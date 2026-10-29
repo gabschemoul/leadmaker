@@ -36,6 +36,27 @@ def card_category(text: str) -> str:
     return ""
 
 
+PHONE = re.compile(r"(\+?\(?\d[\d\s().-]{6,}\d)")
+
+
+def card_details(text: str) -> tuple[str, str]:
+    """Adresse (partie après « Activité · ») et téléphone lus sur une carte de résultat."""
+    address = phone = ""
+    for line in (text or "").split("\n"):
+        if "·" not in line:
+            continue
+        # Google glisse des icônes (caractères privés) à la place de l'adresse des entreprises sans local
+        parts = [re.sub(r"[\ue000-\uf8ff]", "", x).strip() for x in line.split("·")]
+        first = parts[0]
+        if not address and first and not STATUS.match(first) and len(parts) > 1 and re.search(r"\w", parts[1]):
+            address = parts[1]
+        for part in parts[1:]:
+            m = PHONE.fullmatch(part)
+            if not phone and m and sum(ch.isdigit() for ch in part) >= 8:
+                phone = part
+    return address, phone
+
+
 def coords(href: str) -> tuple[float | None, float | None]:
     m = COORDS.search(href or "")
     return (float(m.group(1)), float(m.group(2))) if m else (None, None)
@@ -319,10 +340,16 @@ class GMapsScraper:
                         yield "skip", place
                         continue
 
-                self._scrape_detail(detail, c["href"], place)
-                if "/sorry/" in detail.url:
-                    raise BlockedError("Google a bloqué la lecture d'une fiche (captcha)")
-                self._sleep()
+                # La carte suffit (activité, note, site, adresse, téléphone) : on n'ouvre la fiche que s'il manque
+                # l'essentiel. Moins de pages demandées à Google : plus rapide, moins cher, moins de risque de blocage.
+                if place.card_category and place.rating is not None and not c.get("single"):
+                    place.category = place.card_category
+                    place.address, place.phone = card_details(c.get("text", ""))
+                else:
+                    self._scrape_detail(detail, c["href"], place)
+                    if "/sorry/" in detail.url:
+                        raise BlockedError("Google a bloqué la lecture d'une fiche (captcha)")
+                    self._sleep()
 
                 if not _rating_ok(place.rating, filters) or not _website_ok(place.website, filters):
                     yield "skip", place

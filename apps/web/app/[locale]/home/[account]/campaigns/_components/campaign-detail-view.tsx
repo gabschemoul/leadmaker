@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import Link from 'next/link';
 
@@ -49,10 +49,12 @@ export function CampaignDetailView(props: {
     queryFn: () => fetchCampaignLive(client, props.campaignId),
     initialData: props.initialData,
     staleTime: 5_000,
-    // rafraîchi seulement pendant que la campagne tourne
+    // filet de sécurité : le temps réel (useCampaignRealtime) rafraîchit dès qu'il se passe quelque chose
     refetchInterval: (query) =>
       query.state.data?.status === 'running' ? REFRESH_INTERVAL : false,
   });
+
+  useCampaignRealtime(props.campaignId, queryKey);
 
   const exportHref = `/api/leadmaker/export?campaign_id=${props.campaignId}`;
   const noCredits =
@@ -377,4 +379,65 @@ function LocalDateTime(props: { value: string }) {
       })}
     </>
   );
+}
+
+/**
+ * Affichage en direct : chaque prospect trouvé, chaque recherche terminée et chaque changement de
+ * statut relancent la lecture de la campagne (au plus une fois par seconde). Le rafraîchissement
+ * périodique reste en filet de sécurité si la connexion temps réel tombe.
+ *
+ * useEffect justifié : un abonnement temps réel doit être ouvert au montage et fermé au démontage.
+ */
+function useCampaignRealtime(campaignId: string, queryKey: unknown[]) {
+  const client = useSupabase();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const refresh = () => {
+      if (timer) {
+        return;
+      }
+
+      timer = setTimeout(() => {
+        timer = null;
+        void queryClient.invalidateQueries({ queryKey });
+      }, 1000);
+    };
+
+    const channel = client
+      .channel(`lm-campaign-${campaignId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'lm_prospects',
+          filter: `campaign_id=eq.${campaignId}`,
+        },
+        refresh,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'lm_campaign_categories',
+          filter: `campaign_id=eq.${campaignId}`,
+        },
+        refresh,
+      )
+      .subscribe();
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+
+      void client.removeChannel(channel);
+    };
+    // queryKey est recréé à chaque rendu : l'identifiant de campagne suffit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, campaignId, queryClient]);
 }

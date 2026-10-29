@@ -133,7 +133,7 @@
     "noCreditsDescription": "Vous n'avez plus de crédits découverte. <link>Rechargez vos crédits</link>, puis cliquez sur « Reprendre ».",
     "progressTitle": "Avancement",
     "progressDescription": "Où en est la recherche.",
-    "progressLive": "Mis à jour automatiquement toutes les 10 secondes.",
+    "progressLive": "Mis à jour en direct.",
     "progressDraft": "La recherche commencera quand vous lancerez la campagne.",
     "searchesProgress": "{done, plural, one {# recherche faite} other {# recherches faites}} sur {total, number}",
     "prospectsFound": "Prospects trouvés",

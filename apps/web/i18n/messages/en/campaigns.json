@@ -133,7 +133,7 @@
     "noCreditsDescription": "You have no discovery credits left. <link>Top up your credits</link>, then click \"Resume\".",
     "progressTitle": "Progress",
     "progressDescription": "How far the search has gone.",
-    "progressLive": "Updated automatically every 10 seconds.",
+    "progressLive": "Updated live.",
     "progressDraft": "The search will start when you launch the campaign.",
     "searchesProgress": "{done, plural, one {# search} other {# searches}} done out of {total, number}",
     "prospectsFound": "Prospects found",

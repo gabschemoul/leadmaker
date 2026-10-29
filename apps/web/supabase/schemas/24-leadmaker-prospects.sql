@@ -250,3 +250,6 @@ create policy "lm_suppressions_delete" on public.lm_suppressions for delete
 
 create policy "restrict_mfa_lm_suppressions" on public.lm_suppressions
   as restrictive to authenticated using (public.is_mfa_compliant());
+
+-- Affichage en direct des prospects trouvés (Supabase Realtime, filtré par la RLS)
+alter publication supabase_realtime add table public.lm_prospects;

@@ -792,3 +792,6 @@ grant execute on function public.lm_import_prospects(uuid, jsonb) to authenticat
 create index if not exists ix_lm_tasks_discovery_campaign
   on public.lm_tasks ((payload ->> 'campaign_id'), status)
   where kind = 'discovery';
+
+-- Affichage en direct de l'avancement des campagnes (Supabase Realtime, filtré par la RLS)
+alter publication supabase_realtime add table public.lm_campaign_categories;

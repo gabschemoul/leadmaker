@@ -12,7 +12,7 @@ create trigger "subscriptions_delete"
     on "public"."subscriptions"
     for each row
 execute function "supabase_functions"."http_request"(
-        'http://host.docker.internal:3000/api/db/webhook',
+        'http://host.docker.internal:3001/api/db/webhook',
         'POST',
         '{"Content-Type":"application/json", "X-Supabase-Event-Signature":"WEBHOOKSECRET"}',
         '{}',

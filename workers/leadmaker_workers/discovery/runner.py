@@ -131,8 +131,46 @@ class DiscoveryRunner:
         return {"cards": cards, "new": new, "kept": kept, "stopped": stopped}
 
     def on_final_failure(self, task: Task, conn: psycopg.Connection) -> None:
-        """Recherche abandonnée après plusieurs échecs : on libère sa place dans la campagne."""
+        """Recherche abandonnée après plusieurs échecs : on libère sa place (campagne) ou on la compte vide (estimation)."""
+        if task.kind == "estimate":
+            conn.execute("select public.lm_skip_estimate_search(%s)", (task.payload["estimate_id"],))
+            return
         conn.execute("select public.lm_release_search(%s, %s)", (task.payload["campaign_id"], task.payload["gcid"]))
+
+    def estimate(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
+        """Estimation réelle : lit la liste Google Maps et compte les fiches qui passent les filtres."""
+        p = task.payload
+        est = conn.execute("select status, filters from public.lm_estimates where id = %s", (p["estimate_id"],)).fetchone()
+        if not est or est["status"] != "running":
+            return {"skipped": "estimation terminée ou remplacée"}
+        f = est["filters"] or {}
+        rating_min = float(f.get("rating_min", 0))
+        rating_max = float(f.get("rating_max", 5))
+        min_reviews = int(f.get("min_reviews", 0))
+        website = f.get("website", "all")
+        exclude = _exclude_fn(f)
+        center = None
+        if p.get("latitude") is not None and p.get("longitude") is not None:
+            center = (float(p["latitude"]), float(p["longitude"]), int(p.get("zoom") or 15))
+        cards = self._scraper().list_cards(p["query"], p["country_code"], center=center)
+        matching = []
+        for c in cards:
+            if c.rating is None:
+                if rating_min > 0:
+                    continue
+            elif not rating_min <= c.rating <= rating_max:
+                continue
+            if website == "with" and not c.website or website == "without" and c.website:
+                continue
+            if min_reviews and c.review_count is not None and c.review_count < min_reviews:
+                continue
+            if exclude and exclude(c.name, "", c.website):
+                continue
+            matching.append(c.place_id)
+        conn.execute("select public.lm_record_estimate_search(%s, %s, %s, %s)",
+                     (p["estimate_id"], len(cards), matching, bool(p.get("is_grid"))))
+        log.info("estimation | %s | %d fiches, %d correspondent", p["query"], len(cards), len(matching))
+        return {"cards": len(cards), "matching": len(matching)}
 
 
 __all__ = ["DiscoveryRunner", "BlockedError"]

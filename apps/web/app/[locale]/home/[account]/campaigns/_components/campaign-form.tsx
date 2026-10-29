@@ -147,6 +147,19 @@ export function CampaignForm(props: {
     [values.ratingMin, values.ratingMax, values.minReviews, values.website],
   );
 
+  // Estimation réelle : mêmes filtres que la campagne, exclusions comprises
+  const realEstimateFilters = useMemo(
+    () => ({
+      ...estimateFilters,
+      exclude_public: values.excludePublic ?? true,
+      extra_exclusions: (values.extraExclusions ?? '')
+        .split(',')
+        .map((word) => word.trim())
+        .filter(Boolean),
+    }),
+    [estimateFilters, values.excludePublic, values.extraExclusions],
+  );
+
   // Les villes appartiennent à un pays : on les oublie quand il change.
   const changeCountry = (code: string) => {
     if (code === form.getValues('countryCode')) {
@@ -298,9 +311,11 @@ export function CampaignForm(props: {
 
         <div className={'lg:sticky lg:top-4 lg:self-start'}>
           <CampaignEstimate
+            accountId={props.accountId}
             countryCode={countryCode}
             targeting={targeting}
             filters={estimateFilters}
+            realFilters={realEstimateFilters}
             balance={props.discoveryBalance}
           />
         </div>

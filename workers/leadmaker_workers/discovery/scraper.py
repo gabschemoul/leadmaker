@@ -306,3 +306,34 @@ class GMapsScraper:
         finally:
             page.close()
             detail.close()
+
+    def list_cards(self, query: str, country_code: str, max_results: int = 120,
+                   center: tuple[float, float, int] | None = None) -> list[Place]:
+        """Lit seulement la liste des résultats (sans ouvrir les fiches) : nom, note, avis, présence d'un site."""
+        if not self.is_open:
+            self.open()
+        self.searches += 1
+        page = self._ctx.new_page()
+        try:
+            at = f"/@{center[0]:.5f},{center[1]:.5f},{center[2]}z" if center else ""
+            page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}{at}?hl=en&gl={country_code.lower()}",
+                      wait_until="domcontentloaded")
+            self._accept_consent(page)
+            if "/sorry/" in page.url:
+                raise BlockedError("Google a bloqué la recherche (captcha)")
+            try:
+                page.wait_for_selector('div[role="feed"], h1.DUwDvf', timeout=20000)
+            except PWTimeout:
+                return []
+            if page.locator('div[role="feed"]').count() == 0:
+                return []
+            places = []
+            for c in self._collect_cards(page, max_results):
+                place = Place(name=c["name"], rating=_parse_float(c["star"]), review_count=_parse_count(c["star_text"]),
+                              website=c["site"], maps_url=c["href"].split("?")[0])
+                m = PLACE_ID.search(c["href"])
+                place.place_id = m.group(1) if m else place.maps_url
+                places.append(place)
+            return places
+        finally:
+            page.close()

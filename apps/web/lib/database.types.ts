@@ -441,6 +441,58 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"lm_estimate_places": {
+                  Row: {
+                    "estimate_id": string,"google_place_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "estimate_id": string,"google_place_id": string
+                  }
+                  Update: {
+                    "estimate_id"?: string,"google_place_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_estimate_places_estimate_id_fkey"
+      columns: ["estimate_id"]
+isOneToOne: false
+      referencedRelation: "lm_estimates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_estimates": {
+                  Row: {
+                    "account_id": string,"cards": number,"country_code": string,"created_at": string,"created_by": string | null,"done_searches": number,"expected": number | null,"expected_high": number | null,"expected_low": number | null,"filters": NonNullable<Json>,"finished_at": string | null,"id": string,"matching": number,"mode": string,"overlap": number,"sample_searches": number,"status": string,"targeting": NonNullable<Json>,"total_searches": number,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"cards"?: number,"country_code": string,"created_at"?: string,"created_by"?: string | null,"done_searches"?: number,"expected"?: number | null,"expected_high"?: number | null,"expected_low"?: number | null,"filters"?: NonNullable<Json>,"finished_at"?: string | null,"id"?: string,"matching"?: number,"mode": string,"overlap"?: number,"sample_searches": number,"status"?: string,"targeting": NonNullable<Json>,"total_searches": number,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"cards"?: number,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"done_searches"?: number,"expected"?: number | null,"expected_high"?: number | null,"expected_low"?: number | null,"filters"?: NonNullable<Json>,"finished_at"?: string | null,"id"?: string,"matching"?: number,"mode"?: string,"overlap"?: number,"sample_searches"?: number,"status"?: string,"targeting"?: NonNullable<Json>,"total_searches"?: number,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_estimates_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_estimates_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_estimates_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"lm_geo_cities": {
                   Row: {
                     "admin1_code": string | null,"ascii_name": string,"country_code": string,"geoname_id": number,"latitude": number,"longitude": number,"name": string,"population": number,"timezone": string | null
@@ -1169,11 +1221,17 @@ isOneToOne: false
 "lm_rating_share":
 { Args: { "p_max": number,"p_min": number }; Returns: number
                            },
+"lm_record_estimate_search":
+{ Args: { "p_cards": number,"p_estimate_id": string,"p_is_grid": boolean,"p_place_ids": (string)[] }; Returns: undefined
+                           },
 "lm_record_prospect":
 { Args: { "p_campaign_id": string,"p_place": Json }; Returns: string
                            },
 "lm_release_search":
 { Args: { "p_campaign_id": string,"p_gcid": string }; Returns: undefined
+                           },
+"lm_request_estimate":
+{ Args: { "p_account_id": string,"p_country_code": string,"p_filters": Json,"p_targeting": Json }; Returns: string
                            },
 "lm_requeue_stale_tasks":
 { Args: { "p_stale"?: string }; Returns: number
@@ -1189,6 +1247,9 @@ isOneToOne: false
                            },
 "lm_site_known":
 { Args: { "p_site_key": string,"p_space_id": string }; Returns: boolean
+                           },
+"lm_skip_estimate_search":
+{ Args: { "p_estimate_id": string }; Returns: undefined
                            },
 "lm_space_limit":
 { Args: { "p_account_id": string }; Returns: number
@@ -1268,7 +1329,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
+            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy"|"estimate","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
           }
           CompositeTypes: {
             "invitation": {
@@ -1647,7 +1708,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
+            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy", "estimate"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
           }
         },"storage": {
           Enums: {

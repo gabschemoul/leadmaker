@@ -96,15 +96,27 @@
   },
   "estimate": {
     "title": "Estimation",
-    "description": "Mise à jour automatiquement quand vous modifiez les villes ou les activités.",
+    "description": "Villes et recherches à faire selon votre ciblage.",
     "incomplete": "Complétez les villes et les activités pour voir l'estimation.",
     "cities": "Villes",
     "categories": "Activités",
     "searches": "Recherches",
-    "prospects": "Prospects attendus",
     "balance": "Vos crédits découverte",
     "creditsHint": "Chaque prospect trouvé utilise 1 crédit découverte.",
-    "exceedsBalance": "Vos crédits ne suffisent pas pour toute la campagne. Elle se mettra en pause quand ils seront épuisés."
+    "exceedsBalance": "Vos crédits ne suffisent pas pour toute la campagne. Elle se mettra en pause quand ils seront épuisés.",
+    "real": {
+      "title": "Prospects sur Google Maps",
+      "intro": "Comptez les entreprises qui correspondent à vos critères en lisant Google Maps. Gratuit, sans crédit.",
+      "button": "Estimer le nombre de prospects",
+      "running": "Lecture de Google Maps : {done} recherche{done, plural, one {} other {s}} sur {total}…",
+      "exact": "{count, plural, =0 {Aucune entreprise ne correspond} one {# entreprise correspond} other {# entreprises correspondent}} à vos critères.",
+      "exactHint": "Chiffre mesuré : toutes les recherches ont été lues.",
+      "sample": "Entre {low} et {high} entreprises correspondent à vos critères.",
+      "sampleHint": "Mesuré sur {sample} recherches tirées au hasard parmi {total}, puis extrapolé.",
+      "changed": "Vos critères ont changé : relancez l'estimation.",
+      "failed": "L'estimation n'a pas abouti. Réessayez.",
+      "again": "Relancer"
+    }
   },
   "detail": {
     "pageTitle": "Campagne",

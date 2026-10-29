@@ -6,6 +6,7 @@ import { useFormatter } from 'next-intl';
 
 import { Alert, AlertDescription } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
+import { Button } from '@kit/ui/button';
 import {
   Card,
   CardContent,
@@ -20,11 +21,18 @@ import type { Targeting } from '../_lib/schema/campaign.schema';
 import type { EstimateFilters } from '../_lib/schema/campaign.schema';
 import { estimateCampaignAction } from '../_lib/server/server-actions';
 import { useDebouncedValue } from '../_lib/use-debounced-value';
+import {
+  type RealEstimateFilters,
+  type RealEstimateState,
+  useRealEstimate,
+} from '../_lib/use-real-estimate';
 
 export function CampaignEstimate(props: {
+  accountId: string;
   countryCode: string;
   targeting: Targeting | null;
   filters: EstimateFilters;
+  realFilters: RealEstimateFilters;
   balance: number;
 }) {
   const format = useFormatter();
@@ -64,8 +72,20 @@ export function CampaignEstimate(props: {
   });
 
   const number = (value: number) => format.number(value);
+  const realKey =
+    props.targeting === null
+      ? null
+      : JSON.stringify({
+          countryCode: props.countryCode,
+          targeting: props.targeting,
+          filters: props.realFilters,
+        });
+
+  const real = useRealEstimate(props.accountId, realKey);
+
   const exceedsBalance =
-    key !== null && data ? data.expectedProspects > props.balance : false;
+    real.result?.status === 'done' &&
+    (real.result.expected ?? 0) > props.balance;
 
   return (
     <Card data-test={'campaign-estimate'}>
@@ -106,14 +126,12 @@ export function CampaignEstimate(props: {
               label={'campaigns.estimate.searches'}
               value={data ? number(data.searches) : '–'}
             />
-
-            <EstimateItem
-              label={'campaigns.estimate.prospects'}
-              value={data ? `≈ ${number(data.expectedProspects)}` : '–'}
-              highlight
-            />
           </dl>
         )}
+
+        {realKey !== null ? (
+          <RealEstimate state={real} formatNumber={number} />
+        ) : null}
 
         <div className={'border-t pt-3 text-sm'}>
           <div className={'flex items-center justify-between'}>
@@ -165,6 +183,120 @@ function EstimateItem(props: {
       >
         {props.value}
       </dd>
+    </div>
+  );
+}
+
+function RealEstimate(props: {
+  state: RealEstimateState;
+  formatNumber: (value: number) => string;
+}) {
+  const { result, stale, pending, request } = props.state;
+  const number = props.formatNumber;
+
+  const running = pending || result?.status === 'running';
+
+  return (
+    <div className={'flex flex-col gap-2 border-t pt-3'}>
+      <p className={'text-sm font-medium'}>
+        <Trans i18nKey={'campaigns.estimate.real.title'} />
+      </p>
+
+      {result?.status === 'done' && !stale ? (
+        <div
+          className={'flex flex-col gap-1'}
+          data-test={'real-estimate-result'}
+        >
+          <p className={'text-lg font-semibold'}>
+            {result.mode === 'exact' ? (
+              <Trans
+                i18nKey={'campaigns.estimate.real.exact'}
+                values={{ count: result.expected ?? 0 }}
+              />
+            ) : (
+              <Trans
+                i18nKey={'campaigns.estimate.real.sample'}
+                values={{
+                  low: number(result.expected_low ?? 0),
+                  high: number(result.expected_high ?? 0),
+                }}
+              />
+            )}
+          </p>
+
+          <p className={'text-muted-foreground text-xs'}>
+            {result.mode === 'exact' ? (
+              <Trans i18nKey={'campaigns.estimate.real.exactHint'} />
+            ) : (
+              <Trans
+                i18nKey={'campaigns.estimate.real.sampleHint'}
+                values={{
+                  sample: number(result.sample_searches),
+                  total: number(result.total_searches),
+                }}
+              />
+            )}
+          </p>
+        </div>
+      ) : running && !stale ? (
+        <div className={'flex flex-col gap-2'}>
+          <p
+            className={'text-muted-foreground flex items-center gap-2 text-sm'}
+          >
+            <Spinner className={'size-4'} />
+            <Trans
+              i18nKey={'campaigns.estimate.real.running'}
+              values={{
+                done: result?.done_searches ?? 0,
+                total: result?.sample_searches ?? 0,
+              }}
+            />
+          </p>
+
+          <div className={'bg-muted h-1.5 w-full overflow-hidden rounded-full'}>
+            <div
+              className={'bg-primary h-full transition-all'}
+              style={{
+                width: `${
+                  result && result.sample_searches > 0
+                    ? Math.round(
+                        (result.done_searches / result.sample_searches) * 100,
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </div>
+        </div>
+      ) : (
+        <p className={'text-muted-foreground text-xs'}>
+          {stale && result ? (
+            <Trans i18nKey={'campaigns.estimate.real.changed'} />
+          ) : result?.status === 'failed' ? (
+            <Trans i18nKey={'campaigns.estimate.real.failed'} />
+          ) : (
+            <Trans i18nKey={'campaigns.estimate.real.intro'} />
+          )}
+        </p>
+      )}
+
+      {!running || stale ? (
+        <Button
+          type={'button'}
+          variant={result && !stale ? 'outline' : 'default'}
+          size={'sm'}
+          data-test={'real-estimate-button'}
+          onClick={request}
+        >
+          <Trans
+            i18nKey={
+              result && !stale
+                ? 'campaigns.estimate.real.again'
+                : 'campaigns.estimate.real.button'
+            }
+          />
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -33,9 +33,14 @@ def run_discovery(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
     return discovery_runner().run(task, conn)
 
 
+def run_estimate(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
+    return discovery_runner().estimate(task, conn)
+
+
 HANDLERS = {
     "dummy": run_dummy,
     "discovery": run_discovery,
+    "estimate": run_estimate,
 }
 
 
@@ -47,7 +52,7 @@ def run(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
 
 
 def on_final_failure(task: Task, conn: psycopg.Connection) -> None:
-    if task.kind == "discovery":
+    if task.kind in ("discovery", "estimate"):
         discovery_runner().on_final_failure(task, conn)
 
 

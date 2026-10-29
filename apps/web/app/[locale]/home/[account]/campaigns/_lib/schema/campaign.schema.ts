@@ -247,6 +247,16 @@ export const EstimateCampaignSchema = z.object({
   filters: EstimateFiltersSchema.optional(),
 });
 
+export const RequestEstimateSchema = z.object({
+  accountId: z.string().uuid(),
+  countryCode: z.string().regex(/^[A-Z]{2}$/),
+  targeting: TargetingSchema,
+  filters: EstimateFiltersSchema.extend({
+    exclude_public: z.boolean(),
+    extra_exclusions: z.array(z.string()).max(200),
+  }),
+});
+
 export const SearchCitiesSchema = z.object({
   countryCode: z.string().regex(/^[A-Z]{2}$/),
   query: z.string().trim().min(1).max(100),

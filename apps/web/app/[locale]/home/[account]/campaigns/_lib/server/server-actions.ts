@@ -8,6 +8,7 @@ import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
+  RequestEstimateSchema,
   CampaignIdSchema,
   CreateCampaignSchema,
   EstimateCampaignSchema,
@@ -136,6 +137,37 @@ export const estimateCampaignAction = authActionClient
   });
 
 /** Enregistre la campagne en brouillon puis ouvre sa page. */
+/**
+ * Estimation réelle : le worker lit Google Maps (sans ouvrir les fiches, sans crédit)
+ * et compte les entreprises qui passent les filtres. Renvoie l'identifiant à suivre.
+ */
+export const requestEstimateAction = authActionClient
+  .inputSchema(RequestEstimateSchema)
+  .action(
+    async ({ parsedInput: { accountId, countryCode, targeting, filters } }) => {
+      const client = getSupabaseServerClient();
+
+      const { data, error } = await client.rpc('lm_request_estimate', {
+        p_account_id: accountId,
+        p_country_code: countryCode,
+        p_targeting: targeting,
+        p_filters: filters,
+      });
+
+      if (error || !data) {
+        const logger = await getLogger();
+        logger.error(
+          { name: 'leadmaker.campaigns.real-estimate', accountId, error },
+          'Real estimate request failed',
+        );
+
+        throw new Error('campaigns.errors.estimateFailed');
+      }
+
+      return { estimateId: data };
+    },
+  );
+
 export const createCampaignAction = authActionClient
   .inputSchema(CreateCampaignSchema)
   .action(async ({ parsedInput: values, ctx }) => {

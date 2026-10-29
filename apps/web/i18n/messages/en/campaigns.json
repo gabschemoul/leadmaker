@@ -96,15 +96,27 @@
   },
   "estimate": {
     "title": "Estimate",
-    "description": "Updated automatically when you change cities or activities.",
+    "description": "Cities and searches to run for your targeting.",
     "incomplete": "Complete the cities and activities to see the estimate.",
     "cities": "Cities",
     "categories": "Activities",
     "searches": "Searches",
-    "prospects": "Expected prospects",
     "balance": "Your discovery credits",
     "creditsHint": "Each prospect found uses 1 discovery credit.",
-    "exceedsBalance": "Your credits won't cover the whole campaign. It will pause when they run out."
+    "exceedsBalance": "Your credits won't cover the whole campaign. It will pause when they run out.",
+    "real": {
+      "title": "Prospects on Google Maps",
+      "intro": "Count the businesses matching your criteria by reading Google Maps. Free, no credits used.",
+      "button": "Estimate the number of prospects",
+      "running": "Reading Google Maps: {done} of {total} search{total, plural, one {} other {es}}…",
+      "exact": "{count, plural, =0 {No business matches} one {# business matches} other {# businesses match}} your criteria.",
+      "exactHint": "Measured figure: every search was read.",
+      "sample": "Between {low} and {high} businesses match your criteria.",
+      "sampleHint": "Measured on {sample} random searches out of {total}, then extrapolated.",
+      "changed": "Your criteria changed: run the estimate again.",
+      "failed": "The estimate did not complete. Please try again.",
+      "again": "Run again"
+    }
   },
   "detail": {
     "pageTitle": "Campaign",

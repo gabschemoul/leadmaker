@@ -218,6 +218,7 @@
       "noMessages": "Write at least one message in the campaign first (Messages button).",
       "capReached": "You already have many forms ready to validate. Validate or skip them before preparing more.",
       "failed": "The preparation could not be started. Please try again shortly."
-    }
+    },
+    "preparingBanner": "The robot is working: {count, plural, one {# form being prepared} other {# forms being prepared}} (about a minute per site). Results land in the tabs below without reloading the page."
   }
 }

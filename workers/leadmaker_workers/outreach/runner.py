@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 from typing import Any
+from urllib.parse import urlparse
 
 import psycopg
 from psycopg.types.json import Jsonb
@@ -46,6 +47,16 @@ LOCALES = {
     "DE": "de-DE", "AT": "de-AT", "ES": "es-ES", "MX": "es-MX", "AR": "es-AR", "IT": "it-IT",
     "PT": "pt-PT", "BR": "pt-BR", "NL": "nl-NL", "PL": "pl-PL", "TR": "tr-TR", "SE": "sv-SE", "DK": "da-DK",
 }
+
+
+# Pages sur un réseau social ou un annuaire : pas de formulaire de contact, inutile de les visiter
+NO_FORM_HOSTS = ("facebook.com", "fb.com", "instagram.com", "linkedin.com", "tiktok.com", "twitter.com", "x.com",
+                 "youtube.com", "pagesjaunes.fr", "yelp.com", "yelp.fr", "linktr.ee", "wa.me", "t.me")
+
+
+def _social_host(url: str) -> bool:
+    host = (urlparse(url if "://" in url else f"http://{url}").hostname or "").lower().removeprefix("www.")
+    return any(host == h or host.endswith("." + h) for h in NO_FORM_HOSTS)
 
 
 def _timeout() -> int:
@@ -132,7 +143,10 @@ class PrepareRunner:
         }
         started = time.monotonic()
         timeout = _timeout()
-        result = run_site_job(job, timeout)
+        if _social_host(prospect["website"] or ""):
+            result = {"status": "no_form", "detail": "page sur un réseau social ou un annuaire : pas de formulaire de contact"}
+        else:
+            result = run_site_job(job, timeout)
         if result is None:
             result = {"status": "unreachable", "detail": f"site bloqué plus de {timeout} s : passé au suivant"}
 

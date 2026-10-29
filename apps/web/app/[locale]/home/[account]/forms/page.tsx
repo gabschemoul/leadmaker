@@ -2,9 +2,11 @@ import { Suspense } from 'react';
 
 import Link from 'next/link';
 
+import { Loader2 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { Alert, AlertDescription } from '@kit/ui/alert';
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
@@ -103,14 +105,15 @@ async function FormsContent(props: FormsPageProps) {
   const space = spaces.find((item) => item.id === requestedSpace) ?? spaces[0]!;
   const showFolders = spaces.length > 1;
 
+  const counts = await loadAttemptCounts(client, space.id);
+
+  // Sans onglet choisi : « Prêts », ou le premier onglet non vide (robot au
+  // travail, formulaires à compléter…) pour ne jamais tomber sur une liste vide
   const group: AttemptGroup = isAttemptGroup(rawSearchParams.status)
     ? rawSearchParams.status
-    : 'ready';
+    : (ATTEMPT_GROUP_ORDER.find((item) => counts[item] > 0) ?? 'ready');
 
-  const [counts, rows] = await Promise.all([
-    loadAttemptCounts(client, space.id),
-    loadAttempts(client, { spaceId: space.id, group }),
-  ]);
+  const rows = await loadAttempts(client, { spaceId: space.id, group });
 
   const basePath = pathsConfig.app.accountForms.replace('[account]', slug);
 
@@ -133,6 +136,19 @@ async function FormsContent(props: FormsPageProps) {
         <CardDescription className={'max-w-2xl'}>
           <Trans i18nKey={'outreach.forms.intro'} />
         </CardDescription>
+
+        {counts.preparing > 0 ? (
+          <Alert data-test={'forms-preparing-banner'}>
+            <Loader2 className={'h-4 animate-spin'} />
+
+            <AlertDescription>
+              <Trans
+                i18nKey={'outreach.forms.preparingBanner'}
+                values={{ count: counts.preparing }}
+              />
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
         {showFolders ? (
           <div className={'flex flex-col gap-1.5'}>

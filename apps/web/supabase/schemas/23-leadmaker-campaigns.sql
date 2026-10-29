@@ -35,7 +35,8 @@ grant select, insert, update, delete on table public.lm_campaigns to service_rol
 
 grant select, insert, delete on table public.lm_campaigns to authenticated;
 
-grant update (name, status, country_code, targeting, filters, templates, daily_limit, auto_validation)
+-- status ne se change que par lm_start_campaign / lm_pause_campaign (quotas et préparation des zones)
+grant update (name, country_code, targeting, filters, templates, daily_limit, auto_validation)
   on table public.lm_campaigns to authenticated;
 
 create trigger lm_campaigns_set_timestamps

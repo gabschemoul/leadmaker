@@ -78,3 +78,14 @@ def enqueue(conn: psycopg.Connection, account_id: str, kind: str, payload: dict[
         (account_id, kind, Jsonb(payload), idempotency_key, priority),
     ).fetchone()
     return row["id"] if row else None
+
+
+def requeue(conn: psycopg.Connection, task_id: int, delay_seconds: float, error: str) -> None:
+    """Remet une tâche en file plus tard sans consommer d'essai (blocage temporaire, pas une erreur de la tâche)."""
+    conn.execute(
+        """update public.lm_tasks
+              set status = 'queued', attempts = greatest(attempts - 1, 0), worker_id = null, locked_at = null,
+                  run_after = now() + make_interval(secs => %s), error = %s
+            where id = %s and status = 'running'""",
+        (delay_seconds, error[:2000], task_id),
+    )

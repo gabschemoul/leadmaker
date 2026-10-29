@@ -1,7 +1,15 @@
 # Workers LeadMaker
 
-Processus Python qui exécutent les tâches de la file `public.lm_tasks` : découverte Google Maps,
-préparation et envoi des formulaires. Lot 0 : boucle de base et tâche factice `dummy`.
+Processus Python qui exécutent les tâches de la file `public.lm_tasks` : découverte Google Maps (lot 1),
+préparation et envoi des formulaires (lot 2).
+
+Découverte : le worker planifie lui-même les recherches des campagnes en cours (`lm_schedule_discovery`),
+lit Google Maps (interface en anglais, résultats orientés sur le pays de la campagne), écarte administrations,
+banques et chaînes, enregistre un prospect par site et débite un crédit découverte par prospect retenu.
+Un captcha Google met le worker en pause 30 min, puis 60, 120 et 240 min.
+
+Variables utiles : `WORKER_KINDS=discovery`, `HEADLESS=false` pour voir le navigateur, `SCRAPE_DELAY` (1,5 s),
+`PROXY_URL=http://user:pass@hote:port` pour passer par un fournisseur de proxies.
 
 ## Lancer en local
 
@@ -19,6 +27,12 @@ python -m leadmaker_workers.main
 ```bash
 docker build -t leadmaker-worker workers/
 docker run --env-file workers/.env --network host leadmaker-worker
+```
+
+## Charger les données de référence
+
+```bash
+python scripts/load_categories.py      # 4 053 catégories Google (générales, exclues)
 ```
 
 ## Charger les villes GeoNames

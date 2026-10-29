@@ -1,0 +1,197 @@
+# Generic categories scanned first by the auto scan (one per line, English Google Maps names).
+# All other categories from categories_fr.json ("en" field) come after.
+Restaurant
+Pizza restaurant
+Mexican restaurant
+Italian restaurant
+Chinese restaurant
+Japanese restaurant
+Sushi restaurant
+Thai restaurant
+Indian restaurant
+Vietnamese restaurant
+Seafood restaurant
+Steak house
+Barbecue restaurant
+Hamburger restaurant
+Sandwich shop
+Breakfast restaurant
+Diner
+Fast food restaurant
+Food truck
+Bar
+Sports bar
+Pub
+Brewery
+Coffee shop
+Bakery
+Donut shop
+Ice cream shop
+Juice shop
+Caterer
+Liquor store
+Grocery store
+Butcher shop
+Florist
+Gift shop
+Clothing store
+Boutique
+Shoe store
+Jewelry store
+Furniture store
+Mattress store
+Appliance store
+Hardware store
+Home improvement store
+Garden center
+Pet store
+Pet groomer
+Dog trainer
+Veterinarian
+Animal hospital
+Plumber
+Electrician
+HVAC contractor
+Air conditioning contractor
+Heating contractor
+Roofing contractor
+General contractor
+Construction company
+Home builder
+Remodeler
+Kitchen remodeler
+Bathroom remodeler
+Painter
+Carpenter
+Handyman
+Flooring contractor
+Tile contractor
+Drywall contractor
+Concrete contractor
+Fence contractor
+Deck builder
+Paving contractor
+Landscaper
+Lawn care service
+Tree service
+Pool cleaning service
+Swimming pool contractor
+Pest control service
+Cleaning service
+House cleaning service
+Carpet cleaning service
+Window cleaning service
+Pressure washing service
+Gutter cleaning service
+Junk removal service
+Moving company
+Storage facility
+Locksmith
+Garage door supplier
+Window installation service
+Solar energy contractor
+Septic system service
+Water damage restoration service
+Auto repair shop
+Auto body shop
+Mechanic
+Oil change service
+Tire shop
+Car wash
+Car detailing service
+Towing service
+Used car dealer
+Auto glass shop
+Transmission shop
+Motorcycle repair shop
+Car rental agency
+Dentist
+Cosmetic dentist
+Orthodontist
+Chiropractor
+Physical therapist
+Massage therapist
+Acupuncturist
+Optometrist
+Dermatologist
+Medical spa
+Urgent care center
+Home health care service
+Assisted living facility
+Pharmacy
+Counselor
+Psychologist
+Hair salon
+Barber shop
+Beauty salon
+Nail salon
+Day spa
+Tanning salon
+Waxing hair removal service
+Eyelash salon
+Tattoo shop
+Gym
+Fitness center
+Personal trainer
+Yoga studio
+Pilates studio
+Martial arts school
+Dance school
+Lawyer
+Personal injury attorney
+Family law attorney
+Criminal justice attorney
+Estate planning attorney
+Accountant
+Tax preparation service
+Bookkeeping service
+Insurance agency
+Financial planner
+Mortgage broker
+Real estate agency
+Real estate agent
+Property management company
+Marketing agency
+Website designer
+Advertising agency
+Computer repair service
+Cell phone store
+Mobile phone repair shop
+IT services
+Print shop
+Sign shop
+Photographer
+Wedding venue
+Event venue
+Event planner
+Party equipment rental service
+DJ service
+Child care agency
+Day care center
+Preschool
+Tutoring service
+Driving school
+Music school
+Hotel
+Motel
+Bed & breakfast
+Travel agency
+Funeral home
+Dry cleaner
+Laundromat
+Tailor
+Shoe repair shop
+Watch repair service
+Pawn shop
+Thrift store
+Vape shop
+Smoke shop
+Bicycle shop
+Sporting goods store
+Boat dealer
+RV dealer
+Trucking company
+Courier service
+Security system supplier
+Staffing agency
+Equipment rental agency

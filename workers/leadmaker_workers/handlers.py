@@ -1,17 +1,26 @@
-"""Exécution d'une tâche selon son type.
-
-Lot 0 : seule la tâche « dummy » existe ; elle prouve la boucle réserver → exécuter → écrire.
-Les tâches discovery / prepare / send arrivent aux lots 1 et 2 (moteurs du prototype).
-"""
+"""Exécution d'une tâche selon son type."""
 from __future__ import annotations
 
 import time
 from typing import Any
 
+import psycopg
+
 from .queue import Task
 
+_discovery = None
 
-def run_dummy(task: Task) -> dict[str, Any]:
+
+def discovery_runner():
+    global _discovery
+    if _discovery is None:
+        from .discovery.runner import DiscoveryRunner  # Playwright n'est chargé que pour ce type de tâche
+
+        _discovery = DiscoveryRunner()
+    return _discovery
+
+
+def run_dummy(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
     delay = float(task.payload.get("sleep", 0))
     if delay:
         time.sleep(min(delay, 10))
@@ -20,13 +29,28 @@ def run_dummy(task: Task) -> dict[str, Any]:
     return {"echo": task.payload, "ok": True}
 
 
+def run_discovery(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
+    return discovery_runner().run(task, conn)
+
+
 HANDLERS = {
     "dummy": run_dummy,
+    "discovery": run_discovery,
 }
 
 
-def run(task: Task) -> dict[str, Any]:
+def run(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
     handler = HANDLERS.get(task.kind)
     if handler is None:
         raise RuntimeError(f"aucun gestionnaire pour le type de tâche « {task.kind} »")
-    return handler(task)
+    return handler(task, conn)
+
+
+def on_final_failure(task: Task, conn: psycopg.Connection) -> None:
+    if task.kind == "discovery":
+        discovery_runner().on_final_failure(task, conn)
+
+
+def shutdown() -> None:
+    if _discovery is not None:
+        _discovery.close()

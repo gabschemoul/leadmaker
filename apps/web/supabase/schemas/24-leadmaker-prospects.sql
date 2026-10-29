@@ -20,6 +20,7 @@ create table if not exists public.lm_prospects (
   found_email varchar(320),
   maps_url varchar(1000),
   source public.lm_prospect_source not null default 'maps',
+  campaign_id uuid references public.lm_campaigns(id) on delete set null,
   is_chain boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -57,6 +58,9 @@ create index if not exists ix_lm_prospects_space_id_google_place_id
 
 create index if not exists ix_lm_prospects_account_id
   on public.lm_prospects (account_id);
+
+create index if not exists ix_lm_prospects_campaign_id_created_at
+  on public.lm_prospects (campaign_id, created_at desc);
 
 create policy "lm_prospects_read" on public.lm_prospects for select
   to authenticated using (public.has_role_on_account(account_id));

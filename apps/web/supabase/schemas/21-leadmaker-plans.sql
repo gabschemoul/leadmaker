@@ -204,7 +204,7 @@ begin
     raise exception 'unknown plan %', p_plan_id;
   end if;
 
-  if exists (select 1 from public.lm_credit_ledger where event_ref = p_event_ref) then
+  if exists (select 1 from public.lm_credit_ledger where event_ref = p_event_ref || ':discovery') then
     return;
   end if;
 
@@ -268,3 +268,24 @@ $$;
 create trigger lm_accounts_memberships_seat_quota
   before insert on public.accounts_memberships
   for each row execute function public.lm_enforce_seat_quota();
+
+-- Abonnement supprimé (résiliation effective) : l'organisation perd son forfait et ses crédits.
+create or replace function public.lm_on_subscription_deleted() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  update public.lm_account_credits
+     set plan_id = null, discovery_balance = 0, outreach_balance = 0, period_ends_at = null
+   where account_id = old.account_id;
+
+  return old;
+end;
+$$;
+
+revoke all on function public.lm_on_subscription_deleted() from public;
+
+create trigger lm_subscriptions_after_delete
+  after delete on public.subscriptions
+  for each row execute function public.lm_on_subscription_deleted();

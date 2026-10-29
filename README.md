@@ -40,6 +40,7 @@ Lot 0 (fondations) démarré le 29/10/2026 :
 - [x] Quotas d'espaces et de sièges par forfait, crédits découverte / outreach avec journal
 - [x] File de tâches et worker Python conteneurisé (tâche factice)
 - [x] GeoNames : 252 pays, ~198 000 villes
-- [ ] Stripe en mode test (clés à fournir)
+- [x] Stripe en mode test : 3 offres créées (compte reviewcleaner, sandbox), crédits versés automatiquement à chaque paiement et retirés à la résiliation
+  - clés privées dans `apps/web/.env.local` (non versionné) ; relais des événements : conteneur Docker `leadmaker-stripe-listen`
 - [ ] Accès administrateur : une fois le compte créé, exécuter `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role": "super-admin"}' where email = '…'` puis activer la double authentification dans le profil ; le panneau est sur /admin
 - [ ] Mesure des coûts réels (proxies) et calendrier réestimé

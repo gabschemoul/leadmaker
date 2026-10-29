@@ -111,6 +111,34 @@ select is(
   public.lm_debit_credits((select id from public.accounts where slug = 'org-b'), 'outreach', 1, 'test:debit:2', 'test'),
   false, 'Sans solde, le débit est refusé');
 
+-- Un webhook de renouvellement reçu deux fois ne recrédite pas
+select public.lm_reset_credits((select id from public.accounts where slug = 'org-a'), 'growth', now() + interval '1 month', 'test:renewal:a');
+
+select is(
+  (select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'org-a')),
+  14990, 'Un renouvellement déjà traité ne remet pas le solde à zéro');
+
+-- Résiliation effective : forfait et crédits retirés
+insert into public.billing_customers (account_id, provider, customer_id)
+values ((select id from public.accounts where slug = 'org-a'), 'stripe', 'cus_test_a');
+
+insert into public.subscriptions (id, account_id, billing_customer_id, status, active, billing_provider,
+  cancel_at_period_end, currency, period_starts_at, period_ends_at)
+values ('sub_test_a', (select id from public.accounts where slug = 'org-a'),
+  (select id from public.billing_customers where customer_id = 'cus_test_a'),
+  'active', true, 'stripe', false, 'eur', now(), now() + interval '1 month');
+
+-- le webhook de développement (seed) appelle l'API locale : on le coupe le temps du test
+set local role postgres;
+alter table public.subscriptions disable trigger subscriptions_delete;
+set local role service_role;
+delete from public.subscriptions where id = 'sub_test_a';
+
+select is(
+  (select (plan_id, discovery_balance, outreach_balance)::text from public.lm_account_credits
+    where account_id = (select id from public.accounts where slug = 'org-a')),
+  '(,0,0)', 'La résiliation retire le forfait et les crédits');
+
 -- La base locale peut déjà contenir des tâches : on les écarte le temps du test (annulé au rollback)
 update public.lm_tasks set status = 'cancelled' where status = 'queued';
 

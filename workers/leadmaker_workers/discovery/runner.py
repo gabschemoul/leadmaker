@@ -149,9 +149,8 @@ class DiscoveryRunner:
             # La fiche ouverte confirme l'activité principale
             if category_ok and obj.category and not category_ok(obj.category):
                 continue
-            key = site_key(obj.website)
-            if not key:
-                continue
+            # Sans site web : prospect gardé quand même (à appeler ou à exporter), identifié par sa fiche Google
+            key = site_key(obj.website) or f"maps:{obj.place_id}"
             outcome = conn.execute(
                 "select public.lm_record_prospect(%s, %s) as r",
                 (p["campaign_id"], Jsonb({

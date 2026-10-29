@@ -531,6 +531,7 @@ begin
                                  'country_code', v_campaign.country_code,
                                  'latitude', v_zone.latitude, 'longitude', v_zone.longitude, 'zoom', v_zone.zoom,
                                  'geoname_id', v_zone.geoname_id,
+                                 'city', (select c.name from public.lm_geo_cities c where c.geoname_id = v_zone.geoname_id),
                                  'query', case when v_zone.latitude is null
                                                then v_pick.label_en || ' in ' || v_zone.label
                                                else v_pick.label_en end),
@@ -607,6 +608,11 @@ stable
 security definer
 as $$
   select exists (select 1 from public.lm_prospects where space_id = p_space_id and site_key = p_site_key)
+      or exists (select 1 from public.lm_suppressions s
+                  where s.site_key = p_site_key
+                    and (s.account_id is null
+                         or (s.account_id = (select account_id from public.lm_spaces where id = p_space_id)
+                             and (s.space_id is null or s.space_id = p_space_id))))
       or (select count(*) from public.lm_place_sightings where space_id = p_space_id and site_key = p_site_key)
          >= (select chain_min from public.lm_discovery_settings where id);
 $$;
@@ -629,11 +635,11 @@ begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id;
 
   insert into public.lm_prospects (account_id, space_id, google_place_id, name, category, rating, review_count,
-                                   address, country_code, phone, website, site_key, maps_url, source, campaign_id)
+                                   address, country_code, phone, website, site_key, maps_url, source, campaign_id, city)
   values (v_campaign.account_id, v_campaign.space_id, p_place ->> 'place_id', left(p_place ->> 'name', 500),
           left(p_place ->> 'category', 255), (p_place ->> 'rating')::numeric(2,1), (p_place ->> 'review_count')::integer,
           p_place ->> 'address', v_campaign.country_code, left(p_place ->> 'phone', 50), left(p_place ->> 'website', 1000),
-          p_place ->> 'site_key', left(p_place ->> 'maps_url', 1000), 'maps', p_campaign_id)
+          p_place ->> 'site_key', left(p_place ->> 'maps_url', 1000), 'maps', p_campaign_id, left(p_place ->> 'city', 200))
   on conflict (space_id, site_key) do nothing
   returning id into v_id;
 
@@ -770,10 +776,11 @@ begin
      where length(trim(coalesce(r ->> 'site_key', ''))) > 0 and length(trim(coalesce(r ->> 'name', ''))) > 0
   ), ins as (
     insert into public.lm_prospects (account_id, space_id, name, category, phone, website, site_key, found_email,
-                                     address, country_code, maps_url, source)
+                                     address, country_code, maps_url, source, city)
     select v_account_id, p_space_id, left(r ->> 'name', 500), left(r ->> 'category', 255), left(r ->> 'phone', 50),
            left(r ->> 'website', 1000), lower(r ->> 'site_key'), left(r ->> 'email', 320), r ->> 'address',
-           coalesce(nullif(upper(r ->> 'country_code'), ''), v_country), left(r ->> 'maps_url', 1000), 'csv'
+           coalesce(nullif(upper(r ->> 'country_code'), ''), v_country), left(r ->> 'maps_url', 1000), 'csv',
+           left(nullif(trim(r ->> 'city'), ''), 200)
       from src
     on conflict (space_id, site_key) do nothing
     returning 1

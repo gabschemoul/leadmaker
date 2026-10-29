@@ -563,14 +563,14 @@ isOneToOne: false
                   ]
                 },"lm_prospects": {
                   Row: {
-                    "account_id": string,"address": string | null,"campaign_id": string | null,"category": string | null,"country_code": string | null,"created_at": string,"created_by": string | null,"found_email": string | null,"google_place_id": string | null,"id": string,"is_chain": boolean,"maps_url": string | null,"name": string,"phone": string | null,"rating": number | null,"review_count": number | null,"site_key": string,"source": Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at": string,"updated_by": string | null,"website": string | null
+                    "account_id": string,"address": string | null,"campaign_id": string | null,"category": string | null,"city": string | null,"country_code": string | null,"created_at": string,"created_by": string | null,"excluded_at": string | null,"found_email": string | null,"google_place_id": string | null,"id": string,"is_chain": boolean,"maps_url": string | null,"name": string,"phone": string | null,"rating": number | null,"review_count": number | null,"site_key": string,"source": Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at": string,"updated_by": string | null,"website": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"address"?: string | null,"campaign_id"?: string | null,"category"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name": string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key": string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
+                    "account_id": string,"address"?: string | null,"campaign_id"?: string | null,"category"?: string | null,"city"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"excluded_at"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name": string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key": string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"address"?: string | null,"campaign_id"?: string | null,"category"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name"?: string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
+                    "account_id"?: string,"address"?: string | null,"campaign_id"?: string | null,"category"?: string | null,"city"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"excluded_at"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name"?: string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
                   }
                   Relationships: [
                     {
@@ -1196,10 +1196,16 @@ isOneToOne: false
 "lm_debit_credits":
 { Args: { "p_account_id": string,"p_campaign_id"?: string,"p_event_ref": string,"p_kind": Database["public"]['Enums']["lm_credit_kind"],"p_quantity": number,"p_reason": string }; Returns: boolean
                            },
+"lm_delete_prospects":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
 "lm_estimate_campaign":
 { Args: { "p_country_code": string,"p_filters"?: Json,"p_targeting": Json }; Returns: {
               "categories": number,"cities": number,"expected_prospects": number,"rate": number,"searches": number
             }[]
+                           },
+"lm_exclude_prospects":
+{ Args: { "p_ids": (string)[] }; Returns: number
                            },
 "lm_fail_task":
 { Args: { "p_error": string,"p_id": number }; Returns: undefined
@@ -1217,6 +1223,11 @@ isOneToOne: false
                            },
 "lm_pause_campaign":
 { Args: { "p_campaign_id": string,"p_reason"?: string }; Returns: undefined
+                           },
+"lm_prospect_facets":
+{ Args: { "p_space_id": string }; Returns: {
+              "kind": string,"total": number,"value": string
+            }[]
                            },
 "lm_rating_share":
 { Args: { "p_max": number,"p_min": number }; Returns: number
@@ -1238,6 +1249,9 @@ isOneToOne: false
                            },
 "lm_reset_credits":
 { Args: { "p_account_id": string,"p_event_ref": string,"p_period_ends_at": string,"p_plan_id": string }; Returns: undefined
+                           },
+"lm_restore_prospects":
+{ Args: { "p_ids": (string)[] }; Returns: number
                            },
 "lm_schedule_discovery":
 { Args: Record<PropertyKey, never>; Returns: number

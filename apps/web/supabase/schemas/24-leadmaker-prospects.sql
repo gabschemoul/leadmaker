@@ -22,6 +22,8 @@ create table if not exists public.lm_prospects (
   source public.lm_prospect_source not null default 'maps',
   campaign_id uuid references public.lm_campaigns(id) on delete set null,
   is_chain boolean not null default false,
+  city text,                           -- ville ciblée par la recherche (ou colonne du fichier importé)
+  excluded_at timestamptz,             -- exclu par l'utilisateur : jamais contacté, site en liste d'opposition
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -62,6 +64,14 @@ create index if not exists ix_lm_prospects_account_id
 create index if not exists ix_lm_prospects_campaign_id_created_at
   on public.lm_prospects (campaign_id, created_at desc);
 
+create index if not exists ix_lm_prospects_space_id_category on public.lm_prospects (space_id, category);
+
+create index if not exists ix_lm_prospects_space_id_city on public.lm_prospects (space_id, city);
+
+create index if not exists ix_lm_prospects_space_id_rating on public.lm_prospects (space_id, rating);
+
+create index if not exists ix_lm_prospects_space_id_name on public.lm_prospects (space_id, name);
+
 create policy "lm_prospects_read" on public.lm_prospects for select
   to authenticated using (public.has_role_on_account(account_id));
 
@@ -73,6 +83,119 @@ create policy "lm_prospects_insert" on public.lm_prospects for insert
 
 create policy "restrict_mfa_lm_prospects" on public.lm_prospects
   as restrictive to authenticated using (public.is_mfa_compliant());
+
+-- Villes et activités présentes dans un espace (pour les filtres de la page Prospects)
+create or replace function public.lm_prospect_facets(p_space_id uuid)
+returns table (kind text, value text, total bigint)
+set search_path = ''
+language sql
+stable
+as $$
+  select 'category', p.category, count(*) from public.lm_prospects p
+   where p.space_id = p_space_id and p.category is not null group by p.category
+  union all
+  select 'city', p.city, count(*) from public.lm_prospects p
+   where p.space_id = p_space_id and p.city is not null group by p.city
+  union all
+  select 'campaign', c.id::text, count(*) from public.lm_prospects p
+    join public.lm_campaigns c on c.id = p.campaign_id
+   where p.space_id = p_space_id group by c.id
+  order by 1, 3 desc, 2;
+$$;
+
+grant execute on function public.lm_prospect_facets(uuid) to authenticated, service_role;
+
+-- Exclusion : les prospects ne seront jamais contactés et leur site rejoint la liste d'opposition de l'espace
+create or replace function public.lm_exclude_prospects(p_ids uuid[]) returns integer
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_count integer;
+begin
+  with target as (
+    select p.id, p.account_id, p.space_id, p.site_key
+      from public.lm_prospects p
+     where p.id = any (p_ids) and p.excluded_at is null and public.has_role_on_account(p.account_id)
+  ), upd as (
+    update public.lm_prospects p set excluded_at = now()
+      from target t where p.id = t.id
+    returning t.account_id, t.space_id, t.site_key
+  ), sup as (
+    insert into public.lm_suppressions (account_id, space_id, site_key, reason)
+    select distinct u.account_id, u.space_id, u.site_key, 'excluded'
+      from upd u where u.site_key not like 'maps:%' and u.site_key not like 'tel:%'
+    on conflict do nothing
+    returning 1
+  )
+  select count(*) into v_count from upd;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.lm_exclude_prospects(uuid[]) from public;
+
+grant execute on function public.lm_exclude_prospects(uuid[]) to authenticated, service_role;
+
+-- Retour en liste : exclusion annulée et site retiré de la liste d'opposition de l'espace
+create or replace function public.lm_restore_prospects(p_ids uuid[]) returns integer
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_count integer;
+begin
+  with target as (
+    select p.id, p.space_id, p.site_key
+      from public.lm_prospects p
+     where p.id = any (p_ids) and p.excluded_at is not null and public.has_role_on_account(p.account_id)
+  ), upd as (
+    update public.lm_prospects p set excluded_at = null
+      from target t where p.id = t.id
+    returning t.space_id, t.site_key
+  ), del as (
+    delete from public.lm_suppressions s
+     using upd u
+     where s.space_id = u.space_id and s.site_key = u.site_key and s.reason = 'excluded'
+    returning 1
+  )
+  select count(*) into v_count from upd;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.lm_restore_prospects(uuid[]) from public;
+
+grant execute on function public.lm_restore_prospects(uuid[]) to authenticated, service_role;
+
+-- Suppression définitive (réservée aux membres qui gèrent les paramètres de l'organisation)
+create or replace function public.lm_delete_prospects(p_ids uuid[]) returns integer
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_count integer;
+begin
+  with del as (
+    delete from public.lm_prospects p
+     where p.id = any (p_ids)
+       and public.has_permission((select auth.uid()), p.account_id, 'settings.manage'::public.app_permissions)
+    returning 1
+  )
+  select count(*) into v_count from del;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.lm_delete_prospects(uuid[]) from public;
+
+grant execute on function public.lm_delete_prospects(uuid[]) to authenticated, service_role;
 
 -- Tentative : un contact préparé puis envoyé pour un prospect
 create table if not exists public.lm_attempts (

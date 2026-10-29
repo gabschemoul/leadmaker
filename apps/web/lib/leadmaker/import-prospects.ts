@@ -17,6 +17,7 @@ export interface ImportRow {
   address: string | null;
   country_code: string | null;
   maps_url: string | null;
+  city: string | null;
 }
 
 type Field = Exclude<keyof ImportRow, 'site_key'>;
@@ -70,6 +71,7 @@ const HEADER_ALIASES: Record<Field, string[]> = {
   email: ['email', 'e mail', 'mail', 'courriel'],
   category: ['categorie', 'category', 'activite'],
   address: ['adresse', 'address'],
+  city: ['ville', 'city', 'commune', 'localite', 'town'],
   maps_url: [
     'maps url',
     'lien google maps',
@@ -118,6 +120,7 @@ export const IMPORT_LIMITS = {
   category: 255,
   address: 1000,
   maps_url: 1000,
+  city: 200,
 } as const;
 
 function optional(value: string | undefined, maxLength: number) {
@@ -184,6 +187,7 @@ export function parseProspectsCsv(text: string): ImportParseResult {
       category: optional(cell(line, 'category'), IMPORT_LIMITS.category),
       address: optional(cell(line, 'address'), IMPORT_LIMITS.address),
       maps_url: optional(mapsUrl, IMPORT_LIMITS.maps_url),
+      city: optional(cell(line, 'city'), IMPORT_LIMITS.city),
       // seul un code pays sur deux lettres est accepté ; sinon le pays de l'espace s'applique
       country_code: /^[a-z]{2}$/i.test(country) ? country.toUpperCase() : null,
     });

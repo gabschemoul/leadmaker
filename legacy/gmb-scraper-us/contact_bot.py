@@ -61,12 +61,14 @@ TEMPLATES_EN = [
 DEFAULT_CONFIG = {
     "sender": {"prenom": "Laurie", "nom": "Wang", "societe": "Review Cleaner", "email": "laurie@review-cleaner.com",
                "telephone": "+33 7 80 97 92 69", "site": "https://review-cleaner.com/", "ville": "Paris",
-               "code_postal": "75012", "adresse": "17 rue Mansard", "pays": "France"},
+               "code_postal": "75012", "adresse": "17 rue Mansard", "pays": "France",
+               "civilite": "Ms.", "fonction": "Google Manager"},
     "templates": TEMPLATES_EN,
     "daily_limit": 500,
     "prepare_ahead": 1500,
     "headless": True,
     "workers": 5,      # onglets qui préparent des formulaires en parallèle
+    "short_template": "",  # modèle utilisé quand la zone de message est limitée (vide = le plus court)
     "start_row": 2,    # première ligne du Sheet à traiter
 }
 VARIABLES = {
@@ -146,6 +148,16 @@ def template_problems(t: dict, sender: dict) -> list[str]:
     if "{societe}" not in t["message"] and (not sender.get("societe") or sender["societe"] not in t["message"]):
         issues.append("ta société doit apparaître dans le message (variable {societe})")
     return issues
+
+
+def short_version(cfg: dict, row: dict) -> tuple[str, str, str] | None:
+    """(nom, objet, message) du modèle court, pour les zones de message limitées en caractères."""
+    usable = [t for t in cfg["templates"] if t["message"].strip()]
+    t = next((t for t in usable if t["nom"] == cfg.get("short_template")), None) or (
+        min(usable, key=lambda t: len(t["message"])) if usable else None)  # sinon : le modèle le plus court
+    if not t:
+        return None
+    return t["nom"], render(t.get("objet", ""), row, cfg["sender"]), render(t["message"], row, cfg["sender"])
 
 
 def render(text: str, row: dict, sender: dict) -> str:
@@ -458,7 +470,10 @@ class ContactBot:
             if not frame:
                 rec = base | {"status": "pas de formulaire", "detail": "aucun formulaire de contact trouvé"}
             else:
-                r = fill_form(frame, sender, objet, message)
+                short = short_version(cfg, row)
+                r = fill_form(frame, sender, objet, message, short_message=short[2] if short else "")
+                if r.short:
+                    tname, objet, message = short
                 captcha = r.status == "captcha" or has_captcha(frame)
                 status = "captcha" if captcha else ("à valider" if r.status == "rempli" else "erreur")
                 warn = "; ".join(filter(None, [r.detail] + [f"champ obligatoire non rempli : {u}" for u in r.unknown_required]))
@@ -502,7 +517,9 @@ class ContactBot:
             if not frame:
                 upd = {"status": "échec envoi", "detail": "formulaire introuvable au moment de l'envoi"}
             else:
-                r = fill_form(frame, Sender(**cfg["sender"]), row["objet"], row["message"], json.loads(row["extra"] or "{}"))
+                short = short_version(cfg, row)
+                r = fill_form(frame, Sender(**cfg["sender"]), row["objet"], row["message"], json.loads(row["extra"] or "{}"),
+                              short_message=short[2] if short else "")
                 if r.status == "captcha" or has_captcha(frame):
                     upd = {"status": "captcha", "detail": "captcha apparu au moment de l'envoi"}
                 elif r.status != "rempli":
@@ -515,6 +532,8 @@ class ContactBot:
                     ok, detail = submit(frame)
                     upd = {"status": {True: "envoyé", False: "à vérifier", None: "échec envoi"}[ok], "detail": detail,
                            "shot_after": self._shot(page, frame, key, "_apres")}
+                    if r.short:  # le message court est parti : c'est lui qui compte dans l'Analytics
+                        upd |= dict(zip(("template", "objet", "message"), short))
         except Exception as e:
             upd = {"status": "échec envoi", "detail": f"{type(e).__name__}: {str(e)[:150]}"}
             if not submitted and not (row["detail"] or "").startswith(RETRY):  # site lent : un seul nouvel essai
@@ -623,7 +642,7 @@ class ContactBot:
 
                 with self.lock:
                     empty = not self.candidates
-                if empty and time.time() - self.last_sheet > 120 or time.time() - self.last_sheet > 600:
+                if empty and time.time() - self.last_sheet > 120 or time.time() - self.last_sheet > 180:
                     self.last_sheet = time.time()
                     try:
                         self.refresh_candidates(cfg)

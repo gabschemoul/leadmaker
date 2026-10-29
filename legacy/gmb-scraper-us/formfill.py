@@ -31,15 +31,25 @@ CAPTCHA = ('iframe[src*="recaptcha"]:not([src*="size=invisible"]):visible, ifram
 
 # Ordre important : le premier motif qui correspond gagne.
 COUNTRY = r"\bpays\b|country"
+CIVILITY = r"civilit|salutation|\bgenre\b|\bsexe\b"
+CIV_F = re.compile(r"^\W*(madame|mme\.?|mrs\.?|ms\.?|mademoiselle|mlle)\W*$", re.I)  # option « Madame »
 FIELD_RULES = [
+    ("civility", CIVILITY),
     ("email", r"e-?mail|courriel|mail"),
-    ("phone", r"t[eé]l|phone|portable|mobile|gsm"),
+    ("phone", r"t[eé]l|phone|portable|mobile|gsm|joindre"),
+    # « Numéro de contact », « Numéro * », « Contact number »… = téléphone, sauf les autres numéros (SIRET, commande…)
+    ("phone", r"^(?!.*(siret|siren|tva|commande|order|dossier|serie|suivi|contrat|client|facture|locataire|adherent|membre"
+              r"|rue|voie|voirie|maison|street|departement|immat|reservation|carte|adeli|rpps|\brg\b|redevable"
+              r"|appartement|ligne|licence|permis|securite sociale)).*(\bnumero\b|\bn°|\bnumber\b)"),
     ("full_name", r"nom (et|&|/) ?pr[eé]nom|pr[eé]nom (et|&|/) ?nom|nom complet|full ?name"),
     ("first_name", r"pr[eé]nom|first|given|fname"),
     ("company", r"soci[eé]t[eé]|entreprise|company|organi[sz]ation|raison sociale|structure|etablissement|business"),
     ("subject", r"objet|sujet|subject|motif|regarding|topic"),
     ("zip", r"code postal|postal|zip|cp\b"),
     ("country", COUNTRY),
+    ("job_title", r"fonction|job ?title|\bjob\b|intitule (du |de )?poste|poste occupe|votre poste|^\W*poste\b\W*\*?\W*$"
+                  r"|\bposition\b|titre de fonction"),
+    ("location", r"\blieu (du|de|d'|des)|localisation|^\W*location\W*\*?\W*$|select a location"),
     ("city", r"ville|city|commune|localit"),
     ("address", r"adresse|address|rue"),
     ("website", r"site|url|website|web"),
@@ -74,6 +84,8 @@ class Sender:
     code_postal: str = ""
     adresse: str = ""
     pays: str = "France"
+    civilite: str = "Ms."
+    fonction: str = "Google Manager"
 
 
 @dataclass
@@ -83,6 +95,7 @@ class FillResult:
     filled: dict = field(default_factory=dict)  # type de champ -> libellé du champ
     unknown_required: list = field(default_factory=list)
     missing: list = field(default_factory=list)  # libellés des champs obligatoires non remplis
+    short: bool = False  # zone de message trop courte : le message court a été utilisé
     detail: str = ""
 
 
@@ -102,7 +115,8 @@ FIND_FORM_JS = r"""
 () => {
   const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
     return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
-  const containers = [...document.querySelectorAll('form')];
+  // Formulaires « mailto: » (ouvrent la messagerie du visiteur) : ce ne sont pas des formulaires web.
+  const containers = [...document.querySelectorAll('form')].filter(f => !/^mailto:/i.test(f.getAttribute('action') || ''));
   // Formulaires sans balise <form> (React, Wix…) : on remonte depuis les zones de texte.
   document.querySelectorAll('textarea').forEach(t => { if (!t.closest('form')) {
     let p = t.parentElement; for (let i = 0; i < 6 && p && p.querySelectorAll('input,textarea').length < 3; i++) p = p.parentElement;
@@ -115,7 +129,14 @@ FIND_FORM_JS = r"""
     const pwd = fields.filter(e => e.type === 'password').length;
     const search = fields.filter(e => e.type === 'search' || /search|recherche|\bq\b/i.test(e.name||'')).length;
     const score = (ta ? 5 : 0) + (mail ? 3 : 0) + Math.min(fields.length, 8) - (pwd ? 20 : 0) - (search ? 10 : 0);
-    if (ta && score > bestScore) { best = i; bestScore = score; }
+    // Un vrai formulaire de contact permet de répondre : il faut un champ email ou téléphone
+    // (écarte les fenêtres de chat IA, barres de recherche, éditeurs de texte…).
+    const text = e => [e.type, e.name, e.id, e.placeholder, e.getAttribute('aria-label'),
+      e.id && (document.querySelector(`label[for="${CSS.escape(e.id)}"]`) || {}).innerText,
+      e.closest('label') && e.closest('label').innerText].join(' ');
+    const reply = fields.filter(e => e.tagName === 'INPUT' && (['email', 'tel'].includes(e.type)
+      || /mail|courriel|t[ée]l[ée]?phone|\btel\b|phone|portable|mobile/i.test(text(e)))).length;
+    if (ta && reply && score > bestScore) { best = i; bestScore = score; }
   });
   if (best < 0) return null;
   containers.forEach(f => f.removeAttribute('data-ff-form'));
@@ -170,7 +191,8 @@ VALIDATE_JS = r"""
   for (const el of els) {
     if (el.checkValidity()) continue;
     if (el.tagName === 'SELECT') {
-      const o = [...el.options].find(o => o.value && !o.disabled);
+      const ok = [...el.options].filter(o => o.value && !o.disabled);
+      const o = ok.find(o => /^\s*france\b/i.test(o.text)) || ok.find(o => /^\W*(madame|mme)\W*$/i.test(o.text)) || ok[0];
       if (o) { el.value = o.value; fire(el); }
     } else if (el.type === 'radio' && el.name) {
       const first = form.querySelector(`input[type=radio][name="${CSS.escape(el.name)}"]`);
@@ -190,6 +212,12 @@ def classify(f: dict) -> str | None:
         return None
     if f["type"] == "email":
         return "email"
+    if f["type"] in ("tel", "number", "text"):  # le libellé prime sur un type mal choisi par le site
+        lbl = _norm(f"{f['label']} {f['placeholder']}")
+        if re.search(r"e-?mail|courriel", lbl):
+            return "email"
+        if re.search(r"code postal|postal|zip", lbl):
+            return "zip"
     if f["type"] == "tel":
         return "phone"
     if f["type"] == "url":
@@ -215,7 +243,8 @@ def _values(sender: Sender, subject: str, message: str) -> dict[str, str]:
         "email": sender.email, "phone": sender.telephone, "first_name": sender.prenom, "last_name": sender.nom,
         "full_name": f"{sender.prenom} {sender.nom}".strip(), "company": sender.societe, "subject": subject,
         "message": message, "website": sender.site, "city": sender.ville, "zip": sender.code_postal,
-        "address": sender.adresse, "country": sender.pays,
+        "address": sender.adresse, "country": sender.pays, "civility": sender.civilite,
+        "job_title": sender.fonction, "location": sender.pays,
     }
 
 
@@ -259,10 +288,16 @@ def _load(page: Page, url: str, timeout: int):
     page.wait_for_timeout(800)
 
 
+def _find_form_late(page: Page) -> Frame | None:
+    """Formulaires chargés après coup (Jotform, HubSpot, Typeform… dans une iframe) : on laisse 2,5 s de plus."""
+    page.wait_for_timeout(2500)
+    return _find_form(page)
+
+
 def open_contact_form(page: Page, site: str, timeout: int = 25000) -> Frame | None:
     """Ouvre le site et renvoie le cadre contenant le formulaire de contact (ou None)."""
     _load(page, site, timeout)
-    frame = _find_form(page)
+    frame = _find_form(page) or _find_form_late(page)
     if frame:
         return frame
     home = page.url
@@ -280,7 +315,7 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000) -> Frame | No
             for _ in range(4):
                 page.mouse.wheel(0, 2500)
                 page.wait_for_timeout(400)
-            frame = _find_form(page)
+            frame = _find_form(page) or _find_form_late(page)
             if frame:
                 return frame
         except PWTimeout:
@@ -323,6 +358,29 @@ def _dismiss_cookies(page: Page):
             continue
 
 
+SET_VALUE_JS = """(e, v) => { e.focus(); e.value = v;
+    ['input', 'change', 'blur'].forEach(t => e.dispatchEvent(new Event(t, {bubbles: true}))); return e.value === v; }"""
+SELECT_TEXT_JS = """(e, v) => { const o = [...e.options].find(o => o.text.trim().toLowerCase() === v.trim().toLowerCase());
+    if (!o) return false; e.value = o.value; e.dispatchEvent(new Event('change', {bubbles: true})); return true; }"""
+
+
+def _fill(loc, value: str):
+    """Remplit un champ ; si le site bloque le remplissage normal (lenteur, widget), écrit la valeur directement."""
+    try:
+        loc.fill(value, timeout=5000)
+    except Exception:
+        if not loc.evaluate(SET_VALUE_JS, value):
+            raise
+
+
+def _select(loc, label: str):
+    try:
+        loc.select_option(label=label, timeout=3000)
+    except Exception:
+        if not loc.evaluate(SELECT_TEXT_JS, label):
+            raise
+
+
 def _check(loc):
     try:
         loc.check(timeout=2000, force=True)
@@ -331,7 +389,8 @@ def _check(loc):
             el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true})); } }""")
 
 
-def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: dict | None = None) -> FillResult:
+def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: dict | None = None,
+              short_message: str = "") -> FillResult:
     """extra : valeurs saisies à la main pour des champs précis ({libellé du champ: valeur})."""
     fields = frame.evaluate(DESCRIBE_JS)
     values = _values(sender, subject, message)
@@ -341,6 +400,8 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
         res.status, res.detail = "captcha", "captcha dans le formulaire"
     has_message = False
     radios_done: set[str] = set()
+    # Groupes de boutons radio de civilité : on coche « Madame » (et pas le premier bouton du groupe).
+    civ_radio = {f["name"]: f["i"] for f in fields if f["type"] == "radio" and f["name"] and CIV_F.search(f["label"] or "")}
     kinds = {f["i"]: classify(f) for f in fields if f["visible"]}
     # Un seul champ « nom » sans champ prénom : on y met le nom complet.
     lone_name = "last_name" in kinds.values() and "first_name" not in kinds.values()
@@ -356,10 +417,13 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
         label = f["label"] or f["placeholder"] or f["name"] or f["id"]
         try:
             if extra and extra.get(label, "").strip():
-                if kind == "select":
-                    loc.select_option(label=extra[label], timeout=3000)
+                if f["type"] in ("checkbox", "radio"):  # case validée à la main (« oui ») : on la coche
+                    if _norm(extra[label]).strip() in ("oui", "coche", "x", "true"):
+                        _check(loc)
+                elif kind == "select":
+                    _select(loc, extra[label])
                 else:
-                    loc.fill(extra[label], timeout=5000)
+                    _fill(loc, extra[label])
                 res.filled[f"saisi {f['i']}"] = label
             elif kind == "checkbox":
                 text = _norm(f"{f['label']} {f['name']}")
@@ -369,6 +433,11 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
                 elif f["required"] and not NEWSLETTER.search(text):
                     _check(loc)
                     res.filled[f"case obligatoire {f['i']}"] = label
+            elif kind == "radio" and f["name"] in civ_radio:
+                if f["i"] == civ_radio[f["name"]]:
+                    _check(loc)
+                    radios_done.add(f["name"])
+                    res.filled["civilité"] = f"{label}"
             elif kind == "radio":
                 if f["name"] not in radios_done and f["required"]:
                     _check(loc)
@@ -376,10 +445,15 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
             elif kind == "select":
                 opts = [o for o in f["options"] if o and not re.search(r"^(--|choisi|select|s[eé]lection|veuillez)", _norm(o))]
                 pick = next((o for o in opts if SELECT_PREF.search(_norm(o))), opts[0] if opts else None)
-                if re.search(COUNTRY, _norm(f"{label} {f['name']}")):  # liste de pays : on prend le tien
-                    pick = next((o for o in opts if _norm(o).strip() == _norm(sender.pays)), pick)
+                # Liste de pays (repérée par son libellé ou parce qu'elle contient « France ») : toujours ton pays.
+                country = next((o for o in opts if _norm(o).strip() == _norm(sender.pays)), None) or next(
+                    (o for o in opts if _norm(o).strip().startswith(_norm(sender.pays))), None)
+                if country and (re.search(COUNTRY, _norm(f"{label} {f['name']}")) or len(opts) > 20):
+                    pick = country
+                elif re.search(CIVILITY, _norm(f"{label} {f['name']}")) or any(CIV_F.search(o) for o in opts):
+                    pick = next((o for o in opts if CIV_F.search(o)), pick)  # civilité : Madame
                 if pick:
-                    loc.select_option(label=pick, timeout=3000)
+                    _select(loc, pick)
                     res.filled[f"liste {f['i']}"] = f"{label} = {pick}"
             elif kind == "unknown":
                 if CAPTCHA_TEXT.search(_norm(label)):
@@ -398,9 +472,13 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
                     if has_message:
                         continue
                     has_message = True
+                    # Zone limitée en caractères (le site couperait le message) : message court à la place.
+                    limit = loc.evaluate("e => e.maxLength || 0")
+                    if short_message and 0 < limit < len(value) and len(short_message) < len(value):
+                        value, res.short = short_message, True
                 if f["type"] == "number":  # champ numérique (téléphone, code postal) : chiffres uniquement
                     value = re.sub(r"\D", "", value)
-                loc.fill(value, timeout=5000)
+                _fill(loc, value)
                 res.filled[kind] = label
         except Exception as e:  # champ non modifiable, masqué par un widget…
             if f["required"]:
@@ -423,8 +501,8 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
         res.detail = f"message coupé à {check['truncated']} caractères par le site : raccourcis-le"
     if not has_message:
         res.status, res.detail = "erreur", "zone de message non remplie"
-    elif "email" not in res.filled and not res.detail:
-        res.detail = "pas de champ email dans ce formulaire : ton email doit figurer dans le message"
+    elif "email" not in res.filled and "phone" not in res.filled and not res.detail:
+        res.detail = "pas de champ email ni téléphone : l'entreprise ne pourra pas te répondre"
     return res
 
 

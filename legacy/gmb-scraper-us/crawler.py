@@ -52,6 +52,10 @@ TIER_LABELS = {
     "G": "catégories générales", "S": "autres catégories",
 }
 CHAIN_MIN = 5  # un même site web sur 5 fiches ou plus = chaîne / grande enseigne : exclue
+# Choix des catégories dans une vague (cf. Crawler.claim_task)
+PRIOR = 5            # lissage : 5 recherches « moyennes » ajoutées au rendement de chaque catégorie
+MIN_SEARCHES = 40    # après 40 recherches…
+MIN_RATE = 0.05      # …une catégorie à moins de 5 fiches retenues pour 100 recherches est terminée pour la vague
 PLACE_COLS = ["nom", "categorie", "note", "nb_avis", "adresse", "telephone", "site_web", "lien_maps", "recherche"]
 
 SCHEMA = """
@@ -212,6 +216,30 @@ def tier_zones(zones: list[dict], i: int) -> list[dict]:
 
 
 # ---------------------------------------------------------------- Google Sheets
+def _append_new(db, ws, rows: list, log: logging.Logger) -> list:
+    """Ajoute les fiches au Sheet par paquets de 500, sans jamais réécrire une fiche déjà présente.
+
+    Un gros envoi peut réussir côté Google alors que la réponse expire : sans cette vérification,
+    le paquet était renvoyé et les fiches apparaissaient deux fois.
+    """
+    if not rows:
+        return rows
+    header = [h.strip().lower() for h in ws.row_values(1)]
+    col = header.index("lien google maps") + 1 if "lien google maps" in header else 8
+    present = set(ws.col_values(col))
+    link_i = 1 + PLACE_COLS.index("lien_maps")
+    already = [r for r in rows if r[link_i] in present]
+    db.executemany("update places set exported=1 where place_id=?", [(r[0],) for r in already])
+    rows = [r for r in rows if r[link_i] not in present]
+    for i in range(0, len(rows), 500):
+        chunk = rows[i:i + 500]
+        ws.append_rows([["" if v is None else v for v in r[1:]] for r in chunk], value_input_option="RAW")
+        db.executemany("update places set exported=1 where place_id=?", [(r[0],) for r in chunk])
+    if rows:
+        log.info("Sheets : %d fiches envoyées", len(rows))
+    return rows
+
+
 def sync_sheets(db, log: logging.Logger) -> str:
     try:
         settings = json.loads(SETTINGS.read_text())
@@ -238,11 +266,7 @@ def sync_sheets(db, log: logging.Logger) -> str:
         ws.update([["Nom", "Catégorie", "Note", "Nb avis", "Adresse", "Téléphone", "Site web",
                     "Lien Google Maps", "Recherche", "Date"]], "A1")
         ws.freeze(rows=1)
-    if rows:
-        values = [["" if v is None else v for v in r[1:]] for r in rows]
-        ws.append_rows(values, value_input_option="RAW")
-        db.executemany("update places set exported=1 where place_id=?", [(r[0],) for r in rows])
-        log.info("Sheets : %d fiches envoyées", len(rows))
+    rows = _append_new(db, ws, rows, log)
     if chains:  # chaîne repérée après l'export : « exclu (chaîne) » pour que le bot de contact ne l'écrive pas
         from contact_bot import ensure_columns
         from gspread.utils import rowcol_to_a1
@@ -353,12 +377,17 @@ class Crawler:
                 n = len(tiers_zones[tier])
                 self.db.executemany("insert or ignore into cursors (tier, categorie) values (?, ?)",
                                     [(tier, c) for c in cats[TIERS[tier][0]]])
-                # Catégories jamais essayées d'abord (exploration), puis les plus rentables (moyenne glissante).
+                # Catégories jamais essayées d'abord (exploration), puis les plus rentables : fiches retenues par
+                # recherche, lissé (PRIOR recherches « moyennes » ajoutées) pour qu'un premier résultat nul ne
+                # condamne pas une catégorie. Une catégorie qui ne rapporte presque rien après MIN_SEARCHES
+                # recherches est considérée comme terminée pour la vague.
                 row = self.db.execute(
                     """select c.categorie, c.zone_idx from cursors c left join cat_stats s using (categorie)
                        where c.tier=? and c.zone_idx<?
-                       order by (s.ema_kept is not null), s.ema_kept desc, s.ema_new desc, random() limit 1""",
-                    (tier, n),
+                         and not (coalesce(s.searches, 0) >= ? and coalesce(s.kept, 0) < ? * s.searches)
+                       order by (s.searches is not null),
+                                (coalesce(s.kept, 0) + ? * ?) / (coalesce(s.searches, 0) + ?) desc, random() limit 1""",
+                    (tier, n, MIN_SEARCHES, MIN_RATE, PRIOR, self.mean_rate(), PRIOR),
                 ).fetchone()
                 if row:
                     self.db.execute("update cursors set zone_idx=zone_idx+1 where tier=? and categorie=?", (tier, row[0]))
@@ -372,6 +401,11 @@ class Crawler:
         except BaseException:
             self.db.execute("rollback")
             raise
+
+    def mean_rate(self) -> float:
+        """Fiches retenues par recherche, toutes catégories confondues."""
+        searches, kept = self.db.execute("select sum(searches), sum(kept) from cat_stats").fetchone()
+        return (kept or 0) / searches if searches else 0.3
 
     def give_back(self, task: tuple, failed: bool):
         """Remet une recherche non terminée dans la file (abandonnée après 3 échecs)."""

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 import sys
 import time
 from pathlib import Path
@@ -44,6 +45,8 @@ with st.expander(f"⚙️ Ton profil et tes {len(cfg['templates'])} modèles de 
             "telephone": c[1].text_input("Téléphone", s["telephone"]), "site": c[2].text_input("Ton site web", s["site"]),
             "adresse": c[0].text_input("Adresse (si demandée)", s["adresse"]),
             "code_postal": c[1].text_input("Code postal", s["code_postal"]), "ville": c[2].text_input("Ville", s["ville"]),
+            "civilite": c[1].text_input("Civilité", s["civilite"]),
+            "fonction": c[2].text_input("Fonction / Job title", s["fonction"]),
             "pays": c[0].text_input("Pays", s["pays"]),
         }
         st.markdown("**Modèles de message** (un modèle différent est utilisé à tour de rôle). Variables disponibles : "
@@ -143,7 +146,11 @@ def status_bar():
     st.subheader(("🟢 " if alive else "⚪ ") + (get_state(db, "status", "jamais lancé") if alive else "Arrêté")
                  + (f" · {get_state(db, 'current')}" if alive and get_state(db, "current") else ""))
     m = st.columns(6)
-    m[0].metric("Fiches opt-in « oui »", get_state(db, "optin_total", "—"))
+    read_at = get_state(db, "sheet_read_at")
+    m[0].metric("Fiches opt-in à traiter", get_state(db, "optin_total", "—"),
+                help="Lignes Opt-in = « oui » avec un site web et sans statut de contact : celles que le bot n'a pas encore "
+                     "traitées. Le bot relit le Sheet toutes les 3 minutes (bot démarré). "
+                     + (f"Dernière lecture : {datetime.fromtimestamp(read_at):%H:%M}." if read_at else ""))
     m[1].metric("À valider", n.get("à valider", 0))
     m[2].metric("Envoyés aujourd'hui", f"{sent_today(db)} / {cfg['daily_limit']}")
     m[3].metric("Envoyés au total", n.get("envoyé", 0))
@@ -167,12 +174,24 @@ with tab_bulk:
     if bulk.empty:
         st.info("Aucun formulaire prêt pour le moment : le bot en prépare en arrière-plan.")
     else:
-        bulk.insert(0, "Envoyer", bulk["Alerte"] == "")
+        # Tout cocher / tout décocher : on change la clé du tableau pour repartir des cases par défaut choisies.
+        st.session_state.setdefault("bulk_mode", "auto")
+        st.session_state.setdefault("bulk_v", 0)
+        s1, s2, s3, _ = st.columns([1, 1, 1.3, 3])
+        for col, mode, text in ((s1, "all", "☑️ Tout sélectionner"), (s2, "none", "⬜ Tout désélectionner"),
+                                (s3, "auto", "↩️ Sauf ceux avec alerte")):
+            if col.button(text, key=f"bulk_{mode}"):
+                st.session_state.bulk_mode = mode
+                st.session_state.bulk_v += 1
+                st.rerun()
+        mode = st.session_state.bulk_mode
+        bulk.insert(0, "Envoyer", True if mode == "all" else False if mode == "none" else bulk["Alerte"] == "")
         st.caption(f"**{len(bulk)} formulaires prêts** sur {int(size)} demandés (le bot continue d'en préparer). "
                    "Les formulaires avec un champ obligatoire vide sont dans l'onglet « ⚠️ À compléter ». "
                    "Ceux avec une autre alerte sont décochés par défaut, en bas de liste. "
                    "Décoche ceux que tu ne veux pas envoyer.")
         edited = st.data_editor(bulk, hide_index=True, width="stretch", height=480, disabled=list(bulk.columns[1:]),
+                                key=f"bulk_editor_{st.session_state.bulk_v}",
                                 column_config={"site_key": None, "Formulaire": st.column_config.LinkColumn()})
         keys = edited.loc[edited["Envoyer"], "site_key"].tolist()
         left = max(cfg["daily_limit"] - sent_today(db), 0)
@@ -186,6 +205,42 @@ with tab_bulk:
             st.rerun()
 
 with tab_fix:
+    # Questions de vérification (calcul, capitale…) : c'est toi qui réponds, le bot ne fait que recopier ta réponse.
+    import re as _re
+    from formfill import CAPTCHA_TEXT, _norm
+    ROBOT_Q = _re.compile(r"robot|humain|human|capital|operation|securite|security|\d+\s*[+x*-]\s*\d+|combien fai|que font|lettre|what is|how much|sum of")
+    FIXED_Q = _re.compile(r"\d+\s*[+x*-]\s*\d+|capital|lettre du mot|somme de|combien|que font|what is|how much|sum of")
+    qrows = []
+    for k, nom, miss, url, site in db.execute("select site_key, nom, missing, form_url, site from contacts "
+                                              "where status='à valider' and missing is not null"):
+        for lab in json.loads(miss):
+            n = _norm(lab)
+            if (CAPTCHA_TEXT.search(n) or ROBOT_Q.search(n)) and FIXED_Q.search(n) and "robot" not in n:
+                qrows.append({"site_key": k, "Entreprise": nom, "Question": lab, "Réponse": "",
+                              "Formulaire": url or site})
+    if qrows:
+        with st.expander(f"🧮 Questions de vérification à répondre ({len(qrows)})", expanded=False):
+            st.caption("Questions fixes posées par les sites (calcul, capitale…). **Tape la réponse**, puis enregistre : "
+                       "le bot la recopie au moment de l'envoi et la fiche passe dans « 📦 Envoi groupé » si plus rien "
+                       "ne manque. Si le site change la question à chaque visite, la fiche reviendra ici : utilise alors "
+                       "« 🖥️ Ouvrir dans Chrome ». Les cases « Je ne suis pas un robot » se font uniquement dans Chrome.")
+            qdf = st.data_editor(pd.DataFrame(qrows), hide_index=True, width="stretch", key="robot_q",
+                                 disabled=["Entreprise", "Question", "Formulaire"],
+                                 column_config={"site_key": None, "Formulaire": st.column_config.LinkColumn()})
+            if st.button("💾 Enregistrer mes réponses", type="primary"):
+                done = 0
+                for _, q in qdf[qdf["Réponse"].astype(str).str.strip() != ""].iterrows():
+                    miss, extra = db.execute("select missing, extra from contacts where site_key=?", (q["site_key"],)).fetchone()
+                    miss, extra = json.loads(miss or "[]"), json.loads(extra or "{}")
+                    extra[q["Question"]] = str(q["Réponse"]).strip()
+                    rest = [m for m in miss if m != q["Question"]]
+                    db.execute("update contacts set extra=?, missing=? where site_key=? and status='à valider'",
+                               (json.dumps(extra, ensure_ascii=False), json.dumps(rest, ensure_ascii=False) if rest else None,
+                                q["site_key"]))
+                    done += 1
+                st.success(f"{done} réponse(s) enregistrée(s).")
+                time.sleep(1)
+                st.rerun()
     st.caption("Formulaires où un champ obligatoire n'a pas pu être rempli. Deux façons de faire :  \n"
                "• **🖥️ Ouvrir dans Chrome** : le formulaire s'ouvre déjà rempli, champs à problème encadrés en rouge. "
                "Tu corriges, tu cliques sur Envoyer sur le site, tu fermes la fenêtre, puis « ✔️ Je l'ai envoyé ».  \n"

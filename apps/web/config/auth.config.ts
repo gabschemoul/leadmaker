@@ -41,7 +41,9 @@ const authConfig = AuthConfigSchema.parse({
     // NB: Passkeys are disabled by default. Enable WebAuthn in the Supabase
     // Console (Authentication > Sign In / Providers) for this to work.
     passkey: process.env.NEXT_PUBLIC_AUTH_PASSKEY === 'true',
-    oAuth: ['google'],
+    // Le bouton Google n'apparaît que lorsque les identifiants OAuth Google sont configurés
+    // (Supabase > Authentication > Providers) et que NEXT_PUBLIC_AUTH_GOOGLE=true.
+    oAuth: process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true' ? ['google'] : [],
   },
 } satisfies z.output<typeof AuthConfigSchema>);
 

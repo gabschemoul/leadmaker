@@ -1,0 +1,627 @@
+"""Trouve le formulaire de contact d'un site et remplit ses champs (repris du prototype, règles de l'annexe 13).
+
+Étapes : page d'accueil → lien « Contact » (dans la langue du site) → formulaire avec une zone de message
+et un champ email ou téléphone → chaque champ visible est identifié (nom, email, téléphone, société, objet,
+message…) et rempli. Les champs invisibles (pièges anti-robots) ne sont jamais touchés, les cases newsletter
+jamais cochées ; les captchas sont détectés par type, jamais résolus ici.
+"""
+from __future__ import annotations
+
+import re
+import unicodedata
+from dataclasses import dataclass, field
+from urllib.parse import urlparse
+
+from playwright.sync_api import Frame, Page, TimeoutError as PWTimeout
+
+# Mots « contact » par langue (fr, en, de, es, it, pt, nl, pl, tr…)
+CONTACT_LINK = re.compile(
+    r"contact|contactez|contacteer|contacto|contatt|contato|kontakt|nous[- ]?ecrire|ecrivez|joindre|devis|formulaire"
+    r"|get[- ]?in[- ]?touch|reach[- ]?us|request[- ]?a[- ]?quote|free[- ]?quote|get[- ]?a[- ]?quote|estimate|inquir"
+    r"|anfrage|angebot|presupuesto|preventivo|orcamento|offerte|iletisim|お問い合わせ|联系", re.I)
+NOT_CONTACT = re.compile(r"mentions|cgv|cgu|legal|politique|recrut|carriere|job|privacy|terms|career|employment|hiring"
+                         r"|impressum|datenschutz|aviso|emploi|stellen|karriere|vacature|lavora", re.I)
+SUCCESS = re.compile(
+    r"merci|bien (ete )?(envoye|recu|transmis)|a ete envoye|message (a ete )?envoye|nous vous (repondrons|recontacterons)"
+    r"|thank|has been sent|success|we('ll| will) (be in touch|get back|contact you|respond)|been (received|submitted)"
+    r"|message (was )?sent|submission (was )?(received|successful)|vielen dank|gracias|grazie|obrigad|bedankt", re.I)
+FAILURE = re.compile(
+    r"recaptcha[^.]{0,60}(echoue|invalide|failed)|utilisation abusive|(envoi|message)[^.]{0,30}(a echoue|n'a pas pu)"
+    r"|n'a pas pu etre envoye|une erreur (s'est produite|est survenue)|formulaire non valide|failed to send"
+    r"|there was an error|spam detecte|please try again|could not be (sent|submitted)|unable to (send|submit)"
+    r"|an error (has )?occurred|captcha (verification )?failed|invalid captcha|flagged as spam", re.I)
+
+# Protections visibles, par type (le reCAPTCHA v3 invisible n'en est pas une)
+PROTECTIONS = [
+    ("recaptcha_v2", 'iframe[src*="recaptcha"]:not([src*="size=invisible"]):visible, .g-recaptcha:not([data-size="invisible"]):visible'),
+    ("hcaptcha", 'iframe[src*="hcaptcha"]:visible, .h-captcha:visible'),
+    ("turnstile", '.cf-turnstile:visible, iframe[src*="challenges.cloudflare"]:visible'),
+    ("friendlycaptcha", 'iframe[src*="friendlycaptcha"]:visible, .frc-captcha:visible'),
+]
+
+COUNTRY = r"\bpays\b|country|\bland\b|pais|paese"
+CIVILITY = r"civilit|salutation|\bgenre\b|\bsexe\b|anrede|tratamiento|\btitel\b|aanhef"
+CIV_F = re.compile(r"^\W*(madame|mme\.?|mrs\.?|ms\.?|miss|mademoiselle|mlle|frau|sra\.?|senora|señora|signora"
+                   r"|mevrouw|mevr\.?|senhora)\W*$", re.I)
+CIV_M = re.compile(r"^\W*(monsieur|m\.|mr\.?|herr|sr\.?|senor|señor|signor|meneer|dhr\.?|senhor)\W*$", re.I)
+FIELD_RULES = [
+    ("civility", CIVILITY),
+    ("email", r"e-?mail|courriel|\bmail\b|correo"),
+    ("phone", r"t[eé]l|phone|portable|mobile|gsm|joindre|telefon|handy|mobil|cellulare|telemovel|celular"),
+    ("phone", r"^(?!.*(siret|siren|tva|commande|order|dossier|serie|suivi|contrat|client|facture|locataire|adherent|membre"
+              r"|rue|voie|voirie|maison|street|departement|immat|reservation|carte|adeli|rpps|\brg\b|redevable"
+              r"|appartement|ligne|licence|permis|securite sociale|kunden|rechnung|bestell|pedido|ordine)).*(\bnumero\b|\bn°|\bnumber\b|\bnummer\b)"),
+    ("full_name", r"nom (et|&|/) ?pr[eé]nom|pr[eé]nom (et|&|/) ?nom|nom complet|full ?name|vor- und nachname|nombre completo|nome completo"),
+    ("first_name", r"pr[eé]nom|first|given|fname|vorname|voornaam"),
+    ("company", r"soci[eé]t[eé]|entreprise|company|organi[sz]ation|raison sociale|structure|etablissement|business|firma"
+                r"|unternehmen|empresa|azienda|bedrijf"),
+    ("subject", r"objet|sujet|subject|motif|regarding|topic|betreff|asunto|oggetto|onderwerp|assunto"),
+    ("zip", r"code postal|postal|zip|\bcp\b|\bplz\b|postleitzahl|codigo postal|\bcap\b|postcode"),
+    ("country", COUNTRY),
+    ("job_title", r"fonction|job ?title|\bjob\b|intitule (du |de )?poste|poste occupe|votre poste|^\W*poste\b\W*\*?\W*$"
+                  r"|\bposition\b|titre de fonction|\bcargo\b|\bfunktion\b|\bruolo\b|\bfunctie\b"),
+    ("location", r"\blieu (du|de|d'|des)|localisation|^\W*location\W*\*?\W*$|select a location"),
+    ("city", r"ville|city|commune|localit|stadt|\bort\b|ciudad|citta|cidade|plaats|woonplaats"),
+    ("address", r"adresse|address|\brue\b|strasse|straße|direccion|indirizzo|endereco|adres"),
+    ("website", r"\bsite\b|\burl\b|website|\bweb\b|webseite|sitio|sito"),
+    ("last_name", r"\bnom\b|last|surname|lname|family|nachname|apellido|cognome|achternaam|sobrenome"),
+    ("full_name", r"\bname\b|votre nom|\bnombre\b|\bnome\b|\bnaam\b"),
+    ("message", r"message|commentaire|demande|question|comment|precisions|description|texte|body|content|how can we help"
+                r"|nachricht|anliegen|mensaje|consulta|messaggio|richiesta|bericht|mensagem"),
+]
+CONSENT = re.compile(r"rgpd|gdpr|consent|accepte|j'accepte|politique|confidentialit|donnees personnelles|privacy|conditions"
+                     r"|cgu|cgv|i agree|agree to the|terms|datenschutz|einverstanden|zustimm|acepto|privacidad|accetto"
+                     r"|informativa|akkoord|concordo", re.I)
+NEWSLETTER = re.compile(r"newsletter|lettre d'information|actualit|offres? (commerciales|promotionnelles)|partenaires"
+                        r"|etre (re)?contacte|me contacter|par telephone|sms|subscribe|mailing list|marketing|promotion"
+                        r"|special offers|text messages?|receive (updates|news|offers|emails|texts)|werbung|boletin"
+                        r"|novedades|nieuwsbrief", re.I)
+# Captchas « à recopier » (image, calcul)
+CAPTCHA_TEXT = re.compile(r"code de securite|entre[rz]? le code|recopie|antispam|anti-spam|combien font|resultat de l'operation"
+                          r"|(?<!re)captcha|security code|enter the (code|characters)|what is \d+|solve|math question"
+                          r"|prove you|sicherheitscode|rechenaufgabe|codigo de seguridad|codice di sicurezza", re.I)
+MATH_TEXT = re.compile(r"combien font|resultat de l'operation|what is \d+|math question|rechenaufgabe|\d+\s*[+×x*-]\s*\d+\s*=", re.I)
+CONTACT_PATHS = ["/contact", "/contact-us", "/contact/", "/contact-us/", "/contactus", "/contact.html", "/contact-us.html",
+                 "/contact.php", "/nous-contacter", "/kontakt", "/kontakt/", "/contacto", "/contacto/", "/contatti",
+                 "/contatti/", "/contato", "/get-in-touch"]
+SELECT_PREF = re.compile(r"autre|other|information|renseignement|partenariat|commercial|demande|general|contact|sonstige"
+                         r"|otro|altro|anders|outro", re.I)
+SUBMIT = re.compile(r"envoy|send|valider|soumettre|submit|contact|transmettre|demander|go\b|ok\b|senden|absenden|enviar"
+                    r"|invia|verstuur|verzend", re.I)
+EMAIL = re.compile(r"[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}", re.I)
+EMAIL_SKIP = re.compile(r"\.(png|jpe?g|gif|svg|webp|css|js)$|sentry|example\.|wixpress|domain\.com|email\.com|yourdomain"
+                        r"|@2x|godaddy|placeholder|noreply|no-reply", re.I)
+
+
+@dataclass
+class Sender:
+    first_name: str = ""
+    last_name: str = ""
+    company: str = ""
+    email: str = ""
+    phone: str = ""
+    website: str = ""
+    city: str = ""
+    zip: str = ""
+    address: str = ""
+    job_title: str = ""
+    civility: str = ""            # "mrs", "mr" ou ""
+    country_names: list = field(default_factory=list)  # noms du pays dans plusieurs langues
+
+
+@dataclass
+class FillResult:
+    status: str  # "filled", "captcha", "error"
+    form_url: str = ""
+    filled: dict = field(default_factory=dict)  # type de champ -> libellé du champ
+    missing: list = field(default_factory=list)  # libellés des champs obligatoires non remplis
+    warnings: list = field(default_factory=list)  # explications lisibles
+    short: bool = False  # zone de message trop courte : le message court a été utilisé
+    protection: str | None = None
+    detail: str = ""
+
+
+def _norm(s: str) -> str:
+    s = unicodedata.normalize("NFKD", (s or "").lower())
+    return "".join(c for c in s if not unicodedata.combining(c))
+
+
+def _same_site(url: str, base: str) -> bool:
+    a, b = urlparse(url).hostname or "", urlparse(base).hostname or ""
+    return a.removeprefix("www.") == b.removeprefix("www.")
+
+
+# Repère dans un cadre (page ou iframe) le meilleur formulaire de contact : zone de message + email ou téléphone.
+# Recherche, newsletter, connexion, chat IA, éditeurs et formulaires mailto: sont ignorés.
+FIND_FORM_JS = r"""
+() => {
+  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+    return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const containers = [...document.querySelectorAll('form')].filter(f => !/^mailto:/i.test(f.getAttribute('action') || ''));
+  document.querySelectorAll('textarea').forEach(t => { if (!t.closest('form')) {
+    let p = t.parentElement; for (let i = 0; i < 6 && p && p.querySelectorAll('input,textarea').length < 3; i++) p = p.parentElement;
+    if (p) containers.push(p); } });
+  let best = -1, bestScore = 0;
+  containers.forEach((f, i) => {
+    const fields = [...f.querySelectorAll('input,textarea,select')].filter(vis);
+    const ta = fields.filter(e => e.tagName === 'TEXTAREA').length;
+    const mail = fields.filter(e => e.type === 'email' || /mail|courriel|correo/i.test((e.name||'') + (e.id||'') + (e.placeholder||''))).length;
+    const pwd = fields.filter(e => e.type === 'password').length;
+    const search = fields.filter(e => e.type === 'search' || /search|recherche|suche|busca|\bq\b/i.test(e.name||'')).length;
+    const score = (ta ? 5 : 0) + (mail ? 3 : 0) + Math.min(fields.length, 8) - (pwd ? 20 : 0) - (search ? 10 : 0);
+    const text = e => [e.type, e.name, e.id, e.placeholder, e.getAttribute('aria-label'),
+      e.id && (document.querySelector(`label[for="${CSS.escape(e.id)}"]`) || {}).innerText,
+      e.closest('label') && e.closest('label').innerText].join(' ');
+    const reply = fields.filter(e => e.tagName === 'INPUT' && (['email', 'tel'].includes(e.type)
+      || /mail|courriel|correo|t[ée]l[ée]?phone|\btel\b|phone|portable|mobile|telefon|handy/i.test(text(e)))).length;
+    if (ta && reply && score > bestScore) { best = i; bestScore = score; }
+  });
+  if (best < 0) return null;
+  containers.forEach(f => f.removeAttribute('data-ff-form'));
+  containers[best].setAttribute('data-ff-form', '1');
+  return bestScore;
+}
+"""
+
+DESCRIBE_JS = r"""
+() => {
+  const form = document.querySelector('[data-ff-form]');
+  if (!form) return [];
+  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+    return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const labelOf = el => {
+    let t = '';
+    if (el.id) { const l = document.querySelector(`label[for="${CSS.escape(el.id)}"]`); if (l) t += l.innerText; }
+    const pl = el.closest('label'); if (pl) t += ' ' + pl.innerText;
+    if (el.getAttribute('aria-label')) t += ' ' + el.getAttribute('aria-label');
+    if (!t.trim()) { let p = el.parentElement; for (let i = 0; i < 2 && p; i++, p = p.parentElement) {
+      const txt = [...p.childNodes].filter(n => n.nodeType === 3 || ['LABEL','SPAN','P','DIV','LEGEND'].includes(n.tagName))
+        .map(n => (n.innerText || n.textContent || '')).join(' ').trim();
+      if (txt && txt.length < 120) { t = txt; break; } } }
+    return t.replace(/\s+/g, ' ').trim().slice(0, 120);
+  };
+  const labelVis = el => { const l = (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`)) || el.closest('label');
+    return !!(l && vis(l)); };
+  const captchaImg = !!form.querySelector('img[src*="captcha" i], input[name*="captcha" i]:not([type=hidden]), '
+    + 'img[id*="captcha" i], img[class*="captcha" i]');
+  return [...form.querySelectorAll('input,textarea,select')].map((el, i) => {
+    el.setAttribute('data-ff-i', String(i));
+    const box = el.type === 'checkbox' || el.type === 'radio';
+    return { i, tag: el.tagName.toLowerCase(), type: (el.type || '').toLowerCase(), name: el.name || '', id: el.id || '',
+      placeholder: el.placeholder || '', label: labelOf(el), required: el.required || el.getAttribute('aria-required') === 'true'
+        || /\*/.test(labelOf(el)), visible: vis(el) || (box && (labelVis(el) || (el.parentElement && vis(el.parentElement)))), autocomplete: el.autocomplete || '',
+      captchaImg,
+      options: el.tagName === 'SELECT' ? [...el.options].map(o => o.text.trim()) : [] };
+  });
+}
+"""
+
+VALIDATE_JS = r"""
+(prefs) => {
+  const form = document.querySelector('[data-ff-form]');
+  if (!form) return {invalid: [], truncated: 0};
+  const els = [...form.querySelectorAll('[data-ff-i]')].filter(el => el.willValidate);
+  const fire = el => ['input', 'change'].forEach(t => el.dispatchEvent(new Event(t, {bubbles: true})));
+  const countries = (prefs.countries || []).map(c => c.toLowerCase());
+  const civ = prefs.civility ? new RegExp(prefs.civility, 'i') : null;
+  for (const el of els) {
+    if (el.checkValidity()) continue;
+    if (el.tagName === 'SELECT') {
+      const ok = [...el.options].filter(o => o.value && !o.disabled);
+      const o = ok.find(o => countries.includes(o.text.trim().toLowerCase()))
+        || (civ && ok.find(o => civ.test(o.text))) || ok[0];
+      if (o) { el.value = o.value; fire(el); }
+    } else if (el.type === 'radio' && el.name) {
+      const first = form.querySelector(`input[type=radio][name="${CSS.escape(el.name)}"]`);
+      if (first) { first.checked = true; fire(first); }
+    }
+  }
+  const ta = [...form.querySelectorAll('textarea')].find(t => t.maxLength > 0 && t.value.length >= t.maxLength);
+  return {invalid: els.filter(el => !el.checkValidity()).map(el => +el.dataset.ffI), truncated: ta ? ta.maxLength : 0};
+}
+"""
+
+EMAILS_JS = r"""
+() => {
+  const out = [];
+  document.querySelectorAll('a[href^="mailto:"]').forEach(a => out.push(a.getAttribute('href').slice(7).split('?')[0]));
+  out.push(document.body ? document.body.innerText : '');
+  return out.join('\n');
+}
+"""
+
+
+def classify(f: dict) -> str | None:
+    if f["tag"] == "textarea":
+        return "message"
+    if f["type"] in ("hidden", "submit", "button", "image", "reset", "file", "password", "search"):
+        return None
+    if f["type"] == "email":
+        return "email"
+    if f["type"] in ("tel", "number", "text"):  # le libellé prime sur un type mal choisi par le site
+        lbl = _norm(f"{f['label']} {f['placeholder']}")
+        if re.search(r"e-?mail|courriel|correo", lbl):
+            return "email"
+        if re.search(r"code postal|postal|zip|\bplz\b", lbl):
+            return "zip"
+    if f["type"] == "tel":
+        return "phone"
+    if f["type"] == "url":
+        return "website"
+    if f["type"] in ("checkbox", "radio"):
+        return f["type"]
+    if f["tag"] == "select":
+        return "select"
+    ac = f.get("autocomplete", "")
+    ac_map = {"given-name": "first_name", "family-name": "last_name", "name": "full_name", "email": "email",
+              "tel": "phone", "organization": "company", "postal-code": "zip", "address-level2": "city",
+              "organization-title": "job_title", "url": "website"}
+    if ac in ac_map:
+        return ac_map[ac]
+    text = _norm(" ".join([f["label"], f["placeholder"], f["name"], f["id"]]))
+    for kind, pattern in FIELD_RULES:
+        if re.search(pattern, text):
+            return kind
+    return "unknown"
+
+
+def _values(sender: Sender, subject: str, message: str) -> dict[str, str]:
+    country = sender.country_names[0] if sender.country_names else ""
+    return {
+        "email": sender.email, "phone": sender.phone, "first_name": sender.first_name, "last_name": sender.last_name,
+        "full_name": f"{sender.first_name} {sender.last_name}".strip(), "company": sender.company, "subject": subject,
+        "message": message, "website": sender.website, "city": sender.city, "zip": sender.zip,
+        "address": sender.address, "country": country, "civility": sender.civility,
+        "job_title": sender.job_title, "location": country,
+    }
+
+
+def _civ_regex(sender: Sender):
+    return CIV_M if sender.civility == "mr" else CIV_F if sender.civility == "mrs" else None
+
+
+def _find_form(page: Page) -> Frame | None:
+    for frame in [page.main_frame, *[f for f in page.frames if f != page.main_frame]]:
+        try:
+            if frame.evaluate(FIND_FORM_JS):
+                return frame
+        except Exception:
+            continue
+    return None
+
+
+def _contact_links(page: Page, base: str) -> list[str]:
+    links = page.evaluate("""() => [...document.querySelectorAll('a[href]')].map(a => [a.href, (a.innerText || a.title || a.getAttribute('aria-label') || '').trim()])""")
+    scored = []
+    for href, text in links:
+        if not href.startswith("http") or not _same_site(href, base):
+            continue
+        t = _norm(f"{text} {urlparse(href).path}")
+        if CONTACT_LINK.search(t) and not NOT_CONTACT.search(t):
+            score = 2 if re.search(r"contact|kontakt|contatt|contato", t) else 1
+            scored.append((score, href.split("#")[0]))
+    seen, out = set(), []
+    for _, h in sorted(scored, key=lambda x: -x[0]):
+        if h not in seen:
+            seen.add(h)
+            out.append(h)
+    return out[:4]
+
+
+def _scroll(page: Page):
+    for _ in range(4):
+        page.mouse.wheel(0, 2500)
+        page.wait_for_timeout(400)
+
+
+def _load(page: Page, url: str, timeout: int):
+    page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+    page.wait_for_timeout(2000)
+    _dismiss_cookies(page)
+    _scroll(page)
+    page.wait_for_timeout(800)
+
+
+def _find_form_late(page: Page) -> Frame | None:
+    """Formulaires chargés après coup (Jotform, HubSpot, Typeform… dans une iframe) : 2,5 s de plus."""
+    page.wait_for_timeout(2500)
+    return _find_form(page)
+
+
+def harvest_emails(page: Page, site: str, found: set[str]) -> None:
+    """Relève les adresses email visibles (liens mailto et texte) ; celles du domaine du site d'abord."""
+    try:
+        text = page.evaluate(EMAILS_JS)
+    except Exception:
+        return
+    for m in EMAIL.findall(text or ""):
+        if not EMAIL_SKIP.search(m):
+            found.add(m.lower())
+
+
+def best_email(site: str, found: set[str]) -> str | None:
+    host = (urlparse(site if "://" in site else f"http://{site}").hostname or "").removeprefix("www.").lower()
+    root = ".".join(host.split(".")[-2:])
+    same = sorted(e for e in found if e.endswith("@" + host) or e.endswith("." + root) or e.endswith("@" + root))
+    return (same or sorted(found) or [None])[0]
+
+
+def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[str] | None = None) -> Frame | None:
+    """Ouvre le site et renvoie le cadre contenant le formulaire de contact (ou None)."""
+    emails = emails if emails is not None else set()
+    _load(page, site, timeout)
+    harvest_emails(page, site, emails)
+    frame = _find_form(page) or _find_form_late(page)
+    if frame:
+        return frame
+    home = page.url
+    candidates = _contact_links(page, home)
+    root = f"{urlparse(home).scheme}://{urlparse(home).netloc}"
+    for p in CONTACT_PATHS:  # adresses classiques en complément des liens trouvés
+        if root + p not in candidates:
+            candidates.append(root + p)
+    tried = 0
+    for link in candidates:
+        if tried >= 6:
+            break
+        try:
+            tried += 1
+            resp = page.goto(link, wait_until="domcontentloaded", timeout=timeout)
+            if resp is not None and resp.status >= 400:
+                continue
+            page.wait_for_timeout(1500)
+            _dismiss_cookies(page)
+            _scroll(page)
+            harvest_emails(page, site, emails)
+            frame = _find_form(page) or _find_form_late(page)
+            if frame:
+                return frame
+        except PWTimeout:
+            continue
+    return None
+
+
+COOKIE_SELECTORS = [
+    "#onetrust-accept-btn-handler", "#didomi-notice-agree-button", "#axeptio_btn_acceptAll",
+    "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll", "#CybotCookiebotDialogBodyButtonAccept",
+    ".cmplz-accept", ".cky-btn-accept", "#tarteaucitronPersonalize2", "#tarteaucitronAllAllowed", ".tarteaucitronAllow",
+    ".iubenda-cs-accept-btn", ".qc-cmp2-summary-buttons button[mode=primary]", "a._brlbs-btn-accept-all",
+    "#cookie_action_close_header", ".cc-allow", ".cc-accept", "#hs-eu-confirmation-button", ".sp_choice_type_11",
+    "[data-cookiefirst-action=accept]", "#acceptAllCookies", "#accept-all-cookies", "#cookie-accept",
+    "#usercentrics-root button[data-testid=uc-accept-all-button]", ".cmpboxbtnyes", "#BorlabsCookieBoxButtonAcceptAll",
+]
+COOKIE_ACCEPT = re.compile(r"^\W*(tout accepter|accepter|j'accepte|oui,? j'accepte|autoriser|d'accord|ok|compris|"
+                           r"accept|accept all|allow all|agree|i agree|got it|alle akzeptieren|akzeptieren|zustimmen|"
+                           r"aceptar|aceptar todo|accetta|accetta tutto|aceitar|alles accepteren|accepteren)\b[^\n]{0,30}$", re.I)
+
+
+def _dismiss_cookies(page: Page):
+    """Accepte le bandeau cookies s'il y en a un (aussi dans les iframes de consentement)."""
+    for frame in page.frames:
+        try:
+            for sel in COOKIE_SELECTORS:
+                loc = frame.locator(f"{sel}:visible")
+                if loc.count():
+                    loc.first.click(timeout=2000)
+                    page.wait_for_timeout(700)
+                    return
+            for role in ("button", "link"):
+                loc = frame.get_by_role(role, name=COOKIE_ACCEPT)
+                for j in range(min(loc.count(), 3)):
+                    if loc.nth(j).is_visible():
+                        loc.nth(j).click(timeout=2000)
+                        page.wait_for_timeout(700)
+                        return
+        except Exception:
+            continue
+
+
+SET_VALUE_JS = """(e, v) => { e.focus(); e.value = v;
+    ['input', 'change', 'blur'].forEach(t => e.dispatchEvent(new Event(t, {bubbles: true}))); return e.value === v; }"""
+SELECT_TEXT_JS = """(e, v) => { const o = [...e.options].find(o => o.text.trim().toLowerCase() === v.trim().toLowerCase());
+    if (!o) return false; e.value = o.value; e.dispatchEvent(new Event('change', {bubbles: true})); return true; }"""
+
+
+def _fill(loc, value: str):
+    """Remplit un champ ; si le site bloque le remplissage normal (lenteur, widget), écrit la valeur directement."""
+    try:
+        loc.fill(value, timeout=5000)
+    except Exception:
+        if not loc.evaluate(SET_VALUE_JS, value):
+            raise
+
+
+def _select(loc, label: str):
+    try:
+        loc.select_option(label=label, timeout=3000)
+    except Exception:
+        if not loc.evaluate(SELECT_TEXT_JS, label):
+            raise
+
+
+def _check(loc):
+    try:
+        loc.check(timeout=2000, force=True)
+    except Exception:
+        loc.evaluate("""el => { el.click(); if (!el.checked) { el.checked = true;
+            el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true})); } }""")
+
+
+def _pick_country(opts: list[str], sender: Sender) -> str | None:
+    names = [_norm(n).strip() for n in sender.country_names if n]
+    for o in opts:
+        if _norm(o).strip() in names:
+            return o
+    for o in opts:
+        if any(_norm(o).strip().startswith(n) for n in names):
+            return o
+    return None
+
+
+def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: dict | None = None,
+              short_message: str = "") -> FillResult:
+    """extra : valeurs saisies à la main pour des champs précis ({libellé du champ: valeur})."""
+    fields = frame.evaluate(DESCRIBE_JS)
+    values = _values(sender, subject, message)
+    res = FillResult(status="filled", form_url=frame.url)
+    civ_rx = _civ_regex(sender)
+    if any(f.get("captchaImg") for f in fields[:1]):
+        res.status, res.protection, res.detail = "captcha", "image", "captcha image dans le formulaire"
+    else:
+        for f in fields:
+            if f["visible"] and CAPTCHA_TEXT.search(_norm(f["label"] + " " + f["name"])):
+                res.status = "captcha"
+                res.protection = "math" if MATH_TEXT.search(_norm(f["label"])) else "text"
+                res.detail = f"captcha à recopier : « {f['label'][:60]} »"
+                break
+    has_message = False
+    radios_done: set[str] = set()
+    civ_radio = {f["name"]: f["i"] for f in fields if f["type"] == "radio" and f["name"] and civ_rx and civ_rx.search(f["label"] or "")}
+    kinds = {f["i"]: classify(f) for f in fields if f["visible"]}
+    lone_name = "last_name" in kinds.values() and "first_name" not in kinds.values()
+    for f in fields:
+        if not f["visible"]:
+            continue  # champs cachés = pièges anti-robots : on n'y touche pas
+        kind = kinds[f["i"]]
+        if kind == "last_name" and lone_name:
+            kind = "full_name"
+        if kind is None:
+            continue
+        loc = frame.locator(f'[data-ff-i="{f["i"]}"]')
+        label = f["label"] or f["placeholder"] or f["name"] or f["id"]
+        try:
+            if extra and extra.get(label, "").strip():
+                if f["type"] in ("checkbox", "radio"):
+                    if _norm(extra[label]).strip() in ("oui", "yes", "coche", "x", "true", "ok", "ja", "si"):
+                        _check(loc)
+                elif kind == "select":
+                    _select(loc, extra[label])
+                else:
+                    _fill(loc, extra[label])
+                res.filled[f"saisi {f['i']}"] = label
+            elif kind == "checkbox":
+                text = _norm(f"{f['label']} {f['name']}")
+                if CONSENT.search(text) and not NEWSLETTER.search(text):
+                    _check(loc)
+                    res.filled["consentement"] = label
+                elif f["required"] and not NEWSLETTER.search(text):
+                    _check(loc)
+                    res.filled[f"case obligatoire {f['i']}"] = label
+            elif kind == "radio" and f["name"] in civ_radio:
+                if f["i"] == civ_radio[f["name"]]:
+                    _check(loc)
+                    radios_done.add(f["name"])
+                    res.filled["civilité"] = f"{label}"
+            elif kind == "radio":
+                if f["name"] not in radios_done and f["required"]:
+                    _check(loc)
+                    radios_done.add(f["name"])
+            elif kind == "select":
+                opts = [o for o in f["options"] if o and not re.search(r"^(--|choisi|select|s[eé]lection|veuillez|bitte|elige|seleccion|scegli|kies)", _norm(o))]
+                pick = next((o for o in opts if SELECT_PREF.search(_norm(o))), opts[0] if opts else None)
+                country = _pick_country(opts, sender)
+                if country and (re.search(COUNTRY, _norm(f"{label} {f['name']}")) or len(opts) > 20):
+                    pick = country
+                elif civ_rx and (re.search(CIVILITY, _norm(f"{label} {f['name']}")) or any(CIV_F.search(o) or CIV_M.search(o) for o in opts)):
+                    pick = next((o for o in opts if civ_rx.search(o)), pick)
+                if pick:
+                    _select(loc, pick)
+                    res.filled[f"liste {f['i']}"] = f"{label} = {pick}"
+            elif kind == "unknown":
+                if CAPTCHA_TEXT.search(_norm(label)):
+                    continue
+                if f["required"]:
+                    res.warnings.append(f"champ obligatoire non reconnu : {label}")
+                    res.missing.append(label)
+            else:
+                value = values.get(kind, "")
+                if not value:
+                    if f["required"]:
+                        res.warnings.append(f"champ obligatoire vide dans votre profil : {label}")
+                        res.missing.append(label)
+                    continue
+                if kind == "message":
+                    if has_message:
+                        continue
+                    has_message = True
+                    limit = loc.evaluate("e => e.maxLength || 0")
+                    if short_message and 0 < limit < len(value) and len(short_message) < len(value):
+                        value, res.short = short_message, True
+                if f["type"] == "number":
+                    value = re.sub(r"\D", "", value)
+                _fill(loc, value)
+                res.filled[kind] = label
+        except Exception as e:  # champ non modifiable, masqué par un widget…
+            if f["required"]:
+                res.warnings.append(f"champ impossible à remplir : {label} ({type(e).__name__})")
+                res.missing.append(label)
+    if res.status == "captcha":
+        return res
+    try:
+        check = frame.evaluate(VALIDATE_JS, {"countries": sender.country_names,
+                                             "civility": civ_rx.pattern if civ_rx else None})
+    except Exception:
+        check = {"invalid": [], "truncated": 0}
+    by_i = {f["i"]: f for f in fields}
+    for i in check["invalid"]:
+        f = by_i.get(i)
+        label = f and (f["label"] or f["placeholder"] or f["name"] or f["id"])
+        if f and f["visible"] and label not in res.missing:
+            res.missing.append(label)
+            res.warnings.append(f"refusé par le formulaire : {label}")
+    if check["truncated"]:
+        res.warnings.append(f"message coupé à {check['truncated']} caractères par le site : raccourcissez-le")
+    if not has_message:
+        res.status, res.detail = "error", "zone de message non remplie"
+    elif "email" not in res.filled and "phone" not in res.filled:
+        res.warnings.append("pas de champ email ni téléphone : l'entreprise ne pourra pas vous répondre")
+    return res
+
+
+def detect_protection(frame: Frame) -> str | None:
+    """Type de protection visible (reCAPTCHA case à cocher, hCaptcha, Turnstile…), ou None."""
+    for kind, selector in PROTECTIONS:
+        try:
+            if frame.locator(selector).count() > 0 or frame.page.locator(selector).count() > 0:
+                return kind
+        except Exception:
+            continue
+    return None
+
+
+def submit(frame: Frame) -> tuple[bool | None, str]:
+    """Clique sur le bouton d'envoi du formulaire et vérifie la confirmation (None = refusé par le site)."""
+    _dismiss_cookies(frame.page)
+    form = frame.locator("[data-ff-form]")
+    btn = form.locator('button[type="submit"]:visible, input[type="submit"]:visible, button:not([type]):visible')
+    if not btn.count():
+        cands = form.locator("button:visible, [role=button]:visible, a.button:visible, input[type=button]:visible")
+        btn = cands.filter(has_text=SUBMIT) if cands.count() else cands
+    url_before = frame.url
+    if btn.count():
+        try:
+            btn.first.click(timeout=5000)
+        except Exception:
+            btn.first.evaluate("b => b.click()")
+    elif not frame.evaluate("""() => { const f = document.querySelector('[data-ff-form]');
+                                      if (f && f.tagName === 'FORM' && f.requestSubmit) { f.requestSubmit(); return true; }
+                                      return false; }"""):
+        return False, "bouton d'envoi introuvable"
+    frame.page.wait_for_timeout(5000)
+    try:
+        text = _norm(frame.page.inner_text("body", timeout=5000))
+    except Exception:
+        text = ""
+    m = FAILURE.search(text)
+    if m:
+        return None, f"refusé par le site (« {m.group(0)} »)"
+    if SUCCESS.search(text):
+        return True, "confirmation affichée"
+    if frame.url != url_before:
+        return True, "page changée après envoi"
+    try:
+        if not form.count() or not form.first.is_visible():
+            return True, "formulaire disparu après envoi"
+    except Exception:
+        pass
+    return False, "pas de confirmation visible"

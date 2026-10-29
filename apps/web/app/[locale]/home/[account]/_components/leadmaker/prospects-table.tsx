@@ -88,6 +88,9 @@ export function ProspectsTable(props: {
   /** appelé après une action groupée réussie (le parent rafraîchit ses données) */
   onMutated?: () => void;
   noResultsMessage?: React.ReactNode;
+  /** campagnes du dossier (préparation des prospects importés sans campagne) */
+  campaigns?: Array<{ id: string; name: string }>;
+  formsHref?: string;
 }) {
   const t = useTranslations('prospects');
   const format = useFormatter();
@@ -136,6 +139,8 @@ export function ProspectsTable(props: {
               canDelete={props.canDelete}
               onClear={clearSelection}
               onMutated={props.onMutated}
+              campaigns={props.campaigns}
+              formsHref={props.formsHref}
             />
           ) : null}
         </div>

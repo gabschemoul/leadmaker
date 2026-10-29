@@ -72,7 +72,8 @@
     "spaces": "Dossiers clients",
     "new": "Nouvelle",
     "sender": "Expéditeur",
-    "messages": "Messages"
+    "messages": "Messages",
+    "forms": "Formulaires"
   },
   "roles": {
     "owner": {

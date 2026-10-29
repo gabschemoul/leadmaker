@@ -14,3 +14,10 @@ export const ProspectIdsSchema = z.object({
 });
 
 export type ProspectIdsInput = z.output<typeof ProspectIdsSchema>;
+
+/** Préparation des formulaires : campagne facultative pour les prospects importés sans campagne. */
+export const PrepareProspectsSchema = ProspectIdsSchema.extend({
+  campaignId: z.string().uuid().nullable(),
+});
+
+export type PrepareProspectsInput = z.output<typeof PrepareProspectsSchema>;

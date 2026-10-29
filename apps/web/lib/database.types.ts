@@ -1151,6 +1151,14 @@ isOneToOne: false
 "is_team_member":
 { Args: { "account_id": string,"user_id": string }; Returns: boolean
                            },
+"lm_attempt_counts":
+{ Args: { "p_space_id": string }; Returns: {
+              "status": Database["public"]['Enums']["lm_attempt_status"],"total": number
+            }[]
+                           },
+"lm_attempt_repreparable":
+{ Args: { "p_status": Database["public"]['Enums']["lm_attempt_status"] }; Returns: boolean
+                           },
 "lm_campaign_progress":
 { Args: { "p_campaign_id": string }; Returns: {
               "abandoned": number,"cards": number,"categories": number,"in_flight": number,"last_search_at": string,"prospects": number,"searches_done": number,"searches_total": number,"zones": number
@@ -1204,11 +1212,17 @@ isOneToOne: false
               "categories": number,"cities": number,"expected_prospects": number,"rate": number,"searches": number
             }[]
                            },
+"lm_exclude_attempts":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
 "lm_exclude_prospects":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },
 "lm_fail_task":
 { Args: { "p_error": string,"p_id": number }; Returns: undefined
+                           },
+"lm_finish_prepare":
+{ Args: { "p_attempt_id": string,"p_result": Json }; Returns: boolean
                            },
 "lm_finish_search":
 { Args: { "p_campaign_id": string,"p_cards": number,"p_duration_ms": number,"p_error"?: string,"p_gcid": string,"p_kept": number,"p_new": number,"p_zone_idx": number }; Returns: undefined
@@ -1223,6 +1237,16 @@ isOneToOne: false
                            },
 "lm_pause_campaign":
 { Args: { "p_campaign_id": string,"p_reason"?: string }; Returns: undefined
+                           },
+"lm_prepare_campaign":
+{ Args: { "p_campaign_id": string }; Returns: {
+              "queued": number,"skipped": number
+            }[]
+                           },
+"lm_prepare_prospects":
+{ Args: { "p_campaign_id"?: string,"p_ids": (string)[] }; Returns: {
+              "queued": number,"skipped": number
+            }[]
                            },
 "lm_prospect_facets":
 { Args: { "p_space_id": string }; Returns: {
@@ -1262,6 +1286,9 @@ isOneToOne: false
 "lm_site_known":
 { Args: { "p_site_key": string,"p_space_id": string }; Returns: boolean
                            },
+"lm_skip_attempts":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
 "lm_skip_estimate_search":
 { Args: { "p_estimate_id": string }; Returns: undefined
                            },
@@ -1285,6 +1312,15 @@ isOneToOne: false
 { Args: { "p_country_code": string,"p_targeting": Json }; Returns: {
               "geoname_id": number,"label": string,"latitude": number,"longitude": number,"population": number,"zoom": number
             }[]
+                           },
+"lm_templates_usable":
+{ Args: { "p_templates": Json }; Returns: boolean
+                           },
+"lm_update_attempt":
+{ Args: { "p_body": string,"p_extra": Json,"p_id": string,"p_subject": string }; Returns: boolean
+                           },
+"lm_validate_attempts":
+{ Args: { "p_ids": (string)[] }; Returns: number
                            },
 "revoke_nonce":
 { Args: { "p_id": string,"p_reason"?: string }; Returns: boolean

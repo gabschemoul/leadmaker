@@ -72,7 +72,8 @@
     "spaces": "Client folders",
     "new": "New",
     "sender": "Sender",
-    "messages": "Messages"
+    "messages": "Messages",
+    "forms": "Forms"
   },
   "roles": {
     "owner": {

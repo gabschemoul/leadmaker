@@ -9,6 +9,16 @@ import psycopg
 from .queue import Task
 
 _discovery = None
+_prepare = None
+
+
+def prepare_runner():
+    global _prepare
+    if _prepare is None:
+        from .outreach.runner import PrepareRunner
+
+        _prepare = PrepareRunner()
+    return _prepare
 
 
 def discovery_runner():
@@ -37,10 +47,15 @@ def run_estimate(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
     return discovery_runner().estimate(task, conn)
 
 
+def run_prepare(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
+    return prepare_runner().run(task, conn)
+
+
 HANDLERS = {
     "dummy": run_dummy,
     "discovery": run_discovery,
     "estimate": run_estimate,
+    "prepare": run_prepare,
 }
 
 
@@ -54,6 +69,8 @@ def run(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
 def on_final_failure(task: Task, conn: psycopg.Connection) -> None:
     if task.kind in ("discovery", "estimate"):
         discovery_runner().on_final_failure(task, conn)
+    elif task.kind == "prepare":
+        prepare_runner().on_final_failure(task, conn)
 
 
 def shutdown() -> None:

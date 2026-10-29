@@ -28,6 +28,8 @@ export function ProspectsList(props: {
   campaignsPath: string;
   canDelete: boolean;
   noResultsMessage: React.ReactNode;
+  campaigns: Array<{ id: string; name: string }>;
+  formsHref: string;
 }) {
   const router = useRouter();
 
@@ -60,6 +62,8 @@ export function ProspectsList(props: {
       sorting={sorting}
       onSortingChange={onSortingChange}
       noResultsMessage={props.noResultsMessage}
+      campaigns={props.campaigns}
+      formsHref={props.formsHref}
     />
   );
 }

@@ -365,3 +365,45 @@ export const saveCampaignTemplatesAction = authActionClient
 
     return { success: true, count: filled.length };
   });
+
+const PREPARE_ERRORS: Record<string, string> = {
+  no_sender: 'outreach.forms.prepare.noSender',
+  no_messages: 'outreach.forms.prepare.noMessages',
+  cap_reached: 'outreach.forms.prepare.capReached',
+};
+
+/** Prépare les formulaires de tous les prospects d'une campagne pas encore traités. */
+export const prepareCampaignAction = authActionClient
+  .inputSchema(CampaignIdSchema)
+  .action(async ({ parsedInput: { campaignId }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client.rpc('lm_prepare_campaign', {
+      p_campaign_id: campaignId,
+    });
+
+    if (error) {
+      const known = error.hint ? PREPARE_ERRORS[error.hint] : undefined;
+
+      if (known) {
+        throw new Error(known);
+      }
+
+      const logger = await getLogger();
+      logger.error(
+        {
+          name: 'leadmaker.campaigns.prepare',
+          campaignId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to queue campaign form preparation',
+      );
+
+      throw new Error('outreach.forms.prepare.failed');
+    }
+
+    revalidatePath('/home/[account]/forms', 'page');
+
+    return { queued: data?.[0]?.queued ?? 0, skipped: data?.[0]?.skipped ?? 0 };
+  });

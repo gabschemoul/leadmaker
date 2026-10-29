@@ -222,6 +222,8 @@ async function ProspectsContent(props: ProspectsPageProps) {
           accountId={account.id}
           campaignsPath={campaignsPath}
           canDelete={canDelete}
+          campaigns={campaignOptions.map(({ id, name }) => ({ id, name }))}
+          formsHref={pathsConfig.app.accountForms.replace('[account]', slug)}
           noResultsMessage={
             <span data-test={'prospects-empty'}>
               <Trans

@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
   Download,
+  FileText,
   MessageSquareText,
   Pause,
   Play,
@@ -36,6 +37,7 @@ import { ProspectsTable } from '../../_components/leadmaker/prospects-table';
 import { type CampaignLive, fetchCampaignLive } from '../_lib/campaign-live';
 import {
   pauseCampaignAction,
+  prepareCampaignAction,
   startCampaignAction,
 } from '../_lib/server/server-actions';
 
@@ -55,6 +57,7 @@ export function CampaignDetailView(props: {
   messagesHref: string;
   /** nombre de messages rédigés (0 = la préparation des formulaires est impossible) */
   messagesCount: number;
+  formsHref: string;
   initialData: CampaignLive;
 }) {
   const client = useSupabase();
@@ -109,6 +112,14 @@ export function CampaignDetailView(props: {
             campaignId={props.campaignId}
             status={data.status}
             queryKey={queryKey}
+          />
+
+          <PrepareCampaignButton
+            campaignId={props.campaignId}
+            disabled={
+              props.messagesCount === 0 || data.progress.prospects === 0
+            }
+            formsHref={props.formsHref}
           />
 
           <Button
@@ -204,6 +215,7 @@ export function CampaignDetailView(props: {
             accountId={props.accountId}
             campaignsPath={props.campaignsPath}
             canDelete={props.canDelete}
+            formsHref={props.formsHref}
             sorting={[{ id: 'date', desc: true }]}
             hiddenColumns={['campaign']}
             onMutated={() => void queryClient.invalidateQueries({ queryKey })}
@@ -306,6 +318,50 @@ function CampaignActions(props: {
   }
 
   return null;
+}
+
+/** Met en préparation tous les prospects de la campagne pas encore traités. */
+function PrepareCampaignButton(props: {
+  campaignId: string;
+  disabled: boolean;
+  formsHref: string;
+}) {
+  const t = useTranslations('outreach.forms.prepare');
+
+  const prepare = useAction(prepareCampaignAction, {
+    onSuccess: ({ data }) =>
+      toast.success(
+        t('done', { queued: data?.queued ?? 0, skipped: data?.skipped ?? 0 }),
+        {
+          action: {
+            label: t('goToForms'),
+            onClick: () => window.location.assign(props.formsHref),
+          },
+        },
+      ),
+    onError: ({ error }) =>
+      toast.error(
+        t(
+          (error.serverError ?? 'outreach.forms.prepare.failed').replace(
+            'outreach.forms.prepare.',
+            '',
+          ),
+        ),
+      ),
+  });
+
+  return (
+    <Button
+      variant={'outline'}
+      data-test={'campaign-prepare-button'}
+      disabled={props.disabled || prepare.isPending}
+      onClick={() => prepare.execute({ campaignId: props.campaignId })}
+    >
+      <FileText className={'w-4'} />
+
+      <span>{t('campaignButton')}</span>
+    </Button>
+  );
 }
 
 function ProgressCard({ live }: { live: CampaignLive }) {

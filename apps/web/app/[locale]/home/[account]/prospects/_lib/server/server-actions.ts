@@ -7,7 +7,10 @@ import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { ImportProspectsSchema } from '../schema/import.schema';
-import { ProspectIdsSchema } from '../schema/prospects-actions.schema';
+import {
+  PrepareProspectsSchema,
+  ProspectIdsSchema,
+} from '../schema/prospects-actions.schema';
 import { createProspectsService } from './prospects.service';
 
 /**
@@ -109,4 +112,51 @@ export const deleteProspectsAction = authActionClient
     revalidateProspects();
 
     return result;
+  });
+
+const PREPARE_ERRORS: Record<string, string> = {
+  no_sender: 'outreach.forms.prepare.noSender',
+  no_messages: 'outreach.forms.prepare.noMessages',
+  cap_reached: 'outreach.forms.prepare.capReached',
+};
+
+/**
+ * Met des prospects en file de préparation : le robot remplira leur formulaire
+ * de contact sans l'envoyer. Renvoie le nombre mis en file et le nombre ignorés
+ * (sans site, exclus, déjà traités).
+ */
+export const prepareProspectsAction = authActionClient
+  .inputSchema(PrepareProspectsSchema)
+  .action(async ({ parsedInput: { accountId, ids, campaignId }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client.rpc('lm_prepare_prospects', {
+      p_ids: ids,
+      p_campaign_id: campaignId ?? undefined,
+    });
+
+    if (error) {
+      const known = error.hint ? PREPARE_ERRORS[error.hint] : undefined;
+
+      if (known) {
+        throw new Error(known);
+      }
+
+      const logger = await getLogger();
+      logger.error(
+        {
+          name: 'leadmaker.prospects.prepare',
+          accountId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to queue form preparation',
+      );
+
+      throw new Error('outreach.forms.prepare.failed');
+    }
+
+    revalidatePath('/home/[account]/forms', 'page');
+
+    return { queued: data?.[0]?.queued ?? 0, skipped: data?.[0]?.skipped ?? 0 };
   });

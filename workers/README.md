@@ -8,6 +8,12 @@ lit Google Maps (interface en anglais, résultats orientés sur le pays de la ca
 banques et chaînes, enregistre un prospect par site et débite un crédit découverte par prospect retenu.
 Un captcha Google met le worker en pause 30 min, puis 60, 120 et 240 min.
 
+Préparation des formulaires (`WORKER_KINDS=prepare`) : pour chaque tentative en attente, le worker ouvre le site du
+prospect dans un processus à part (coupé après `PREPARE_TIMEOUT`, 180 s), trouve le formulaire de contact, le remplit
+avec le profil expéditeur et un message tiré en rotation équilibrée, prend une capture (bucket `lm_screenshots`,
+`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` requis) et enregistre le résultat : prêt, à compléter, intervention requise
+(captcha détecté par type, jamais résolu ici), pas de formulaire, inaccessible. Rien n'est envoyé à cette étape.
+
 Variables utiles : `WORKER_KINDS=discovery`, `HEADLESS=false` pour voir le navigateur, `SCRAPE_DELAY` (1,5 s),
 `PROXY_URL=http://user:pass@hote:port` pour passer par un fournisseur de proxies.
 

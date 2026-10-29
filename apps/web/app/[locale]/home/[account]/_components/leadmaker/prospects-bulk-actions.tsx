@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { Ban, Download, RotateCcw, Trash2, X } from 'lucide-react';
+import { Ban, Download, FileText, RotateCcw, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
@@ -24,6 +24,10 @@ import {
   excludeProspectsAction,
   restoreProspectsAction,
 } from '../../prospects/_lib/server/server-actions';
+import {
+  type CampaignOption,
+  PrepareFormsDialog,
+} from './prepare-forms-dialog';
 
 type BulkOperation = 'exclude' | 'restore' | 'delete';
 
@@ -33,19 +37,36 @@ type BulkOperation = 'exclude' | 'restore' | 'delete';
  */
 export function ProspectsBulkActions(props: {
   accountId: string;
-  selected: Array<{ id: string; excluded_at: string | null }>;
+  selected: Array<{
+    id: string;
+    excluded_at: string | null;
+    website?: string | null;
+    campaign?: { id: string; name: string } | null;
+  }>;
   canDelete: boolean;
+  /** campagnes du dossier, pour les prospects importés sans campagne */
+  campaigns?: CampaignOption[];
+  formsHref?: string;
   onClear: () => void;
   /** appelé après une action réussie (le parent rafraîchit ses données) */
   onMutated?: () => void;
 }) {
   const t = useTranslations('prospects');
   const [pending, setPending] = useState<BulkOperation | null>(null);
+  const [prepareOpen, setPrepareOpen] = useState(false);
 
   const ids = props.selected.map((prospect) => prospect.id);
   const hasActive = props.selected.some((prospect) => !prospect.excluded_at);
   const hasExcluded = props.selected.some((prospect) => prospect.excluded_at);
   const exportHref = `/api/leadmaker/export?ids=${ids.join(',')}`;
+
+  // préparables : non exclus, avec un site web (quand la ligne le connaît)
+  const preparable = props.selected.filter(
+    (prospect) => !prospect.excluded_at && prospect.website !== null,
+  );
+  const needsCampaign =
+    props.campaigns !== undefined &&
+    preparable.some((prospect) => prospect.campaign === null);
 
   const close = () => setPending(null);
 
@@ -115,6 +136,20 @@ export function ProspectsBulkActions(props: {
           </span>
         </Button>
 
+        {preparable.length > 0 ? (
+          <Button
+            size={'sm'}
+            data-test={'prospects-prepare-button'}
+            onClick={() => setPrepareOpen(true)}
+          >
+            <FileText className={'w-4'} />
+
+            <span>
+              <Trans i18nKey={'outreach.forms.prepare.button'} />
+            </span>
+          </Button>
+        ) : null}
+
         {hasActive ? (
           <Button
             size={'sm'}
@@ -174,6 +209,20 @@ export function ProspectsBulkActions(props: {
           <Trans i18nKey={'prospects.selection.clear'} />
         </span>
       </Button>
+
+      <PrepareFormsDialog
+        open={prepareOpen}
+        onOpenChange={setPrepareOpen}
+        accountId={props.accountId}
+        ids={preparable.map((prospect) => prospect.id)}
+        needsCampaign={needsCampaign}
+        campaigns={props.campaigns ?? []}
+        formsHref={props.formsHref}
+        onDone={() => {
+          props.onClear();
+          props.onMutated?.();
+        }}
+      />
 
       <AlertDialog
         open={pending !== null}

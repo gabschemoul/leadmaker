@@ -5,7 +5,14 @@ import { useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Download, Pause, Play, TriangleAlert } from 'lucide-react';
+import {
+  ArrowRight,
+  Download,
+  MessageSquareText,
+  Pause,
+  Play,
+  TriangleAlert,
+} from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
@@ -44,6 +51,10 @@ export function CampaignDetailView(props: {
   folderName: string | null;
   countryLabel: string;
   billingPath: string;
+  /** page des messages de la campagne */
+  messagesHref: string;
+  /** nombre de messages rédigés (0 = la préparation des formulaires est impossible) */
+  messagesCount: number;
   initialData: CampaignLive;
 }) {
   const client = useSupabase();
@@ -103,6 +114,28 @@ export function CampaignDetailView(props: {
           <Button
             variant={'outline'}
             nativeButton={false}
+            data-test={'campaign-messages-button'}
+            render={<Link href={props.messagesHref} />}
+          >
+            <MessageSquareText className={'w-4'} />
+
+            <span>
+              <Trans i18nKey={'outreach.messages.detailButton'} />
+            </span>
+
+            <span className={'text-muted-foreground'}>
+              (
+              <Trans
+                i18nKey={'outreach.messages.detailCount'}
+                values={{ count: props.messagesCount }}
+              />
+              )
+            </span>
+          </Button>
+
+          <Button
+            variant={'outline'}
+            nativeButton={false}
             data-test={'campaign-export-button'}
             render={<a href={exportHref} download />}
           >
@@ -114,6 +147,20 @@ export function CampaignDetailView(props: {
           </Button>
         </div>
       </div>
+
+      {props.messagesCount === 0 ? (
+        <Alert data-test={'no-messages-alert'}>
+          <MessageSquareText className={'h-4'} />
+
+          <AlertDescription className={'flex flex-wrap gap-x-2'}>
+            <Trans i18nKey={'outreach.messages.detailMissing'} />
+
+            <Link className={'underline'} href={props.messagesHref}>
+              <Trans i18nKey={'outreach.messages.detailButton'} />
+            </Link>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {noCredits ? (
         <Alert className={alertExtras.warning} data-test={'no-credits-alert'}>

@@ -70,7 +70,9 @@
     "campaigns": "Campaigns",
     "prospects": "Prospects",
     "spaces": "Client folders",
-    "new": "New"
+    "new": "New",
+    "sender": "Sender",
+    "messages": "Messages"
   },
   "roles": {
     "owner": {

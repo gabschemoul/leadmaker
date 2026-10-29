@@ -16,6 +16,7 @@ import {
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import { buildProspectsHref } from '~/lib/leadmaker/prospects-query';
+import { parseTemplates, usableMessages } from '~/lib/leadmaker/templates';
 
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
@@ -128,6 +129,10 @@ async function CampaignContent({ params }: { params: Params }) {
         folderName={folderName}
         countryLabel={countryLabel}
         billingPath={pathsConfig.app.accountBilling.replace('[account]', slug)}
+        messagesHref={`${pathsConfig.app.accountCampaigns.replace('[account]', slug)}/${id}/messages`}
+        messagesCount={
+          usableMessages(parseTemplates(campaign.templates)).length
+        }
         initialData={live}
       />
     </>

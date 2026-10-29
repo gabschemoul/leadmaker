@@ -7,6 +7,8 @@ import { authActionClient } from '@kit/next/safe-action';
 import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import { mentionsCompany, unknownVariables } from '~/lib/leadmaker/templates';
+
 import {
   RequestEstimateSchema,
   CampaignIdSchema,
@@ -17,6 +19,7 @@ import {
   buildFilters,
   buildTargeting,
 } from '../schema/campaign.schema';
+import { SaveCampaignTemplatesSchema } from '../schema/templates.schema';
 
 /** Échappe les jokers de LIKE (% et _) saisis par l'utilisateur. */
 function escapeLike(value: string) {
@@ -282,4 +285,83 @@ export const pauseCampaignAction = authActionClient
     revalidatePath('/home/[account]/campaigns', 'layout');
 
     return { success: true };
+  });
+
+/**
+ * Enregistre les messages d'une campagne. Contrôle bloquant : chaque message
+ * rempli doit mentionner la société de l'expéditeur (variable {my_company} ou
+ * nom en clair), pour que l'entreprise contactée sache qui lui écrit.
+ */
+export const saveCampaignTemplatesAction = authActionClient
+  .inputSchema(SaveCampaignTemplatesSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const campaign = await client
+      .from('lm_campaigns')
+      .select('id, space_id')
+      .eq('id', parsedInput.campaignId)
+      .maybeSingle();
+
+    if (campaign.error) throw campaign.error;
+
+    if (!campaign.data) {
+      throw new Error('outreach.messages.campaignNotFound');
+    }
+
+    const sender = await client
+      .from('lm_sender_profiles')
+      .select('company')
+      .eq('space_id', campaign.data.space_id)
+      .maybeSingle();
+
+    if (sender.error) throw sender.error;
+
+    // seuls les messages remplis sont conservés ; les cases vides sont ignorées
+    const messages = parsedInput.messages
+      .map((message, index) => ({
+        name: message.name || `Message ${index + 1}`,
+        subject: message.subject,
+        body: message.body,
+      }))
+      .filter((message) => message.body.trim() !== '');
+
+    const filled = [
+      ...messages,
+      ...(parsedInput.short.body.trim() ? [parsedInput.short] : []),
+    ];
+
+    for (const message of filled) {
+      if (unknownVariables(`${message.subject} ${message.body}`).length > 0) {
+        throw new Error('outreach.messages.unknownVariable');
+      }
+
+      if (!mentionsCompany(message.body, sender.data?.company ?? null)) {
+        throw new Error('outreach.messages.companyMissing');
+      }
+    }
+
+    const { error } = await client
+      .from('lm_campaigns')
+      .update({ templates: { messages, short: parsedInput.short } })
+      .eq('id', parsedInput.campaignId);
+
+    if (error) {
+      const logger = await getLogger();
+      logger.error(
+        {
+          name: 'leadmaker.campaigns.templates',
+          campaignId: parsedInput.campaignId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to save campaign templates',
+      );
+
+      throw new Error('outreach.messages.saveFailed');
+    }
+
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    return { success: true, count: filled.length };
   });

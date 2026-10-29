@@ -34,7 +34,9 @@ export async function loadCampaigns(client: Client, accountId: string) {
 export async function loadCampaign(client: Client, campaignId: string) {
   const { data, error } = await client
     .from('lm_campaigns')
-    .select('id, account_id, space_id, name, status, country_code, created_at')
+    .select(
+      'id, account_id, space_id, name, status, country_code, created_at, templates, auto_validation',
+    )
     .eq('id', campaignId)
     .maybeSingle();
 
@@ -43,4 +45,25 @@ export async function loadCampaign(client: Client, campaignId: string) {
   }
 
   return data;
+}
+
+/**
+ * Trois prospects récents de l'espace (avec site web) pour l'aperçu des
+ * messages. Null-safe : un espace vide renvoie une liste vide.
+ */
+export async function loadPreviewProspects(client: Client, spaceId: string) {
+  const { data, error } = await client
+    .from('lm_prospects')
+    .select('id, name, city, category, rating, review_count, website')
+    .eq('space_id', spaceId)
+    .is('excluded_at', null)
+    .not('website', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(3);
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
 }

@@ -1,4 +1,5 @@
 import {
+  Contact,
   CreditCard,
   FolderKanban,
   LayoutDashboard,
@@ -34,6 +35,11 @@ const getRoutes = (account: string) => [
         label: 'common.routes.prospects',
         path: createPath(pathsConfig.app.accountProspects, account),
         Icon: <UserSearch className={iconClasses} />,
+      },
+      {
+        label: 'common.routes.sender',
+        path: createPath(pathsConfig.app.accountSender, account),
+        Icon: <Contact className={iconClasses} />,
       },
     ],
   },

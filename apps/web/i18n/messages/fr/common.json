@@ -70,7 +70,9 @@
     "campaigns": "Campagnes",
     "prospects": "Prospects",
     "spaces": "Dossiers clients",
-    "new": "Nouvelle"
+    "new": "Nouvelle",
+    "sender": "Expéditeur",
+    "messages": "Messages"
   },
   "roles": {
     "owner": {

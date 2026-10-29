@@ -105,6 +105,7 @@ export function CampaignForm(props: {
       minReviews: 1,
       website: 'with' as const,
       excludePublic: true,
+      mainCategoryOnly: true,
       extraExclusions: '',
     },
   });
@@ -152,12 +153,18 @@ export function CampaignForm(props: {
     () => ({
       ...estimateFilters,
       exclude_public: values.excludePublic ?? true,
+      main_category_only: values.mainCategoryOnly ?? true,
       extra_exclusions: (values.extraExclusions ?? '')
         .split(',')
         .map((word) => word.trim())
         .filter(Boolean),
     }),
-    [estimateFilters, values.excludePublic, values.extraExclusions],
+    [
+      estimateFilters,
+      values.excludePublic,
+      values.mainCategoryOnly,
+      values.extraExclusions,
+    ],
   );
 
   // Les villes appartiennent à un pays : on les oublie quand il change.
@@ -786,6 +793,29 @@ function FiltersSection() {
                   ]}
                 />
               </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          name={'mainCategoryOnly'}
+          render={({ field }) => (
+            <FormItem>
+              <label
+                className={'flex cursor-pointer items-center gap-2 text-sm'}
+              >
+                <FormControl>
+                  <Checkbox
+                    data-test={'campaign-main-category-checkbox'}
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked)}
+                  />
+                </FormControl>
+
+                <Trans i18nKey={'campaigns.form.mainCategoryOnlyLabel'} />
+              </label>
 
               <FormMessage />
             </FormItem>

@@ -92,7 +92,8 @@
     "categoriesRequired": "Ajoutez au moins une activité.",
     "ratingRange": "La note maximale doit être supérieure ou égale à la note minimale.",
     "numberInvalid": "Indiquez un nombre.",
-    "numberOutOfRange": "Cette valeur n'est pas autorisée."
+    "numberOutOfRange": "Cette valeur n'est pas autorisée.",
+    "mainCategoryOnlyLabel": "Uniquement les entreprises dont c'est l'activité principale (recommandé)"
   },
   "estimate": {
     "title": "Estimation",

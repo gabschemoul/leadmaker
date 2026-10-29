@@ -530,6 +530,7 @@ begin
                                  'category', v_pick.label_en, 'zone', v_zone.label,
                                  'country_code', v_campaign.country_code,
                                  'latitude', v_zone.latitude, 'longitude', v_zone.longitude, 'zoom', v_zone.zoom,
+                                 'geoname_id', v_zone.geoname_id,
                                  'query', case when v_zone.latitude is null
                                                then v_pick.label_en || ' in ' || v_zone.label
                                                else v_pick.label_en end),

@@ -62,6 +62,7 @@ const CampaignFieldsSchema = z.object({
   minReviews: integer(0, 1_000_000),
   website: z.enum(['with', 'without', 'all']),
   excludePublic: z.boolean(),
+  mainCategoryOnly: z.boolean(),
   extraExclusions: z.string().max(2000),
 });
 
@@ -215,6 +216,7 @@ export function buildFilters(
     | 'minReviews'
     | 'website'
     | 'excludePublic'
+    | 'mainCategoryOnly'
     | 'extraExclusions'
   >,
 ) {
@@ -224,6 +226,7 @@ export function buildFilters(
     min_reviews: values.minReviews,
     website: values.website,
     exclude_public: values.excludePublic,
+    main_category_only: values.mainCategoryOnly,
     extra_exclusions: values.extraExclusions
       .split(',')
       .map((word) => word.trim())
@@ -253,6 +256,7 @@ export const RequestEstimateSchema = z.object({
   targeting: TargetingSchema,
   filters: EstimateFiltersSchema.extend({
     exclude_public: z.boolean(),
+    main_category_only: z.boolean(),
     extra_exclusions: z.array(z.string()).max(200),
   }),
 });

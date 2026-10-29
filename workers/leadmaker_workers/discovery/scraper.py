@@ -21,6 +21,24 @@ USER_AGENT = (
 )
 END_OF_LIST = re.compile(r"reached the end of the list|arrivé à la fin de la liste", re.I)
 PLACE_ID = re.compile(r"!1s(0x[0-9a-f]+:0x[0-9a-f]+)")
+COORDS = re.compile(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)")
+STATUS = re.compile(r"^(open|closed|opens|closes|temporarily|permanently|\d)", re.I)
+
+
+def card_category(text: str) -> str:
+    """Activité d'une carte de résultat : première partie d'une ligne « Activité · adresse »."""
+    for line in (text or "").split("\n"):
+        if "·" not in line:
+            continue
+        first = line.split("·")[0].strip()
+        if first and not STATUS.match(first) and not first.startswith(("$", "€", "£")):
+            return first
+    return ""
+
+
+def coords(href: str) -> tuple[float | None, float | None]:
+    m = COORDS.search(href or "")
+    return (float(m.group(1)), float(m.group(2))) if m else (None, None)
 
 
 class BlockedError(RuntimeError):
@@ -38,6 +56,10 @@ class Filters:
     exclude: Callable[[str, str, str], str | None] | None = None
     # site_seen(url) -> vrai si un prospect avec ce site existe déjà (un seul prospect par site)
     site_seen: Callable[[str], bool] | None = None
+    # in_area(place) -> vrai si l'entreprise est dans la zone ciblée (coordonnées du lien Google)
+    in_area: Callable[["Place"], bool] | None = None
+    # category_ok(activité) -> vrai si l'activité principale affichée est celle recherchée
+    category_ok: Callable[[str], bool] | None = None
 
 
 @dataclass
@@ -51,6 +73,9 @@ class Place:
     website: str = ""
     maps_url: str = ""
     place_id: str = field(default="")
+    latitude: float | None = None
+    longitude: float | None = None
+    card_category: str = ""  # activité affichée sur la carte de résultat (anglais)
 
 
 def _parse_float(txt: str | None) -> float | None:
@@ -182,6 +207,7 @@ class GMapsScraper:
                     star: star ? star.getAttribute('aria-label') : null,
                     star_text: star && star.parentElement ? star.parentElement.innerText : '',
                     site: site ? site.href : '',
+                    text: card.innerText || '',
                 };
             })"""
         )[:max_results]
@@ -259,10 +285,18 @@ class GMapsScraper:
                     return
                 rating = _parse_float(c["star"])
                 place = Place(name=c["name"], rating=rating, review_count=_parse_count(c["star_text"]),
-                              website=c["site"], maps_url=c["href"].split("?")[0])
+                              website=c["site"], maps_url=c["href"].split("?")[0],
+                              card_category=card_category(c.get("text", "")))
+                place.latitude, place.longitude = coords(c["href"])
                 m = PLACE_ID.search(c["href"])
                 place.place_id = m.group(1) if m else place.maps_url
 
+                if filters.in_area and not filters.in_area(place):
+                    yield "skip", place
+                    continue
+                if filters.category_ok and not filters.category_ok(place.card_category):
+                    yield "skip", place
+                    continue
                 if known and known(place):
                     yield "known", place
                     continue
@@ -330,7 +364,9 @@ class GMapsScraper:
             places = []
             for c in self._collect_cards(page, max_results):
                 place = Place(name=c["name"], rating=_parse_float(c["star"]), review_count=_parse_count(c["star_text"]),
-                              website=c["site"], maps_url=c["href"].split("?")[0])
+                              website=c["site"], maps_url=c["href"].split("?")[0],
+                              card_category=card_category(c.get("text", "")))
+                place.latitude, place.longitude = coords(c["href"])
                 m = PLACE_ID.search(c["href"])
                 place.place_id = m.group(1) if m else place.maps_url
                 places.append(place)

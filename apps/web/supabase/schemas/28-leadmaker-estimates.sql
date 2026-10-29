@@ -121,18 +121,19 @@ begin
   select p_account_id, 'estimate',
          jsonb_build_object('estimate_id', v_id, 'country_code', upper(p_country_code),
                             'latitude', s.latitude, 'longitude', s.longitude, 'zoom', s.zoom,
+                            'geoname_id', s.geoname_id, 'category', s.label_en,
                             'is_grid', s.latitude is not null,
                             'query', case when s.latitude is null then s.label_en || ' in ' || s.label else s.label_en end),
          'estimate:' || v_id || ':' || row_number() over (),
          10
     from (
-      select z.label, z.latitude, z.longitude, z.zoom, cat.label_en
+      select z.geoname_id, z.label, z.latitude, z.longitude, z.zoom, cat.label_en
         from public.lm_target_zones(p_country_code, p_targeting) z
        cross join public.lm_target_categories(p_targeting) c
         join public.lm_categories cat on cat.gcid = c.gcid
        where v_mode = 'exact'
       union all
-      select z.label, z.latitude, z.longitude, z.zoom,
+      select z.geoname_id, z.label, z.latitude, z.longitude, z.zoom,
              (select cat.label_en from public.lm_target_categories(p_targeting) c
                 join public.lm_categories cat on cat.gcid = c.gcid
                where z.label is not null

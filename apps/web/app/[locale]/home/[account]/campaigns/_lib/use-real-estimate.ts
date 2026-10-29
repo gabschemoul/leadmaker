@@ -14,6 +14,7 @@ export type RealEstimateFilters = {
   min_reviews: number;
   website: 'with' | 'without' | 'all';
   exclude_public: boolean;
+  main_category_only: boolean;
   extra_exclusions: string[];
 };
 

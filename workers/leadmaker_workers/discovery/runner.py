@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
 import re
 import time
@@ -28,6 +29,39 @@ def _exclude_fn(filters: dict[str, Any]):
         return None
     rx = re.compile("|".join(r"\b" + re.escape(normalize(w)) + r"\b" for w in extra))
     return lambda name, category, site: "mot-clé" if rx.search(normalize(f"{name} {category}")) else None
+
+
+def _distance_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    a = (math.sin(math.radians(lat2 - lat1) / 2) ** 2
+         + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(math.radians(lng2 - lng1) / 2) ** 2)
+    return 6371 * 2 * math.asin(math.sqrt(a))
+
+
+def _area_fn(conn: psycopg.Connection, geoname_id: int | None):
+    """Garde seulement les entreprises situées dans la ville ciblée (rayon selon sa taille, + 1,5 km de marge)."""
+    if not geoname_id:
+        return None
+    city = conn.execute(
+        "select latitude, longitude, population from public.lm_geo_cities where geoname_id = %s", (geoname_id,)
+    ).fetchone()
+    if not city:
+        return None
+    max_km = min(12.0, max(1.5, math.sqrt(city["population"] or 0) / 150.0)) + 1.5
+
+    def in_area(place: Place) -> bool:
+        if place.latitude is None or place.longitude is None:
+            return True
+        return _distance_km(city["latitude"], city["longitude"], place.latitude, place.longitude) <= max_km
+
+    return in_area
+
+
+def _category_fn(filters: dict[str, Any], label: str | None):
+    """Garde seulement les entreprises dont l'activité principale est celle recherchée (réglage par défaut)."""
+    if not label or not filters.get("main_category_only", True):
+        return None
+    wanted = normalize(label).strip()
+    return lambda category: not category or normalize(category).strip() == wanted
 
 
 class DiscoveryRunner:
@@ -78,6 +112,11 @@ class DiscoveryRunner:
                 "select public.lm_site_known(%s, %s) as k", (space_id, key)
             ).fetchone()["k"]
 
+        geoname_id = p.get("geoname_id") or (conn.execute(
+            "select geoname_id from public.lm_campaign_zones where campaign_id = %s and idx = %s",
+            (p["campaign_id"], p["zone_idx"]),
+        ).fetchone() or {}).get("geoname_id")
+        category_ok = _category_fn(f, p.get("category"))
         filters = Filters(
             rating_min=rating_min,
             rating_max=float(f.get("rating_max", 5)),
@@ -86,6 +125,8 @@ class DiscoveryRunner:
             website=f.get("website", "with"),
             exclude=_exclude_fn(f),
             site_seen=site_seen,
+            in_area=_area_fn(conn, geoname_id),
+            category_ok=category_ok,
         )
 
         started = time.monotonic()
@@ -104,6 +145,9 @@ class DiscoveryRunner:
                 continue
             new += 1
             if kind != "place":
+                continue
+            # La fiche ouverte confirme l'activité principale
+            if category_ok and obj.category and not category_ok(obj.category):
                 continue
             key = site_key(obj.website)
             if not key:
@@ -149,12 +193,18 @@ class DiscoveryRunner:
         min_reviews = int(f.get("min_reviews", 0))
         website = f.get("website", "all")
         exclude = _exclude_fn(f)
+        in_area = _area_fn(conn, p.get("geoname_id"))
+        category_ok = _category_fn(f, p.get("category"))
         center = None
         if p.get("latitude") is not None and p.get("longitude") is not None:
             center = (float(p["latitude"]), float(p["longitude"]), int(p.get("zoom") or 15))
         cards = self._scraper().list_cards(p["query"], p["country_code"], center=center)
         matching = []
         for c in cards:
+            if in_area and not in_area(c):
+                continue
+            if category_ok and not category_ok(c.card_category):
+                continue
             if c.rating is None:
                 if rating_min > 0:
                     continue

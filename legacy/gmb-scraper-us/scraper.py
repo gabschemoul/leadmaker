@@ -1,0 +1,272 @@
+"""Scraping des fiches Google Maps (Google My Business) avec Playwright — version US (Google Maps en anglais).
+
+Attention : le scraping de Google Maps est contraire aux CGU de Google. Utiliser des volumes
+raisonnables et des délais entre requêtes, sinon Google affiche des captchas ou bloque l'IP.
+"""
+from __future__ import annotations
+
+import random
+import re
+import time
+from dataclasses import dataclass, asdict, field
+from typing import Callable, Iterator
+from urllib.parse import quote_plus
+
+from playwright.sync_api import sync_playwright, Page, TimeoutError as PWTimeout
+
+# Sans un user-agent "normal", Google sert une vue limitée (pas de nombre d'avis).
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+)
+END_OF_LIST = re.compile(r"arrivé à la fin de la liste|reached the end of the list", re.I)
+PLACE_ID = re.compile(r"!1s(0x[0-9a-f]+:0x[0-9a-f]+)")
+
+
+@dataclass
+class Filters:
+    rating_min: float = 0.0
+    rating_max: float = 5.0
+    min_reviews: int = 0
+    include_unrated: bool = False
+    website: str = "all"  # "all" | "with" | "without"
+    # Écarter dès la liste (sans ouvrir la fiche) d'après la note et le bouton « Site Web » de la carte.
+    # Beaucoup plus rapide ; utilisé par le scan automatique.
+    card_prefilter: bool = False
+    # exclude(nom, categorie, site) -> raison ou None (établissements publics, banques…)
+    exclude: Callable[[str, str, str], str | None] | None = None
+    # site_seen(url) -> vrai si une fiche avec ce site web est déjà enregistrée (une seule fiche par site)
+    site_seen: Callable[[str], bool] | None = None
+
+
+@dataclass
+class Place:
+    nom: str
+    categorie: str = ""
+    note: float | None = None
+    nb_avis: int | None = None
+    adresse: str = ""
+    telephone: str = ""
+    site_web: str = ""
+    lien_maps: str = ""
+    recherche: str = ""
+    place_id: str = field(default="", repr=False)
+
+    def to_row(self) -> dict:
+        d = asdict(self)
+        d.pop("place_id")
+        return d
+
+
+def _parse_float(txt: str | None) -> float | None:
+    if not txt:
+        return None
+    m = re.search(r"(\d+[.,]\d+|\d+)", txt)
+    return float(m.group(1).replace(",", ".")) if m else None
+
+
+def _parse_count(txt: str | None) -> int | None:
+    if not txt:
+        return None
+    m = re.search(r"\(([\d\s  .,]+)\)", txt)
+    if not m:
+        return None
+    digits = re.sub(r"\D", "", m.group(1))
+    return int(digits) if digits else None
+
+
+def _rating_ok(note: float | None, f: Filters) -> bool:
+    if note is None:
+        return f.include_unrated
+    return f.rating_min <= note <= f.rating_max
+
+
+def _website_ok(site: str, f: Filters) -> bool:
+    if f.website == "with":
+        return bool(site)
+    if f.website == "without":
+        return not site
+    return True
+
+
+class GMapsScraper:
+    def __init__(self, headless: bool = True, delay: float = 1.5, stop_flag: Callable[[], bool] | None = None):
+        self.headless = headless
+        self.delay = delay
+        self.stop_flag = stop_flag or (lambda: False)
+        self._pw = self._browser = self._ctx = None
+
+    def __enter__(self):
+        self._pw = sync_playwright().start()
+        self._browser = self._pw.chromium.launch(headless=self.headless)
+        self._ctx = self._browser.new_context(
+            user_agent=USER_AGENT, locale="en-US", timezone_id="America/New_York", viewport={"width": 1300, "height": 900}
+        )
+        return self
+
+    def __exit__(self, *exc):
+        for obj in (self._ctx, self._browser):
+            try:
+                obj.close()
+            except Exception:
+                pass
+        if self._pw:
+            self._pw.stop()
+
+    def _sleep(self, factor: float = 1.0):
+        time.sleep(self.delay * factor * random.uniform(0.7, 1.3))
+
+    @staticmethod
+    def _accept_consent(page: Page):
+        if "consent." not in page.url:
+            return
+        btn = page.get_by_role("button", name=re.compile(r"Tout refuser|Reject all|Tout accepter|Accept all", re.I))
+        btn.first.click()
+        page.wait_for_load_state("domcontentloaded")
+
+    def _collect_cards(self, page: Page, max_results: int) -> list[dict]:
+        feed = page.locator('div[role="feed"]')
+        stale = 0
+        last = 0
+        while not self.stop_flag():
+            count = feed.locator('a[href*="/maps/place/"]').count()
+            if count >= max_results:
+                break
+            if END_OF_LIST.search(feed.inner_text()):
+                break
+            stale = stale + 1 if count == last else 0
+            if stale >= 4:
+                break
+            last = count
+            feed.evaluate("el => el.scrollBy(0, el.scrollHeight)")
+            self._sleep(0.8)
+
+        return feed.evaluate(
+            """el => [...el.querySelectorAll('a[href*="/maps/place/"]')].map(a => {
+                const card = a.parentElement;
+                const star = card.querySelector('span[role="img"][aria-label*="toile"], span[role="img"][aria-label*="star"]');
+                const site = card.querySelector('a[data-value="Site Web"], a[data-value="Website"]');
+                return {
+                    nom: a.getAttribute('aria-label') || '',
+                    href: a.href,
+                    star: star ? star.getAttribute('aria-label') : null,
+                    star_text: star && star.parentElement ? star.parentElement.innerText : '',
+                    site: site ? site.href : '',
+                };
+            })"""
+        )[:max_results]
+
+    def _scrape_detail(self, page: Page, url: str, place: Place):
+        page.goto(url, wait_until="domcontentloaded")
+        try:
+            page.wait_for_selector("h1", timeout=15000)
+        except PWTimeout:
+            return
+        page.wait_for_timeout(800)
+        data = page.evaluate(
+            """() => {
+                const q = s => document.querySelector(s);
+                const lbl = s => { const e = q(s); return e ? (e.getAttribute('aria-label') || '') : ''; };
+                const rating = q('div.F7nice');
+                const site = q('a[data-item-id="authority"]');
+                const cat = q('button.DkEaL');
+                return {
+                    nom: (q('h1.DUwDvf') || q('h1') || {}).innerText || '',
+                    rating_text: rating ? rating.parentElement.innerText : '',
+                    categorie: cat ? cat.innerText : '',
+                    adresse: lbl('button[data-item-id="address"]'),
+                    telephone: lbl('button[data-item-id^="phone:tel:"]'),
+                    site: site ? site.href : '',
+                };
+            }"""
+        )
+        place.nom = data["nom"].strip() or place.nom
+        place.categorie = data["categorie"].strip()
+        place.adresse = re.sub(r"^\s*(Adresse|Address)\s*:\s*", "", data["adresse"]).strip()
+        place.telephone = re.sub(r"^.*?:\s*", "", data["telephone"]).strip()
+        place.site_web = data["site"] or place.site_web
+        if data["rating_text"]:
+            place.note = _parse_float(data["rating_text"].split("\n")[0]) or place.note
+            place.nb_avis = _parse_count(data["rating_text"]) or place.nb_avis
+
+    def search(self, query: str, filters: Filters, max_results: int = 60,
+               known: Callable[[str], bool] | None = None) -> Iterator[tuple[str, object]]:
+        """Génère des événements ("info", str) | ("place", Place) | ("skip", Place) | ("known", Place).
+
+        `known(place_id)` : si vrai, la fiche a déjà été traitée et n'est pas rouverte.
+        """
+        page = self._ctx.new_page()
+        detail = self._ctx.new_page()
+        try:
+            page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}?hl=en&gl=us", wait_until="domcontentloaded")
+            self._accept_consent(page)
+            if "/sorry/" in page.url:
+                raise RuntimeError("Google a bloqué la requête (captcha). Attends un peu, augmente le délai ou change d'IP.")
+
+            try:
+                page.wait_for_selector('div[role="feed"], h1.DUwDvf', timeout=20000)
+            except PWTimeout:
+                yield "info", f"Aucun résultat pour « {query} »"
+                return
+
+            if page.locator('div[role="feed"]').count() == 0:
+                # Un seul résultat : Google ouvre directement la fiche.
+                cards = [{"nom": "", "href": page.url, "star": None, "star_text": "", "site": "", "single": True}]
+            else:
+                cards = self._collect_cards(page, max_results)
+            yield "info", f"« {query} » : {len(cards)} fiches trouvées"
+
+            for c in cards:
+                if self.stop_flag():
+                    return
+                note = _parse_float(c["star"])
+                place = Place(
+                    nom=c["nom"], note=note, nb_avis=_parse_count(c["star_text"]),
+                    site_web=c["site"], lien_maps=c["href"].split("?")[0], recherche=query,
+                )
+                m = PLACE_ID.search(c["href"])
+                place.place_id = m.group(1) if m else place.lien_maps
+
+                if known and known(place.place_id):
+                    yield "known", place
+                    continue
+                if filters.exclude and filters.exclude(place.nom, "", place.site_web):
+                    yield "skip", place
+                    continue
+                if filters.site_seen and place.site_web and filters.site_seen(place.site_web):
+                    yield "skip", place
+                    continue
+
+                # Pré-filtrage sur la liste pour ne pas ouvrir les fiches inutiles.
+                if note is not None and not _rating_ok(note, filters):
+                    yield "skip", place
+                    continue
+                if filters.card_prefilter and not c.get("single"):
+                    if (note is None and not filters.include_unrated) or not _website_ok(c["site"], filters):
+                        yield "skip", place
+                        continue
+                    if filters.min_reviews and place.nb_avis is not None and place.nb_avis < filters.min_reviews:
+                        yield "skip", place
+                        continue
+
+                self._scrape_detail(detail, c["href"], place)
+                if "/sorry/" in detail.url:
+                    raise RuntimeError("Google a bloqué la requête (captcha).")
+                self._sleep()
+
+                if not _rating_ok(place.note, filters) or not _website_ok(place.site_web, filters):
+                    yield "skip", place
+                    continue
+                if filters.exclude and filters.exclude(place.nom, place.categorie, place.site_web):
+                    yield "skip", place
+                    continue
+                if filters.site_seen and place.site_web and filters.site_seen(place.site_web):
+                    yield "skip", place
+                    continue
+                if filters.min_reviews and (place.nb_avis or 0) < filters.min_reviews:
+                    yield "skip", place
+                    continue
+                yield "place", place
+        finally:
+            page.close()
+            detail.close()

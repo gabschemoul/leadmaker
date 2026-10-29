@@ -1,0 +1,6 @@
+.venv/
+credentials.json
+.settings.json
+__pycache__/
+data/scan.db*
+data/scan*.log*

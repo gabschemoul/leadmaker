@@ -52,3 +52,12 @@ node-compile-cache/
 # prds
 .prds/
 .bug-hunt/
+# LeadMaker — secrets et artefacts locaux
+credentials.json
+.settings.json
+*.db
+*.db-wal
+*.db-shm
+.venv/
+__pycache__/
+*.pyc

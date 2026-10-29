@@ -102,10 +102,11 @@
       "validated": "Validés",
       "preparing": "En préparation",
       "no_form": "Sans formulaire",
-      "unreachable": "Inaccessibles",
+      "unreachable": "Inaccessibles / échecs",
       "skipped": "Passés",
       "sent": "Envoyés",
-      "excluded": "Exclus"
+      "excluded": "Exclus",
+      "to_verify": "À vérifier"
     },
     "status": {
       "pending": "En attente",
@@ -127,13 +128,14 @@
       "ready": "Le formulaire est rempli. Vérifiez la capture et le message, puis validez.",
       "incomplete": "Le site demande une information que le robot n'a pas : ouvrez le formulaire et renseignez-la.",
       "intervention_required": "Le site est protégé par un captcha. Le robot ne l'a pas résolu : vous pouvez envoyer à la main depuis le site.",
-      "validated": "Validés par vous. L'envoi arrive à la prochaine étape.",
+      "validated": "Validés par vous. Le robot les envoie dans la journée, dans la limite quotidienne de la campagne et du forfait.",
       "preparing": "Le robot travaille. Cette liste se met à jour toute seule.",
       "no_form": "Aucun formulaire de contact trouvé. Quand une adresse email a été repérée sur le site, elle est notée sur le prospect.",
-      "unreachable": "Site injoignable ou erreur. Vous pouvez relancer la préparation depuis la page Prospects.",
+      "unreachable": "Site injoignable, erreur, ou envoi qui a échoué. Vous pouvez relancer la préparation depuis la page Prospects.",
       "skipped": "Formulaires passés sans envoi.",
-      "sent": "Formulaires envoyés.",
-      "excluded": "Entreprises à ne jamais contacter."
+      "sent": "Formulaires envoyés (confirmation vue sur le site). Un crédit d'envoi a été débité par formulaire.",
+      "excluded": "Entreprises à ne jamais contacter.",
+      "to_verify": "Le robot a cliqué sur Envoyer mais n'a pas vu de confirmation claire. Regardez la capture après envoi et tranchez : bien arrivé ou pas arrivé."
     },
     "columns": {
       "company": "Entreprise",
@@ -155,7 +157,9 @@
       "none": "Tout désélectionner",
       "validate": "Valider",
       "skip": "Passer",
-      "exclude": "Ne jamais contacter"
+      "exclude": "Ne jamais contacter",
+      "markSent": "Bien arrivé",
+      "markFailed": "Pas arrivé"
     },
     "warningBadge": "Alerte",
     "missingBadge": "{count, plural, one {# champ manquant} other {# champs manquants}}",
@@ -178,7 +182,13 @@
       "excludeTitle": "Ne plus jamais contacter {count, plural, one {cette entreprise} other {ces # entreprises}} ?",
       "excludeDescription": "Leur site rejoint la liste d'opposition du dossier : elles ne seront plus contactées.",
       "excludeSubmit": "Ne jamais contacter",
-      "working": "En cours…"
+      "working": "En cours…",
+      "markSentTitle": "Marquer {count, plural, one {ce formulaire} other {ces # formulaires}} comme bien arrivé ?",
+      "markSentDescription": "Ils passeront dans « Envoyés ».",
+      "markSentSubmit": "Bien arrivé",
+      "markFailedTitle": "Marquer {count, plural, one {ce formulaire} other {ces # formulaires}} comme pas arrivé ?",
+      "markFailedDescription": "Ils passeront dans « Inaccessibles / échecs ». Vous pourrez relancer la préparation plus tard.",
+      "markFailedSubmit": "Pas arrivé"
     },
     "actions": {
       "validateDone": "{count, plural, =0 {Aucun formulaire validé.} one {# formulaire validé.} other {# formulaires validés.}}",
@@ -187,7 +197,10 @@
       "validateIncomplete": "Renseignez d'abord les champs manquants des formulaires « À compléter ».",
       "failed": "L'action a échoué. Réessayez dans un instant.",
       "updated": "Formulaire enregistré.",
-      "updateFailed": "Le formulaire n'a pas pu être enregistré (déjà validé ou envoyé ?)."
+      "updateFailed": "Le formulaire n'a pas pu être enregistré (déjà validé ou envoyé ?).",
+      "markSentDone": "{count, plural, =0 {Aucun formulaire modifié.} one {# formulaire marqué bien arrivé.} other {# formulaires marqués bien arrivés.}}",
+      "markFailedDone": "{count, plural, =0 {Aucun formulaire modifié.} one {# formulaire marqué pas arrivé.} other {# formulaires marqués pas arrivés.}}",
+      "markDone": "{count, plural, =0 {Aucun formulaire modifié.} one {Formulaire mis à jour.} other {# formulaires mis à jour.}}"
     },
     "detail": {
       "title": "Formulaire de {name}",
@@ -201,7 +214,8 @@
       "template": "Message utilisé :",
       "save": "Enregistrer",
       "saveAndValidate": "Enregistrer et valider",
-      "close": "Fermer"
+      "close": "Fermer",
+      "screenshotAfter": "Capture après envoi"
     },
     "prepare": {
       "button": "Préparer les formulaires",
@@ -219,6 +233,7 @@
       "capReached": "Vous avez déjà beaucoup de formulaires prêts à valider. Validez-les ou passez-les avant d'en préparer d'autres.",
       "failed": "La préparation n'a pas pu être lancée. Réessayez dans un instant."
     },
-    "preparingBanner": "Le robot travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page."
+    "preparingBanner": "Le robot travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page.",
+    "balance": "Crédits d'envoi restants : {count, number}."
   }
 }

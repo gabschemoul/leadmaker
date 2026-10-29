@@ -51,11 +51,16 @@ def run_prepare(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
     return prepare_runner().run(task, conn)
 
 
+def run_send(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
+    return prepare_runner().send(task, conn)
+
+
 HANDLERS = {
     "dummy": run_dummy,
     "discovery": run_discovery,
     "estimate": run_estimate,
     "prepare": run_prepare,
+    "send": run_send,
 }
 
 
@@ -69,7 +74,7 @@ def run(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
 def on_final_failure(task: Task, conn: psycopg.Connection) -> None:
     if task.kind in ("discovery", "estimate"):
         discovery_runner().on_final_failure(task, conn)
-    elif task.kind == "prepare":
+    elif task.kind in ("prepare", "send"):
         prepare_runner().on_final_failure(task, conn)
 
 

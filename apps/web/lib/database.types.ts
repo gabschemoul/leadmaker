@@ -1227,10 +1227,16 @@ isOneToOne: false
 "lm_finish_search":
 { Args: { "p_campaign_id": string,"p_cards": number,"p_duration_ms": number,"p_error"?: string,"p_gcid": string,"p_kept": number,"p_new": number,"p_zone_idx": number }; Returns: undefined
                            },
+"lm_finish_send":
+{ Args: { "p_attempt_id": string,"p_result": Json }; Returns: boolean
+                           },
 "lm_import_prospects":
 { Args: { "p_rows": Json,"p_space_id": string }; Returns: {
               "duplicates": number,"inserted": number
             }[]
+                           },
+"lm_mark_attempts":
+{ Args: { "p_ids": (string)[],"p_outcome": string }; Returns: number
                            },
 "lm_mark_place_seen":
 { Args: { "p_place_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
@@ -1252,6 +1258,9 @@ isOneToOne: false
 { Args: { "p_space_id": string }; Returns: {
               "kind": string,"total": number,"value": string
             }[]
+                           },
+"lm_queue_sends":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "lm_rating_share":
 { Args: { "p_max": number,"p_min": number }; Returns: number
@@ -1282,6 +1291,9 @@ isOneToOne: false
                            },
 "lm_seat_limit":
 { Args: { "p_account_id": string }; Returns: number
+                           },
+"lm_sends_today":
+{ Args: { "p_campaign_id": string }; Returns: number
                            },
 "lm_site_known":
 { Args: { "p_site_key": string,"p_space_id": string }; Returns: boolean

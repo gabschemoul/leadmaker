@@ -82,7 +82,93 @@ def run_site_job(job: dict, timeout: int) -> dict | None:
     return json.loads(lines[-1])
 
 
+def _load_context(conn: psycopg.Connection, row: dict):
+    """Prospect, expéditeur, campagne et expéditeur prêt pour le navigateur (None si incomplet)."""
+    prospect = conn.execute(
+        "select name, city, category, rating, review_count, website from public.lm_prospects where id = %s",
+        (row["prospect_id"],),
+    ).fetchone()
+    sender = conn.execute(
+        """select civility, first_name, last_name, job_title, company, email, phone, website, address, zip, city, country_code
+             from public.lm_sender_profiles where space_id = %s""",
+        (row["space_id"],),
+    ).fetchone()
+    campaign = conn.execute(
+        "select templates, country_code from public.lm_campaigns where id = %s", (row["campaign_id"],)
+    ).fetchone()
+    if not prospect or not sender or not campaign:
+        return None
+    country = sender["country_code"] or campaign["country_code"]
+    english = (conn.execute("select name from public.lm_country_coverage where country_code = %s", (country,)).fetchone()
+               or {}).get("name")
+    names = list(dict.fromkeys(COUNTRY_NAMES.get(country, []) + ([english] if english else [])))
+    sender_job = {
+        "first_name": sender["first_name"], "last_name": sender["last_name"], "company": sender["company"],
+        "email": sender["email"], "phone": sender["phone"] or "", "website": sender["website"] or "",
+        "city": sender["city"] or "", "zip": sender["zip"] or "", "address": sender["address"] or "",
+        "job_title": sender["job_title"] or "", "civility": sender["civility"] or "", "country_names": names,
+    }
+    return prospect, dict(sender), campaign, sender_job
+
+
 class PrepareRunner:
+    def send(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
+        """Envoi d'une tentative validée. Jamais deux fois : une tentative déjà « en envoi » passe « à vérifier »."""
+        attempt_id = task.payload["attempt_id"]
+        row = conn.execute(
+            """update public.lm_attempts a set status = 'sending'
+                where a.id = %s and a.status = 'validated'
+            returning a.id, a.account_id, a.space_id, a.campaign_id, a.prospect_id, a.extra, a.subject, a.body,
+                      a.form_url, a.template_used""",
+            (attempt_id,),
+        ).fetchone()
+        if not row:
+            current = conn.execute("select status from public.lm_attempts where id = %s", (attempt_id,)).fetchone()
+            if current and current["status"] == "sending":
+                conn.execute("select public.lm_finish_send(%s, %s)", (attempt_id, Jsonb(
+                    {"status": "to_verify", "submitted": False,
+                     "detail": "envoi interrompu : vérifiez sur le site si le message est parti"})))
+            return {"skipped": "tentative non validée"}
+
+        ctx = _load_context(conn, row)
+        if not ctx:
+            conn.execute("select public.lm_finish_send(%s, %s)", (attempt_id, Jsonb(
+                {"status": "failed", "submitted": False, "detail": "prospect, expéditeur ou campagne introuvable"})))
+            return {"status": "failed"}
+        prospect, sender_dict, campaign, sender_job = ctx
+        messages, short = parse_templates(campaign["templates"])
+        short_t = short_version(messages, short)
+        short_body = render(short_t["body"], prospect, sender_dict) if short_t else ""
+        job = {
+            "mode": "send", "site": prospect["website"], "form_url": row["form_url"], "subject": row["subject"] or "",
+            "body": row["body"] or "", "short_body": short_body if row["template_used"] != (short_t or {}).get("name") else "",
+            "extra": row["extra"] or {}, "locale": LOCALES.get(campaign["country_code"], "en-US"),
+            "headless": os.environ.get("HEADLESS", "true").lower() != "false", "sender": sender_job,
+        }
+        started = time.monotonic()
+        result = run_site_job(job, _timeout())
+        if result is None:
+            result = {"status": "to_verify", "submitted": True,
+                      "detail": f"envoi bloqué plus de {_timeout()} s : vérifiez sur le site si le message est parti"}
+        shot = None
+        if result.get("screenshot_b64"):
+            try:
+                shot = upload_png(f"{row['account_id']}/{attempt_id}-after.png", base64.b64decode(result["screenshot_b64"]))
+            except Exception as exc:
+                log.warning("capture après envoi non enregistrée pour %s : %s", attempt_id, exc)
+        finish = {
+            "status": result["status"], "submitted": bool(result.get("submitted")), "detail": result.get("detail") or None,
+            "protection_type": result.get("protection_type"), "screenshot_after": shot,
+            "missing": result.get("missing") if result.get("status") == "incomplete" else None,
+        }
+        if result.get("short") and short_t:
+            finish.update(template_used=short_t["name"], body=short_body,
+                          subject=render(short_t["subject"], prospect, sender_dict))
+        conn.execute("select public.lm_finish_send(%s, %s)", (attempt_id, Jsonb(finish)))
+        log.info("ENVOI %s → %s (%.1fs) %s", prospect["website"], result["status"], time.monotonic() - started,
+                 (result.get("detail") or "")[:120])
+        return {"status": result["status"], "submitted": finish["submitted"]}
+
     def run(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
         attempt_id = task.payload["attempt_id"]
         row = conn.execute(
@@ -176,6 +262,11 @@ class PrepareRunner:
         return {"status": result["status"], "found_email": result.get("found_email")}
 
     def on_final_failure(self, task: Task, conn: psycopg.Connection) -> None:
+        if task.kind == "send":
+            # on ne sait pas si le message est parti : jamais de nouvel essai automatique
+            conn.execute("select public.lm_finish_send(%s, %s)", (task.payload["attempt_id"], Jsonb(
+                {"status": "to_verify", "submitted": False, "detail": "erreur du robot pendant l'envoi : vérifiez sur le site"})))
+            return
         conn.execute("select public.lm_finish_prepare(%s, %s)",
                      (task.payload["attempt_id"], Jsonb({"status": "failed", "detail": "erreur répétée du worker"})))
 

@@ -17,7 +17,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 from ..discovery.scraper import USER_AGENT, _proxy_settings
-from .formfill import Sender, SiteDown, best_email, detect_protection, fill_form, open_contact_form
+from .formfill import Sender, SiteDown, best_email, detect_protection, fill_form, open_contact_form, submit
 
 BLOCKED_RESOURCES = ("media", "font")  # les images restent : elles comptent dans la capture
 
@@ -82,11 +82,65 @@ def prepare(job: dict) -> dict:
     return out
 
 
+def send(job: dict) -> dict:
+    """Rouvre le formulaire validé, le remplit à nouveau (avec les valeurs saisies à la main) et l'envoie."""
+    sender = Sender(**job["sender"])
+    out: dict = {"status": "failed", "submitted": False, "filled": {}, "missing": [], "detail": ""}
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=job.get("headless", True), proxy=_proxy_settings())
+        ctx = browser.new_context(user_agent=USER_AGENT, locale=job.get("locale", "en-US"),
+                                  viewport={"width": 1280, "height": 900})
+        ctx.set_default_timeout(15000)
+        page = ctx.new_page()
+        try:
+            frame = open_contact_form(page, job.get("form_url") or job["site"])
+            if not frame and job.get("form_url"):
+                frame = open_contact_form(page, job["site"])
+            if not frame:
+                out.update(status="failed", detail="formulaire introuvable au moment de l'envoi")
+            else:
+                r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
+                              short_message=job.get("short_body", ""))
+                protection = r.protection or detect_protection(frame)
+                if protection:
+                    out.update(status="intervention_required", protection_type=protection,
+                               detail=f"protection anti-robot au moment de l'envoi : {protection}",
+                               screenshot_b64=_screenshot(page, frame))
+                elif r.status == "error":
+                    out.update(status="failed", detail=r.detail or "formulaire non rempli")
+                elif r.missing:  # le site refuserait l'envoi : retour « à compléter »
+                    out.update(status="incomplete", missing=r.missing,
+                               detail="; ".join(["champs à renseigner avant envoi"] + r.warnings))
+                else:
+                    out["submitted"] = True
+                    ok, detail = submit(frame)
+                    status = {True: "sent", False: "to_verify", None: "failed"}[ok]
+                    out.update(status=status, detail=detail, short=r.short, filled=r.filled,
+                               screenshot_b64=_screenshot(page, frame))
+        except SiteDown as e:
+            out.update(status="failed", detail=f"site hors ligne (« {e} »)")
+        except Exception as e:
+            if out["submitted"]:  # erreur après le clic : on ne sait pas si c'est parti
+                out.update(status="to_verify", detail=f"erreur après l'envoi : {type(e).__name__}")
+            else:
+                out.update(status="failed", detail=f"site inaccessible : {type(e).__name__}: {str(e)[:150]}")
+        finally:
+            try:
+                ctx.close()
+                browser.close()
+            except Exception:
+                pass
+    return out
+
+
 def main() -> None:
     job = json.loads(sys.stdin.read())
-    if job.get("mode") != "prepare":
+    if job.get("mode") == "send":
+        result = send(job)
+    elif job.get("mode") == "prepare":
+        result = prepare(job)
+    else:
         raise SystemExit("mode inconnu")
-    result = prepare(job)
     sys.stdout.write("\n" + json.dumps(result, ensure_ascii=False) + "\n")
     sys.stdout.flush()
 

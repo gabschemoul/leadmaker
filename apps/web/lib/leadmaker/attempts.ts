@@ -12,7 +12,8 @@ export const ATTEMPT_GROUPS = {
   no_form: ['no_form'],
   unreachable: ['unreachable', 'failed'],
   skipped: ['skipped'],
-  sent: ['sending', 'sent', 'to_verify'],
+  to_verify: ['to_verify'],
+  sent: ['sending', 'sent'],
   excluded: ['excluded'],
 } as const satisfies Record<string, readonly AttemptStatus[]>;
 
@@ -28,6 +29,8 @@ export const ALWAYS_VISIBLE_GROUPS: AttemptGroup[] = [
   'incomplete',
   'intervention_required',
   'validated',
+  'to_verify',
+  'sent',
 ];
 
 export function isAttemptGroup(value: unknown): value is AttemptGroup {

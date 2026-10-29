@@ -50,6 +50,8 @@ def main() -> None:
                 last_housekeeping = time.monotonic()
             if "discovery" in kinds:
                 conn.execute("select public.lm_schedule_discovery()")
+            if "send" in kinds:
+                conn.execute("select public.lm_queue_sends()")
             task = queue.claim(conn, kinds, worker)
         except Exception:
             log.exception("file injoignable, nouvel essai dans %ss", idle)

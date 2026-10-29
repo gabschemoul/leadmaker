@@ -102,10 +102,11 @@
       "validated": "Validated",
       "preparing": "Preparing",
       "no_form": "No form",
-      "unreachable": "Unreachable",
+      "unreachable": "Unreachable / failed",
       "skipped": "Skipped",
       "sent": "Sent",
-      "excluded": "Excluded"
+      "excluded": "Excluded",
+      "to_verify": "To verify"
     },
     "status": {
       "pending": "Pending",
@@ -127,13 +128,14 @@
       "ready": "The form is filled in. Check the screenshot and the message, then validate.",
       "incomplete": "The site asks for something the robot does not have: open the form and fill it in.",
       "intervention_required": "The site is protected by a captcha. The robot did not solve it: you can send by hand from the site.",
-      "validated": "Validated by you. Sending comes at the next step.",
+      "validated": "Validated by you. The robot sends them during the day, within the campaign's and plan's daily limit.",
       "preparing": "The robot is working. This list refreshes by itself.",
       "no_form": "No contact form found. When an email address was spotted on the site, it is saved on the prospect.",
-      "unreachable": "Site unreachable or error. You can relaunch the preparation from the Prospects page.",
+      "unreachable": "Site unreachable, error, or a send that failed. You can relaunch the preparation from the Prospects page.",
       "skipped": "Forms skipped without sending.",
-      "sent": "Forms sent.",
-      "excluded": "Businesses never to contact."
+      "sent": "Forms sent (confirmation seen on the site). One sending credit was debited per form.",
+      "excluded": "Businesses never to contact.",
+      "to_verify": "The robot clicked Send but saw no clear confirmation. Look at the after-send screenshot and decide: delivered or not."
     },
     "columns": {
       "company": "Business",
@@ -155,7 +157,9 @@
       "none": "Deselect all",
       "validate": "Validate",
       "skip": "Skip",
-      "exclude": "Never contact"
+      "exclude": "Never contact",
+      "markSent": "Delivered",
+      "markFailed": "Not delivered"
     },
     "warningBadge": "Alert",
     "missingBadge": "{count, plural, one {# missing field} other {# missing fields}}",
@@ -178,7 +182,13 @@
       "excludeTitle": "Never contact {count, plural, one {this business} other {these # businesses}} again?",
       "excludeDescription": "Their site joins the folder's suppression list: they will not be contacted again.",
       "excludeSubmit": "Never contact",
-      "working": "Working…"
+      "working": "Working…",
+      "markSentTitle": "Mark {count, plural, one {this form} other {these # forms}} as delivered?",
+      "markSentDescription": "They will move to “Sent”.",
+      "markSentSubmit": "Delivered",
+      "markFailedTitle": "Mark {count, plural, one {this form} other {these # forms}} as not delivered?",
+      "markFailedDescription": "They will move to “Unreachable / failed”. You can relaunch the preparation later.",
+      "markFailedSubmit": "Not delivered"
     },
     "actions": {
       "validateDone": "{count, plural, =0 {No form validated.} one {# form validated.} other {# forms validated.}}",
@@ -187,7 +197,10 @@
       "validateIncomplete": "Fill in the missing fields of the “To complete” forms first.",
       "failed": "The action failed. Please try again shortly.",
       "updated": "Form saved.",
-      "updateFailed": "The form could not be saved (already validated or sent?)."
+      "updateFailed": "The form could not be saved (already validated or sent?).",
+      "markSentDone": "{count, plural, =0 {No form changed.} one {# form marked delivered.} other {# forms marked delivered.}}",
+      "markFailedDone": "{count, plural, =0 {No form changed.} one {# form marked not delivered.} other {# forms marked not delivered.}}",
+      "markDone": "{count, plural, =0 {No form changed.} one {Form updated.} other {# forms updated.}}"
     },
     "detail": {
       "title": "Form for {name}",
@@ -201,7 +214,8 @@
       "template": "Message used:",
       "save": "Save",
       "saveAndValidate": "Save and validate",
-      "close": "Close"
+      "close": "Close",
+      "screenshotAfter": "Screenshot after sending"
     },
     "prepare": {
       "button": "Prepare forms",
@@ -219,6 +233,7 @@
       "capReached": "You already have many forms ready to validate. Validate or skip them before preparing more.",
       "failed": "The preparation could not be started. Please try again shortly."
     },
-    "preparingBanner": "The robot is working: {count, plural, one {# form being prepared} other {# forms being prepared}} (about a minute per site). Results land in the tabs below without reloading the page."
+    "preparingBanner": "The robot is working: {count, plural, one {# form being prepared} other {# forms being prepared}} (about a minute per site). Results land in the tabs below without reloading the page.",
+    "balance": "Sending credits left: {count, number}."
   }
 }

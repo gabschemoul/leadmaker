@@ -8,6 +8,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
   AttemptIdsSchema,
+  MarkAttemptsSchema,
   UpdateAttemptSchema,
 } from '../schema/forms-actions.schema';
 
@@ -133,4 +134,30 @@ export const updateAttemptAction = authActionClient
     revalidateForms();
 
     return { validated };
+  });
+
+/** Formulaires « à vérifier » : l'utilisateur confirme (envoyé) ou infirme (échec) l'envoi. */
+export const markAttemptsAction = authActionClient
+  .inputSchema(MarkAttemptsSchema)
+  .action(async ({ parsedInput: { accountId, ids, outcome }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client.rpc('lm_mark_attempts', {
+      p_ids: ids,
+      p_outcome: outcome,
+    });
+
+    if (error) {
+      const logger = await getLogger();
+      logger.error(
+        { name: 'leadmaker.forms.mark', accountId, userId: ctx.user.id, error },
+        'Marking attempts failed',
+      );
+
+      throw new Error('outreach.forms.actions.failed');
+    }
+
+    revalidateForms();
+
+    return { count: data ?? 0 };
   });

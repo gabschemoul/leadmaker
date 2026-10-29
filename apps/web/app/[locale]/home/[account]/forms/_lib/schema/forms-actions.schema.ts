@@ -30,3 +30,8 @@ export const UpdateAttemptSchema = AttemptEditFormSchema.extend({
   /** valider dans la foulée */
   validate: z.boolean(),
 });
+
+/** « À vérifier » tranché à la main : bien arrivé ou pas arrivé. */
+export const MarkAttemptsSchema = AttemptIdsSchema.extend({
+  outcome: z.enum(['sent', 'failed']),
+});

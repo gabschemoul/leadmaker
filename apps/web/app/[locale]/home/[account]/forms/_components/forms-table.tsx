@@ -9,6 +9,8 @@ import {
   Check,
   ExternalLink,
   SkipForward,
+  ThumbsDown,
+  ThumbsUp,
   TriangleAlert,
   X,
 } from 'lucide-react';
@@ -49,13 +51,19 @@ import {
 import type { AttemptRow } from '../_lib/server/forms.loader';
 import {
   excludeAttemptsAction,
+  markAttemptsAction,
   skipAttemptsAction,
   validateAttemptsAction,
 } from '../_lib/server/server-actions';
 import { AttemptDetailDialog } from './attempt-detail-dialog';
 import { FormsLiveRefresh } from './forms-live-refresh';
 
-type BulkOperation = 'validate' | 'skip' | 'exclude';
+type BulkOperation =
+  | 'validate'
+  | 'skip'
+  | 'exclude'
+  | 'markSent'
+  | 'markFailed';
 
 const STATUS_STYLE: Record<string, string> = {
   ready: badgeExtras.success,
@@ -101,7 +109,8 @@ export function FormsTable(props: {
     'unreachable',
     'preparing',
   ].includes(props.group);
-  const canExclude = !['sent', 'excluded'].includes(props.group);
+  const canExclude = !['sent', 'excluded', 'to_verify'].includes(props.group);
+  const canMark = props.group === 'to_verify';
 
   const ids = [...selection].filter((id) =>
     props.rows.some((row) => row.id === id),
@@ -142,12 +151,23 @@ export function FormsTable(props: {
     validate: useAction(validateAttemptsAction, callbacks('validate')),
     skip: useAction(skipAttemptsAction, callbacks('skip')),
     exclude: useAction(excludeAttemptsAction, callbacks('exclude')),
+    markSent: useAction(markAttemptsAction, callbacks('markSent')),
+    markFailed: useAction(markAttemptsAction, callbacks('markFailed')),
   };
 
-  const isPending =
-    actions.validate.isPending ||
-    actions.skip.isPending ||
-    actions.exclude.isPending;
+  const isPending = Object.values(actions).some((action) => action.isPending);
+
+  const run = (operation: BulkOperation) => {
+    const input = { accountId: props.accountId, ids };
+
+    if (operation === 'markSent') {
+      actions.markSent.execute({ ...input, outcome: 'sent' });
+    } else if (operation === 'markFailed') {
+      actions.markFailed.execute({ ...input, outcome: 'failed' });
+    } else {
+      actions[operation].execute(input);
+    }
+  };
 
   const toggle = (id: string, checked: boolean) =>
     setSelection((current) => {
@@ -234,6 +254,29 @@ export function FormsTable(props: {
                 <SkipForward className={'w-4'} />
                 {t('selection.skip')}
               </Button>
+            ) : null}
+
+            {canMark ? (
+              <>
+                <Button
+                  size={'sm'}
+                  data-test={'forms-mark-sent-button'}
+                  onClick={() => setPending('markSent')}
+                >
+                  <ThumbsUp className={'w-4'} />
+                  {t('selection.markSent')}
+                </Button>
+
+                <Button
+                  size={'sm'}
+                  variant={'outline'}
+                  data-test={'forms-mark-failed-button'}
+                  onClick={() => setPending('markFailed')}
+                >
+                  <ThumbsDown className={'w-4'} />
+                  {t('selection.markFailed')}
+                </Button>
+              </>
             ) : null}
 
             {canExclude ? (
@@ -374,10 +417,10 @@ export function FormsTable(props: {
                 </TableCell>
 
                 <TableCell>
-                  {row.screenshotUrl ? (
+                  {(row.screenshotAfterUrl ?? row.screenshotUrl) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={row.screenshotUrl}
+                      src={row.screenshotAfterUrl ?? row.screenshotUrl ?? ''}
                       alt={''}
                       className={
                         'h-12 w-20 rounded border object-cover object-top'
@@ -443,8 +486,7 @@ export function FormsTable(props: {
               disabled={isPending}
               data-test={'forms-confirm-button'}
               onClick={() => {
-                if (pending)
-                  actions[pending].execute({ accountId: props.accountId, ids });
+                if (pending) run(pending);
               }}
             >
               {isPending

@@ -35,7 +35,10 @@ import {
 
 import { AttemptEditFormSchema } from '../_lib/schema/forms-actions.schema';
 import type { AttemptRow } from '../_lib/server/forms.loader';
-import { updateAttemptAction } from '../_lib/server/server-actions';
+import {
+  markAttemptsAction,
+  updateAttemptAction,
+} from '../_lib/server/server-actions';
 
 const EDITABLE = new Set(['ready', 'incomplete']);
 
@@ -103,6 +106,16 @@ function AttemptDetail(props: {
           ),
         ),
       ),
+  });
+
+  const mark = useAction(markAttemptsAction, {
+    onSuccess: ({ data }) => {
+      toast.success(t('actions.markDone', { count: data?.count ?? 0 }));
+      props.onMutated();
+      props.onClose();
+    },
+    onNavigation: props.onClose,
+    onError: () => toast.error(t('actions.failed')),
   });
 
   const form = useForm({
@@ -176,6 +189,61 @@ function AttemptDetail(props: {
         >
           {attempt.detail}
         </p>
+      ) : null}
+
+      {attempt.screenshotAfterUrl ? (
+        <figure className={'flex flex-col gap-1'}>
+          <figcaption className={'text-muted-foreground text-xs'}>
+            {t('detail.screenshotAfter')}
+          </figcaption>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={attempt.screenshotAfterUrl}
+            alt={t('detail.screenshotAfter')}
+            className={
+              'max-h-96 w-full rounded-md border object-contain object-top'
+            }
+            data-test={'attempt-screenshot-after'}
+          />
+        </figure>
+      ) : null}
+
+      {attempt.status === 'to_verify' ? (
+        <div
+          className={'flex flex-wrap gap-2'}
+          data-test={'attempt-verify-actions'}
+        >
+          <Button
+            type={'button'}
+            disabled={mark.isPending}
+            data-test={'attempt-mark-sent'}
+            onClick={() =>
+              mark.execute({
+                accountId: props.accountId,
+                ids: [attempt.id],
+                outcome: 'sent',
+              })
+            }
+          >
+            {t('selection.markSent')}
+          </Button>
+
+          <Button
+            type={'button'}
+            variant={'outline'}
+            disabled={mark.isPending}
+            data-test={'attempt-mark-failed'}
+            onClick={() =>
+              mark.execute({
+                accountId: props.accountId,
+                ids: [attempt.id],
+                outcome: 'failed',
+              })
+            }
+          >
+            {t('selection.markFailed')}
+          </Button>
+        </div>
       ) : null}
 
       {attempt.screenshotUrl ? (

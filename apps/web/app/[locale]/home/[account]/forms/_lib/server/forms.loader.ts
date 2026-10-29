@@ -39,7 +39,7 @@ export async function loadAttemptCounts(client: Client, spaceId: string) {
 }
 
 const COLUMNS =
-  'id, status, template_name, template_used, subject, body, form_url, filled, missing, extra, protection_type, screenshot_before, detail, updated_at, created_at, prospect:lm_prospects!inner(id, name, website, city, category, found_email)';
+  'id, status, template_name, template_used, subject, body, form_url, filled, missing, extra, protection_type, screenshot_before, screenshot_after, detail, sent_at, updated_at, created_at, prospect:lm_prospects!inner(id, name, website, city, category, found_email)';
 
 /**
  * Formulaires d'un groupe de statuts, les plus récents d'abord, avec un lien
@@ -63,7 +63,7 @@ export async function loadAttempts(
 
   const rows = data ?? [];
   const paths = rows
-    .map((row) => row.screenshot_before)
+    .flatMap((row) => [row.screenshot_before, row.screenshot_after])
     .filter((path): path is string => Boolean(path));
 
   const urls = new Map<string, string>();
@@ -85,7 +85,25 @@ export async function loadAttempts(
     screenshotUrl: row.screenshot_before
       ? (urls.get(row.screenshot_before) ?? null)
       : null,
+    screenshotAfterUrl: row.screenshot_after
+      ? (urls.get(row.screenshot_after) ?? null)
+      : null,
   }));
 }
 
 export type AttemptRow = Awaited<ReturnType<typeof loadAttempts>>[number];
+
+/** Solde de crédits d'envoi de l'organisation (0 sans forfait). */
+export async function loadOutreachBalance(client: Client, accountId: string) {
+  const { data, error } = await client
+    .from('lm_account_credits')
+    .select('outreach_balance')
+    .eq('account_id', accountId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.outreach_balance ?? 0;
+}

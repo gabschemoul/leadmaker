@@ -31,7 +31,6 @@ import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { FolderSwitch } from '../sender/_components/folder-switch';
-import { FormsLiveRefresh } from './_components/forms-live-refresh';
 import { FormsTable } from './_components/forms-table';
 import { loadAttemptCounts, loadAttempts } from './_lib/server/forms.loader';
 
@@ -197,13 +196,13 @@ async function FormsContent(props: FormsPageProps) {
       </CardHeader>
 
       <CardContent>
-        <FormsLiveRefresh spaceId={space.id} preparing={counts.preparing} />
-
         <FormsTable
           key={`${space.id}:${group}`}
           rows={rows}
           group={group}
           accountId={account.id}
+          spaceId={space.id}
+          preparing={counts.preparing}
         />
       </CardContent>
     </Card>

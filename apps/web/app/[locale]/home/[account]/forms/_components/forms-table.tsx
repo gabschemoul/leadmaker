@@ -53,6 +53,7 @@ import {
   validateAttemptsAction,
 } from '../_lib/server/server-actions';
 import { AttemptDetailDialog } from './attempt-detail-dialog';
+import { FormsLiveRefresh } from './forms-live-refresh';
 
 type BulkOperation = 'validate' | 'skip' | 'exclude';
 
@@ -80,6 +81,8 @@ export function FormsTable(props: {
   rows: AttemptRow[];
   group: AttemptGroup;
   accountId: string;
+  spaceId: string;
+  preparing: number;
 }) {
   const t = useTranslations('outreach.forms');
   const format = useFormatter();
@@ -165,6 +168,12 @@ export function FormsTable(props: {
 
   return (
     <div className={'flex flex-col gap-3'}>
+      <FormsLiveRefresh
+        spaceId={props.spaceId}
+        preparing={props.preparing}
+        paused={isPending || pending !== null || openId !== null}
+      />
+
       <div className={'flex flex-wrap items-center gap-2 text-sm'}>
         <Button
           size={'sm'}

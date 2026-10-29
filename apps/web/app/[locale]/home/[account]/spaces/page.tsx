@@ -4,13 +4,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import {
   Table,
@@ -96,15 +90,9 @@ async function SpacesCard({ params }: { params: Params }) {
   return (
     <Card>
       <CardHeader className={'flex flex-row items-start justify-between gap-4'}>
-        <div className={'flex flex-col space-y-1.5'}>
-          <CardTitle>
-            <Trans i18nKey={'campaigns.folders.listTitle'} />
-          </CardTitle>
-
-          <CardDescription>
-            <Trans i18nKey={'campaigns.folders.intro'} />
-          </CardDescription>
-        </div>
+        <CardDescription className={'max-w-xl'}>
+          <Trans i18nKey={'campaigns.folders.intro'} />
+        </CardDescription>
 
         <CreateSpaceDialog accountId={account.id} />
       </CardHeader>

@@ -91,8 +91,12 @@ class DiscoveryRunner:
         started = time.monotonic()
         cards = new = kept = 0
         stopped = None
+        center = None
+        if p.get("latitude") is not None and p.get("longitude") is not None:
+            center = (float(p["latitude"]), float(p["longitude"]), int(p.get("zoom") or 15))
         for kind, obj in self._scraper().search(p["query"], p["country_code"], filters,
-                                               max_results=int(settings["max_results"]), known=known):
+                                               max_results=int(settings["max_results"]), known=known,
+                                               center=center):
             if kind == "info":
                 continue
             cards += 1

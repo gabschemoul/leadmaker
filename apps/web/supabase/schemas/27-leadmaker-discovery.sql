@@ -85,6 +85,10 @@ create table if not exists public.lm_campaign_zones (
   geoname_id integer not null,
   label text not null,
   population integer not null default 0,
+  -- Grandes villes : recherche centrée sur un point de la carte (quadrillage), sinon recherche par nom de ville
+  latitude double precision,
+  longitude double precision,
+  zoom smallint,
   primary key (campaign_id, idx)
 );
 
@@ -232,6 +236,55 @@ $$;
 
 grant execute on function public.lm_target_cities(text, jsonb) to authenticated, service_role;
 
+-- Google Maps n'affiche jamais plus de 120 fiches par recherche. Dans une grande ville, une seule recherche
+-- en manque la plupart : on la découpe en secteurs (points espacés de 2,5 km, vue zoom 15 ≈ 3,5 km de large)
+-- couvrant un disque dont le rayon croît avec la population (2 à 12 km).
+create or replace function public.lm_city_grid(p_lat double precision, p_lng double precision, p_population integer)
+returns table (latitude double precision, longitude double precision)
+set search_path = ''
+language sql
+immutable
+as $$
+  with r as (
+    select least(12.0, greatest(2.0, sqrt(p_population) / 150.0)) as km, 2.5 as step
+  ), n as (
+    select ceil(r.km / r.step)::integer as k, r.km, r.step from r
+  )
+  select p_lat + i * n.step / 111.0,
+         p_lng + j * n.step / (111.0 * cos(radians(p_lat)))
+    from n, generate_series(-n.k, n.k) i, generate_series(-n.k, n.k) j
+   where sqrt(power(i * n.step, 2) + power(j * n.step, 2)) <= n.km + n.step / 2
+   order by abs(i) + abs(j), i, j;
+$$;
+
+grant execute on function public.lm_city_grid(double precision, double precision, integer) to authenticated, service_role;
+
+-- Zones de recherche d'un ciblage : une par petite ville, un quadrillage pour les villes de 50 000 habitants et plus
+create or replace function public.lm_target_zones(p_country_code text, p_targeting jsonb)
+returns table (geoname_id integer, label text, population integer, latitude double precision,
+               longitude double precision, zoom smallint)
+set search_path = ''
+language sql
+stable
+as $$
+  select t.geoname_id, t.label, t.population, null::double precision, null::double precision, null::smallint
+    from public.lm_target_cities(p_country_code, p_targeting) t
+   where t.population < 50000
+  union all
+  select t.geoname_id,
+         t.label || ' · ' || row_number() over (partition by t.geoname_id order by g.ord),
+         t.population, g.latitude, g.longitude, 15::smallint
+    from public.lm_target_cities(p_country_code, p_targeting) t
+    join public.lm_geo_cities c on c.geoname_id = t.geoname_id
+    cross join lateral (
+      select gg.latitude, gg.longitude, row_number() over () as ord
+        from public.lm_city_grid(c.latitude, c.longitude, t.population) gg
+    ) g
+   where t.population >= 50000;
+$$;
+
+grant execute on function public.lm_target_zones(text, jsonb) to authenticated, service_role;
+
 -- Catégories ciblées par une configuration
 create or replace function public.lm_target_categories(p_targeting jsonb)
 returns table (gcid text, is_generic boolean)
@@ -272,8 +325,8 @@ $$;
 grant execute on function public.lm_rating_share(numeric, numeric) to authenticated, service_role;
 
 -- Estimation avant lancement : villes, recherches et prospects attendus selon la taille des villes et les filtres.
--- Une recherche ramène au plus 120 fiches dans une grande ville, quelques-unes dans un village ;
--- 70 % de densité moyenne d'une activité, 10 % d'exclusions (chaînes, administrations), puis les filtres.
+-- Mesure du 29/10/2026 sur les plombiers de Lyon : 210 fiches sur 3 secteurs du centre, 7 % notées de 0,8 à 3,5,
+-- 75 % avec un site. 70 % de densité moyenne d'une activité, 10 % d'exclusions (chaînes, administrations).
 create or replace function public.lm_estimate_campaign(p_country_code text, p_targeting jsonb, p_filters jsonb default '{}')
 returns table (cities integer, categories integer, searches bigint, expected_prospects bigint, rate numeric)
 set search_path = ''
@@ -282,24 +335,29 @@ stable
 as $$
 declare
   v_cities integer;
+  v_zones bigint;
   v_listings numeric;
   v_categories integer;
   v_share numeric;
   v_reviews integer := coalesce((p_filters ->> 'min_reviews')::integer, 0);
 begin
-  select count(*)::integer, coalesce(sum(least(120, greatest(5, ceil(t.population / 2000.0)))), 0)
-    into v_cities, v_listings
-    from public.lm_target_cities(p_country_code, p_targeting) t;
+  -- Fiches Google d'une activité dans une ville : environ 1 pour 1 000 habitants (au moins 5),
+  -- dans la limite de 120 par secteur de recherche.
+  select count(*)::integer, coalesce(sum(z.zones), 0), coalesce(sum(least(z.zones * 120, greatest(5, z.population / 1000.0))), 0)
+    into v_cities, v_zones, v_listings
+    from (select tz.geoname_id, max(tz.population) as population, count(*) as zones
+            from public.lm_target_zones(p_country_code, p_targeting) tz
+           group by tz.geoname_id) z;
 
   select count(*)::integer into v_categories from public.lm_target_categories(p_targeting);
 
   v_share := 0.7 * 0.9
     * public.lm_rating_share(coalesce((p_filters ->> 'rating_min')::numeric, 0), coalesce((p_filters ->> 'rating_max')::numeric, 5))
-    * case coalesce(p_filters ->> 'website', 'all') when 'with' then 0.6 when 'without' then 0.4 else 1 end
+    * case coalesce(p_filters ->> 'website', 'all') when 'with' then 0.75 when 'without' then 0.25 else 1 end
     * case when v_reviews >= 50 then 0.5 when v_reviews >= 10 then 0.8 else 1 end;
 
   return query
-    select v_cities, v_categories, v_cities::bigint * v_categories,
+    select v_cities, v_categories, v_zones * v_categories,
            round(v_listings * v_categories * v_share)::bigint,
            round(case when v_cities > 0 then v_listings / v_cities * v_share else 0 end, 2);
 end;
@@ -346,10 +404,11 @@ begin
 
   -- Premier lancement : on fige les villes et les catégories
   if not exists (select 1 from public.lm_campaign_zones where campaign_id = p_campaign_id) then
-    insert into public.lm_campaign_zones (campaign_id, idx, account_id, geoname_id, label, population)
-      select p_campaign_id, (row_number() over (order by t.population desc, t.geoname_id)) - 1,
-             v_campaign.account_id, t.geoname_id, t.label, t.population
-        from public.lm_target_cities(v_campaign.country_code, v_campaign.targeting) t;
+    insert into public.lm_campaign_zones (campaign_id, idx, account_id, geoname_id, label, population,
+                                          latitude, longitude, zoom)
+      select p_campaign_id, (row_number() over (order by t.population desc, t.geoname_id, t.label)) - 1,
+             v_campaign.account_id, t.geoname_id, t.label, t.population, t.latitude, t.longitude, t.zoom
+        from public.lm_target_zones(v_campaign.country_code, v_campaign.targeting) t;
 
     insert into public.lm_campaign_categories (campaign_id, gcid, account_id, is_generic)
       select p_campaign_id, t.gcid, v_campaign.account_id, t.is_generic
@@ -470,7 +529,10 @@ begin
               jsonb_build_object('campaign_id', v_campaign.id, 'gcid', v_pick.gcid, 'zone_idx', v_zone.idx,
                                  'category', v_pick.label_en, 'zone', v_zone.label,
                                  'country_code', v_campaign.country_code,
-                                 'query', v_pick.label_en || ' in ' || v_zone.label),
+                                 'latitude', v_zone.latitude, 'longitude', v_zone.longitude, 'zoom', v_zone.zoom,
+                                 'query', case when v_zone.latitude is null
+                                               then v_pick.label_en || ' in ' || v_zone.label
+                                               else v_pick.label_en end),
               'discovery:' || v_campaign.id || ':' || v_pick.gcid || ':' || v_zone.idx)
       on conflict (idempotency_key) do nothing;
 

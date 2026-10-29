@@ -293,14 +293,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_zones": {
                   Row: {
-                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"population": number
+                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude": number | null,"longitude": number | null,"population": number,"zoom": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"population"?: number
+                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"zoom"?: number | null
                   }
                   Update: {
-                    "account_id"?: string,"campaign_id"?: string,"geoname_id"?: number,"idx"?: number,"label"?: string,"population"?: number
+                    "account_id"?: string,"campaign_id"?: string,"geoname_id"?: number,"idx"?: number,"label"?: string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"zoom"?: number | null
                   }
                   Relationships: [
                     {
@@ -1104,6 +1104,11 @@ isOneToOne: false
               "abandoned": number,"cards": number,"categories": number,"in_flight": number,"last_search_at": string,"prospects": number,"searches_done": number,"searches_total": number,"zones": number
             }[]
                            },
+"lm_city_grid":
+{ Args: { "p_lat": number,"p_lng": number,"p_population": number }; Returns: {
+              "latitude": number,"longitude": number
+            }[]
+                           },
 "lm_city_label":
 { Args: { "p_country_name": string,"p_name": string }; Returns: string
                            },
@@ -1199,6 +1204,11 @@ isOneToOne: false
 "lm_target_cities":
 { Args: { "p_country_code": string,"p_targeting": Json }; Returns: {
               "geoname_id": number,"label": string,"population": number
+            }[]
+                           },
+"lm_target_zones":
+{ Args: { "p_country_code": string,"p_targeting": Json }; Returns: {
+              "geoname_id": number,"label": string,"latitude": number,"longitude": number,"population": number,"zoom": number
             }[]
                            },
 "revoke_nonce":

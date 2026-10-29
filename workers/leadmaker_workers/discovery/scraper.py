@@ -165,7 +165,7 @@ class GMapsScraper:
             if count >= max_results or END_OF_LIST.search(feed.inner_text()):
                 break
             stale = stale + 1 if count == last else 0
-            if stale >= 4:
+            if stale >= 8:
                 break
             last = count
             feed.evaluate("el => el.scrollBy(0, el.scrollHeight)")
@@ -220,10 +220,13 @@ class GMapsScraper:
             place.review_count = _parse_count(data["rating_text"]) or place.review_count
 
     def search(self, query: str, country_code: str, filters: Filters, max_results: int = 120,
-               known: Callable[[Place], bool] | None = None) -> Iterator[tuple[str, Place | str]]:
+               known: Callable[[Place], bool] | None = None,
+               center: tuple[float, float, int] | None = None) -> Iterator[tuple[str, Place | str]]:
         """Événements : ("info", str) | ("place", Place) | ("skip", Place) | ("known", Place).
 
         known(place) : vrai si la fiche a déjà été vue dans l'espace ; elle n'est alors pas rouverte.
+        center : (latitude, longitude, zoom) pour chercher l'activité dans un secteur de la carte
+        (grandes villes découpées en secteurs, Google n'affichant que 120 fiches par recherche).
         """
         if not self.is_open:
             self.open()
@@ -231,7 +234,8 @@ class GMapsScraper:
         page = self._ctx.new_page()
         detail = self._ctx.new_page()
         try:
-            page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}?hl=en&gl={country_code.lower()}",
+            at = f"/@{center[0]:.5f},{center[1]:.5f},{center[2]}z" if center else ""
+            page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}{at}?hl=en&gl={country_code.lower()}",
                       wait_until="domcontentloaded")
             self._accept_consent(page)
             if "/sorry/" in page.url:

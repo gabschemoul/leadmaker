@@ -41,10 +41,23 @@ values ((select id from public.accounts where slug = 'disc-a'), (select id from 
         '{"rating_min":0.8,"rating_max":3.5}');
 
 -- Estimation : 2 villes dans le rayon, 2 catégories (la mairie est exclue)
+-- Estimation : 2 villes dans le rayon (Bigtown découpée en secteurs, Smallville en une recherche), 2 activités
 select is(
-  (select (cities, categories, searches)::text from public.lm_estimate_campaign('ZZ',
+  (select (cities, categories)::text from public.lm_estimate_campaign('ZZ',
      '{"cities":{"mode":"radius","geoname_id":990000001,"radius_km":20},"categories":{"mode":"list","gcids":["gcid:test_bakery","gcid:test_salon","gcid:test_city_hall"]}}')),
-  '(2,2,4)', 'Estimation : villes du rayon, catégories exclues retirées');
+  '(2,2)', 'Estimation : villes du rayon, catégories exclues retirées');
+
+select is(
+  (select searches from public.lm_estimate_campaign('ZZ',
+     '{"cities":{"mode":"radius","geoname_id":990000001,"radius_km":20},"categories":{"mode":"list","gcids":["gcid:test_bakery","gcid:test_salon"]}}')),
+  (select 2 * count(*) from public.lm_target_zones('ZZ', '{"cities":{"mode":"radius","geoname_id":990000001,"radius_km":20}}')),
+  'Recherches = secteurs × activités');
+
+select ok((select count(*) from public.lm_target_zones('ZZ', '{"cities":{"mode":"list","geoname_ids":[990000001]}}')) > 5,
+  'Une grande ville est découpée en plusieurs secteurs');
+
+select is((select count(*)::int from public.lm_target_zones('ZZ', '{"cities":{"mode":"list","geoname_ids":[990000002]}}') where latitude is null),
+  1, 'Une petite ville reste une seule recherche par nom');
 
 -- Le statut ne se modifie pas directement
 select throws_ok($$ update public.lm_campaigns set status = 'running' where name = 'Campagne A' $$,
@@ -63,7 +76,8 @@ select lives_ok($$ select public.lm_start_campaign((select id from public.lm_cam
   'Lancement accepté avec des crédits');
 
 select is((select count(*)::int from public.lm_campaign_zones where campaign_id = (select id from public.lm_campaigns where name = 'Campagne A')),
-  2, 'Les zones sont figées au lancement');
+  (select count(*)::int from public.lm_target_zones('ZZ', '{"cities":{"mode":"radius","geoname_id":990000001,"radius_km":20}}')),
+  'Les zones (secteurs compris) sont figées au lancement');
 
 -- B ne voit rien de la campagne de A et ne peut pas la piloter
 select makerkit.authenticate_as('disc_b');

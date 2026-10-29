@@ -32,7 +32,7 @@ update public.lm_campaigns set status = 'paused' where status = 'running';
 
 select makerkit.authenticate_as('disc_a');
 
-insert into public.lm_spaces (account_id, name, country_code) values ((select id from public.accounts where slug = 'disc-a'), 'Espace A', 'ZZ');
+update public.lm_spaces set name = 'Espace A' where is_default and account_id = (select id from public.accounts where slug = 'disc-a');
 
 insert into public.lm_campaigns (account_id, space_id, name, country_code, targeting, filters)
 values ((select id from public.accounts where slug = 'disc-a'), (select id from public.lm_spaces where name = 'Espace A'),

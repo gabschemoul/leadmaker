@@ -16,20 +16,20 @@ insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreac
 values ('growth', 'Growth', 2, 3, 15000, 5000, 500, 1, false)
 on conflict (id) do nothing;
 
--- ---------------------------------------------------------------- Org A crée un espace
+-- ---------------------------------------------------------------- Espace par défaut créé avec l'organisation
 select makerkit.authenticate_as('owner_a');
 
-select lives_ok($$
-  insert into public.lm_spaces (account_id, name, country_code)
-  values ((select id from public.accounts where slug = 'org-a'), 'Client 1', 'FR')
-$$, 'A crée un espace dans son organisation');
-
 select is(
-  (select count(*)::int from public.lm_spaces),
-  1,
-  'A voit son espace');
+  (select (count(*), count(*) filter (where is_default))::text from public.lm_spaces),
+  '(1,1)', 'Chaque organisation reçoit son espace par défaut');
 
--- Sans forfait : un seul espace autorisé
+update public.lm_spaces set name = 'Client 1' where is_default;
+
+delete from public.lm_spaces where is_default;
+select is((select count(*)::int from public.lm_spaces where is_default), 1,
+  'L''espace par défaut ne peut pas être supprimé');
+
+-- Sans forfait : seulement l'espace par défaut
 select throws_ok($$
   insert into public.lm_spaces (account_id, name, country_code)
   values ((select id from public.accounts where slug = 'org-a'), 'Client 2', 'FR')
@@ -60,7 +60,7 @@ $$, '42501', null, 'A ne peut pas créer un espace chez B');
 -- ---------------------------------------------------------------- Org B ne voit rien de A
 select makerkit.authenticate_as('owner_b');
 
-select is((select count(*)::int from public.lm_spaces), 0, 'B ne voit aucun espace de A');
+select is((select count(*)::int from public.lm_spaces where account_id = (select id from public.accounts where slug = 'org-a')), 0, 'B ne voit aucun espace de A');
 select is((select count(*)::int from public.lm_account_credits), 0, 'B ne voit pas les crédits de A');
 select is((select count(*)::int from public.lm_credit_ledger), 0, 'B ne voit pas le journal de crédits de A');
 

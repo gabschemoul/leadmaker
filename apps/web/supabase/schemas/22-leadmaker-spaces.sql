@@ -1,16 +1,18 @@
 /*
  * -------------------------------------------------------
  * Section: LeadMaker spaces and sender profiles
- * Un espace = un contexte de travail (un client final en mode agence),
- * cloisonné dans l'organisation : expéditeur, campagnes, suppressions.
+ * Un espace = un dossier de prospection cloisonné : prospects, expéditeur, liste « ne plus contacter ».
+ * Chaque organisation a un espace par défaut, créé automatiquement et invisible pour qui prospecte
+ * pour lui-même ; les agences ajoutent un espace par client final (« Dossiers clients »).
  * -------------------------------------------------------
  */
 create table if not exists public.lm_spaces (
   id uuid not null default extensions.uuid_generate_v4(),
   account_id uuid references public.accounts(id) on delete cascade not null,
   name varchar(255) not null,
-  country_code char(2) not null,
+  country_code char(2),
   language_code varchar(5) not null default 'en',
+  is_default boolean not null default false,
   ready_forms_cap integer not null default 500,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -58,8 +60,36 @@ create policy "lm_spaces_update" on public.lm_spaces for update
 
 create policy "lm_spaces_delete" on public.lm_spaces for delete
   to authenticated using (
-    public.has_permission((select auth.uid()), account_id, 'settings.manage'::public.app_permissions)
+    not is_default
+    and public.has_permission((select auth.uid()), account_id, 'settings.manage'::public.app_permissions)
   );
+
+-- Un seul espace par défaut par organisation
+create unique index if not exists ux_lm_spaces_default_per_account
+  on public.lm_spaces (account_id) where is_default;
+
+-- Chaque organisation (compte d'équipe) reçoit son espace par défaut à la création
+create or replace function public.lm_create_default_space() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  if not new.is_personal_account then
+    insert into public.lm_spaces (account_id, name, is_default)
+    values (new.id, 'Default', true)
+    on conflict do nothing;
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.lm_create_default_space() from public;
+
+create trigger lm_accounts_create_default_space
+  after insert on public.accounts
+  for each row execute function public.lm_create_default_space();
 
 create policy "restrict_mfa_lm_spaces" on public.lm_spaces
   as restrictive to authenticated using (public.is_mfa_compliant());

@@ -669,14 +669,14 @@ isOneToOne: true
                   ]
                 },"lm_spaces": {
                   Row: {
-                    "account_id": string,"country_code": string,"created_at": string,"created_by": string | null,"id": string,"language_code": string,"name": string,"ready_forms_cap": number,"updated_at": string,"updated_by": string | null
+                    "account_id": string,"country_code": string | null,"created_at": string,"created_by": string | null,"id": string,"is_default": boolean,"language_code": string,"name": string,"ready_forms_cap": number,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"country_code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"language_code"?: string,"name": string,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id": string,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_default"?: boolean,"language_code"?: string,"name": string,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"language_code"?: string,"name"?: string,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id"?: string,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_default"?: boolean,"language_code"?: string,"name"?: string,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {

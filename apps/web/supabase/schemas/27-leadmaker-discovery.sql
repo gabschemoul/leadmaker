@@ -770,10 +770,10 @@ begin
      where length(trim(coalesce(r ->> 'site_key', ''))) > 0 and length(trim(coalesce(r ->> 'name', ''))) > 0
   ), ins as (
     insert into public.lm_prospects (account_id, space_id, name, category, phone, website, site_key, found_email,
-                                     address, country_code, source)
+                                     address, country_code, maps_url, source)
     select v_account_id, p_space_id, left(r ->> 'name', 500), left(r ->> 'category', 255), left(r ->> 'phone', 50),
            left(r ->> 'website', 1000), lower(r ->> 'site_key'), left(r ->> 'email', 320), r ->> 'address',
-           coalesce(nullif(upper(r ->> 'country_code'), ''), v_country), 'csv'
+           coalesce(nullif(upper(r ->> 'country_code'), ''), v_country), left(r ->> 'maps_url', 1000), 'csv'
       from src
     on conflict (space_id, site_key) do nothing
     returning 1

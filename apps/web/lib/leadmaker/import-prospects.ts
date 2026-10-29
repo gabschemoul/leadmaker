@@ -16,9 +16,34 @@ export interface ImportRow {
   category: string | null;
   address: string | null;
   country_code: string | null;
+  maps_url: string | null;
 }
 
 type Field = Exclude<keyof ImportRow, 'site_key'>;
+
+const MAPS_PLACE_ID = /!1s(0x[0-9a-f]+:0x[0-9a-f]+)/i;
+
+/**
+ * Clé de dédoublonnage d'une ligne : le site web, à défaut la fiche Google Maps
+ * (même clé que le scan : « maps:<identifiant> »), à défaut le téléphone.
+ */
+export function prospectKey(website: string, mapsUrl: string, phone: string) {
+  const fromSite = siteKey(website);
+
+  if (fromSite) {
+    return fromSite;
+  }
+
+  const placeId = MAPS_PLACE_ID.exec(mapsUrl)?.[1];
+
+  if (placeId) {
+    return `maps:${placeId.toLowerCase()}`;
+  }
+
+  const digits = phone.replace(/\D/g, '');
+
+  return digits.length >= 8 ? `tel:${digits}` : null;
+}
 
 const HEADER_ALIASES: Record<Field, string[]> = {
   name: [
@@ -45,6 +70,14 @@ const HEADER_ALIASES: Record<Field, string[]> = {
   email: ['email', 'e mail', 'mail', 'courriel'],
   category: ['categorie', 'category', 'activite'],
   address: ['adresse', 'address'],
+  maps_url: [
+    'maps url',
+    'lien google maps',
+    'google maps',
+    'lien maps',
+    'maps',
+    'fiche google',
+  ],
   country_code: ['pays', 'country', 'country code', 'code pays'],
 };
 
@@ -84,6 +117,7 @@ export const IMPORT_LIMITS = {
   email: 320,
   category: 255,
   address: 1000,
+  maps_url: 1000,
 } as const;
 
 function optional(value: string | undefined, maxLength: number) {
@@ -106,7 +140,12 @@ export function parseProspectsCsv(text: string): ImportParseResult {
 
   const columns = mapColumns(header);
 
-  if (columns.name === undefined || columns.website === undefined) {
+  if (
+    columns.name === undefined ||
+    (columns.website === undefined &&
+      columns.maps_url === undefined &&
+      columns.phone === undefined)
+  ) {
     return { ok: false, error: 'missingColumns' };
   }
 
@@ -121,7 +160,8 @@ export function parseProspectsCsv(text: string): ImportParseResult {
   for (const line of lines) {
     const name = cell(line, 'name')?.trim() ?? '';
     const website = cell(line, 'website')?.trim() ?? '';
-    const key = siteKey(website);
+    const mapsUrl = cell(line, 'maps_url')?.trim() ?? '';
+    const key = prospectKey(website, mapsUrl, cell(line, 'phone') ?? '');
 
     if (!name || !key) {
       continue;
@@ -143,6 +183,7 @@ export function parseProspectsCsv(text: string): ImportParseResult {
         null,
       category: optional(cell(line, 'category'), IMPORT_LIMITS.category),
       address: optional(cell(line, 'address'), IMPORT_LIMITS.address),
+      maps_url: optional(mapsUrl, IMPORT_LIMITS.maps_url),
       // seul un code pays sur deux lettres est accepté ; sinon le pays de l'espace s'applique
       country_code: /^[a-z]{2}$/i.test(country) ? country.toUpperCase() : null,
     });

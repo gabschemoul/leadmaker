@@ -12,6 +12,7 @@ export const ImportRowSchema = z.object({
   email: optionalText(IMPORT_LIMITS.email),
   category: optionalText(IMPORT_LIMITS.category),
   address: optionalText(IMPORT_LIMITS.address),
+  maps_url: optionalText(IMPORT_LIMITS.maps_url),
   country_code: z
     .string()
     .regex(/^[A-Z]{2}$/)

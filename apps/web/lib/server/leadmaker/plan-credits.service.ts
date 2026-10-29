@@ -1,5 +1,4 @@
 import 'server-only';
-
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { UpsertSubscriptionParams } from '@kit/billing/types';

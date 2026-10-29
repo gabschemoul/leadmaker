@@ -261,7 +261,9 @@ as $$
 declare
   v_rate numeric;
 begin
-  select sum(cc.kept)::numeric / nullif(sum(cc.searches), 0) into v_rate from public.lm_campaign_categories cc;
+  -- Rendement observé seulement s'il repose sur assez de recherches, sinon valeur prudente par défaut
+  select case when sum(cc.searches) >= 100 then sum(cc.kept)::numeric / sum(cc.searches) end into v_rate
+    from public.lm_campaign_categories cc;
 
   if v_rate is null then
     select default_rate into v_rate from public.lm_discovery_settings where id;

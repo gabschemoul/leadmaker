@@ -1,4 +1,12 @@
-import { CreditCard, LayoutDashboard, Settings, Users } from 'lucide-react';
+import {
+  CreditCard,
+  FolderKanban,
+  LayoutDashboard,
+  Radar,
+  Settings,
+  UserSearch,
+  Users,
+} from 'lucide-react';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
@@ -16,6 +24,21 @@ const getRoutes = (account: string) => [
         path: pathsConfig.app.accountHome.replace('[account]', account),
         Icon: <LayoutDashboard className={iconClasses} />,
         highlightMatch: `${pathsConfig.app.home}$`,
+      },
+      {
+        label: 'common.routes.campaigns',
+        path: createPath(pathsConfig.app.accountCampaigns, account),
+        Icon: <Radar className={iconClasses} />,
+      },
+      {
+        label: 'common.routes.prospects',
+        path: createPath(pathsConfig.app.accountProspects, account),
+        Icon: <UserSearch className={iconClasses} />,
+      },
+      {
+        label: 'common.routes.spaces',
+        path: createPath(pathsConfig.app.accountSpaces, account),
+        Icon: <FolderKanban className={iconClasses} />,
       },
     ],
   },

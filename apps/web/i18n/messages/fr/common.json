@@ -66,7 +66,11 @@
     "dashboard": "Tableau de bord",
     "settings": "Paramètres",
     "profile": "Profil",
-    "application": "Application"
+    "application": "Application",
+    "campaigns": "Campagnes",
+    "prospects": "Prospects",
+    "spaces": "Espaces",
+    "new": "Nouvelle"
   },
   "roles": {
     "owner": {

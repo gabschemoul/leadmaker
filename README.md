@@ -27,7 +27,7 @@ pnpm --filter web dev            # application sur http://localhost:3001 (le por
 # emails locaux (confirmation, invitations) : http://127.0.0.1:54324
 pnpm supabase:web:test           # tests de la base, dont l'isolation entre organisations
 cd workers && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres .venv/bin/python -m leadmaker_workers.main
+./run-local.sh                   # worker de découverte en continu (journal : workers/logs/worker.log)
 ```
 
 ## État
@@ -43,4 +43,14 @@ Lot 0 (fondations) démarré le 29/10/2026 :
 - [x] Stripe en mode test : 3 offres créées (compte reviewcleaner, sandbox), crédits versés automatiquement à chaque paiement et retirés à la résiliation
   - clés privées dans `apps/web/.env.local` (non versionné) ; relais des événements : conteneur Docker `leadmaker-stripe-listen`
 - [ ] Accès administrateur : une fois le compte créé, exécuter `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role": "super-admin"}' where email = '…'` puis activer la double authentification dans le profil ; le panneau est sur /admin
-- [ ] Mesure des coûts réels (proxies) et calendrier réestimé
+- [ ] Calendrier réestimé
+
+Lot 1 (découverte) livré le 29/10/2026 :
+
+- [x] Espaces, campagnes (pays, villes : tout le pays / autour d'une ville / liste, catégories, filtres), estimation
+- [x] Scan Google Maps multi-pays par le worker, rendement lissé et abandon des catégories improductives (réglages en base)
+- [x] Un prospect par site et par espace, fiches déjà vues jamais rouvertes, chaînes repérées, exclusions administrations / banques
+- [x] Un crédit découverte par prospect retenu, pause automatique sans crédit, pause / reprise sans perte
+- [x] Avancement en direct, liste des prospects, import et export CSV
+- [x] Coût mesuré : environ 2,7 Mo par fiche ouverte, soit environ 2,7 $ pour 1 000 fiches avec un proxy résidentiel à 1 $/Go (DataImpulse)
+- [ ] Proxy résidentiel à brancher (`PROXY_URL`) avant de scanner depuis un serveur

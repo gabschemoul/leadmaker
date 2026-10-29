@@ -112,7 +112,7 @@ export const estimateCampaignAction = authActionClient
     const { data, error } = await client.rpc('lm_estimate_campaign', {
       p_country_code: countryCode,
       p_targeting: targeting,
-      p_filters: filters,
+      p_filters: filters ?? {},
     });
 
     if (error) {

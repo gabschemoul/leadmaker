@@ -137,7 +137,7 @@ export const TargetingSchema = z.object({
       gcids: z.array(z.string().min(1)).max(1000),
     }),
   ]),
-  max_cities: z.number().int().min(1).max(MAX_CITIES_LIMIT),
+  max_cities: z.number().int().min(1).max(MAX_CITIES_LIMIT).optional(),
 });
 
 export type Targeting = z.infer<typeof TargetingSchema>;
@@ -243,7 +243,8 @@ export type EstimateFilters = z.infer<typeof EstimateFiltersSchema>;
 export const EstimateCampaignSchema = z.object({
   countryCode: z.string().regex(/^[A-Z]{2}$/),
   targeting: TargetingSchema,
-  filters: EstimateFiltersSchema,
+  // facultatif : une page ouverte avant une mise à jour peut encore appeler l'estimation sans filtres
+  filters: EstimateFiltersSchema.optional(),
 });
 
 export const SearchCitiesSchema = z.object({

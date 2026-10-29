@@ -240,6 +240,7 @@ function InviteError(props: { i18nKey: string }) {
             <Trans i18nKey={'teams.backToHome'} />
           </Link>
         }
+        nativeButton={false}
         className={'w-full'}
         variant={'outline'}
       />
@@ -265,6 +266,7 @@ function InviteNotFoundOrExpired() {
             <Trans i18nKey={'teams.backToHome'} />
           </Link>
         }
+        nativeButton={false}
         className={'w-full'}
         variant={'outline'}
       />

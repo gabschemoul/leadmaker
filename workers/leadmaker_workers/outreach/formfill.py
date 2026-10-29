@@ -93,6 +93,20 @@ EMAIL_SKIP = re.compile(r"\.(png|jpe?g|gif|svg|webp|css|js)$|sentry|example\.|wi
                         r"|@2x|godaddy|placeholder|noreply|no-reply", re.I)
 
 
+# Pages de domaine mort, boutique fermée, site en construction : inutile de chercher un formulaire
+DEAD_SITE = re.compile(r"site not found|boutique indisponible|shop (is )?(unavailable|closed)|domain (is )?for sale|ce domaine"
+                       r"|domaine (est )?(a vendre|en vente)|site en construction|under construction|coming soon|parked"
+                       r"|account (has been )?suspended|site suspendu|page introuvable|404 not found|403 forbidden"
+                       r"|en maintenance|maintenance mode|website (is )?(temporarily )?unavailable|site (temporairement )?indisponible"
+                       r"|hebergement (web )?(gratuit|offert)|this site is (currently )?unavailable|expired", re.I)
+NEXT_BUTTON = re.compile(r"suivant|next|continuer|continue|etape suivante|weiter|siguiente|avanti|volgende|commencer|demarrer"
+                         r"|start|c'est parti|valider (l'|cette )?etape", re.I)
+
+
+class SiteDown(Exception):
+    """Le site répond mais n'est plus un vrai site (domaine expiré, boutique fermée, en construction)."""
+
+
 @dataclass
 class Sender:
     first_name: str = ""
@@ -131,30 +145,41 @@ def _same_site(url: str, base: str) -> bool:
     return a.removeprefix("www.") == b.removeprefix("www.")
 
 
-# Repère dans un cadre (page ou iframe) le meilleur formulaire de contact : zone de message + email ou téléphone.
-# Recherche, newsletter, connexion, chat IA, éditeurs et formulaires mailto: sont ignorés.
+# Repère dans un cadre (page ou iframe) le meilleur formulaire de contact : au moins un champ email ou
+# téléphone et deux champs au total. Les champs des étapes suivantes (invisibles au départ) comptent pour la
+# détection ; seuls les champs visibles sont remplis ensuite. Recherche, newsletter, connexion, chat IA,
+# éditeurs et formulaires mailto: sont ignorés. Les formulaires sans balise <form> (React, Wix, tunnels) sont
+# retrouvés à partir de leurs champs.
 FIND_FORM_JS = r"""
 () => {
   const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
     return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const FIELD = 'input:not([type=hidden]),textarea,select';
   const containers = [...document.querySelectorAll('form')].filter(f => !/^mailto:/i.test(f.getAttribute('action') || ''));
-  document.querySelectorAll('textarea').forEach(t => { if (!t.closest('form')) {
-    let p = t.parentElement; for (let i = 0; i < 6 && p && p.querySelectorAll('input,textarea').length < 3; i++) p = p.parentElement;
-    if (p) containers.push(p); } });
+  // Champs hors <form> : on remonte jusqu'à un bloc qui en contient au moins trois.
+  document.querySelectorAll('input[type=email],input[type=tel],textarea,input[type=text]').forEach(t => {
+    if (t.closest('form')) return;
+    let p = t.parentElement;
+    for (let i = 0; i < 8 && p && p !== document.body && p.querySelectorAll(FIELD).length < 3; i++) p = p.parentElement;
+    if (p && p !== document.body && !containers.includes(p) && !containers.some(c => c.contains(p) || p.contains(c))) containers.push(p);
+  });
+  const text = e => [e.type, e.name, e.id, e.placeholder, e.getAttribute('aria-label'),
+    e.id && (document.querySelector(`label[for="${CSS.escape(e.id)}"]`) || {}).innerText,
+    e.closest('label') && e.closest('label').innerText].join(' ');
   let best = -1, bestScore = 0;
   containers.forEach((f, i) => {
-    const fields = [...f.querySelectorAll('input,textarea,select')].filter(vis);
+    const fields = [...f.querySelectorAll(FIELD)].filter(e => !['submit', 'button', 'image', 'reset'].includes(e.type));
+    if (fields.length < 2) return;
+    const visible = fields.filter(vis).length;
     const ta = fields.filter(e => e.tagName === 'TEXTAREA').length;
-    const mail = fields.filter(e => e.type === 'email' || /mail|courriel|correo/i.test((e.name||'') + (e.id||'') + (e.placeholder||''))).length;
+    const msg = ta || fields.filter(e => /message|comment|demande|question|nachricht|mensaje|messaggio|bericht/i.test(text(e))).length;
     const pwd = fields.filter(e => e.type === 'password').length;
-    const search = fields.filter(e => e.type === 'search' || /search|recherche|suche|busca|\bq\b/i.test(e.name||'')).length;
-    const score = (ta ? 5 : 0) + (mail ? 3 : 0) + Math.min(fields.length, 8) - (pwd ? 20 : 0) - (search ? 10 : 0);
-    const text = e => [e.type, e.name, e.id, e.placeholder, e.getAttribute('aria-label'),
-      e.id && (document.querySelector(`label[for="${CSS.escape(e.id)}"]`) || {}).innerText,
-      e.closest('label') && e.closest('label').innerText].join(' ');
+    const search = fields.filter(e => e.type === 'search' || /^(s|q|search|recherche|suche|busca)$/i.test(e.name||'')).length;
     const reply = fields.filter(e => e.tagName === 'INPUT' && (['email', 'tel'].includes(e.type)
       || /mail|courriel|correo|t[ée]l[ée]?phone|\btel\b|phone|portable|mobile|telefon|handy/i.test(text(e)))).length;
-    if (ta && reply && score > bestScore) { best = i; bestScore = score; }
+    if (!reply || pwd || search >= fields.length / 2) return;
+    const score = (ta ? 5 : 0) + (msg ? 3 : 0) + 3 + Math.min(fields.length, 8) + (visible ? 2 : 0) - (f.tagName === 'FORM' ? 0 : 2);
+    if (score > bestScore) { best = i; bestScore = score; }
   });
   if (best < 0) return null;
   containers.forEach(f => f.removeAttribute('data-ff-form'));
@@ -346,10 +371,27 @@ def best_email(site: str, found: set[str]) -> str | None:
     return (same or sorted(found) or [None])[0]
 
 
-def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[str] | None = None) -> Frame | None:
-    """Ouvre le site et renvoie le cadre contenant le formulaire de contact (ou None)."""
+def _check_alive(page: Page) -> None:
+    """Lève SiteDown pour une page de domaine mort / boutique fermée / site en construction."""
+    try:
+        title = page.title() or ""
+        body = page.inner_text("body", timeout=3000) or ""
+    except Exception:
+        return
+    short = len(body.strip()) < 800
+    if DEAD_SITE.search(_norm(title)) or (short and DEAD_SITE.search(_norm(body))):
+        raise SiteDown((title or body).strip()[:80])
+
+
+def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[str] | None = None,
+                      visited: list[str] | None = None) -> Frame | None:
+    """Ouvre le site et renvoie le cadre contenant le formulaire de contact (ou None).
+    `visited` reçoit les pages explorées (pour expliquer un échec)."""
     emails = emails if emails is not None else set()
+    visited = visited if visited is not None else []
     _load(page, site, timeout)
+    _check_alive(page)
+    visited.append("accueil")
     harvest_emails(page, site, emails)
     frame = _find_form(page) or _find_form_late(page)
     if frame:
@@ -369,6 +411,7 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
             resp = page.goto(link, wait_until="domcontentloaded", timeout=timeout)
             if resp is not None and resp.status >= 400:
                 continue
+            visited.append(urlparse(link).path or "/")
             page.wait_for_timeout(1500)
             _dismiss_cookies(page)
             _scroll(page)
@@ -458,12 +501,89 @@ def _pick_country(opts: list[str], sender: Sender) -> str | None:
     return None
 
 
+FILLABLE = {"email", "phone", "first_name", "last_name", "full_name", "company", "subject", "message", "website",
+            "city", "zip", "address", "country", "civility", "job_title", "location"}
+
+
+def _click_next(frame: Frame) -> bool:
+    """Formulaire en plusieurs étapes : clique sur « Suivant » (jamais sur un bouton d'envoi)."""
+    form = frame.locator("[data-ff-form]")
+    cands = form.locator("button:visible, [role=button]:visible, input[type=button]:visible, a.button:visible, .btn:visible")
+    for j in range(min(cands.count(), 8)):
+        btn = cands.nth(j)
+        try:
+            label = _norm(btn.inner_text(timeout=500) or btn.get_attribute("value") or "")
+            kind = (btn.get_attribute("type") or "").lower()
+        except Exception:
+            continue
+        if NEXT_BUTTON.search(label) and not SUBMIT.search(label.replace("continuer", "")) or (kind == "button" and NEXT_BUTTON.search(label)):
+            try:
+                btn.click(timeout=3000)
+            except Exception:
+                try:
+                    btn.evaluate("b => b.click()")
+                except Exception:
+                    continue
+            frame.page.wait_for_timeout(1200)
+            return True
+    return False
+
+
 def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: dict | None = None,
               short_message: str = "") -> FillResult:
-    """extra : valeurs saisies à la main pour des champs précis ({libellé du champ: valeur})."""
-    fields = frame.evaluate(DESCRIBE_JS)
-    values = _values(sender, subject, message)
+    """extra : valeurs saisies à la main pour des champs précis ({libellé du champ: valeur}).
+    Les formulaires en plusieurs étapes sont parcourus : champs visibles remplis, « Suivant », et ainsi de suite."""
     res = FillResult(status="filled", form_url=frame.url)
+    done: set[str] = set()  # identifiants (name/id/index) des champs déjà traités
+    steps = 0
+    while True:
+        fields = frame.evaluate(DESCRIBE_JS)
+        fresh = [f for f in fields if f["visible"] and _field_key(f) not in done]
+        _fill_pass(frame, fields, fresh, sender, subject, message, extra, short_message, res)
+        done.update(_field_key(f) for f in fresh)
+        if res.status == "captcha":
+            return res
+        # champs utiles encore invisibles (étape suivante) → bouton « Suivant »
+        remaining = [f for f in fields if not f["visible"] and f["type"] not in ("hidden", "submit", "button")
+                     and classify(f) in FILLABLE and _field_key(f) not in done]
+        steps += 1
+        if not remaining or steps >= 5 or not _click_next(frame):
+            break
+        res.warnings.append("formulaire en plusieurs étapes") if steps == 1 else None
+    return _finish(frame, fields, sender, res)
+
+
+def _field_key(f: dict) -> str:
+    return f["name"] or f["id"] or f"{f['tag']}:{f['label']}:{f['i']}"
+
+
+def _finish(frame: Frame, fields: list[dict], sender: Sender, res: FillResult) -> FillResult:
+    civ_rx = _civ_regex(sender)
+    try:
+        check = frame.evaluate(VALIDATE_JS, {"countries": sender.country_names,
+                                             "civility": civ_rx.pattern if civ_rx else None})
+    except Exception:
+        check = {"invalid": [], "truncated": 0}
+    by_i = {f["i"]: f for f in fields}
+    for i in check["invalid"]:
+        f = by_i.get(i)
+        label = f and (f["label"] or f["placeholder"] or f["name"] or f["id"])
+        if f and f["visible"] and label not in res.missing:
+            res.missing.append(label)
+            res.warnings.append(f"refusé par le formulaire : {label}")
+    if check["truncated"]:
+        res.warnings.append(f"message coupé à {check['truncated']} caractères par le site : raccourcissez-le")
+    if "message" not in res.filled:
+        res.warnings.append("pas de zone de message sur ce formulaire : seuls vos coordonnées et l'objet partiront")
+    if "email" not in res.filled and "phone" not in res.filled:
+        res.warnings.append("pas de champ email ni téléphone : l'entreprise ne pourra pas vous répondre")
+    res.warnings = list(dict.fromkeys(w for w in res.warnings if w))
+    return res
+
+
+def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Sender, subject: str, message: str,
+               extra: dict | None, short_message: str, res: FillResult) -> None:
+    values = _values(sender, subject, message)
     civ_rx = _civ_regex(sender)
     if any(f.get("captchaImg") for f in fields[:1]):
         res.status, res.protection, res.detail = "captcha", "image", "captcha image dans le formulaire"
@@ -474,14 +594,13 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
                 res.protection = "math" if MATH_TEXT.search(_norm(f["label"])) else "text"
                 res.detail = f"captcha à recopier : « {f['label'][:60]} »"
                 break
-    has_message = False
+    has_message = "message" in res.filled
     radios_done: set[str] = set()
     civ_radio = {f["name"]: f["i"] for f in fields if f["type"] == "radio" and f["name"] and civ_rx and civ_rx.search(f["label"] or "")}
-    kinds = {f["i"]: classify(f) for f in fields if f["visible"]}
+    kinds = {f["i"]: classify(f) for f in fresh}
     lone_name = "last_name" in kinds.values() and "first_name" not in kinds.values()
-    for f in fields:
-        if not f["visible"]:
-            continue  # champs cachés = pièges anti-robots : on n'y touche pas
+    # Un seul champ texte libre sans zone de message : il reçoit le message (formulaires « rappel »)
+    for f in fresh:
         kind = kinds[f["i"]]
         if kind == "last_name" and lone_name:
             kind = "full_name"
@@ -530,6 +649,13 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
             elif kind == "unknown":
                 if CAPTCHA_TEXT.search(_norm(label)):
                     continue
+                if not has_message and f["type"] in ("text", "") and f["tag"] == "input" and not any(
+                        k == "message" for k in kinds.values()) and f["required"]:
+                    _fill(loc, values["message"])
+                    has_message = True
+                    res.filled["message"] = label
+                    res.warnings.append(f"message écrit dans le champ « {label} » (pas de zone de message)")
+                    continue
                 if f["required"]:
                     res.warnings.append(f"champ obligatoire non reconnu : {label}")
                     res.missing.append(label)
@@ -555,27 +681,6 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
             if f["required"]:
                 res.warnings.append(f"champ impossible à remplir : {label} ({type(e).__name__})")
                 res.missing.append(label)
-    if res.status == "captcha":
-        return res
-    try:
-        check = frame.evaluate(VALIDATE_JS, {"countries": sender.country_names,
-                                             "civility": civ_rx.pattern if civ_rx else None})
-    except Exception:
-        check = {"invalid": [], "truncated": 0}
-    by_i = {f["i"]: f for f in fields}
-    for i in check["invalid"]:
-        f = by_i.get(i)
-        label = f and (f["label"] or f["placeholder"] or f["name"] or f["id"])
-        if f and f["visible"] and label not in res.missing:
-            res.missing.append(label)
-            res.warnings.append(f"refusé par le formulaire : {label}")
-    if check["truncated"]:
-        res.warnings.append(f"message coupé à {check['truncated']} caractères par le site : raccourcissez-le")
-    if not has_message:
-        res.status, res.detail = "error", "zone de message non remplie"
-    elif "email" not in res.filled and "phone" not in res.filled:
-        res.warnings.append("pas de champ email ni téléphone : l'entreprise ne pourra pas vous répondre")
-    return res
 
 
 def detect_protection(frame: Frame) -> str | None:

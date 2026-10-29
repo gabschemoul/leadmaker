@@ -17,7 +17,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 from ..discovery.scraper import USER_AGENT, _proxy_settings
-from .formfill import Sender, best_email, detect_protection, fill_form, open_contact_form
+from .formfill import Sender, SiteDown, best_email, detect_protection, fill_form, open_contact_form
 
 BLOCKED_RESOURCES = ("media", "font")  # les images restent : elles comptent dans la capture
 
@@ -36,6 +36,7 @@ def _screenshot(page, frame) -> str:
 def prepare(job: dict) -> dict:
     sender = Sender(**job["sender"])
     emails: set[str] = set()
+    visited: list[str] = []
     out: dict = {"status": "unreachable", "filled": {}, "missing": [], "detail": ""}
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=job.get("headless", True), proxy=_proxy_settings())
@@ -46,9 +47,10 @@ def prepare(job: dict) -> dict:
                   else route.continue_())
         page = ctx.new_page()
         try:
-            frame = open_contact_form(page, job["site"], emails=emails)
+            frame = open_contact_form(page, job["site"], emails=emails, visited=visited)
             if not frame:
-                out.update(status="no_form", detail="aucun formulaire de contact trouvé")
+                out.update(status="no_form", detail="aucun formulaire de contact trouvé (pages vues : "
+                           + ", ".join(dict.fromkeys(visited)) + ")")
             else:
                 r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
                               short_message=job.get("short_body", ""))
@@ -66,6 +68,8 @@ def prepare(job: dict) -> dict:
                     detail = "; ".join(filter(None, [f"protection anti-robot : {protection}", detail]))
                 out.update(status=status, form_url=r.form_url, filled=r.filled, missing=r.missing, detail=detail,
                            protection_type=protection, short=r.short, screenshot_b64=_screenshot(page, frame))
+        except SiteDown as e:
+            out.update(status="unreachable", detail=f"site hors ligne ou en construction (« {e} »)")
         except Exception as e:
             out.update(status="unreachable", detail=f"site inaccessible : {type(e).__name__}: {str(e)[:150]}")
         finally:

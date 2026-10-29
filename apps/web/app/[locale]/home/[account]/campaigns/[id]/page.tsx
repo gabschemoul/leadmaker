@@ -15,6 +15,7 @@ import {
   PageHeaderSkeleton,
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
+import { buildProspectsHref } from '~/lib/leadmaker/prospects-query';
 
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
@@ -111,6 +112,19 @@ async function CampaignContent({ params }: { params: Params }) {
 
       <CampaignDetailView
         campaignId={id}
+        accountId={account.id}
+        campaignsPath={pathsConfig.app.accountCampaigns.replace(
+          '[account]',
+          slug,
+        )}
+        allProspectsHref={buildProspectsHref(
+          pathsConfig.app.accountProspects.replace('[account]', slug),
+          {
+            space: spaces.length > 1 ? campaign.space_id : undefined,
+            filters: { campaign: id, status: 'all' },
+          },
+        )}
+        canDelete={account.permissions.includes('settings.manage')}
         folderName={folderName}
         countryLabel={countryLabel}
         billingPath={pathsConfig.app.accountBilling.replace('[account]', slug)}

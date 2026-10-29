@@ -145,33 +145,6 @@
     "latestProspectsDescription": "The last 50 businesses found by this campaign.",
     "noProspects": "No prospects yet."
   },
-  "prospects": {
-    "pageTitle": "Prospects",
-    "folderFilter": "Client folder",
-    "sourceFilter": "Source",
-    "sourceAll": "All sources",
-    "source": {
-      "maps": "Google Maps",
-      "csv": "Import"
-    },
-    "searchPlaceholder": "Search by name…",
-    "searchButton": "Search",
-    "empty": "No prospects yet.",
-    "noMatch": "No prospects match your search.",
-    "total": "{count, plural, =0 {No prospects} one {# prospect} other {# prospects}}",
-    "pageOf": "Page {page} of {count}",
-    "previousPage": "Previous",
-    "nextPage": "Next",
-    "nameColumn": "Name",
-    "categoryColumn": "Activity",
-    "ratingColumn": "Rating",
-    "reviewsColumn": "Reviews",
-    "addressColumn": "Address",
-    "websiteColumn": "Website",
-    "phoneColumn": "Phone",
-    "sourceColumn": "Source",
-    "chainBadge": "Chain"
-  },
   "import": {
     "button": "Import a CSV file",
     "title": "Import prospects",
@@ -192,9 +165,6 @@
     "noValidRows": "No usable rows: each business needs a name and a valid website.",
     "folderNotFound": "This client folder couldn't be found.",
     "failed": "The import failed. Please try again in a moment."
-  },
-  "export": {
-    "button": "Export CSV"
   },
   "errors": {
     "searchFailed": "The search failed. Please try again.",

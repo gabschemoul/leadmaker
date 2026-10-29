@@ -145,33 +145,6 @@
     "latestProspectsDescription": "Les 50 dernières entreprises trouvées par cette campagne.",
     "noProspects": "Aucun prospect pour l'instant."
   },
-  "prospects": {
-    "pageTitle": "Prospects",
-    "folderFilter": "Dossier client",
-    "sourceFilter": "Origine",
-    "sourceAll": "Toutes les origines",
-    "source": {
-      "maps": "Google Maps",
-      "csv": "Import"
-    },
-    "searchPlaceholder": "Rechercher un nom…",
-    "searchButton": "Rechercher",
-    "empty": "Aucun prospect pour l'instant.",
-    "noMatch": "Aucun prospect ne correspond à votre recherche.",
-    "total": "{count, plural, =0 {Aucun prospect} one {# prospect} other {# prospects}}",
-    "pageOf": "Page {page} sur {count}",
-    "previousPage": "Précédente",
-    "nextPage": "Suivante",
-    "nameColumn": "Nom",
-    "categoryColumn": "Activité",
-    "ratingColumn": "Note",
-    "reviewsColumn": "Avis",
-    "addressColumn": "Adresse",
-    "websiteColumn": "Site web",
-    "phoneColumn": "Téléphone",
-    "sourceColumn": "Origine",
-    "chainBadge": "Chaîne"
-  },
   "import": {
     "button": "Importer un fichier CSV",
     "title": "Importer des prospects",
@@ -192,9 +165,6 @@
     "noValidRows": "Aucune ligne utilisable : chaque entreprise doit avoir un nom et un site web valide.",
     "folderNotFound": "Ce dossier client est introuvable.",
     "failed": "L'import a échoué. Réessayez dans un instant."
-  },
-  "export": {
-    "button": "Exporter en CSV"
   },
   "errors": {
     "searchFailed": "La recherche a échoué. Réessayez.",

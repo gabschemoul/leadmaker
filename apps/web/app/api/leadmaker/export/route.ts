@@ -6,8 +6,13 @@ import { enhanceRouteHandler } from '@kit/next/routes';
 import { getLogger } from '@kit/shared/logger';
 
 import { csvSeparatorFor, toCsvLine } from '~/lib/leadmaker/csv';
+import {
+  applyProspectsFilters,
+  parseProspectsSearchParams,
+} from '~/lib/leadmaker/prospects-query';
 
 const PAGE_SIZE = 1000;
+const MAX_IDS = 2000;
 
 const COLUMNS = [
   'name',
@@ -15,6 +20,7 @@ const COLUMNS = [
   'rating',
   'review_count',
   'address',
+  'city',
   'country_code',
   'phone',
   'website',
@@ -23,12 +29,39 @@ const COLUMNS = [
   'source',
   'is_chain',
   'created_at',
+  'excluded_at',
 ] as const;
 
+const SELECT =
+  'id, name, category, rating, review_count, address, city, country_code, phone, website, found_email, maps_url, source, is_chain, created_at, excluded_at';
+
+const IdsSchema = z
+  .string()
+  .transform((value) => value.split(',').filter(Boolean))
+  .pipe(z.array(z.string().uuid()).min(1).max(MAX_IDS));
+
 const QuerySchema = z.union([
-  z.object({ space_id: z.string().uuid(), campaign_id: z.undefined() }),
-  z.object({ campaign_id: z.string().uuid(), space_id: z.undefined() }),
+  z.object({
+    ids: IdsSchema,
+    space_id: z.undefined(),
+    campaign_id: z.undefined(),
+  }),
+  z.object({
+    space_id: z.string().uuid(),
+    ids: z.undefined(),
+    campaign_id: z.undefined(),
+  }),
+  z.object({
+    campaign_id: z.string().uuid(),
+    ids: z.undefined(),
+    space_id: z.undefined(),
+  }),
 ]);
+
+type Target =
+  | { kind: 'ids'; ids: string[] }
+  | { kind: 'space'; id: string }
+  | { kind: 'campaign'; id: string };
 
 function slugify(value: string) {
   return (
@@ -43,15 +76,21 @@ function slugify(value: string) {
 }
 
 /**
- * Export CSV des prospects d'un espace (?space_id=) ou d'une campagne
- * (?campaign_id=). Client RLS : un membre n'exporte que son organisation.
- * Lecture par pages de 1 000 lignes, écrites au fil de l'eau.
+ * Export CSV des prospects :
+ * - d'un espace (?space_id=), avec les mêmes filtres que la page Prospects
+ *   (q, cat, city, rmin, rmax, reviews, website, source, status, campaign) ;
+ * - d'une campagne (?campaign_id=) ;
+ * - d'une sélection (?ids=a,b,c — 2 000 identifiants au plus).
+ *
+ * Client RLS : un membre n'exporte que son organisation. Lecture par pages de
+ * 1 000 lignes, écrites au fil de l'eau.
  */
 export const GET = enhanceRouteHandler(
   async ({ request, client, user }) => {
     const searchParams = request.nextUrl.searchParams;
 
     const parsed = QuerySchema.safeParse({
+      ids: searchParams.get('ids') ?? undefined,
       space_id: searchParams.get('space_id') ?? undefined,
       campaign_id: searchParams.get('campaign_id') ?? undefined,
     });
@@ -60,38 +99,69 @@ export const GET = enhanceRouteHandler(
       return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
     }
 
-    const filter = parsed.data.space_id
-      ? { column: 'space_id' as const, id: parsed.data.space_id }
-      : { column: 'campaign_id' as const, id: parsed.data.campaign_id! };
+    const target: Target = parsed.data.ids
+      ? { kind: 'ids', ids: parsed.data.ids }
+      : parsed.data.space_id
+        ? { kind: 'space', id: parsed.data.space_id }
+        : { kind: 'campaign', id: parsed.data.campaign_id! };
 
-    // l'espace ou la campagne doit être visible (RLS) : sinon 404
-    const owner =
-      filter.column === 'space_id'
-        ? await client
-            .from('lm_spaces')
-            .select('name, is_default')
-            .eq('id', filter.id)
-            .maybeSingle()
-        : await client
-            .from('lm_campaigns')
-            .select('name')
-            .eq('id', filter.id)
-            .maybeSingle();
+    let filename: string;
 
-    if (owner.error || !owner.data) {
-      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    if (target.kind === 'ids') {
+      filename = 'prospects-selection';
+    } else {
+      // l'espace ou la campagne doit être visible (RLS) : sinon 404
+      const owner =
+        target.kind === 'space'
+          ? await client
+              .from('lm_spaces')
+              .select('name, is_default')
+              .eq('id', target.id)
+              .maybeSingle()
+          : await client
+              .from('lm_campaigns')
+              .select('name')
+              .eq('id', target.id)
+              .maybeSingle();
+
+      if (owner.error || !owner.data) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+
+      // l'espace par défaut porte un nom technique (« Default ») : on l'omet
+      const isDefaultSpace =
+        'is_default' in owner.data && owner.data.is_default === true;
+
+      filename = isDefaultSpace
+        ? 'prospects'
+        : `prospects-${slugify(owner.data.name)}`;
     }
 
-    const fetchPage = (from: number) =>
-      client
-        .from('lm_prospects')
-        .select(
-          'id, name, category, rating, review_count, address, country_code, phone, website, found_email, maps_url, source, is_chain, created_at',
-        )
-        .eq(filter.column, filter.id)
+    // les filtres de la page ne s'appliquent qu'à l'export d'un espace
+    const filters = parseProspectsSearchParams(
+      Object.fromEntries(
+        Array.from(new Set(searchParams.keys())).map((key) => [
+          key,
+          searchParams.getAll(key),
+        ]),
+      ),
+    ).filters;
+
+    const fetchPage = (from: number) => {
+      const query = client.from('lm_prospects').select(SELECT);
+
+      const scoped =
+        target.kind === 'ids'
+          ? query.in('id', target.ids)
+          : target.kind === 'space'
+            ? applyProspectsFilters(query.eq('space_id', target.id), filters)
+            : query.eq('campaign_id', target.id);
+
+      return scoped
         .order('created_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
+    };
 
     const separator = csvSeparatorFor(request.headers.get('accept-language'));
     const encoder = new TextEncoder();
@@ -114,7 +184,7 @@ export const GET = enhanceRouteHandler(
           const logger = await getLogger();
 
           logger.error(
-            { name: 'leadmaker.export', userId: user.id, filter, error },
+            { name: 'leadmaker.export', userId: user.id, target, error },
             'Prospect export failed',
           );
 
@@ -135,6 +205,7 @@ export const GET = enhanceRouteHandler(
                   row.rating,
                   row.review_count,
                   row.address,
+                  row.city,
                   row.country_code,
                   row.phone,
                   row.website,
@@ -143,6 +214,7 @@ export const GET = enhanceRouteHandler(
                   row.source,
                   row.is_chain,
                   row.created_at,
+                  row.excluded_at,
                 ],
                 separator,
               ),
@@ -161,18 +233,11 @@ export const GET = enhanceRouteHandler(
     });
 
     const date = new Date().toISOString().slice(0, 10);
-    // l'espace par défaut porte un nom technique (« Default ») : on l'omet
-    const isDefaultSpace =
-      'is_default' in owner.data && owner.data.is_default === true;
-
-    const filename = isDefaultSpace
-      ? `prospects-${date}.csv`
-      : `prospects-${slugify(owner.data.name)}-${date}.csv`;
 
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename="${filename}-${date}.csv"`,
         'Cache-Control': 'no-store',
       },
     });

@@ -21,7 +21,7 @@ export async function fetchCampaignLive(
     client
       .from('lm_prospects')
       .select(
-        'id, name, category, rating, review_count, address, website, phone, is_chain, created_at',
+        'id, name, category, city, rating, review_count, address, website, phone, found_email, is_chain, source, excluded_at, created_at',
       )
       .eq('campaign_id', campaignId)
       .order('created_at', { ascending: false })

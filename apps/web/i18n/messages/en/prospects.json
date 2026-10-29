@@ -1,0 +1,110 @@
+{
+  "pageTitle": "Prospects",
+  "columns": {
+    "name": "Name",
+    "category": "Activity",
+    "city": "City",
+    "rating": "Rating",
+    "reviews": "Reviews",
+    "address": "Address",
+    "phone": "Phone",
+    "website": "Website",
+    "email": "Email",
+    "source": "Source",
+    "campaign": "Campaign",
+    "date": "Added on"
+  },
+  "columnsMenu": {
+    "button": "Columns",
+    "label": "Visible columns",
+    "reset": "Default columns"
+  },
+  "source": {
+    "maps": "Google Maps",
+    "csv": "Import"
+  },
+  "chainBadge": "Chain",
+  "excludedBadge": "Excluded",
+  "selectAll": "Select all on this page",
+  "selectRow": "Select this row",
+  "total": "{count, plural, =0 {No prospects} one {# prospect} other {# prospects}}",
+  "pageOf": "Page {page} of {count}",
+  "previousPage": "Previous",
+  "nextPage": "Next",
+  "empty": "No prospects yet.",
+  "noMatch": "No prospects match your filters.",
+  "campaignLink": "See all prospects from this campaign",
+  "filters": {
+    "folder": "Client folder",
+    "searchPlaceholder": "Name, address, website, phone…",
+    "searchButton": "Search",
+    "campaign": "Campaign",
+    "campaignAll": "All campaigns",
+    "category": "Activity",
+    "city": "City",
+    "searchValues": "Search…",
+    "noValues": "No values",
+    "ratingMin": "Min. rating",
+    "ratingMax": "Max. rating",
+    "ratingAtLeast": "Rating ≥ {value}",
+    "ratingAtMost": "Rating ≤ {value}",
+    "reviewsMin": "Min. reviews",
+    "reviewsAtLeast": "{count, plural, one {# review or more} other {# reviews or more}}",
+    "website": "Website",
+    "websiteAll": "Website: any",
+    "websiteWith": "With a website",
+    "websiteWithout": "Without a website",
+    "source": "Source",
+    "sourceAll": "All sources",
+    "status": "Status",
+    "statusActive": "Active",
+    "statusExcluded": "Excluded",
+    "statusAll": "Active and excluded",
+    "reset": "Reset",
+    "remove": "Remove this filter"
+  },
+  "badges": {
+    "search": "Search: {value}",
+    "campaign": "Campaign: {value}",
+    "category": "Activity: {value}",
+    "city": "City: {value}",
+    "ratingMin": "Rating ≥ {value}",
+    "ratingMax": "Rating ≤ {value}",
+    "reviewsMin": "{count, plural, one {# review or more} other {# reviews or more}}",
+    "source": "Source: {value}"
+  },
+  "selection": {
+    "count": "{count, plural, one {# selected} other {# selected}}",
+    "clear": "Clear selection",
+    "export": "Export selection",
+    "exclude": "Exclude",
+    "restore": "Restore",
+    "delete": "Delete"
+  },
+  "confirm": {
+    "excludeTitle": "Exclude {count, plural, one {this prospect} other {these # prospects}}?",
+    "excludeDescription": "These businesses will never be contacted, even if another campaign finds them again. You can restore them at any time.",
+    "excludeSubmit": "Exclude",
+    "restoreTitle": "Restore {count, plural, one {this prospect} other {these # prospects}}?",
+    "restoreDescription": "These businesses can be contacted again.",
+    "restoreSubmit": "Restore",
+    "deleteTitle": "Delete {count, plural, one {this prospect} other {these # prospects}}?",
+    "deleteDescription": "Deletion is permanent: these prospects disappear from your list and cannot be recovered. If a campaign finds them again, they will be added back. To never contact them again, use \"Exclude\" instead.",
+    "deleteSubmit": "Delete permanently",
+    "working": "One moment…"
+  },
+  "actions": {
+    "excludeDone": "{count, plural, one {# prospect excluded} other {# prospects excluded}}",
+    "restoreDone": "{count, plural, one {# prospect restored} other {# prospects restored}}",
+    "deleteDone": "{count, plural, one {# prospect deleted} other {# prospects deleted}}",
+    "nothingDone": "No prospects were changed.",
+    "excludeFailed": "Exclusion failed. Please try again in a moment.",
+    "restoreFailed": "Restoring failed. Please try again in a moment.",
+    "deleteFailed": "Deletion failed. Please try again in a moment."
+  },
+  "export": {
+    "button": "Export CSV",
+    "all": "Export CSV",
+    "filtered": "Export filtered list"
+  }
+}

@@ -5,7 +5,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, Pause, Play, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Download, Pause, Play, TriangleAlert } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
@@ -36,12 +36,18 @@ const REFRESH_INTERVAL = 10_000;
 
 export function CampaignDetailView(props: {
   campaignId: string;
+  accountId: string;
+  campaignsPath: string;
+  /** page Prospects filtrée sur cette campagne */
+  allProspectsHref: string;
+  canDelete: boolean;
   folderName: string | null;
   countryLabel: string;
   billingPath: string;
   initialData: CampaignLive;
 }) {
   const client = useSupabase();
+  const queryClient = useQueryClient();
   const queryKey = ['lm-campaign-live', props.campaignId];
 
   const { data } = useQuery({
@@ -103,7 +109,7 @@ export function CampaignDetailView(props: {
             <Download className={'w-4'} />
 
             <span>
-              <Trans i18nKey={'campaigns.export.button'} />
+              <Trans i18nKey={'prospects.export.button'} />
             </span>
           </Button>
         </div>
@@ -145,14 +151,34 @@ export function CampaignDetailView(props: {
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
-          {data.prospects.length === 0 ? (
-            <p className={'text-muted-foreground py-6 text-center text-sm'}>
+        <CardContent className={'flex flex-col gap-4'}>
+          <ProspectsTable
+            prospects={data.prospects}
+            accountId={props.accountId}
+            campaignsPath={props.campaignsPath}
+            canDelete={props.canDelete}
+            sorting={[{ id: 'date', desc: true }]}
+            hiddenColumns={['campaign']}
+            onMutated={() => void queryClient.invalidateQueries({ queryKey })}
+            noResultsMessage={
               <Trans i18nKey={'campaigns.detail.noProspects'} />
-            </p>
-          ) : (
-            <ProspectsTable prospects={data.prospects} />
-          )}
+            }
+          />
+
+          <div className={'flex justify-end'}>
+            <Button
+              variant={'link'}
+              nativeButton={false}
+              data-test={'campaign-all-prospects-link'}
+              render={<Link href={props.allProspectsHref} />}
+            >
+              <span>
+                <Trans i18nKey={'prospects.campaignLink'} />
+              </span>
+
+              <ArrowRight className={'w-4'} />
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

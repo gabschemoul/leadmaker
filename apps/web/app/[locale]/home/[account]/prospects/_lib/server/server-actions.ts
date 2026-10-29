@@ -7,6 +7,8 @@ import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { ImportProspectsSchema } from '../schema/import.schema';
+import { ProspectIdsSchema } from '../schema/prospects-actions.schema';
+import { createProspectsService } from './prospects.service';
 
 /**
  * Importe un paquet de prospects (2 000 lignes au plus) dans un espace.
@@ -47,4 +49,64 @@ export const importProspectsAction = authActionClient
       inserted: data?.[0]?.inserted ?? 0,
       duplicates: data?.[0]?.duplicates ?? 0,
     };
+  });
+
+/**
+ * Chemins à rafraîchir après une action groupée : la liste des prospects et
+ * le détail des campagnes (qui montre les derniers prospects).
+ */
+function revalidateProspects() {
+  revalidatePath('/home/[account]/prospects', 'page');
+  revalidatePath('/home/[account]/campaigns/[id]', 'page');
+}
+
+/** Exclut des prospects : ils ne seront jamais contactés (réversible). */
+export const excludeProspectsAction = authActionClient
+  .inputSchema(ProspectIdsSchema)
+  .action(async ({ parsedInput: { accountId, ids }, ctx }) => {
+    const service = createProspectsService(getSupabaseServerClient());
+    const result = await service.exclude({
+      ids,
+      accountId,
+      userId: ctx.user.id,
+    });
+
+    revalidateProspects();
+
+    return result;
+  });
+
+/** Rétablit des prospects exclus. */
+export const restoreProspectsAction = authActionClient
+  .inputSchema(ProspectIdsSchema)
+  .action(async ({ parsedInput: { accountId, ids }, ctx }) => {
+    const service = createProspectsService(getSupabaseServerClient());
+    const result = await service.restore({
+      ids,
+      accountId,
+      userId: ctx.user.id,
+    });
+
+    revalidateProspects();
+
+    return result;
+  });
+
+/**
+ * Supprime définitivement des prospects. La fonction SQL n'efface que si le
+ * membre a la permission `settings.manage` ; sinon elle renvoie 0.
+ */
+export const deleteProspectsAction = authActionClient
+  .inputSchema(ProspectIdsSchema)
+  .action(async ({ parsedInput: { accountId, ids }, ctx }) => {
+    const service = createProspectsService(getSupabaseServerClient());
+    const result = await service.delete({
+      ids,
+      accountId,
+      userId: ctx.user.id,
+    });
+
+    revalidateProspects();
+
+    return result;
   });

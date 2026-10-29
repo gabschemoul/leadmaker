@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { getFormatter, getTranslations } from 'next-intl/server';
-import * as z from 'zod';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
@@ -20,16 +19,24 @@ import {
   TableSkeleton,
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
+import {
+  buildProspectsHref,
+  countActiveFilters,
+  parseProspectsSearchParams,
+  toProspectsSearchParams,
+} from '~/lib/leadmaker/prospects-query';
 
-import { ProspectsTable } from '../_components/leadmaker/prospects-table';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { ImportProspectsDialog } from './_components/import-prospects-dialog';
 import { ProspectsFilters } from './_components/prospects-filters';
+import { ProspectsList } from './_components/prospects-list';
 import {
   PROSPECTS_PAGE_SIZE,
+  loadProspectFacets,
   loadProspectsPage,
+  loadSpaceCampaigns,
 } from './_lib/server/prospects.loader';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -39,18 +46,11 @@ interface ProspectsPageProps {
   searchParams: SearchParams;
 }
 
-const SearchParamsSchema = z.object({
-  space: z.string().uuid().optional().catch(undefined),
-  q: z.string().trim().max(100).optional().catch(undefined),
-  source: z.enum(['maps', 'csv']).optional().catch(undefined),
-  page: z.coerce.number().int().min(1).max(100_000).optional().catch(undefined),
-});
-
 export const generateMetadata = async () => {
-  const t = await getTranslations('campaigns');
+  const t = await getTranslations('prospects');
 
   return {
-    title: t('prospects.pageTitle'),
+    title: t('pageTitle'),
   };
 };
 
@@ -94,22 +94,13 @@ async function ProspectsPageHeader({
   );
 }
 
-function first(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 async function ProspectsContent(props: ProspectsPageProps) {
   const [{ account: slug }, rawSearchParams] = await Promise.all([
     props.params,
     props.searchParams,
   ]);
 
-  const search = SearchParamsSchema.parse({
-    space: first(rawSearchParams.space),
-    q: first(rawSearchParams.q),
-    source: first(rawSearchParams.source),
-    page: first(rawSearchParams.page),
-  });
+  const state = parseProspectsSearchParams(rawSearchParams);
 
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
@@ -118,35 +109,34 @@ async function ProspectsContent(props: ProspectsPageProps) {
   // l'espace par défaut vient en premier ; avec un seul dossier client, la
   // notion reste invisible (pas de filtre, pas de paramètre d'URL)
   const showFolders = spaces.length > 1;
-  const space = spaces.find((item) => item.id === search.space) ?? spaces[0]!;
-  const page = search.page ?? 1;
-  const query = search.q ?? '';
-  const source = search.source ?? null;
+  const space = spaces.find((item) => item.id === state.space) ?? spaces[0]!;
+  const spaceParam = showFolders ? space.id : undefined;
 
-  const [{ prospects, total }, format] = await Promise.all([
-    loadProspectsPage(client, { spaceId: space.id, query, source, page }),
+  const [{ prospects, total }, facets, campaigns, format] = await Promise.all([
+    loadProspectsPage(client, {
+      spaceId: space.id,
+      page: state.page,
+      sort: state.sort,
+      dir: state.dir,
+      filters: state.filters,
+    }),
+    loadProspectFacets(client, space.id),
+    loadSpaceCampaigns(client, space.id),
     getFormatter(),
   ]);
 
   const pageCount = Math.max(1, Math.ceil(total / PROSPECTS_PAGE_SIZE));
   const basePath = pathsConfig.app.accountProspects.replace('[account]', slug);
+  const campaignsPath = pathsConfig.app.accountCampaigns.replace(
+    '[account]',
+    slug,
+  );
 
-  const pageHref = (target: number) => {
-    const urlParams = new URLSearchParams();
-
-    if (showFolders) urlParams.set('space', space.id);
-
-    if (query) urlParams.set('q', query);
-    if (source) urlParams.set('source', source);
-    if (target > 1) urlParams.set('page', String(target));
-
-    const queryString = urlParams.toString();
-
-    return queryString ? `${basePath}?${queryString}` : basePath;
-  };
+  const pageHref = (page: number) =>
+    buildProspectsHref(basePath, { ...state, space: spaceParam, page });
 
   // page au-delà de la dernière (lien périmé) : on revient à la dernière
-  if (prospects.length === 0 && page > pageCount) {
+  if (prospects.length === 0 && state.page > pageCount) {
     redirect(pageHref(pageCount));
   }
 
@@ -154,22 +144,41 @@ async function ProspectsContent(props: ProspectsPageProps) {
     ? spaces.map(({ id, label }) => ({ id, label }))
     : [];
 
+  // nombre de prospects par campagne, pour le filtre
+  const campaignTotals = new Map(
+    facets.campaigns.map((facet) => [facet.value, facet.total]),
+  );
+
+  const campaignOptions = campaigns.map((campaign) => ({
+    id: campaign.id,
+    name: campaign.name,
+    total: campaignTotals.get(campaign.id) ?? 0,
+  }));
+
+  const exportParams = toProspectsSearchParams({ filters: state.filters });
+  exportParams.set('space_id', space.id);
+
+  const canDelete = account.permissions.includes('settings.manage');
+  const hasFilters = countActiveFilters(state.filters) > 0;
+
   return (
     <Card>
       <CardHeader
         className={
-          'flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between'
+          'flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between'
         }
       >
         <ProspectsFilters
-          action={basePath}
+          basePath={basePath}
+          state={state}
           folders={folderOptions}
           spaceId={space.id}
-          query={query}
-          source={source ?? ''}
+          campaigns={campaignOptions}
+          categories={facets.categories}
+          cities={facets.cities}
         />
 
-        <div className={'flex gap-2'}>
+        <div className={'flex shrink-0 gap-2'}>
           <ImportProspectsDialog
             folders={folderOptions}
             defaultSpaceId={space.id}
@@ -181,35 +190,46 @@ async function ProspectsContent(props: ProspectsPageProps) {
             nativeButton={false}
             data-test={'export-prospects-button'}
             render={
-              <a href={`/api/leadmaker/export?space_id=${space.id}`} download />
+              <a
+                href={`/api/leadmaker/export?${exportParams.toString()}`}
+                download
+              />
             }
           >
             <Download className={'w-4'} />
 
             <span>
-              <Trans i18nKey={'campaigns.export.button'} />
+              <Trans
+                i18nKey={
+                  hasFilters
+                    ? 'prospects.export.filtered'
+                    : 'prospects.export.all'
+                }
+              />
             </span>
           </Button>
         </div>
       </CardHeader>
 
       <CardContent className={'flex flex-col gap-4'}>
-        {prospects.length === 0 ? (
-          <p
-            className={'text-muted-foreground py-10 text-center text-sm'}
-            data-test={'prospects-empty'}
-          >
-            <Trans
-              i18nKey={
-                query || source
-                  ? 'campaigns.prospects.noMatch'
-                  : 'campaigns.prospects.empty'
-              }
-            />
-          </p>
-        ) : (
-          <ProspectsTable prospects={prospects} showSource />
-        )}
+        <ProspectsList
+          // nouvelle page, nouveau tri ou nouveaux filtres : la sélection repart de zéro
+          key={pageHref(state.page)}
+          basePath={basePath}
+          state={state}
+          space={spaceParam}
+          prospects={prospects}
+          accountId={account.id}
+          campaignsPath={campaignsPath}
+          canDelete={canDelete}
+          noResultsMessage={
+            <span data-test={'prospects-empty'}>
+              <Trans
+                i18nKey={hasFilters ? 'prospects.noMatch' : 'prospects.empty'}
+              />
+            </span>
+          }
+        />
 
         <div
           className={
@@ -218,7 +238,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
         >
           <span data-test={'prospects-total'}>
             <Trans
-              i18nKey={'campaigns.prospects.total'}
+              i18nKey={'prospects.total'}
               values={{ count: total, formatted: format.number(total) }}
             />
           </span>
@@ -226,26 +246,26 @@ async function ProspectsContent(props: ProspectsPageProps) {
           {pageCount > 1 ? (
             <div className={'flex items-center gap-2'}>
               <PageLink
-                href={page > 1 ? pageHref(page - 1) : null}
+                href={state.page > 1 ? pageHref(state.page - 1) : null}
                 dataTest={'prospects-previous-page'}
               >
                 <ChevronLeft className={'w-4'} />
 
-                <Trans i18nKey={'campaigns.prospects.previousPage'} />
+                <Trans i18nKey={'prospects.previousPage'} />
               </PageLink>
 
               <span className={'tabular-nums'}>
                 <Trans
-                  i18nKey={'campaigns.prospects.pageOf'}
-                  values={{ page, count: pageCount }}
+                  i18nKey={'prospects.pageOf'}
+                  values={{ page: state.page, count: pageCount }}
                 />
               </span>
 
               <PageLink
-                href={page < pageCount ? pageHref(page + 1) : null}
+                href={state.page < pageCount ? pageHref(state.page + 1) : null}
                 dataTest={'prospects-next-page'}
               >
-                <Trans i18nKey={'campaigns.prospects.nextPage'} />
+                <Trans i18nKey={'prospects.nextPage'} />
 
                 <ChevronRight className={'w-4'} />
               </PageLink>

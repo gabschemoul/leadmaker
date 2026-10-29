@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
-import { If } from '@kit/ui/if';
 import { PageBody } from '@kit/ui/page';
 import {
   Table,
@@ -30,10 +29,7 @@ import {
 } from '~/components/skeletons/page-skeletons';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
-import {
-  loadCountryOptions,
-  loadSpaces,
-} from '../_lib/server/leadmaker.loader';
+import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { CreateSpaceDialog } from './_components/create-space-dialog';
 
@@ -47,7 +43,7 @@ export const generateMetadata = async () => {
   const t = await getTranslations('campaigns');
 
   return {
-    title: t('spaces.pageTitle'),
+    title: t('folders.pageTitle'),
   };
 };
 
@@ -92,77 +88,55 @@ async function SpacesCard({ params }: { params: Params }) {
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
 
-  const [spaces, countries, format] = await Promise.all([
+  const [spaces, format] = await Promise.all([
     loadSpaces(client, account.id),
-    loadCountryOptions(client),
     getFormatter(),
   ]);
 
-  const countryName = (code: string) =>
-    countries.find((country) => country.code === code)?.label ?? code;
-
   return (
     <Card>
-      <CardHeader className={'flex flex-row items-start justify-between'}>
+      <CardHeader className={'flex flex-row items-start justify-between gap-4'}>
         <div className={'flex flex-col space-y-1.5'}>
           <CardTitle>
-            <Trans i18nKey={'campaigns.spaces.listTitle'} />
+            <Trans i18nKey={'campaigns.folders.listTitle'} />
           </CardTitle>
 
           <CardDescription>
-            <Trans i18nKey={'campaigns.spaces.listDescription'} />
+            <Trans i18nKey={'campaigns.folders.intro'} />
           </CardDescription>
         </div>
 
-        <CreateSpaceDialog accountId={account.id} countries={countries} />
+        <CreateSpaceDialog accountId={account.id} />
       </CardHeader>
 
       <CardContent>
-        <If
-          condition={spaces.length > 0}
-          fallback={
-            <p
-              className={'text-muted-foreground py-6 text-center text-sm'}
-              data-test={'spaces-empty'}
-            >
-              <Trans i18nKey={'campaigns.spaces.empty'} />
-            </p>
-          }
-        >
-          <Table data-test={'spaces-table'}>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Trans i18nKey={'campaigns.spaces.nameColumn'} />
-                </TableHead>
+        <Table data-test={'folders-table'}>
+          <TableHeader>
+            <TableRow>
+              <TableHead>
+                <Trans i18nKey={'campaigns.folders.nameColumn'} />
+              </TableHead>
 
-                <TableHead>
-                  <Trans i18nKey={'campaigns.spaces.countryColumn'} />
-                </TableHead>
+              <TableHead>
+                <Trans i18nKey={'campaigns.folders.createdAtColumn'} />
+              </TableHead>
+            </TableRow>
+          </TableHeader>
 
-                <TableHead>
-                  <Trans i18nKey={'campaigns.spaces.createdAtColumn'} />
-                </TableHead>
+          <TableBody>
+            {spaces.map((space) => (
+              <TableRow key={space.id} data-test={'folder-row'}>
+                <TableCell className={'font-medium'}>{space.label}</TableCell>
+
+                <TableCell>
+                  {format.dateTime(new Date(space.created_at), {
+                    dateStyle: 'medium',
+                  })}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {spaces.map((space) => (
-                <TableRow key={space.id}>
-                  <TableCell className={'font-medium'}>{space.name}</TableCell>
-
-                  <TableCell>{countryName(space.country_code)}</TableCell>
-
-                  <TableCell>
-                    {format.dateTime(new Date(space.created_at), {
-                      dateStyle: 'medium',
-                    })}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </If>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

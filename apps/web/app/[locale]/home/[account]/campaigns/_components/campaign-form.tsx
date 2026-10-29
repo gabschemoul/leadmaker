@@ -57,8 +57,8 @@ import { SearchPicker } from './search-picker';
 
 interface SpaceOption {
   id: string;
-  name: string;
-  country_code: string;
+  label: string;
+  is_default: boolean;
 }
 
 export function CampaignForm(props: {
@@ -69,8 +69,14 @@ export function CampaignForm(props: {
   discoveryBalance: number;
 }) {
   const t = useTranslations('campaigns');
+  const locale = useLocale();
   const [error, setError] = useState<string | null>(null);
-  const firstSpace = props.spaces[0];
+
+  // Une seule entrée = l'espace par défaut : le choix du dossier client est masqué.
+  const defaultSpace =
+    props.spaces.find((space) => space.is_default) ?? props.spaces[0];
+
+  const showSpaceSelect = props.spaces.length > 1;
 
   const { execute, isPending } = useAction(createCampaignAction, {
     onExecute: () => setError(null),
@@ -83,8 +89,8 @@ export function CampaignForm(props: {
     resolver: zodResolver(CampaignFormSchema),
     defaultValues: {
       name: '',
-      spaceId: firstSpace?.id ?? '',
-      countryCode: firstSpace?.country_code ?? 'FR',
+      spaceId: defaultSpace?.id ?? '',
+      countryCode: locale.startsWith('fr') ? 'FR' : 'US',
       citiesMode: 'country' as const,
       minPopulation: 0,
       radiusCity: null,
@@ -188,43 +194,40 @@ export function CampaignForm(props: {
               />
 
               <div className={'grid grid-cols-1 gap-4 md:grid-cols-2'}>
-                <FormField
-                  name={'spaceId'}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <Trans i18nKey={'campaigns.form.spaceLabel'} />
-                      </FormLabel>
+                <If condition={showSpaceSelect}>
+                  <FormField
+                    name={'spaceId'}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <Trans i18nKey={'campaigns.form.folderLabel'} />
+                        </FormLabel>
 
-                      <FormControl>
-                        <NativeSelect
-                          className={'w-full'}
-                          data-test={'campaign-space-select'}
-                          value={field.value}
-                          onChange={(event) => {
-                            const space = props.spaces.find(
-                              (item) => item.id === event.target.value,
-                            );
-
-                            field.onChange(event.target.value);
-
-                            if (space) {
-                              changeCountry(space.country_code);
+                        <FormControl>
+                          <NativeSelect
+                            className={'w-full'}
+                            data-test={'campaign-folder-select'}
+                            value={field.value}
+                            onChange={(event) =>
+                              field.onChange(event.target.value)
                             }
-                          }}
-                        >
-                          {props.spaces.map((space) => (
-                            <NativeSelectOption key={space.id} value={space.id}>
-                              {space.name}
-                            </NativeSelectOption>
-                          ))}
-                        </NativeSelect>
-                      </FormControl>
+                          >
+                            {props.spaces.map((space) => (
+                              <NativeSelectOption
+                                key={space.id}
+                                value={space.id}
+                              >
+                                {space.label}
+                              </NativeSelectOption>
+                            ))}
+                          </NativeSelect>
+                        </FormControl>
 
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </If>
 
                 <FormField
                   name={'countryCode'}

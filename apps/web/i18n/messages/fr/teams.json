@@ -18,7 +18,7 @@
   "billing": {
     "pageTitle": "Facturation"
   },
-  "switchWorkspace": "Changer d'espace de travail",
+  "switchWorkspace": "Changer d'équipe",
   "yourTeams": "Vos équipes ({teamsCount})",
   "createTeam": "Créer une équipe",
   "creatingTeam": "Création de l'équipe...",

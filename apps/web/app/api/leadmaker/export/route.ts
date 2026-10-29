@@ -69,7 +69,7 @@ export const GET = enhanceRouteHandler(
       filter.column === 'space_id'
         ? await client
             .from('lm_spaces')
-            .select('name')
+            .select('name, is_default')
             .eq('id', filter.id)
             .maybeSingle()
         : await client
@@ -161,7 +161,13 @@ export const GET = enhanceRouteHandler(
     });
 
     const date = new Date().toISOString().slice(0, 10);
-    const filename = `prospects-${slugify(owner.data.name)}-${date}.csv`;
+    // l'espace par défaut porte un nom technique (« Default ») : on l'omet
+    const isDefaultSpace =
+      'is_default' in owner.data && owner.data.is_default === true;
+
+    const filename = isDefaultSpace
+      ? `prospects-${date}.csv`
+      : `prospects-${slugify(owner.data.name)}-${date}.csv`;
 
     return new Response(stream, {
       headers: {

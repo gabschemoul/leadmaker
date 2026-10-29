@@ -13,7 +13,6 @@ import {
   PageHeaderSkeleton,
 } from '~/components/skeletons/page-skeletons';
 
-import { NoSpaceNotice } from '../../_components/leadmaker/no-space-notice';
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
   loadCountryOptions,
@@ -87,15 +86,15 @@ async function NewCampaignContent({ params }: { params: Params }) {
     loadDiscoveryBalance(client, account.id),
   ]);
 
-  if (spaces.length === 0) {
-    return <NoSpaceNotice account={slug} />;
-  }
-
   return (
     <CampaignForm
       accountId={account.id}
       accountSlug={slug}
-      spaces={spaces}
+      spaces={spaces.map(({ id, label, is_default }) => ({
+        id,
+        label,
+        is_default,
+      }))}
       countries={countries}
       discoveryBalance={balance}
     />

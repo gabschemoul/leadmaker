@@ -17,7 +17,8 @@ import { Trans } from '@kit/ui/trans';
  */
 export function ProspectsFilters(props: {
   action: string;
-  spaces: Array<{ id: string; name: string }>;
+  /** vide quand l'organisation n'a qu'un dossier client : pas de sélecteur */
+  folders: Array<{ id: string; label: string }>;
   spaceId: string;
   query: string;
   source: string;
@@ -36,19 +37,21 @@ export function ProspectsFilters(props: {
       data-test={'prospects-filters'}
       className={'flex flex-col gap-2 md:flex-row md:items-center'}
     >
-      <NativeSelect
-        name={'space'}
-        aria-label={t('prospects.spaceFilter')}
-        data-test={'prospects-space-select'}
-        defaultValue={props.spaceId}
-        onChange={submitOnChange}
-      >
-        {props.spaces.map((space) => (
-          <NativeSelectOption key={space.id} value={space.id}>
-            {space.name}
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
+      {props.folders.length > 1 ? (
+        <NativeSelect
+          name={'space'}
+          aria-label={t('prospects.folderFilter')}
+          data-test={'prospects-folder-select'}
+          defaultValue={props.spaceId}
+          onChange={submitOnChange}
+        >
+          {props.folders.map((folder) => (
+            <NativeSelectOption key={folder.id} value={folder.id}>
+              {folder.label}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
+      ) : null}
 
       <NativeSelect
         name={'source'}

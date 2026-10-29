@@ -24,6 +24,6 @@ export const ImportProspectsSchema = z.object({
 });
 
 export const ImportFormSchema = z.object({
-  spaceId: z.string().min(1, { error: 'campaigns.import.spaceRequired' }),
+  spaceId: z.string().min(1, { error: 'campaigns.import.folderRequired' }),
   file: z.instanceof(File, { error: 'campaigns.import.fileRequired' }),
 });

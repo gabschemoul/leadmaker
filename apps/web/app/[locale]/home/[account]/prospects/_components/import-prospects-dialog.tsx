@@ -46,7 +46,8 @@ interface ImportResult {
 }
 
 export function ImportProspectsDialog(props: {
-  spaces: Array<{ id: string; name: string }>;
+  /** vide quand l'organisation n'a qu'un dossier client : pas de sélecteur */
+  folders: Array<{ id: string; label: string }>;
   defaultSpaceId: string;
 }) {
   const { dialogProps, isPending, setIsPending, setOpen } = useAsyncDialog();
@@ -80,7 +81,7 @@ export function ImportProspectsDialog(props: {
 
           <If condition={dialogProps.open}>
             <ImportProspectsForm
-              spaces={props.spaces}
+              folders={props.folders}
               defaultSpaceId={props.defaultSpaceId}
               setIsPending={setIsPending}
               onClose={() => setOpen(false)}
@@ -104,7 +105,8 @@ async function readFileText(file: File) {
 }
 
 function ImportProspectsForm(props: {
-  spaces: Array<{ id: string; name: string }>;
+  /** vide quand l'organisation n'a qu'un dossier client : pas de sélecteur */
+  folders: Array<{ id: string; label: string }>;
   defaultSpaceId: string;
   setIsPending: (pending: boolean) => void;
   onClose: () => void;
@@ -248,33 +250,35 @@ function ImportProspectsForm(props: {
           )}
         </If>
 
-        <FormField
-          name={'spaceId'}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <Trans i18nKey={'campaigns.import.spaceLabel'} />
-              </FormLabel>
+        <If condition={props.folders.length > 1}>
+          <FormField
+            name={'spaceId'}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <Trans i18nKey={'campaigns.import.folderLabel'} />
+                </FormLabel>
 
-              <FormControl>
-                <NativeSelect
-                  className={'w-full'}
-                  data-test={'import-space-select'}
-                  value={field.value}
-                  onChange={(event) => field.onChange(event.target.value)}
-                >
-                  {props.spaces.map((space) => (
-                    <NativeSelectOption key={space.id} value={space.id}>
-                      {space.name}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </FormControl>
+                <FormControl>
+                  <NativeSelect
+                    className={'w-full'}
+                    data-test={'import-folder-select'}
+                    value={field.value}
+                    onChange={(event) => field.onChange(event.target.value)}
+                  >
+                    {props.folders.map((folder) => (
+                      <NativeSelectOption key={folder.id} value={folder.id}>
+                        {folder.label}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                </FormControl>
 
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </If>
 
         <FormField
           name={'file'}

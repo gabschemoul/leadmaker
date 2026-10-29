@@ -1,27 +1,47 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { getLocale } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import type { Database } from '@kit/supabase/database';
 
 import { toCountryOptions } from '~/lib/leadmaker/countries';
+import { spaceLabel } from '~/lib/leadmaker/space-label';
 
 type Client = SupabaseClient<Database>;
 
-/** Espaces de l'organisation, du plus ancien au plus récent. */
+/**
+ * Renvoie une fonction qui donne le libellé affiché d'un dossier client :
+ * « Mon entreprise » pour l'espace par défaut, son nom sinon.
+ */
+export async function getSpaceLabeler() {
+  const t = await getTranslations('campaigns');
+  const defaultLabel = t('folders.defaultName');
+
+  return (space: { name: string; is_default: boolean }) =>
+    spaceLabel(space, defaultLabel);
+}
+
+/**
+ * Dossiers clients (espaces) de l'organisation : l'espace par défaut en
+ * premier, puis du plus ancien au plus récent. Il y en a toujours au moins un.
+ */
 export async function loadSpaces(client: Client, accountId: string) {
-  const { data, error } = await client
-    .from('lm_spaces')
-    .select('id, name, country_code, language_code, created_at')
-    .eq('account_id', accountId)
-    .order('created_at', { ascending: true });
+  const [{ data, error }, label] = await Promise.all([
+    client
+      .from('lm_spaces')
+      .select('id, name, is_default, created_at')
+      .eq('account_id', accountId)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: true }),
+    getSpaceLabeler(),
+  ]);
 
   if (error) {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).map((space) => ({ ...space, label: label(space) }));
 }
 
 export type SpaceSummary = Awaited<ReturnType<typeof loadSpaces>>[number];

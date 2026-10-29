@@ -24,7 +24,7 @@ export const importProspectsAction = authActionClient
 
     if (error) {
       if (error.code === 'P0002') {
-        throw new Error('campaigns.import.spaceNotFound');
+        throw new Error('campaigns.import.folderNotFound');
       }
 
       const logger = await getLogger();

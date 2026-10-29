@@ -9,38 +9,27 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { CreateSpaceSchema } from '../schema/space.schema';
 
 /**
- * Crée un espace. Le quota du forfait est vérifié par un trigger en base,
+ * Crée un dossier client (un espace). Le quota du forfait est vérifié par un trigger en base,
  * qui lève une erreur 23514 (check_violation) au-delà de la limite.
  */
 export const createSpaceAction = authActionClient
   .inputSchema(CreateSpaceSchema)
-  .action(async ({ parsedInput: { accountId, name, countryCode }, ctx }) => {
+  .action(async ({ parsedInput: { accountId, name }, ctx }) => {
     const logger = await getLogger();
     const client = getSupabaseServerClient();
-
-    const { data: coverage } = await client
-      .from('lm_country_coverage')
-      .select('languages')
-      .eq('country_code', countryCode)
-      .maybeSingle();
-
-    // première langue officielle du pays (sert plus tard aux messages)
-    const language = coverage?.languages?.find((code) => code.length === 2);
 
     const { error } = await client.from('lm_spaces').insert({
       account_id: accountId,
       name,
-      country_code: countryCode,
-      language_code: language ?? 'en',
     });
 
     if (error) {
       if (error.code === '23514') {
-        throw new Error('campaigns.spaces.quotaReached');
+        throw new Error('campaigns.folders.quotaReached');
       }
 
       if (error.code === '23505') {
-        throw new Error('campaigns.spaces.nameTaken');
+        throw new Error('campaigns.folders.nameTaken');
       }
 
       logger.error(
@@ -53,7 +42,7 @@ export const createSpaceAction = authActionClient
         'Failed to create space',
       );
 
-      throw new Error('campaigns.spaces.createError');
+      throw new Error('campaigns.folders.createError');
     }
 
     revalidatePath('/home/[account]/spaces', 'page');

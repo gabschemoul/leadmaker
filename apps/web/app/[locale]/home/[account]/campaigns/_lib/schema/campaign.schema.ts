@@ -45,7 +45,7 @@ const CampaignFieldsSchema = z.object({
     .trim()
     .min(1, { error: 'campaigns.form.nameRequired' })
     .max(255, { error: 'campaigns.form.nameTooLong' }),
-  spaceId: z.string().min(1, { error: 'campaigns.form.spaceRequired' }),
+  spaceId: z.string().min(1, { error: 'campaigns.form.folderRequired' }),
   countryCode: z
     .string()
     .regex(/^[A-Z]{2}$/, { error: 'campaigns.form.countryRequired' }),

@@ -21,7 +21,6 @@ import {
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 
-import { NoSpaceNotice } from '../_components/leadmaker/no-space-notice';
 import { ProspectsTable } from '../_components/leadmaker/prospects-table';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
@@ -116,10 +115,9 @@ async function ProspectsContent(props: ProspectsPageProps) {
   const client = getSupabaseServerClient();
   const spaces = await loadSpaces(client, account.id);
 
-  if (spaces.length === 0) {
-    return <NoSpaceNotice account={slug} />;
-  }
-
+  // l'espace par défaut vient en premier ; avec un seul dossier client, la
+  // notion reste invisible (pas de filtre, pas de paramètre d'URL)
+  const showFolders = spaces.length > 1;
   const space = spaces.find((item) => item.id === search.space) ?? spaces[0]!;
   const page = search.page ?? 1;
   const query = search.q ?? '';
@@ -134,13 +132,17 @@ async function ProspectsContent(props: ProspectsPageProps) {
   const basePath = pathsConfig.app.accountProspects.replace('[account]', slug);
 
   const pageHref = (target: number) => {
-    const urlParams = new URLSearchParams({ space: space.id });
+    const urlParams = new URLSearchParams();
+
+    if (showFolders) urlParams.set('space', space.id);
 
     if (query) urlParams.set('q', query);
     if (source) urlParams.set('source', source);
     if (target > 1) urlParams.set('page', String(target));
 
-    return `${basePath}?${urlParams.toString()}`;
+    const queryString = urlParams.toString();
+
+    return queryString ? `${basePath}?${queryString}` : basePath;
   };
 
   // page au-delà de la dernière (lien périmé) : on revient à la dernière
@@ -148,7 +150,9 @@ async function ProspectsContent(props: ProspectsPageProps) {
     redirect(pageHref(pageCount));
   }
 
-  const spaceOptions = spaces.map(({ id, name }) => ({ id, name }));
+  const folderOptions = showFolders
+    ? spaces.map(({ id, label }) => ({ id, label }))
+    : [];
 
   return (
     <Card>
@@ -159,7 +163,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
       >
         <ProspectsFilters
           action={basePath}
-          spaces={spaceOptions}
+          folders={folderOptions}
           spaceId={space.id}
           query={query}
           source={source ?? ''}
@@ -167,7 +171,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
         <div className={'flex gap-2'}>
           <ImportProspectsDialog
-            spaces={spaceOptions}
+            folders={folderOptions}
             defaultSpaceId={space.id}
           />
 

@@ -36,7 +36,7 @@ const REFRESH_INTERVAL = 10_000;
 
 export function CampaignDetailView(props: {
   campaignId: string;
-  spaceName: string;
+  folderName: string | null;
   countryLabel: string;
   billingPath: string;
   initialData: CampaignLive;
@@ -72,10 +72,12 @@ export function CampaignDetailView(props: {
         >
           <CampaignStatusBadge status={data.status} />
 
-          <span>
-            <Trans i18nKey={'campaigns.detail.space'} />{' '}
-            <span className={'text-foreground'}>{props.spaceName}</span>
-          </span>
+          {props.folderName ? (
+            <span data-test={'campaign-folder'}>
+              <Trans i18nKey={'campaigns.detail.folder'} />{' '}
+              <span className={'text-foreground'}>{props.folderName}</span>
+            </span>
+          ) : null}
 
           <span>
             <Trans i18nKey={'campaigns.detail.country'} />{' '}

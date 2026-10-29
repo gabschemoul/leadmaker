@@ -35,11 +35,6 @@ const getRoutes = (account: string) => [
         path: createPath(pathsConfig.app.accountProspects, account),
         Icon: <UserSearch className={iconClasses} />,
       },
-      {
-        label: 'common.routes.spaces',
-        path: createPath(pathsConfig.app.accountSpaces, account),
-        Icon: <FolderKanban className={iconClasses} />,
-      },
     ],
   },
   {
@@ -55,6 +50,11 @@ const getRoutes = (account: string) => [
         label: 'common.routes.members',
         path: createPath(pathsConfig.app.accountMembers, account),
         Icon: <Users className={iconClasses} />,
+      },
+      {
+        label: 'common.routes.spaces',
+        path: createPath(pathsConfig.app.accountSpaces, account),
+        Icon: <FolderKanban className={iconClasses} />,
       },
       featureFlagsConfig.enableTeamAccountBilling
         ? {

@@ -29,29 +29,23 @@ import { If } from '@kit/ui/if';
 import { Input } from '@kit/ui/input';
 import { Trans } from '@kit/ui/trans';
 
-import type { CountryOption } from '~/lib/leadmaker/countries';
-
-import { CountrySelect } from '../../_components/leadmaker/country-select';
 import { SpaceFormSchema } from '../_lib/schema/space.schema';
 import { createSpaceAction } from '../_lib/server/server-actions';
 
-export function CreateSpaceDialog(props: {
-  accountId: string;
-  countries: CountryOption[];
-}) {
+export function CreateSpaceDialog(props: { accountId: string }) {
   const { dialogProps, isPending, setIsPending, setOpen } = useAsyncDialog();
 
   return (
     <>
       <Button
         size={'sm'}
-        data-test={'create-space-button'}
+        data-test={'create-folder-button'}
         onClick={() => setOpen(true)}
       >
         <PlusCircle className={'w-4'} />
 
         <span>
-          <Trans i18nKey={'campaigns.spaces.createButton'} />
+          <Trans i18nKey={'campaigns.folders.createButton'} />
         </span>
       </Button>
 
@@ -59,18 +53,17 @@ export function CreateSpaceDialog(props: {
         <DialogContent showCloseButton={!isPending}>
           <DialogHeader>
             <DialogTitle>
-              <Trans i18nKey={'campaigns.spaces.createTitle'} />
+              <Trans i18nKey={'campaigns.folders.createTitle'} />
             </DialogTitle>
 
             <DialogDescription>
-              <Trans i18nKey={'campaigns.spaces.createDescription'} />
+              <Trans i18nKey={'campaigns.folders.createDescription'} />
             </DialogDescription>
           </DialogHeader>
 
           <If condition={dialogProps.open}>
             <CreateSpaceForm
               accountId={props.accountId}
-              countries={props.countries}
               setIsPending={setIsPending}
               onClose={() => setOpen(false)}
             />
@@ -83,7 +76,6 @@ export function CreateSpaceDialog(props: {
 
 function CreateSpaceForm(props: {
   accountId: string;
-  countries: CountryOption[];
   setIsPending: (pending: boolean) => void;
   onClose: () => void;
 }) {
@@ -97,7 +89,7 @@ function CreateSpaceForm(props: {
     onSuccess: () => props.onClose(),
     onNavigation: () => props.onClose(),
     onError: ({ error }) => {
-      setError(error.serverError ?? 'campaigns.spaces.createError');
+      setError(error.serverError ?? 'campaigns.folders.createError');
     },
     onSettled: () => props.setIsPending(false),
   });
@@ -106,7 +98,6 @@ function CreateSpaceForm(props: {
     resolver: zodResolver(SpaceFormSchema),
     defaultValues: {
       name: '',
-      countryCode: props.countries[0]?.code ?? 'FR',
     },
   });
 
@@ -115,7 +106,7 @@ function CreateSpaceForm(props: {
   return (
     <Form {...form}>
       <form
-        data-test={'create-space-form'}
+        data-test={'create-folder-form'}
         className={'flex flex-col space-y-4'}
         onSubmit={form.handleSubmit((values) =>
           execute({ ...values, accountId: props.accountId }),
@@ -136,36 +127,14 @@ function CreateSpaceForm(props: {
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                <Trans i18nKey={'campaigns.spaces.nameLabel'} />
+                <Trans i18nKey={'campaigns.folders.nameLabel'} />
               </FormLabel>
 
               <FormControl>
                 <Input
-                  data-test={'space-name-input'}
+                  data-test={'folder-name-input'}
                   maxLength={100}
                   {...field}
-                />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          name={'countryCode'}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <Trans i18nKey={'campaigns.spaces.countryLabel'} />
-              </FormLabel>
-
-              <FormControl>
-                <CountrySelect
-                  data-test={'space-country-select'}
-                  countries={props.countries}
-                  value={field.value}
-                  onChange={field.onChange}
                 />
               </FormControl>
 
@@ -186,10 +155,10 @@ function CreateSpaceForm(props: {
 
           <Button
             type={'submit'}
-            data-test={'confirm-create-space-button'}
+            data-test={'confirm-create-folder-button'}
             disabled={disabled}
           >
-            <Trans i18nKey={'campaigns.spaces.createSubmit'} />
+            <Trans i18nKey={'campaigns.folders.createSubmit'} />
           </Button>
         </div>
       </form>

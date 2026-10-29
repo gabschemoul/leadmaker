@@ -34,7 +34,6 @@ import {
 import pathsConfig from '~/config/paths.config';
 
 import { CampaignStatusBadge } from '../_components/leadmaker/campaign-status-badge';
-import { NoSpaceNotice } from '../_components/leadmaker/no-space-notice';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import {
   loadCountryOptions,
@@ -110,9 +109,11 @@ async function CampaignsCard({ params }: { params: Params }) {
     slug,
   );
 
-  if (spaces.length === 0) {
-    return <NoSpaceNotice account={slug} />;
-  }
+  // un seul dossier (celui par défaut) : la notion n'est pas affichée
+  const showFolders = spaces.length > 1;
+
+  const folderLabel = (spaceId: string) =>
+    spaces.find((space) => space.id === spaceId)?.label ?? '';
 
   const countryName = (code: string) =>
     countries.find((country) => country.code === code)?.label ?? code;
@@ -164,9 +165,11 @@ async function CampaignsCard({ params }: { params: Params }) {
                   <Trans i18nKey={'campaigns.list.statusColumn'} />
                 </TableHead>
 
-                <TableHead>
-                  <Trans i18nKey={'campaigns.list.spaceColumn'} />
-                </TableHead>
+                {showFolders ? (
+                  <TableHead>
+                    <Trans i18nKey={'campaigns.list.folderColumn'} />
+                  </TableHead>
+                ) : null}
 
                 <TableHead>
                   <Trans i18nKey={'campaigns.list.countryColumn'} />
@@ -199,7 +202,9 @@ async function CampaignsCard({ params }: { params: Params }) {
                     <CampaignStatusBadge status={campaign.status} />
                   </TableCell>
 
-                  <TableCell>{campaign.spaceName}</TableCell>
+                  {showFolders ? (
+                    <TableCell>{folderLabel(campaign.spaceId)}</TableCell>
+                  ) : null}
 
                   <TableCell>{countryName(campaign.countryCode)}</TableCell>
 

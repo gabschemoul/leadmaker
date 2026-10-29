@@ -17,7 +17,10 @@ import {
 import pathsConfig from '~/config/paths.config';
 
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
-import { loadCountryOptions } from '../../_lib/server/leadmaker.loader';
+import {
+  loadCountryOptions,
+  loadSpaces,
+} from '../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../_lib/server/team-account-workspace.loader';
 import { CampaignDetailView } from '../_components/campaign-detail-view';
 import { fetchCampaignLive } from '../_lib/campaign-live';
@@ -72,13 +75,14 @@ async function CampaignContent({ params }: { params: Params }) {
   }
 
   // vérifie l'appartenance à l'organisation (et redirige sinon)
-  await loadTeamWorkspace(slug);
+  const { account } = await loadTeamWorkspace(slug);
 
   const client = getSupabaseServerClient();
 
-  const [campaign, countries] = await Promise.all([
+  const [campaign, countries, spaces] = await Promise.all([
     loadCampaign(client, id),
     loadCountryOptions(client),
+    loadSpaces(client, account.id),
   ]);
 
   if (!campaign) {
@@ -91,6 +95,12 @@ async function CampaignContent({ params }: { params: Params }) {
     countries.find((country) => country.code === campaign.country_code)
       ?.label ?? campaign.country_code;
 
+  // le dossier client n'est mentionné que si l'organisation en a plusieurs
+  const folderName =
+    spaces.length > 1
+      ? (spaces.find((space) => space.id === campaign.space_id)?.label ?? null)
+      : null;
+
   return (
     <>
       <TeamAccountLayoutPageHeader
@@ -101,7 +111,7 @@ async function CampaignContent({ params }: { params: Params }) {
 
       <CampaignDetailView
         campaignId={id}
-        spaceName={campaign.space?.name ?? ''}
+        folderName={folderName}
         countryLabel={countryLabel}
         billingPath={pathsConfig.app.accountBilling.replace('[account]', slug)}
         initialData={live}

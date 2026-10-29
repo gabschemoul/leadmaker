@@ -9,7 +9,7 @@
     "build": "next build",
     "build:test": "NODE_ENV=test next build",
     "clean": "git clean -xdf .next .turbo node_modules",
-    "dev": "next dev | pino-pretty -c",
+    "dev": "next dev -p 3001 | pino-pretty -c",
     "start": "next start",
     "start:test": "NODE_ENV=test next start",
     "typecheck": "tsc --noEmit",

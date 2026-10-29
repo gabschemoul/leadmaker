@@ -23,7 +23,8 @@ legacy/         prototype interne et documents de cadrage
 ```bash
 pnpm install
 pnpm supabase:web:start          # base locale (Docker), migrations et données de référence
-pnpm --filter web dev            # application sur http://localhost:3000 (ou 3001 si le port est pris)
+pnpm --filter web dev            # application sur http://localhost:3001 (le port 3000 est pris par une autre app sur le Mac de Gabriel)
+# emails locaux (confirmation, invitations) : http://127.0.0.1:54324
 pnpm supabase:web:test           # tests de la base, dont l'isolation entre organisations
 cd workers && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres .venv/bin/python -m leadmaker_workers.main
@@ -39,5 +40,6 @@ Lot 0 (fondations) démarré le 29/10/2026 :
 - [x] Quotas d'espaces et de sièges par forfait, crédits découverte / outreach avec journal
 - [x] File de tâches et worker Python conteneurisé (tâche factice)
 - [x] GeoNames : 252 pays, ~198 000 villes
-- [ ] Stripe en mode test (clés à fournir), accès administrateur
+- [ ] Stripe en mode test (clés à fournir)
+- [ ] Accès administrateur : une fois le compte créé, exécuter `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role": "super-admin"}' where email = '…'` puis activer la double authentification dans le profil ; le panneau est sur /admin
 - [ ] Mesure des coûts réels (proxies) et calendrier réestimé

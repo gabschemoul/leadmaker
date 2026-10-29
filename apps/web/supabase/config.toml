@@ -40,12 +40,12 @@ file_size_limit = "50MiB"
 [auth]
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://localhost:3000"
+site_url = "http://localhost:3001"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
-  "http://localhost:3000",
-  "http://localhost:3000/auth/callback",
-  "http://localhost:3000/update-password",
+  "http://localhost:3001",
+  "http://localhost:3001/auth/callback",
+  "http://localhost:3001/update-password",
   # Native (Expo) OAuth callback. `mkkit` is the `scheme` in apps/native/app.json;
   "mkkit://**",
 ]
@@ -112,7 +112,7 @@ enabled = true
 
 rp_display_name = "Makerkit"
 rp_id = "localhost"
-rp_origins = ["http://localhost:3000"]
+rp_origins = ["http://localhost:3001"]
 
 [analytics]
 enabled = true

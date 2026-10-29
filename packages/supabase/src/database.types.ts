@@ -1140,7 +1140,7 @@ isOneToOne: false
 { Args: { "p_account_id": string,"p_campaign_id"?: string,"p_event_ref": string,"p_kind": Database["public"]['Enums']["lm_credit_kind"],"p_quantity": number,"p_reason": string }; Returns: boolean
                            },
 "lm_estimate_campaign":
-{ Args: { "p_country_code": string,"p_targeting": Json }; Returns: {
+{ Args: { "p_country_code": string,"p_filters"?: Json,"p_targeting": Json }; Returns: {
               "categories": number,"cities": number,"expected_prospects": number,"rate": number,"searches": number
             }[]
                            },
@@ -1160,6 +1160,9 @@ isOneToOne: false
                            },
 "lm_pause_campaign":
 { Args: { "p_campaign_id": string,"p_reason"?: string }; Returns: undefined
+                           },
+"lm_rating_share":
+{ Args: { "p_max": number,"p_min": number }; Returns: number
                            },
 "lm_record_prospect":
 { Args: { "p_campaign_id": string,"p_place": Json }; Returns: string

@@ -106,12 +106,13 @@ export const searchCategoriesAction = authActionClient
 /** Estimation avant lancement : villes, recherches et prospects attendus. */
 export const estimateCampaignAction = authActionClient
   .inputSchema(EstimateCampaignSchema)
-  .action(async ({ parsedInput: { countryCode, targeting } }) => {
+  .action(async ({ parsedInput: { countryCode, targeting, filters } }) => {
     const client = getSupabaseServerClient();
 
     const { data, error } = await client.rpc('lm_estimate_campaign', {
       p_country_code: countryCode,
       p_targeting: targeting,
+      p_filters: filters,
     });
 
     if (error) {

@@ -45,6 +45,7 @@ import {
   type CategoryRef,
   CampaignFormSchema,
   type CityRef,
+  MAX_CITIES_LIMIT,
   buildTargeting,
 } from '../_lib/schema/campaign.schema';
 import {
@@ -96,7 +97,7 @@ export function CampaignForm(props: {
       radiusCity: null,
       radiusKm: 30,
       cities: [],
-      maxCities: 5000,
+      maxCities: MAX_CITIES_LIMIT,
       categoriesMode: 'generic' as const,
       categories: [],
       ratingMin: 0.8,
@@ -120,7 +121,7 @@ export function CampaignForm(props: {
         radiusCity: (values.radiusCity as CityRef | null) ?? null,
         radiusKm: values.radiusKm ?? 30,
         cities: (values.cities ?? []) as CityRef[],
-        maxCities: values.maxCities ?? 5000,
+        maxCities: MAX_CITIES_LIMIT,
         categoriesMode: values.categoriesMode ?? 'generic',
         categories: (values.categories ?? []) as CategoryRef[],
       }),
@@ -130,10 +131,20 @@ export function CampaignForm(props: {
       values.radiusCity,
       values.radiusKm,
       values.cities,
-      values.maxCities,
       values.categoriesMode,
       values.categories,
     ],
+  );
+
+  // L'estimation dépend aussi des filtres (note, site web, avis).
+  const estimateFilters = useMemo(
+    () => ({
+      rating_min: finiteOr(values.ratingMin, 0),
+      rating_max: finiteOr(values.ratingMax, 5),
+      min_reviews: finiteOr(values.minReviews, 0),
+      website: values.website ?? 'all',
+    }),
+    [values.ratingMin, values.ratingMax, values.minReviews, values.website],
   );
 
   // Les villes appartiennent à un pays : on les oublie quand il change.
@@ -289,6 +300,7 @@ export function CampaignForm(props: {
           <CampaignEstimate
             countryCode={countryCode}
             targeting={targeting}
+            filters={estimateFilters}
             balance={props.discoveryBalance}
           />
         </div>
@@ -511,33 +523,6 @@ function CitiesSection(props: { countryCode: string }) {
             }}
           />
         </If>
-
-        <FormField
-          name={'maxCities'}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <Trans i18nKey={'campaigns.form.maxCitiesLabel'} />
-              </FormLabel>
-
-              <FormControl>
-                <NumberInput
-                  data-test={'campaign-max-cities-input'}
-                  min={1}
-                  max={20000}
-                  value={field.value}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-
-              <FormDescription>
-                <Trans i18nKey={'campaigns.form.maxCitiesHint'} />
-              </FormDescription>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </CardContent>
     </Card>
   );
@@ -936,4 +921,8 @@ function SelectedChip(props: {
       </button>
     </Badge>
   );
+}
+
+function finiteOr(value: number | undefined, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }

@@ -56,8 +56,6 @@
     "citiesListLabel": "Villes",
     "citySearchPlaceholder": "Tapez le nom d'une ville…",
     "population": "{count} hab.",
-    "maxCitiesLabel": "Nombre maximum de villes",
-    "maxCitiesHint": "Au-delà, les plus petites villes sont laissées de côté.",
     "categoriesTitle": "Quelles entreprises ?",
     "categoriesDescription": "Choisissez les types d'activités à rechercher.",
     "categoriesGeneric": "Activités courantes (recommandé)",

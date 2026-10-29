@@ -231,9 +231,19 @@ export function buildFilters(
   };
 }
 
+export const EstimateFiltersSchema = z.object({
+  rating_min: z.number().min(0).max(5),
+  rating_max: z.number().min(0).max(5),
+  min_reviews: z.number().int().min(0),
+  website: z.enum(['with', 'without', 'all']),
+});
+
+export type EstimateFilters = z.infer<typeof EstimateFiltersSchema>;
+
 export const EstimateCampaignSchema = z.object({
   countryCode: z.string().regex(/^[A-Z]{2}$/),
   targeting: TargetingSchema,
+  filters: EstimateFiltersSchema,
 });
 
 export const SearchCitiesSchema = z.object({

@@ -17,12 +17,14 @@ import { Spinner } from '@kit/ui/spinner';
 import { Trans } from '@kit/ui/trans';
 
 import type { Targeting } from '../_lib/schema/campaign.schema';
+import type { EstimateFilters } from '../_lib/schema/campaign.schema';
 import { estimateCampaignAction } from '../_lib/server/server-actions';
 import { useDebouncedValue } from '../_lib/use-debounced-value';
 
 export function CampaignEstimate(props: {
   countryCode: string;
   targeting: Targeting | null;
+  filters: EstimateFilters;
   balance: number;
 }) {
   const format = useFormatter();
@@ -33,6 +35,7 @@ export function CampaignEstimate(props: {
       ? JSON.stringify({
           countryCode: props.countryCode,
           targeting: props.targeting,
+          filters: props.filters,
         })
       : null,
     500,
@@ -47,6 +50,7 @@ export function CampaignEstimate(props: {
       const input = JSON.parse(key!) as {
         countryCode: string;
         targeting: Targeting;
+        filters: EstimateFilters;
       };
 
       const result = await estimateCampaignAction(input);

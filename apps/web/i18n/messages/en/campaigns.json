@@ -56,8 +56,6 @@
     "citiesListLabel": "Cities",
     "citySearchPlaceholder": "Type a city name…",
     "population": "pop. {count}",
-    "maxCitiesLabel": "Maximum number of cities",
-    "maxCitiesHint": "Beyond this, the smallest cities are left out.",
     "categoriesTitle": "Which businesses?",
     "categoriesDescription": "Choose the types of business to search for.",
     "categoriesGeneric": "Common activities (recommended)",

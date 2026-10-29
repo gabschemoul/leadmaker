@@ -183,7 +183,7 @@ declare
   v_mode text := coalesce(v_cities ->> 'mode', 'country');
   v_min integer := coalesce((v_cities ->> 'min_population')::integer, 0);
   v_max integer := (v_cities ->> 'max_population')::integer;
-  v_limit integer := least(coalesce((p_targeting ->> 'max_cities')::integer, 5000), 20000);
+  v_limit integer := least(coalesce((p_targeting ->> 'max_cities')::integer, 20000), 20000);
   v_country_name text;
   v_lat double precision;
   v_lng double precision;
@@ -251,35 +251,61 @@ $$;
 
 grant execute on function public.lm_target_categories(jsonb) to authenticated, service_role;
 
--- Estimation avant lancement : villes, recherches, prospects et crédits attendus
-create or replace function public.lm_estimate_campaign(p_country_code text, p_targeting jsonb)
+-- Part des fiches Google dont la note tombe dans [p_min, p_max].
+-- Répartition approximative des notes sur Google Maps (fiches notées) :
+--   <1 : 1 %, 1-2 : 2 %, 2-3 : 3 %, 3-3,5 : 4 %, 3,5-4 : 10 %, 4-4,5 : 25 %, 4,5-5 : 55 %.
+-- Environ 15 % des fiches n'ont pas de note ; elles ne comptent que si la note minimale est 0.
+create or replace function public.lm_rating_share(p_min numeric, p_max numeric) returns numeric
+set search_path = ''
+language sql
+immutable
+as $$
+  with bands(lo, hi, share) as (
+    values (0.0, 1.0, 0.01), (1.0, 2.0, 0.02), (2.0, 3.0, 0.03), (3.0, 3.5, 0.04),
+           (3.5, 4.0, 0.10), (4.0, 4.5, 0.25), (4.5, 5.0, 0.55)
+  )
+  select 0.85 * coalesce(sum(b.share * greatest(0, least(b.hi, p_max) - greatest(b.lo, p_min)) / (b.hi - b.lo)), 0)
+         + case when p_min <= 0 then 0.15 else 0 end
+    from bands b;
+$$;
+
+grant execute on function public.lm_rating_share(numeric, numeric) to authenticated, service_role;
+
+-- Estimation avant lancement : villes, recherches et prospects attendus selon la taille des villes et les filtres.
+-- Une recherche ramène au plus 120 fiches dans une grande ville, quelques-unes dans un village ;
+-- 70 % de densité moyenne d'une activité, 10 % d'exclusions (chaînes, administrations), puis les filtres.
+create or replace function public.lm_estimate_campaign(p_country_code text, p_targeting jsonb, p_filters jsonb default '{}')
 returns table (cities integer, categories integer, searches bigint, expected_prospects bigint, rate numeric)
 set search_path = ''
 language plpgsql
 stable
 as $$
 declare
-  v_rate numeric;
+  v_cities integer;
+  v_listings numeric;
+  v_categories integer;
+  v_share numeric;
+  v_reviews integer := coalesce((p_filters ->> 'min_reviews')::integer, 0);
 begin
-  -- Rendement observé seulement s'il repose sur assez de recherches, sinon valeur prudente par défaut
-  select case when sum(cc.searches) >= 100 then sum(cc.kept)::numeric / sum(cc.searches) end into v_rate
-    from public.lm_campaign_categories cc;
+  select count(*)::integer, coalesce(sum(least(120, greatest(5, ceil(t.population / 2000.0)))), 0)
+    into v_cities, v_listings
+    from public.lm_target_cities(p_country_code, p_targeting) t;
 
-  if v_rate is null then
-    select default_rate into v_rate from public.lm_discovery_settings where id;
-  end if;
+  select count(*)::integer into v_categories from public.lm_target_categories(p_targeting);
 
-  v_rate := coalesce(v_rate, 0.3);
+  v_share := 0.7 * 0.9
+    * public.lm_rating_share(coalesce((p_filters ->> 'rating_min')::numeric, 0), coalesce((p_filters ->> 'rating_max')::numeric, 5))
+    * case coalesce(p_filters ->> 'website', 'all') when 'with' then 0.6 when 'without' then 0.4 else 1 end
+    * case when v_reviews >= 50 then 0.5 when v_reviews >= 10 then 0.8 else 1 end;
 
   return query
-    with ci as (select count(*)::integer n from public.lm_target_cities(p_country_code, p_targeting)),
-         ca as (select count(*)::integer n from public.lm_target_categories(p_targeting))
-    select ci.n, ca.n, ci.n::bigint * ca.n, round(ci.n::bigint * ca.n * v_rate)::bigint, round(v_rate, 4)
-      from ci, ca;
+    select v_cities, v_categories, v_cities::bigint * v_categories,
+           round(v_listings * v_categories * v_share)::bigint,
+           round(case when v_cities > 0 then v_listings / v_cities * v_share else 0 end, 2);
 end;
 $$;
 
-grant execute on function public.lm_estimate_campaign(text, jsonb) to authenticated, service_role;
+grant execute on function public.lm_estimate_campaign(text, jsonb, jsonb) to authenticated, service_role;
 
 -- Lancement : vérifie les droits et quotas, fige les zones et les catégories, passe la campagne en cours
 create or replace function public.lm_start_campaign(p_campaign_id uuid) returns void

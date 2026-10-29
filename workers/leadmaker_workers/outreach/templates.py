@@ -46,15 +46,35 @@ def values(prospect: dict, sender: dict) -> dict[str, str]:
     }
 
 
+PROSPECT_VARS = {"company", "city", "category", "rating", "reviews", "website"}
+EMPTY_MARK = "\x00"
+SENTENCE = re.compile(r"[^.!?]*[.!?]+\s*|[^.!?]+$")
+
+
 def render(text: str, prospect: dict, sender: dict) -> str:
+    """Remplace les variables. Une info manquante sur l'entreprise (pas de note, pas d'avis…) retire la phrase
+    qui la contient, pour ne jamais écrire « : /5 avec avis ». Même règle que templates.ts côté interface."""
     vals = values(prospect, sender)
 
     def sub(m: re.Match) -> str:
-        key = m.group(1).lower()
-        key = ALIASES.get(key, key)
-        return vals[key] if key in vals else m.group(0)
+        key = ALIASES.get(m.group(1).lower(), m.group(1).lower())
+        if key not in vals:
+            return m.group(0)
+        if vals[key] == "" and key in PROSPECT_VARS:
+            return EMPTY_MARK
+        return vals[key]
 
-    return TOKEN.sub(sub, text or "")
+    out = TOKEN.sub(sub, text or "")
+    if EMPTY_MARK not in out:
+        return out
+    lines = []
+    for line in out.split("\n"):
+        if EMPTY_MARK in line:
+            parts = SENTENCE.findall(line) or [line]
+            line = "".join(p for p in parts if EMPTY_MARK not in p).rstrip()
+        lines.append(line)
+    cleaned = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip("\n")
+    return cleaned if cleaned.strip() else out.replace(EMPTY_MARK, "")
 
 
 def pick_balanced(messages: list[dict], counts: dict[str, int]) -> dict | None:

@@ -42,7 +42,7 @@
   "messages": {
     "pageTitle": "Messages",
     "title": "Campaign messages",
-    "intro": "Write up to 4 messages: they are sent in turn to see which one works best. Variables in braces are replaced for each business.",
+    "intro": "Write up to 4 messages: they are sent in turn to see which one works best. Variables in braces are replaced for each business. If a piece of information is missing for a business (no rating, no reviews…), the sentence containing it is removed automatically.",
     "messageTab": "Message {index}",
     "shortTab": "Short version",
     "shortIntro": "Some sites limit the message length. This version of at most 200 characters is used instead.",

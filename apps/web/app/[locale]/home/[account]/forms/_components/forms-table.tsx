@@ -108,6 +108,7 @@ export function FormsTable(props: {
     'no_form',
     'unreachable',
     'preparing',
+    'validated',
   ].includes(props.group);
   const canExclude = !['sent', 'excluded', 'to_verify'].includes(props.group);
   const canMark = props.group === 'to_verify';

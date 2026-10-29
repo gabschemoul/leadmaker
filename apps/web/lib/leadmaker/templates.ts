@@ -144,13 +144,63 @@ function resolve(token: string, ctx: TemplateContext): string | null {
   }
 }
 
-/** Remplace les variables ; une variable inconnue est laissée telle quelle. */
+const PROSPECT_VARS = new Set([
+  'company',
+  'city',
+  'category',
+  'rating',
+  'reviews',
+  'website',
+]);
+const EMPTY_MARK = '\u0000';
+const SENTENCE = /[^.!?]*[.!?]+\s*|[^.!?]+$/g;
+
+function canonical(token: string) {
+  const key = token.toLowerCase();
+  const variable = TEMPLATE_VARIABLES.find(
+    (item) =>
+      item.token === key || (item.aliases as readonly string[]).includes(key),
+  );
+
+  return variable?.token ?? null;
+}
+
+/**
+ * Remplace les variables ; une variable inconnue est laissée telle quelle.
+ * Une info manquante sur l'entreprise (pas de note, pas d'avis…) retire la
+ * phrase qui la contient, pour ne jamais écrire « : /5 avec avis ». Même
+ * règle que templates.py côté worker.
+ */
 export function renderTemplate(text: string, ctx: TemplateContext) {
-  return text.replace(TOKEN_PATTERN, (match, token: string) => {
+  const out = text.replace(TOKEN_PATTERN, (match, token: string) => {
     const value = resolve(token, ctx);
 
-    return value === null ? match : value;
+    if (value === null) return match;
+
+    const key = canonical(token);
+
+    return value === '' && key && PROSPECT_VARS.has(key) ? EMPTY_MARK : value;
   });
+
+  if (!out.includes(EMPTY_MARK)) return out;
+
+  const cleaned = out
+    .split('\n')
+    .map((line) => {
+      if (!line.includes(EMPTY_MARK)) return line;
+
+      const parts = line.match(SENTENCE) ?? [line];
+
+      return parts
+        .filter((part) => !part.includes(EMPTY_MARK))
+        .join('')
+        .trimEnd();
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^\n+|\n+$/g, '');
+
+  return cleaned.trim() === '' ? out.replaceAll(EMPTY_MARK, '') : cleaned;
 }
 
 /** Variables inconnues présentes dans un texte (fautes de frappe). */

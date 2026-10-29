@@ -1,1620 +1,1340 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-  public: {
-    Tables: {
-      accounts: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          email: string | null
-          id: string
-          is_personal_account: boolean
-          name: string
-          picture_url: string | null
-          primary_owner_user_id: string
-          public_data: Json
-          slug: string | null
-          updated_at: string | null
-          updated_by: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          email?: string | null
-          id?: string
-          is_personal_account?: boolean
-          name: string
-          picture_url?: string | null
-          primary_owner_user_id?: string
-          public_data?: Json
-          slug?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          email?: string | null
-          id?: string
-          is_personal_account?: boolean
-          name?: string
-          picture_url?: string | null
-          primary_owner_user_id?: string
-          public_data?: Json
-          slug?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
-      accounts_memberships: {
-        Row: {
-          account_id: string
-          account_role: string
-          created_at: string
-          created_by: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-        }
-        Insert: {
-          account_id: string
-          account_role: string
-          created_at?: string
-          created_by?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-        }
-        Update: {
-          account_id?: string
-          account_role?: string
-          created_at?: string
-          created_by?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "accounts_memberships_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "accounts_memberships_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_account_workspace"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "accounts_memberships_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "accounts_memberships_account_role_fkey"
-            columns: ["account_role"]
-            isOneToOne: false
-            referencedRelation: "roles"
-            referencedColumns: ["name"]
-          },
-        ]
-      }
-      billing_customers: {
-        Row: {
-          account_id: string
-          customer_id: string
-          email: string | null
-          id: number
-          provider: Database["public"]["Enums"]["billing_provider"]
-        }
-        Insert: {
-          account_id: string
-          customer_id: string
-          email?: string | null
-          id?: number
-          provider: Database["public"]["Enums"]["billing_provider"]
-        }
-        Update: {
-          account_id?: string
-          customer_id?: string
-          email?: string | null
-          id?: number
-          provider?: Database["public"]["Enums"]["billing_provider"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "billing_customers_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "billing_customers_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_account_workspace"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "billing_customers_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      config: {
-        Row: {
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          enable_account_billing: boolean
-          enable_team_account_billing: boolean
-          enable_team_accounts: boolean
-        }
-        Insert: {
-          billing_provider?: Database["public"]["Enums"]["billing_provider"]
-          enable_account_billing?: boolean
-          enable_team_account_billing?: boolean
-          enable_team_accounts?: boolean
-        }
-        Update: {
-          billing_provider?: Database["public"]["Enums"]["billing_provider"]
-          enable_account_billing?: boolean
-          enable_team_account_billing?: boolean
-          enable_team_accounts?: boolean
-        }
-        Relationships: []
-      }
-      invitations: {
-        Row: {
-          account_id: string
-          created_at: string
-          email: string
-          expires_at: string
-          id: number
-          invite_token: string
-          invited_by: string
-          role: string
-          updated_at: string
-        }
-        Insert: {
-          account_id: string
-          created_at?: string
-          email: string
-          expires_at?: string
-          id?: number
-          invite_token: string
-          invited_by: string
-          role: string
-          updated_at?: string
-        }
-        Update: {
-          account_id?: string
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: number
-          invite_token?: string
-          invited_by?: string
-          role?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invitations_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invitations_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_account_workspace"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invitations_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invitations_role_fkey"
-            columns: ["role"]
-            isOneToOne: false
-            referencedRelation: "roles"
-            referencedColumns: ["name"]
-          },
-        ]
-      }
-      nonces: {
-        Row: {
-          client_token: string
-          created_at: string
-          expires_at: string
-          id: string
-          last_verification_at: string | null
-          last_verification_ip: unknown
-          last_verification_user_agent: string | null
-          metadata: Json | null
-          nonce: string
-          purpose: string
-          revoked: boolean
-          revoked_reason: string | null
-          scopes: string[] | null
-          used_at: string | null
-          user_id: string | null
-          verification_attempts: number
-        }
-        Insert: {
-          client_token: string
-          created_at?: string
-          expires_at: string
-          id?: string
-          last_verification_at?: string | null
-          last_verification_ip?: unknown
-          last_verification_user_agent?: string | null
-          metadata?: Json | null
-          nonce: string
-          purpose: string
-          revoked?: boolean
-          revoked_reason?: string | null
-          scopes?: string[] | null
-          used_at?: string | null
-          user_id?: string | null
-          verification_attempts?: number
-        }
-        Update: {
-          client_token?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          last_verification_at?: string | null
-          last_verification_ip?: unknown
-          last_verification_user_agent?: string | null
-          metadata?: Json | null
-          nonce?: string
-          purpose?: string
-          revoked?: boolean
-          revoked_reason?: string | null
-          scopes?: string[] | null
-          used_at?: string | null
-          user_id?: string | null
-          verification_attempts?: number
-        }
-        Relationships: []
-      }
-      notifications: {
-        Row: {
-          account_id: string
-          body: string
-          channel: Database["public"]["Enums"]["notification_channel"]
-          created_at: string
-          dismissed: boolean
-          expires_at: string | null
-          id: number
-          link: string | null
-          type: Database["public"]["Enums"]["notification_type"]
-        }
-        Insert: {
-          account_id: string
-          body: string
-          channel?: Database["public"]["Enums"]["notification_channel"]
-          created_at?: string
-          dismissed?: boolean
-          expires_at?: string | null
-          id?: never
-          link?: string | null
-          type?: Database["public"]["Enums"]["notification_type"]
-        }
-        Update: {
-          account_id?: string
-          body?: string
-          channel?: Database["public"]["Enums"]["notification_channel"]
-          created_at?: string
-          dismissed?: boolean
-          expires_at?: string | null
-          id?: never
-          link?: string | null
-          type?: Database["public"]["Enums"]["notification_type"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_account_workspace"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      order_items: {
-        Row: {
-          created_at: string
-          id: string
-          order_id: string
-          price_amount: number | null
-          product_id: string
-          quantity: number
-          updated_at: string
-          variant_id: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          order_id: string
-          price_amount?: number | null
-          product_id: string
-          quantity?: number
-          updated_at?: string
-          variant_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          order_id?: string
-          price_amount?: number | null
-          product_id?: string
-          quantity?: number
-          updated_at?: string
-          variant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      orders: {
-        Row: {
-          account_id: string
-          billing_customer_id: number
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          created_at: string
-          currency: string
-          id: string
-          status: Database["public"]["Enums"]["payment_status"]
-          total_amount: number
-          updated_at: string
-        }
-        Insert: {
-          account_id: string
-          billing_customer_id: number
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          created_at?: string
-          currency: string
-          id: string
-          status: Database["public"]["Enums"]["payment_status"]
-          total_amount: number
-          updated_at?: string
-        }
-        Update: {
-          account_id?: string
-          billing_customer_id?: number
-          billing_provider?: Database["public"]["Enums"]["billing_provider"]
-          created_at?: string
-          currency?: string
-          id?: string
-          status?: Database["public"]["Enums"]["payment_status"]
-          total_amount?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "orders_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_account_workspace"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_billing_customer_id_fkey"
-            columns: ["billing_customer_id"]
-            isOneToOne: false
-            referencedRelation: "billing_customers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      role_permissions: {
-        Row: {
-          id: number
-          permission: Database["public"]["Enums"]["app_permissions"]
-          role: string
-        }
-        Insert: {
-          id?: number
-          permission: Database["public"]["Enums"]["app_permissions"]
-          role: string
-        }
-        Update: {
-          id?: number
-          permission?: Database["public"]["Enums"]["app_permissions"]
-          role?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "role_permissions_role_fkey"
-            columns: ["role"]
-            isOneToOne: false
-            referencedRelation: "roles"
-            referencedColumns: ["name"]
-          },
-        ]
-      }
-      roles: {
-        Row: {
-          hierarchy_level: number
-          name: string
-        }
-        Insert: {
-          hierarchy_level: number
-          name: string
-        }
-        Update: {
-          hierarchy_level?: number
-          name?: string
-        }
-        Relationships: []
-      }
-      subscription_items: {
-        Row: {
-          created_at: string
-          id: string
-          interval: string
-          interval_count: number
-          price_amount: number | null
-          product_id: string
-          quantity: number
-          subscription_id: string
-          type: Database["public"]["Enums"]["subscription_item_type"]
-          updated_at: string
-          variant_id: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          interval: string
-          interval_count: number
-          price_amount?: number | null
-          product_id: string
-          quantity?: number
-          subscription_id: string
-          type: Database["public"]["Enums"]["subscription_item_type"]
-          updated_at?: string
-          variant_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          interval?: string
-          interval_count?: number
-          price_amount?: number | null
-          product_id?: string
-          quantity?: number
-          subscription_id?: string
-          type?: Database["public"]["Enums"]["subscription_item_type"]
-          updated_at?: string
-          variant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subscription_items_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      subscriptions: {
-        Row: {
-          account_id: string
-          active: boolean
-          billing_customer_id: number
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          cancel_at_period_end: boolean
-          created_at: string
-          currency: string
-          id: string
-          period_ends_at: string
-          period_starts_at: string
-          status: Database["public"]["Enums"]["subscription_status"]
-          trial_ends_at: string | null
-          trial_starts_at: string | null
-          updated_at: string
-        }
-        Insert: {
-          account_id: string
-          active: boolean
-          billing_customer_id: number
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          cancel_at_period_end: boolean
-          created_at?: string
-          currency: string
-          id: string
-          period_ends_at: string
-          period_starts_at: string
-          status: Database["public"]["Enums"]["subscription_status"]
-          trial_ends_at?: string | null
-          trial_starts_at?: string | null
-          updated_at?: string
-        }
-        Update: {
-          account_id?: string
-          active?: boolean
-          billing_customer_id?: number
-          billing_provider?: Database["public"]["Enums"]["billing_provider"]
-          cancel_at_period_end?: boolean
-          created_at?: string
-          currency?: string
-          id?: string
-          period_ends_at?: string
-          period_starts_at?: string
-          status?: Database["public"]["Enums"]["subscription_status"]
-          trial_ends_at?: string | null
-          trial_starts_at?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subscriptions_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subscriptions_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_account_workspace"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subscriptions_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "user_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subscriptions_billing_customer_id_fkey"
-            columns: ["billing_customer_id"]
-            isOneToOne: false
-            referencedRelation: "billing_customers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Views: {
-      user_account_workspace: {
-        Row: {
-          id: string | null
-          name: string | null
-          picture_url: string | null
-          subscription_status:
-            | Database["public"]["Enums"]["subscription_status"]
-            | null
-        }
-        Relationships: []
-      }
-      user_accounts: {
-        Row: {
-          id: string | null
-          name: string | null
-          picture_url: string | null
-          role: string | null
-          slug: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "accounts_memberships_account_role_fkey"
-            columns: ["role"]
-            isOneToOne: false
-            referencedRelation: "roles"
-            referencedColumns: ["name"]
-          },
-        ]
-      }
-    }
-    Functions: {
-      accept_invitation: {
-        Args: { token: string; user_id: string }
-        Returns: string
-      }
-      add_invitations_to_account: {
-        Args: {
-          account_slug: string
-          invitations: Database["public"]["CompositeTypes"]["invitation"][]
-          invited_by: string
-        }
-        Returns: Database["public"]["Tables"]["invitations"]["Row"][]
-      }
-      can_action_account_member: {
-        Args: { target_team_account_id: string; target_user_id: string }
-        Returns: boolean
-      }
-      create_invitation: {
-        Args: { account_id: string; email: string; role: string }
-        Returns: {
-          account_id: string
-          created_at: string
-          email: string
-          expires_at: string
-          id: number
-          invite_token: string
-          invited_by: string
-          role: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "invitations"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      create_nonce: {
-        Args: {
-          p_expires_in_seconds?: number
-          p_metadata?: Json
-          p_purpose?: string
-          p_revoke_previous?: boolean
-          p_scopes?: string[]
-          p_user_id?: string
-        }
-        Returns: Json
-      }
-      create_team_account: {
-        Args: { account_name: string; account_slug?: string }
-        Returns: {
-          created_at: string | null
-          created_by: string | null
-          email: string | null
-          id: string
-          is_personal_account: boolean
-          name: string
-          picture_url: string | null
-          primary_owner_user_id: string
-          public_data: Json
-          slug: string | null
-          updated_at: string | null
-          updated_by: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "accounts"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      get_account_invitations: {
-        Args: { account_slug: string }
-        Returns: {
-          account_id: string
-          created_at: string
-          email: string
-          expires_at: string
-          id: number
-          invited_by: string
-          inviter_email: string
-          inviter_name: string
-          role: string
-          updated_at: string
-        }[]
-      }
-      get_account_members: {
-        Args: { account_slug: string }
-        Returns: {
-          account_id: string
-          created_at: string
-          email: string
-          id: string
-          name: string
-          picture_url: string
-          primary_owner_user_id: string
-          role: string
-          role_hierarchy_level: number
-          updated_at: string
-          user_id: string
-        }[]
-      }
-      get_config: { Args: never; Returns: Json }
-      get_nonce_status: { Args: { p_id: string }; Returns: Json }
-      get_upper_system_role: { Args: never; Returns: string }
-      has_active_subscription: {
-        Args: { target_account_id: string }
-        Returns: boolean
-      }
-      has_more_elevated_role: {
-        Args: {
-          role_name: string
-          target_account_id: string
-          target_user_id: string
-        }
-        Returns: boolean
-      }
-      has_permission: {
-        Args: {
-          account_id: string
-          permission_name: Database["public"]["Enums"]["app_permissions"]
-          user_id: string
-        }
-        Returns: boolean
-      }
-      has_role_on_account: {
-        Args: { account_id: string; account_role?: string }
-        Returns: boolean
-      }
-      has_same_role_hierarchy_level: {
-        Args: {
-          role_name: string
-          target_account_id: string
-          target_user_id: string
-        }
-        Returns: boolean
-      }
-      is_aal2: { Args: never; Returns: boolean }
-      is_account_owner: { Args: { account_id: string }; Returns: boolean }
-      is_account_team_member: {
-        Args: { target_account_id: string }
-        Returns: boolean
-      }
-      is_mfa_compliant: { Args: never; Returns: boolean }
-      is_set: { Args: { field_name: string }; Returns: boolean }
-      is_super_admin: { Args: never; Returns: boolean }
-      is_team_member: {
-        Args: { account_id: string; user_id: string }
-        Returns: boolean
-      }
-      revoke_nonce: {
-        Args: { p_id: string; p_reason?: string }
-        Returns: boolean
-      }
-      team_account_workspace: {
-        Args: { account_slug: string }
-        Returns: {
-          id: string
-          name: string
-          permissions: Database["public"]["Enums"]["app_permissions"][]
-          picture_url: string
-          primary_owner_user_id: string
-          role: string
-          role_hierarchy_level: number
-          slug: string
-          subscription_status: Database["public"]["Enums"]["subscription_status"]
-        }[]
-      }
-      transfer_team_account_ownership: {
-        Args: { new_owner_id: string; target_account_id: string }
-        Returns: undefined
-      }
-      upsert_order: {
-        Args: {
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          currency: string
-          line_items: Json
-          status: Database["public"]["Enums"]["payment_status"]
-          target_account_id: string
-          target_customer_id: string
-          target_order_id: string
-          total_amount: number
-        }
-        Returns: {
-          account_id: string
-          billing_customer_id: number
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          created_at: string
-          currency: string
-          id: string
-          status: Database["public"]["Enums"]["payment_status"]
-          total_amount: number
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "orders"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      upsert_subscription: {
-        Args: {
-          active: boolean
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          cancel_at_period_end: boolean
-          currency: string
-          line_items: Json
-          period_ends_at: string
-          period_starts_at: string
-          status: Database["public"]["Enums"]["subscription_status"]
-          target_account_id: string
-          target_customer_id: string
-          target_subscription_id: string
-          trial_ends_at?: string
-          trial_starts_at?: string
-        }
-        Returns: {
-          account_id: string
-          active: boolean
-          billing_customer_id: number
-          billing_provider: Database["public"]["Enums"]["billing_provider"]
-          cancel_at_period_end: boolean
-          created_at: string
-          currency: string
-          id: string
-          period_ends_at: string
-          period_starts_at: string
-          status: Database["public"]["Enums"]["subscription_status"]
-          trial_ends_at: string | null
-          trial_starts_at: string | null
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "subscriptions"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      verify_nonce: {
-        Args: {
-          p_ip?: unknown
-          p_max_verification_attempts?: number
-          p_purpose: string
-          p_required_scopes?: string[]
-          p_token: string
-          p_user_agent?: string
-          p_user_id?: string
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      app_permissions:
-        | "roles.manage"
-        | "billing.manage"
-        | "settings.manage"
-        | "members.manage"
-        | "invites.manage"
-      billing_provider: "stripe" | "lemon-squeezy" | "paddle"
-      notification_channel: "in_app" | "email"
-      notification_type: "info" | "warning" | "error"
-      payment_status: "pending" | "succeeded" | "failed"
-      subscription_item_type: "flat" | "per_seat" | "metered"
-      subscription_status:
-        | "active"
-        | "trialing"
-        | "past_due"
-        | "canceled"
-        | "unpaid"
-        | "incomplete"
-        | "incomplete_expired"
-        | "paused"
-    }
-    CompositeTypes: {
-      invitation: {
-        email: string | null
-        role: string | null
-      }
-    }
-  }
-  storage: {
-    Tables: {
-      buckets: {
-        Row: {
-          allowed_mime_types: string[] | null
-          avif_autodetection: boolean | null
-          created_at: string | null
-          file_size_limit: number | null
-          id: string
-          name: string
-          owner: string | null
-          owner_id: string | null
-          public: boolean | null
-          type: Database["storage"]["Enums"]["buckettype"]
-          updated_at: string | null
-        }
-        Insert: {
-          allowed_mime_types?: string[] | null
-          avif_autodetection?: boolean | null
-          created_at?: string | null
-          file_size_limit?: number | null
-          id: string
-          name: string
-          owner?: string | null
-          owner_id?: string | null
-          public?: boolean | null
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string | null
-        }
-        Update: {
-          allowed_mime_types?: string[] | null
-          avif_autodetection?: boolean | null
-          created_at?: string | null
-          file_size_limit?: number | null
-          id?: string
-          name?: string
-          owner?: string | null
-          owner_id?: string | null
-          public?: boolean | null
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      buckets_analytics: {
-        Row: {
-          created_at: string
-          deleted_at: string | null
-          format: string
-          id: string
-          name: string
-          type: Database["storage"]["Enums"]["buckettype"]
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          deleted_at?: string | null
-          format?: string
-          id?: string
-          name: string
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          deleted_at?: string | null
-          format?: string
-          id?: string
-          name?: string
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      buckets_vectors: {
-        Row: {
-          created_at: string
-          id: string
-          type: Database["storage"]["Enums"]["buckettype"]
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      iceberg_namespaces: {
-        Row: {
-          bucket_name: string
-          catalog_id: string
-          created_at: string
-          id: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          bucket_name: string
-          catalog_id: string
-          created_at?: string
-          id?: string
-          metadata?: Json
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          bucket_name?: string
-          catalog_id?: string
-          created_at?: string
-          id?: string
-          metadata?: Json
-          name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
-            columns: ["catalog_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      iceberg_tables: {
-        Row: {
-          bucket_name: string
-          catalog_id: string
-          created_at: string
-          id: string
-          location: string
-          name: string
-          namespace_id: string
-          remote_table_id: string | null
-          shard_id: string | null
-          shard_key: string | null
-          updated_at: string
-        }
-        Insert: {
-          bucket_name: string
-          catalog_id: string
-          created_at?: string
-          id?: string
-          location: string
-          name: string
-          namespace_id: string
-          remote_table_id?: string | null
-          shard_id?: string | null
-          shard_key?: string | null
-          updated_at?: string
-        }
-        Update: {
-          bucket_name?: string
-          catalog_id?: string
-          created_at?: string
-          id?: string
-          location?: string
-          name?: string
-          namespace_id?: string
-          remote_table_id?: string | null
-          shard_id?: string | null
-          shard_key?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_tables_catalog_id_fkey"
-            columns: ["catalog_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "iceberg_tables_namespace_id_fkey"
-            columns: ["namespace_id"]
-            isOneToOne: false
-            referencedRelation: "iceberg_namespaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      migrations: {
-        Row: {
-          executed_at: string | null
-          hash: string
-          id: number
-          name: string
-        }
-        Insert: {
-          executed_at?: string | null
-          hash: string
-          id: number
-          name: string
-        }
-        Update: {
-          executed_at?: string | null
-          hash?: string
-          id?: number
-          name?: string
-        }
-        Relationships: []
-      }
-      objects: {
-        Row: {
-          bucket_id: string | null
-          created_at: string | null
-          id: string
-          last_accessed_at: string | null
-          level: number | null
-          metadata: Json | null
-          name: string | null
-          owner: string | null
-          owner_id: string | null
-          path_tokens: string[] | null
-          updated_at: string | null
-          user_metadata: Json | null
-          version: string | null
-        }
-        Insert: {
-          bucket_id?: string | null
-          created_at?: string | null
-          id?: string
-          last_accessed_at?: string | null
-          level?: number | null
-          metadata?: Json | null
-          name?: string | null
-          owner?: string | null
-          owner_id?: string | null
-          path_tokens?: string[] | null
-          updated_at?: string | null
-          user_metadata?: Json | null
-          version?: string | null
-        }
-        Update: {
-          bucket_id?: string | null
-          created_at?: string | null
-          id?: string
-          last_accessed_at?: string | null
-          level?: number | null
-          metadata?: Json | null
-          name?: string | null
-          owner?: string | null
-          owner_id?: string | null
-          path_tokens?: string[] | null
-          updated_at?: string | null
-          user_metadata?: Json | null
-          version?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "objects_bucketId_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      prefixes: {
-        Row: {
-          bucket_id: string
-          created_at: string | null
-          level: number
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string | null
-          level?: number
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string | null
-          level?: number
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prefixes_bucketId_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      s3_multipart_uploads: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          id: string
-          in_progress_size: number
-          key: string
-          owner_id: string | null
-          upload_signature: string
-          user_metadata: Json | null
-          version: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          id: string
-          in_progress_size?: number
-          key: string
-          owner_id?: string | null
-          upload_signature: string
-          user_metadata?: Json | null
-          version: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          id?: string
-          in_progress_size?: number
-          key?: string
-          owner_id?: string | null
-          upload_signature?: string
-          user_metadata?: Json | null
-          version?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "s3_multipart_uploads_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      s3_multipart_uploads_parts: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          etag: string
-          id: string
-          key: string
-          owner_id: string | null
-          part_number: number
-          size: number
-          upload_id: string
-          version: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          etag: string
-          id?: string
-          key: string
-          owner_id?: string | null
-          part_number: number
-          size?: number
-          upload_id: string
-          version: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          etag?: string
-          id?: string
-          key?: string
-          owner_id?: string | null
-          part_number?: number
-          size?: number
-          upload_id?: string
-          version?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "s3_multipart_uploads_parts_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "s3_multipart_uploads_parts_upload_id_fkey"
-            columns: ["upload_id"]
-            isOneToOne: false
-            referencedRelation: "s3_multipart_uploads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      vector_indexes: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          data_type: string
-          dimension: number
-          distance_metric: string
-          id: string
-          metadata_configuration: Json | null
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          data_type: string
-          dimension: number
-          distance_metric: string
-          id?: string
-          metadata_configuration?: Json | null
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          data_type?: string
-          dimension?: number
-          distance_metric?: string
-          id?: string
-          metadata_configuration?: Json | null
-          name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vector_indexes_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_vectors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      add_prefixes: {
-        Args: { _bucket_id: string; _name: string }
-        Returns: undefined
-      }
-      can_insert_object: {
-        Args: { bucketid: string; metadata: Json; name: string; owner: string }
-        Returns: undefined
-      }
-      delete_leaf_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
-        Returns: undefined
-      }
-      delete_prefix: {
-        Args: { _bucket_id: string; _name: string }
-        Returns: boolean
-      }
-      extension: { Args: { name: string }; Returns: string }
-      filename: { Args: { name: string }; Returns: string }
-      foldername: { Args: { name: string }; Returns: string[] }
-      get_level: { Args: { name: string }; Returns: number }
-      get_prefix: { Args: { name: string }; Returns: string }
-      get_prefixes: { Args: { name: string }; Returns: string[] }
-      get_size_by_bucket: {
-        Args: never
-        Returns: {
-          bucket_id: string
-          size: number
-        }[]
-      }
-      list_multipart_uploads_with_delimiter: {
-        Args: {
-          bucket_id: string
-          delimiter_param: string
-          max_keys?: number
-          next_key_token?: string
-          next_upload_token?: string
-          prefix_param: string
-        }
-        Returns: {
-          created_at: string
-          id: string
-          key: string
-        }[]
-      }
-      list_objects_with_delimiter: {
-        Args: {
-          bucket_id: string
-          delimiter_param: string
-          max_keys?: number
-          next_token?: string
-          prefix_param: string
-          start_after?: string
-        }
-        Returns: {
-          id: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
-      lock_top_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
-        Returns: undefined
-      }
-      operation: { Args: never; Returns: string }
-      search:
-        | {
-            Args: {
-              bucketname: string
-              levels?: number
-              limits?: number
-              offsets?: number
-              prefix: string
-            }
-            Returns: {
-              created_at: string
-              id: string
-              last_accessed_at: string
-              metadata: Json
-              name: string
-              updated_at: string
-            }[]
+  
+  "graphql_public": {
+          Tables: {
+            [_ in never]: never
           }
-        | {
-            Args: {
-              bucketname: string
-              levels?: number
-              limits?: number
-              offsets?: number
-              prefix: string
-              search?: string
-              sortcolumn?: string
-              sortorder?: string
-            }
-            Returns: {
-              created_at: string
-              id: string
-              last_accessed_at: string
-              metadata: Json
-              name: string
-              updated_at: string
-            }[]
+          Views: {
+            [_ in never]: never
           }
-      search_legacy_v1: {
-        Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
+          Functions: {
+            "graphql":
+{ Args: { "extensions"?: Json,"operationName"?: string,"query"?: string,"variables"?: Json }; Returns: Json
+                           }
+          }
+          Enums: {
+            [_ in never]: never
+          }
+          CompositeTypes: {
+            [_ in never]: never
+          }
+        },"public": {
+          Tables: {
+            "accounts": {
+                  Row: {
+                    "created_at": string | null,"created_by": string | null,"email": string | null,"id": string,"is_personal_account": boolean,"name": string,"picture_url": string | null,"primary_owner_user_id": string,"public_data": NonNullable<Json>,"slug": string | null,"updated_at": string | null,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string | null,"created_by"?: string | null,"email"?: string | null,"id"?: string,"is_personal_account"?: boolean,"name": string,"picture_url"?: string | null,"primary_owner_user_id"?: string,"public_data"?: NonNullable<Json>,"slug"?: string | null,"updated_at"?: string | null,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string | null,"created_by"?: string | null,"email"?: string | null,"id"?: string,"is_personal_account"?: boolean,"name"?: string,"picture_url"?: string | null,"primary_owner_user_id"?: string,"public_data"?: NonNullable<Json>,"slug"?: string | null,"updated_at"?: string | null,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"accounts_memberships": {
+                  Row: {
+                    "account_id": string,"account_role": string,"created_at": string,"created_by": string | null,"updated_at": string,"updated_by": string | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"account_role": string,"created_at"?: string,"created_by"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "account_id"?: string,"account_role"?: string,"created_at"?: string,"created_by"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "accounts_memberships_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "accounts_memberships_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "accounts_memberships_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "accounts_memberships_account_role_fkey"
+      columns: ["account_role"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["name"]
+    }
+                  ]
+                },"billing_customers": {
+                  Row: {
+                    "account_id": string,"customer_id": string,"email": string | null,"id": number,"provider": Database["public"]['Enums']["billing_provider"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"customer_id": string,"email"?: string | null,"id"?: number,"provider": Database["public"]['Enums']["billing_provider"]
+                  }
+                  Update: {
+                    "account_id"?: string,"customer_id"?: string,"email"?: string | null,"id"?: number,"provider"?: Database["public"]['Enums']["billing_provider"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "billing_customers_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "billing_customers_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "billing_customers_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"config": {
+                  Row: {
+                    "billing_provider": Database["public"]['Enums']["billing_provider"],"enable_account_billing": boolean,"enable_team_account_billing": boolean,"enable_team_accounts": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "billing_provider"?: Database["public"]['Enums']["billing_provider"],"enable_account_billing"?: boolean,"enable_team_account_billing"?: boolean,"enable_team_accounts"?: boolean
+                  }
+                  Update: {
+                    "billing_provider"?: Database["public"]['Enums']["billing_provider"],"enable_account_billing"?: boolean,"enable_team_account_billing"?: boolean,"enable_team_accounts"?: boolean
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"invitations": {
+                  Row: {
+                    "account_id": string,"created_at": string,"email": string,"expires_at": string,"id": number,"invite_token": string,"invited_by": string,"role": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"created_at"?: string,"email": string,"expires_at"?: string,"id"?: number,"invite_token": string,"invited_by": string,"role": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"created_at"?: string,"email"?: string,"expires_at"?: string,"id"?: number,"invite_token"?: string,"invited_by"?: string,"role"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "invitations_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invitations_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invitations_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invitations_role_fkey"
+      columns: ["role"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["name"]
+    }
+                  ]
+                },"lm_account_credits": {
+                  Row: {
+                    "account_id": string,"created_at": string,"discovery_balance": number,"outreach_balance": number,"period_ends_at": string | null,"plan_id": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"created_at"?: string,"discovery_balance"?: number,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"created_at"?: string,"discovery_balance"?: number,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_account_credits_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: true
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_account_credits_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: true
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_account_credits_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: true
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_account_credits_plan_id_fkey"
+      columns: ["plan_id"]
+isOneToOne: false
+      referencedRelation: "lm_plans"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_attempts": {
+                  Row: {
+                    "account_id": string,"body": string | null,"campaign_id": string,"created_at": string,"created_by": string | null,"detail": string | null,"extra": NonNullable<Json>,"filled": NonNullable<Json>,"form_url": string | null,"id": string,"missing": NonNullable<Json>,"prospect_id": string,"protection_type": string | null,"screenshot_after": string | null,"screenshot_before": string | null,"sent_at": string | null,"space_id": string,"status": Database["public"]['Enums']["lm_attempt_status"],"subject": string | null,"template_name": string | null,"template_used": string | null,"updated_at": string,"updated_by": string | null,"validated_at": string | null,"validated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"body"?: string | null,"campaign_id": string,"created_at"?: string,"created_by"?: string | null,"detail"?: string | null,"extra"?: NonNullable<Json>,"filled"?: NonNullable<Json>,"form_url"?: string | null,"id"?: string,"missing"?: NonNullable<Json>,"prospect_id": string,"protection_type"?: string | null,"screenshot_after"?: string | null,"screenshot_before"?: string | null,"sent_at"?: string | null,"space_id": string,"status"?: Database["public"]['Enums']["lm_attempt_status"],"subject"?: string | null,"template_name"?: string | null,"template_used"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"validated_at"?: string | null,"validated_by"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"body"?: string | null,"campaign_id"?: string,"created_at"?: string,"created_by"?: string | null,"detail"?: string | null,"extra"?: NonNullable<Json>,"filled"?: NonNullable<Json>,"form_url"?: string | null,"id"?: string,"missing"?: NonNullable<Json>,"prospect_id"?: string,"protection_type"?: string | null,"screenshot_after"?: string | null,"screenshot_before"?: string | null,"sent_at"?: string | null,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_attempt_status"],"subject"?: string | null,"template_name"?: string | null,"template_used"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"validated_at"?: string | null,"validated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_attempts_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_attempts_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_attempts_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_attempts_campaign_id_fkey"
+      columns: ["campaign_id"]
+isOneToOne: false
+      referencedRelation: "lm_campaigns"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_attempts_prospect_id_fkey"
+      columns: ["prospect_id"]
+isOneToOne: false
+      referencedRelation: "lm_prospects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_attempts_space_id_fkey"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "lm_spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_campaigns": {
+                  Row: {
+                    "account_id": string,"auto_validation": boolean,"country_code": string,"created_at": string,"created_by": string | null,"daily_limit": number,"filters": NonNullable<Json>,"id": string,"name": string,"space_id": string,"status": Database["public"]['Enums']["lm_campaign_status"],"targeting": NonNullable<Json>,"templates": NonNullable<Json>,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"auto_validation"?: boolean,"country_code": string,"created_at"?: string,"created_by"?: string | null,"daily_limit"?: number,"filters"?: NonNullable<Json>,"id"?: string,"name": string,"space_id": string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"auto_validation"?: boolean,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"daily_limit"?: number,"filters"?: NonNullable<Json>,"id"?: string,"name"?: string,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_campaigns_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_campaigns_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_campaigns_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_campaigns_space_id_fkey"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "lm_spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_country_coverage": {
+                  Row: {
+                    "country_code": string,"created_at": string,"form_rate": number | null,"languages": (string)[],"last_corpus_at": string | null,"name": string,"tier": Database["public"]['Enums']["lm_coverage_tier"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "country_code": string,"created_at"?: string,"form_rate"?: number | null,"languages"?: (string)[],"last_corpus_at"?: string | null,"name": string,"tier"?: Database["public"]['Enums']["lm_coverage_tier"],"updated_at"?: string
+                  }
+                  Update: {
+                    "country_code"?: string,"created_at"?: string,"form_rate"?: number | null,"languages"?: (string)[],"last_corpus_at"?: string | null,"name"?: string,"tier"?: Database["public"]['Enums']["lm_coverage_tier"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"lm_credit_ledger": {
+                  Row: {
+                    "account_id": string,"campaign_id": string | null,"created_at": string,"delta": number,"event_ref": string,"id": number,"kind": Database["public"]['Enums']["lm_credit_kind"],"reason": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"campaign_id"?: string | null,"created_at"?: string,"delta": number,"event_ref": string,"id"?: never,"kind": Database["public"]['Enums']["lm_credit_kind"],"reason": string
+                  }
+                  Update: {
+                    "account_id"?: string,"campaign_id"?: string | null,"created_at"?: string,"delta"?: number,"event_ref"?: string,"id"?: never,"kind"?: Database["public"]['Enums']["lm_credit_kind"],"reason"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_credit_ledger_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_credit_ledger_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_credit_ledger_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_geo_cities": {
+                  Row: {
+                    "admin1_code": string | null,"ascii_name": string,"country_code": string,"geoname_id": number,"latitude": number,"longitude": number,"name": string,"population": number,"timezone": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "admin1_code"?: string | null,"ascii_name": string,"country_code": string,"geoname_id": number,"latitude": number,"longitude": number,"name": string,"population"?: number,"timezone"?: string | null
+                  }
+                  Update: {
+                    "admin1_code"?: string | null,"ascii_name"?: string,"country_code"?: string,"geoname_id"?: number,"latitude"?: number,"longitude"?: number,"name"?: string,"population"?: number,"timezone"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"lm_plan_variants": {
+                  Row: {
+                    "interval": string,"plan_id": string,"variant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "interval": string,"plan_id": string,"variant_id": string
+                  }
+                  Update: {
+                    "interval"?: string,"plan_id"?: string,"variant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_plan_variants_plan_id_fkey"
+      columns: ["plan_id"]
+isOneToOne: false
+      referencedRelation: "lm_plans"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_plans": {
+                  Row: {
+                    "active_campaigns": number | null,"auto_validation": boolean,"created_at": string,"daily_send_limit": number,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"seats": number | null,"spaces": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"daily_send_limit": number,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"seats"?: number | null,"spaces": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"daily_send_limit"?: number,"discovery_credits"?: number,"id"?: string,"name"?: string,"outreach_credits"?: number,"seats"?: number | null,"spaces"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"lm_prospects": {
+                  Row: {
+                    "account_id": string,"address": string | null,"category": string | null,"country_code": string | null,"created_at": string,"created_by": string | null,"found_email": string | null,"google_place_id": string | null,"id": string,"is_chain": boolean,"maps_url": string | null,"name": string,"phone": string | null,"rating": number | null,"review_count": number | null,"site_key": string,"source": Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at": string,"updated_by": string | null,"website": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"address"?: string | null,"category"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name": string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key": string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"address"?: string | null,"category"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name"?: string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_prospects_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_prospects_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_prospects_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_prospects_space_id_fkey"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "lm_spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_replies": {
+                  Row: {
+                    "account_id": string,"attempt_id": string,"created_at": string,"created_by": string | null,"id": string,"kind": Database["public"]['Enums']["lm_reply_kind"],"note": string | null,"replied_at": string,"source": Database["public"]['Enums']["lm_reply_source"],"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"attempt_id": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["lm_reply_kind"],"note"?: string | null,"replied_at"?: string,"source"?: Database["public"]['Enums']["lm_reply_source"],"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"attempt_id"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["lm_reply_kind"],"note"?: string | null,"replied_at"?: string,"source"?: Database["public"]['Enums']["lm_reply_source"],"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_replies_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_replies_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_replies_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_replies_attempt_id_fkey"
+      columns: ["attempt_id"]
+isOneToOne: true
+      referencedRelation: "lm_attempts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_searches": {
+                  Row: {
+                    "account_id": string,"campaign_id": string,"cards_kept": number,"cards_new": number,"cards_seen": number,"category": string,"country_code": string,"created_at": string,"duration_ms": number | null,"error": string | null,"id": number,"wave": number,"zone_key": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"campaign_id": string,"cards_kept"?: number,"cards_new"?: number,"cards_seen"?: number,"category": string,"country_code": string,"created_at"?: string,"duration_ms"?: number | null,"error"?: string | null,"id"?: never,"wave"?: number,"zone_key": string
+                  }
+                  Update: {
+                    "account_id"?: string,"campaign_id"?: string,"cards_kept"?: number,"cards_new"?: number,"cards_seen"?: number,"category"?: string,"country_code"?: string,"created_at"?: string,"duration_ms"?: number | null,"error"?: string | null,"id"?: never,"wave"?: number,"zone_key"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_searches_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_searches_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_searches_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_searches_campaign_id_fkey"
+      columns: ["campaign_id"]
+isOneToOne: false
+      referencedRelation: "lm_campaigns"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_sender_profiles": {
+                  Row: {
+                    "account_id": string,"address": string | null,"city": string | null,"civility": string | null,"company": string,"country_code": string,"created_at": string,"created_by": string | null,"email": string,"first_name": string,"id": string,"job_title": string | null,"last_name": string,"phone": string | null,"space_id": string,"updated_at": string,"updated_by": string | null,"website": string | null,"zip": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"address"?: string | null,"city"?: string | null,"civility"?: string | null,"company": string,"country_code": string,"created_at"?: string,"created_by"?: string | null,"email": string,"first_name": string,"id"?: string,"job_title"?: string | null,"last_name": string,"phone"?: string | null,"space_id": string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null,"zip"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"address"?: string | null,"city"?: string | null,"civility"?: string | null,"company"?: string,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"email"?: string,"first_name"?: string,"id"?: string,"job_title"?: string | null,"last_name"?: string,"phone"?: string | null,"space_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null,"zip"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_sender_profiles_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_sender_profiles_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_sender_profiles_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_sender_profiles_space_id_fkey"
+      columns: ["space_id"]
+isOneToOne: true
+      referencedRelation: "lm_spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_spaces": {
+                  Row: {
+                    "account_id": string,"country_code": string,"created_at": string,"created_by": string | null,"id": string,"language_code": string,"name": string,"ready_forms_cap": number,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"country_code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"language_code"?: string,"name": string,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"language_code"?: string,"name"?: string,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_spaces_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_spaces_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_spaces_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_suppressions": {
+                  Row: {
+                    "account_id": string | null,"created_at": string,"created_by": string | null,"id": string,"reason": string | null,"site_key": string,"space_id": string | null,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"reason"?: string | null,"site_key": string,"space_id"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"reason"?: string | null,"site_key"?: string,"space_id"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_suppressions_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_suppressions_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_suppressions_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_suppressions_space_id_fkey"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "lm_spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_tasks": {
+                  Row: {
+                    "account_id": string,"attempts": number,"created_at": string,"error": string | null,"finished_at": string | null,"id": number,"idempotency_key": string,"kind": Database["public"]['Enums']["lm_task_kind"],"locked_at": string | null,"max_attempts": number,"payload": NonNullable<Json>,"priority": number,"result": Json | null,"run_after": string,"status": Database["public"]['Enums']["lm_task_status"],"updated_at": string,"worker_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"attempts"?: number,"created_at"?: string,"error"?: string | null,"finished_at"?: string | null,"id"?: never,"idempotency_key": string,"kind": Database["public"]['Enums']["lm_task_kind"],"locked_at"?: string | null,"max_attempts"?: number,"payload"?: NonNullable<Json>,"priority"?: number,"result"?: Json | null,"run_after"?: string,"status"?: Database["public"]['Enums']["lm_task_status"],"updated_at"?: string,"worker_id"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"attempts"?: number,"created_at"?: string,"error"?: string | null,"finished_at"?: string | null,"id"?: never,"idempotency_key"?: string,"kind"?: Database["public"]['Enums']["lm_task_kind"],"locked_at"?: string | null,"max_attempts"?: number,"payload"?: NonNullable<Json>,"priority"?: number,"result"?: Json | null,"run_after"?: string,"status"?: Database["public"]['Enums']["lm_task_status"],"updated_at"?: string,"worker_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_tasks_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_tasks_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_tasks_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"nonces": {
+                  Row: {
+                    "client_token": string,"created_at": string,"expires_at": string,"id": string,"last_verification_at": string | null,"last_verification_ip": unknown,"last_verification_user_agent": string | null,"metadata": Json | null,"nonce": string,"purpose": string,"revoked": boolean,"revoked_reason": string | null,"scopes": (string)[] | null,"used_at": string | null,"user_id": string | null,"verification_attempts": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_token": string,"created_at"?: string,"expires_at": string,"id"?: string,"last_verification_at"?: string | null,"last_verification_ip"?: unknown,"last_verification_user_agent"?: string | null,"metadata"?: Json | null,"nonce": string,"purpose": string,"revoked"?: boolean,"revoked_reason"?: string | null,"scopes"?: (string)[] | null,"used_at"?: string | null,"user_id"?: string | null,"verification_attempts"?: number
+                  }
+                  Update: {
+                    "client_token"?: string,"created_at"?: string,"expires_at"?: string,"id"?: string,"last_verification_at"?: string | null,"last_verification_ip"?: unknown,"last_verification_user_agent"?: string | null,"metadata"?: Json | null,"nonce"?: string,"purpose"?: string,"revoked"?: boolean,"revoked_reason"?: string | null,"scopes"?: (string)[] | null,"used_at"?: string | null,"user_id"?: string | null,"verification_attempts"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"notifications": {
+                  Row: {
+                    "account_id": string,"body": string,"channel": Database["public"]['Enums']["notification_channel"],"created_at": string,"dismissed": boolean,"expires_at": string | null,"id": number,"link": string | null,"type": Database["public"]['Enums']["notification_type"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"body": string,"channel"?: Database["public"]['Enums']["notification_channel"],"created_at"?: string,"dismissed"?: boolean,"expires_at"?: string | null,"id"?: never,"link"?: string | null,"type"?: Database["public"]['Enums']["notification_type"]
+                  }
+                  Update: {
+                    "account_id"?: string,"body"?: string,"channel"?: Database["public"]['Enums']["notification_channel"],"created_at"?: string,"dismissed"?: boolean,"expires_at"?: string | null,"id"?: never,"link"?: string | null,"type"?: Database["public"]['Enums']["notification_type"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"order_items": {
+                  Row: {
+                    "created_at": string,"id": string,"order_id": string,"price_amount": number | null,"product_id": string,"quantity": number,"updated_at": string,"variant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id": string,"order_id": string,"price_amount"?: number | null,"product_id": string,"quantity"?: number,"updated_at"?: string,"variant_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"order_id"?: string,"price_amount"?: number | null,"product_id"?: string,"quantity"?: number,"updated_at"?: string,"variant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "order_items_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "orders"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"orders": {
+                  Row: {
+                    "account_id": string,"billing_customer_id": number,"billing_provider": Database["public"]['Enums']["billing_provider"],"created_at": string,"currency": string,"id": string,"status": Database["public"]['Enums']["payment_status"],"total_amount": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"billing_customer_id": number,"billing_provider": Database["public"]['Enums']["billing_provider"],"created_at"?: string,"currency": string,"id": string,"status": Database["public"]['Enums']["payment_status"],"total_amount": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"billing_customer_id"?: number,"billing_provider"?: Database["public"]['Enums']["billing_provider"],"created_at"?: string,"currency"?: string,"id"?: string,"status"?: Database["public"]['Enums']["payment_status"],"total_amount"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "orders_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "orders_billing_customer_id_fkey"
+      columns: ["billing_customer_id"]
+isOneToOne: false
+      referencedRelation: "billing_customers"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"role_permissions": {
+                  Row: {
+                    "id": number,"permission": Database["public"]['Enums']["app_permissions"],"role": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: number,"permission": Database["public"]['Enums']["app_permissions"],"role": string
+                  }
+                  Update: {
+                    "id"?: number,"permission"?: Database["public"]['Enums']["app_permissions"],"role"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "role_permissions_role_fkey"
+      columns: ["role"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["name"]
+    }
+                  ]
+                },"roles": {
+                  Row: {
+                    "hierarchy_level": number,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "hierarchy_level": number,"name": string
+                  }
+                  Update: {
+                    "hierarchy_level"?: number,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"subscription_items": {
+                  Row: {
+                    "created_at": string,"id": string,"interval": string,"interval_count": number,"price_amount": number | null,"product_id": string,"quantity": number,"subscription_id": string,"type": Database["public"]['Enums']["subscription_item_type"],"updated_at": string,"variant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id": string,"interval": string,"interval_count": number,"price_amount"?: number | null,"product_id": string,"quantity"?: number,"subscription_id": string,"type": Database["public"]['Enums']["subscription_item_type"],"updated_at"?: string,"variant_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"interval"?: string,"interval_count"?: number,"price_amount"?: number | null,"product_id"?: string,"quantity"?: number,"subscription_id"?: string,"type"?: Database["public"]['Enums']["subscription_item_type"],"updated_at"?: string,"variant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscription_items_subscription_id_fkey"
+      columns: ["subscription_id"]
+isOneToOne: false
+      referencedRelation: "subscriptions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"subscriptions": {
+                  Row: {
+                    "account_id": string,"active": boolean,"billing_customer_id": number,"billing_provider": Database["public"]['Enums']["billing_provider"],"cancel_at_period_end": boolean,"created_at": string,"currency": string,"id": string,"period_ends_at": string,"period_starts_at": string,"status": Database["public"]['Enums']["subscription_status"],"trial_ends_at": string | null,"trial_starts_at": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"active": boolean,"billing_customer_id": number,"billing_provider": Database["public"]['Enums']["billing_provider"],"cancel_at_period_end": boolean,"created_at"?: string,"currency": string,"id": string,"period_ends_at": string,"period_starts_at": string,"status": Database["public"]['Enums']["subscription_status"],"trial_ends_at"?: string | null,"trial_starts_at"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"active"?: boolean,"billing_customer_id"?: number,"billing_provider"?: Database["public"]['Enums']["billing_provider"],"cancel_at_period_end"?: boolean,"created_at"?: string,"currency"?: string,"id"?: string,"period_ends_at"?: string,"period_starts_at"?: string,"status"?: Database["public"]['Enums']["subscription_status"],"trial_ends_at"?: string | null,"trial_starts_at"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscriptions_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "subscriptions_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "subscriptions_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "subscriptions_billing_customer_id_fkey"
+      columns: ["billing_customer_id"]
+isOneToOne: false
+      referencedRelation: "billing_customers"
+      referencedColumns: ["id"]
+    }
+                  ]
+                }
+          }
+          Views: {
+            "user_account_workspace": {
+                  Row: {
+                    "id": string | null,"name": string | null,"picture_url": string | null,"subscription_status": Database["public"]['Enums']["subscription_status"] | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"user_accounts": {
+                  Row: {
+                    "id": string | null,"name": string | null,"picture_url": string | null,"role": string | null,"slug": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "accounts_memberships_account_role_fkey"
+      columns: ["role"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["name"]
+    }
+                  ]
+                }
+          }
+          Functions: {
+            "accept_invitation":
+{ Args: { "token": string,"user_id": string }; Returns: string
+                           },
+"add_invitations_to_account":
+{ Args: { "account_slug": string,"invitations": (Database["public"]['CompositeTypes']["invitation"])[],"invited_by": string }; Returns: (Database["public"]['Tables']["invitations"]['Row'])[]
+                           },
+"can_action_account_member":
+{ Args: { "target_team_account_id": string,"target_user_id": string }; Returns: boolean
+                           },
+"create_invitation":
+{ Args: { "account_id": string,"email": string,"role": string }; Returns: {
+              "account_id": string,
+"created_at": string,
+"email": string,
+"expires_at": string,
+"id": number,
+"invite_token": string,
+"invited_by": string,
+"role": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "invitations"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"create_nonce":
+{ Args: { "p_expires_in_seconds"?: number,"p_metadata"?: Json,"p_purpose"?: string,"p_revoke_previous"?: boolean,"p_scopes"?: (string)[],"p_user_id"?: string }; Returns: Json
+                           },
+"create_team_account":
+{ Args: { "account_name": string,"account_slug"?: string,"user_id": string }; Returns: {
+              "created_at": string | null,
+"created_by": string | null,
+"email": string | null,
+"id": string,
+"is_personal_account": boolean,
+"name": string,
+"picture_url": string | null,
+"primary_owner_user_id": string,
+"public_data": NonNullable<Json>,
+"slug": string | null,
+"updated_at": string | null,
+"updated_by": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "accounts"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"get_account_invitations":
+{ Args: { "account_slug": string }; Returns: {
+              "account_id": string,"created_at": string,"email": string,"expires_at": string,"id": number,"invited_by": string,"inviter_email": string,"inviter_name": string,"role": string,"updated_at": string
+            }[]
+                           },
+"get_account_members":
+{ Args: { "account_slug": string }; Returns: {
+              "account_id": string,"created_at": string,"email": string,"id": string,"name": string,"picture_url": string,"primary_owner_user_id": string,"role": string,"role_hierarchy_level": number,"updated_at": string,"user_id": string
+            }[]
+                           },
+"get_config":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"get_nonce_status":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"get_upper_system_role":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"has_active_subscription":
+{ Args: { "target_account_id": string }; Returns: boolean
+                           },
+"has_more_elevated_role":
+{ Args: { "role_name": string,"target_account_id": string,"target_user_id": string }; Returns: boolean
+                           },
+"has_permission":
+{ Args: { "account_id": string,"permission_name": Database["public"]['Enums']["app_permissions"],"user_id": string }; Returns: boolean
+                           },
+"has_role_on_account":
+{ Args: { "account_id": string,"account_role"?: string }; Returns: boolean
+                           },
+"has_same_role_hierarchy_level":
+{ Args: { "role_name": string,"target_account_id": string,"target_user_id": string }; Returns: boolean
+                           },
+"is_aal2":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_account_owner":
+{ Args: { "account_id": string }; Returns: boolean
+                           },
+"is_account_team_member":
+{ Args: { "target_account_id": string }; Returns: boolean
+                           },
+"is_mfa_compliant":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_set":
+{ Args: { "field_name": string }; Returns: boolean
+                           },
+"is_super_admin":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_team_member":
+{ Args: { "account_id": string,"user_id": string }; Returns: boolean
+                           },
+"lm_claim_task":
+{ Args: { "p_kinds": (Database["public"]['Enums']["lm_task_kind"])[],"p_worker_id": string }; Returns: {
+              "account_id": string,
+"attempts": number,
+"created_at": string,
+"error": string | null,
+"finished_at": string | null,
+"id": number,
+"idempotency_key": string,
+"kind": Database["public"]['Enums']["lm_task_kind"],
+"locked_at": string | null,
+"max_attempts": number,
+"payload": NonNullable<Json>,
+"priority": number,
+"result": Json | null,
+"run_after": string,
+"status": Database["public"]['Enums']["lm_task_status"],
+"updated_at": string,
+"worker_id": string | null
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "lm_tasks"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
+"lm_complete_task":
+{ Args: { "p_id": number,"p_result": Json }; Returns: undefined
+                           },
+"lm_debit_credits":
+{ Args: { "p_account_id": string,"p_campaign_id"?: string,"p_event_ref": string,"p_kind": Database["public"]['Enums']["lm_credit_kind"],"p_quantity": number,"p_reason": string }; Returns: boolean
+                           },
+"lm_fail_task":
+{ Args: { "p_error": string,"p_id": number }; Returns: undefined
+                           },
+"lm_requeue_stale_tasks":
+{ Args: { "p_stale"?: string }; Returns: number
+                           },
+"lm_reset_credits":
+{ Args: { "p_account_id": string,"p_event_ref": string,"p_period_ends_at": string,"p_plan_id": string }; Returns: undefined
+                           },
+"lm_seat_limit":
+{ Args: { "p_account_id": string }; Returns: number
+                           },
+"lm_space_limit":
+{ Args: { "p_account_id": string }; Returns: number
+                           },
+"revoke_nonce":
+{ Args: { "p_id": string,"p_reason"?: string }; Returns: boolean
+                           },
+"team_account_workspace":
+{ Args: { "account_slug": string }; Returns: {
+              "id": string,"name": string,"permissions": (Database["public"]['Enums']["app_permissions"])[],"picture_url": string,"primary_owner_user_id": string,"role": string,"role_hierarchy_level": number,"slug": string,"subscription_status": Database["public"]['Enums']["subscription_status"]
+            }[]
+                           },
+"transfer_team_account_ownership":
+{ Args: { "new_owner_id": string,"target_account_id": string }; Returns: undefined
+                           },
+"upsert_order":
+{ Args: { "billing_provider": Database["public"]['Enums']["billing_provider"],"currency": string,"line_items": Json,"status": Database["public"]['Enums']["payment_status"],"target_account_id": string,"target_customer_id": string,"target_order_id": string,"total_amount": number }; Returns: {
+              "account_id": string,
+"billing_customer_id": number,
+"billing_provider": Database["public"]['Enums']["billing_provider"],
+"created_at": string,
+"currency": string,
+"id": string,
+"status": Database["public"]['Enums']["payment_status"],
+"total_amount": number,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "orders"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"upsert_subscription":
+{ Args: { "active": boolean,"billing_provider": Database["public"]['Enums']["billing_provider"],"cancel_at_period_end": boolean,"currency": string,"line_items": Json,"period_ends_at": string,"period_starts_at": string,"status": Database["public"]['Enums']["subscription_status"],"target_account_id": string,"target_customer_id": string,"target_subscription_id": string,"trial_ends_at"?: string,"trial_starts_at"?: string }; Returns: {
+              "account_id": string,
+"active": boolean,
+"billing_customer_id": number,
+"billing_provider": Database["public"]['Enums']["billing_provider"],
+"cancel_at_period_end": boolean,
+"created_at": string,
+"currency": string,
+"id": string,
+"period_ends_at": string,
+"period_starts_at": string,
+"status": Database["public"]['Enums']["subscription_status"],
+"trial_ends_at": string | null,
+"trial_starts_at": string | null,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "subscriptions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"verify_nonce":
+{ Args: { "p_ip"?: unknown,"p_max_verification_attempts"?: number,"p_purpose": string,"p_required_scopes"?: (string)[],"p_token": string,"p_user_agent"?: string,"p_user_id"?: string }; Returns: Json
+                           }
+          }
+          Enums: {
+            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
+          }
+          CompositeTypes: {
+            "invitation": {
+                        "email": string | null,"role": string | null
+                      }
+          }
+        },"storage": {
+          Tables: {
+            "buckets": {
+                  Row: {
+                    "allowed_mime_types": (string)[] | null,"avif_autodetection": boolean | null,"created_at": string | null,"file_size_limit": number | null,"id": string,"lifecycle_configuration": Json | null,"lifecycle_configuration_generation": string | null,"name": string,"owner": string | null,"owner_id": string | null,"public": boolean | null,"type": Database["storage"]['Enums']["buckettype"],"updated_at": string | null,"versioning_status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "allowed_mime_types"?: (string)[] | null,"avif_autodetection"?: boolean | null,"created_at"?: string | null,"file_size_limit"?: number | null,"id": string,"lifecycle_configuration"?: Json | null,"lifecycle_configuration_generation"?: string | null,"name": string,"owner"?: string | null,"owner_id"?: string | null,"public"?: boolean | null,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string | null,"versioning_status"?: string
+                  }
+                  Update: {
+                    "allowed_mime_types"?: (string)[] | null,"avif_autodetection"?: boolean | null,"created_at"?: string | null,"file_size_limit"?: number | null,"id"?: string,"lifecycle_configuration"?: Json | null,"lifecycle_configuration_generation"?: string | null,"name"?: string,"owner"?: string | null,"owner_id"?: string | null,"public"?: boolean | null,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string | null,"versioning_status"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"buckets_analytics": {
+                  Row: {
+                    "created_at": string,"deleted_at": string | null,"format": string,"id": string,"name": string,"type": Database["storage"]['Enums']["buckettype"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"deleted_at"?: string | null,"format"?: string,"id"?: string,"name": string,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"deleted_at"?: string | null,"format"?: string,"id"?: string,"name"?: string,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"buckets_vectors": {
+                  Row: {
+                    "created_at": string,"id": string,"type": Database["storage"]['Enums']["buckettype"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id": string,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"iceberg_namespaces": {
+                  Row: {
+                    "bucket_name": string,"catalog_id": string,"created_at": string,"id": string,"metadata": NonNullable<Json>,"name": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bucket_name": string,"catalog_id": string,"created_at"?: string,"id"?: string,"metadata"?: NonNullable<Json>,"name": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "bucket_name"?: string,"catalog_id"?: string,"created_at"?: string,"id"?: string,"metadata"?: NonNullable<Json>,"name"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
+      columns: ["catalog_id"]
+isOneToOne: false
+      referencedRelation: "buckets_analytics"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"iceberg_tables": {
+                  Row: {
+                    "bucket_name": string,"catalog_id": string,"created_at": string,"id": string,"location": string,"name": string,"namespace_id": string,"remote_table_id": string | null,"shard_id": string | null,"shard_key": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bucket_name": string,"catalog_id": string,"created_at"?: string,"id"?: string,"location": string,"name": string,"namespace_id": string,"remote_table_id"?: string | null,"shard_id"?: string | null,"shard_key"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "bucket_name"?: string,"catalog_id"?: string,"created_at"?: string,"id"?: string,"location"?: string,"name"?: string,"namespace_id"?: string,"remote_table_id"?: string | null,"shard_id"?: string | null,"shard_key"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "iceberg_tables_catalog_id_fkey"
+      columns: ["catalog_id"]
+isOneToOne: false
+      referencedRelation: "buckets_analytics"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "iceberg_tables_namespace_id_fkey"
+      columns: ["namespace_id"]
+isOneToOne: false
+      referencedRelation: "iceberg_namespaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"migrations": {
+                  Row: {
+                    "executed_at": string | null,"hash": string,"id": number,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "executed_at"?: string | null,"hash": string,"id": number,"name": string
+                  }
+                  Update: {
+                    "executed_at"?: string | null,"hash"?: string,"id"?: number,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"objects": {
+                  Row: {
+                    "archived_at": string | null,"bucket_id": string | null,"created_at": string | null,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"last_accessed_at": string | null,"metadata": Json | null,"name": string | null,"owner": string | null,"owner_id": string | null,"path_tokens": (string)[] | null,"updated_at": string | null,"user_metadata": Json | null,"version": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"bucket_id"?: string | null,"created_at"?: string | null,"id"?: string,"is_delete_marker"?: boolean,"is_versioned"?: boolean,"last_accessed_at"?: string | null,"metadata"?: Json | null,"name"?: string | null,"owner"?: string | null,"owner_id"?: string | null,"path_tokens"?: never,"updated_at"?: string | null,"user_metadata"?: Json | null,"version"?: string | null
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"bucket_id"?: string | null,"created_at"?: string | null,"id"?: string,"is_delete_marker"?: boolean,"is_versioned"?: boolean,"last_accessed_at"?: string | null,"metadata"?: Json | null,"name"?: string | null,"owner"?: string | null,"owner_id"?: string | null,"path_tokens"?: never,"updated_at"?: string | null,"user_metadata"?: Json | null,"version"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "objects_bucketId_fkey"
+      columns: ["bucket_id"]
+isOneToOne: false
+      referencedRelation: "buckets"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"s3_multipart_uploads": {
+                  Row: {
+                    "bucket_id": string,"created_at": string,"id": string,"in_progress_size": number,"key": string,"metadata": Json | null,"owner_id": string | null,"upload_signature": string,"user_metadata": Json | null,"version": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bucket_id": string,"created_at"?: string,"id": string,"in_progress_size"?: number,"key": string,"metadata"?: Json | null,"owner_id"?: string | null,"upload_signature": string,"user_metadata"?: Json | null,"version": string
+                  }
+                  Update: {
+                    "bucket_id"?: string,"created_at"?: string,"id"?: string,"in_progress_size"?: number,"key"?: string,"metadata"?: Json | null,"owner_id"?: string | null,"upload_signature"?: string,"user_metadata"?: Json | null,"version"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "s3_multipart_uploads_bucket_id_fkey"
+      columns: ["bucket_id"]
+isOneToOne: false
+      referencedRelation: "buckets"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"s3_multipart_uploads_parts": {
+                  Row: {
+                    "bucket_id": string,"created_at": string,"etag": string,"id": string,"key": string,"owner_id": string | null,"part_number": number,"size": number,"upload_id": string,"version": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bucket_id": string,"created_at"?: string,"etag": string,"id"?: string,"key": string,"owner_id"?: string | null,"part_number": number,"size"?: number,"upload_id": string,"version": string
+                  }
+                  Update: {
+                    "bucket_id"?: string,"created_at"?: string,"etag"?: string,"id"?: string,"key"?: string,"owner_id"?: string | null,"part_number"?: number,"size"?: number,"upload_id"?: string,"version"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "s3_multipart_uploads_parts_bucket_id_fkey"
+      columns: ["bucket_id"]
+isOneToOne: false
+      referencedRelation: "buckets"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "s3_multipart_uploads_parts_upload_id_fkey"
+      columns: ["upload_id"]
+isOneToOne: false
+      referencedRelation: "s3_multipart_uploads"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"vector_indexes": {
+                  Row: {
+                    "bucket_id": string,"created_at": string,"data_type": string,"dimension": number,"distance_metric": string,"id": string,"metadata_configuration": Json | null,"name": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bucket_id": string,"created_at"?: string,"data_type": string,"dimension": number,"distance_metric": string,"id"?: string,"metadata_configuration"?: Json | null,"name": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "bucket_id"?: string,"created_at"?: string,"data_type"?: string,"dimension"?: number,"distance_metric"?: string,"id"?: string,"metadata_configuration"?: Json | null,"name"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "vector_indexes_bucket_id_fkey"
+      columns: ["bucket_id"]
+isOneToOne: false
+      referencedRelation: "buckets_vectors"
+      referencedColumns: ["id"]
+    }
+                  ]
+                }
+          }
+          Views: {
+            [_ in never]: never
+          }
+          Functions: {
+            "allow_any_operation":
+{ Args: { "expected_operations": (string)[] }; Returns: boolean
+                           },
+"allow_only_operation":
+{ Args: { "expected_operation": string }; Returns: boolean
+                           },
+"can_insert_object":
+{ Args: { "bucketid": string,"metadata": Json,"name": string,"owner": string }; Returns: undefined
+                           },
+"extension":
+{ Args: { "name": string }; Returns: string
+                           },
+"filename":
+{ Args: { "name": string }; Returns: string
+                           },
+"foldername":
+{ Args: { "name": string }; Returns: (string)[]
+                           },
+"get_common_prefix":
+{ Args: { "p_delimiter": string,"p_key": string,"p_prefix": string }; Returns: string
+                           },
+"get_size_by_bucket":
+{ Args: { "delete_markers"?: string,"noncurrent_versions"?: string }; Returns: {
+              "bucket_id": string,"size": number
+            }[]
+                           },
+"list_multipart_uploads_with_delimiter":
+{ Args: { "bucket_id": string,"delimiter_param": string,"max_keys"?: number,"next_key_token"?: string,"next_upload_token"?: string,"prefix_param": string,"raw_prefix_param"?: string }; Returns: {
+              "created_at": string,"id": string,"key": string
+            }[]
+                           },
+"list_objects_with_delimiter":
+{ Args: { "_bucket_id": string,"delete_markers"?: string,"delimiter_param": string,"max_keys"?: number,"next_token"?: string,"next_token_archived_at"?: string,"next_token_version"?: string,"noncurrent_versions"?: string,"prefix_param": string,"sort_order"?: string,"start_after"?: string }; Returns: {
+              "archived_at": string,"created_at": string,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string,"version": string
+            }[]
+                           },
+"operation":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"search":
+{ Args: { "bucketname": string,"delete_markers"?: string,"levels"?: number,"limits"?: number,"noncurrent_versions"?: string,"offsets"?: number,"prefix": string,"search"?: string,"sortcolumn"?: string,"sortorder"?: string }; Returns: {
+              "archived_at": string,"created_at": string,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string,"version": string
+            }[]
+                           },
+"search_by_timestamp":
+{ Args: { "delete_markers"?: string,"noncurrent_versions"?: string,"p_bucket_id": string,"p_level": number,"p_limit": number,"p_prefix": string,"p_sort_column": string,"p_sort_column_after": string,"p_sort_order": string,"p_start_after": string,"p_start_after_version"?: string }; Returns: {
+              "archived_at": string,"created_at": string,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"key": string,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string,"version": string
+            }[]
+                           },
+"search_v2":
+{ Args: { "bucket_name": string,"delete_markers"?: string,"levels"?: number,"limits"?: number,"noncurrent_versions"?: string,"prefix": string,"sort_column"?: string,"sort_column_after"?: string,"sort_order"?: string,"start_after"?: string,"start_after_archived_at"?: string,"start_after_is_continuation"?: boolean,"start_after_version"?: string }; Returns: {
+              "archived_at": string,"created_at": string,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"key": string,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string,"version": string
+            }[]
+                           }
+          }
+          Enums: {
+            "buckettype": "STANDARD"|"ANALYTICS"|"VECTOR"
+          }
+          CompositeTypes: {
+            [_ in never]: never
+          }
         }
-        Returns: {
-          created_at: string
-          id: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
-      search_v1_optimised: {
-        Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
-      search_v2:
-        | {
-            Args: {
-              bucket_name: string
-              levels?: number
-              limits?: number
-              prefix: string
-              start_after?: string
-            }
-            Returns: {
-              created_at: string
-              id: string
-              key: string
-              metadata: Json
-              name: string
-              updated_at: string
-            }[]
-          }
-        | {
-            Args: {
-              bucket_name: string
-              levels?: number
-              limits?: number
-              prefix: string
-              sort_column?: string
-              sort_column_after?: string
-              sort_order?: string
-              start_after?: string
-            }
-            Returns: {
-              created_at: string
-              id: string
-              key: string
-              last_accessed_at: string
-              metadata: Json
-              name: string
-              updated_at: string
-            }[]
-          }
-    }
-    Enums: {
-      buckettype: "STANDARD" | "ANALYTICS" | "VECTOR"
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
@@ -1627,25 +1347,21 @@ export type Tables<
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
     : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
@@ -1655,22 +1371,20 @@ export type TablesInsert<
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
     : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
@@ -1680,22 +1394,20 @@ export type TablesUpdate<
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
     : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
@@ -1705,14 +1417,12 @@ export type Enums<
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+    : never = never
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
@@ -1722,49 +1432,25 @@ export type CompositeTypes<
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+    : never = never
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
-  public: {
-    Enums: {
-      app_permissions: [
-        "roles.manage",
-        "billing.manage",
-        "settings.manage",
-        "members.manage",
-        "invites.manage",
-      ],
-      billing_provider: ["stripe", "lemon-squeezy", "paddle"],
-      notification_channel: ["in_app", "email"],
-      notification_type: ["info", "warning", "error"],
-      payment_status: ["pending", "succeeded", "failed"],
-      subscription_item_type: ["flat", "per_seat", "metered"],
-      subscription_status: [
-        "active",
-        "trialing",
-        "past_due",
-        "canceled",
-        "unpaid",
-        "incomplete",
-        "incomplete_expired",
-        "paused",
-      ],
-    },
-  },
-  storage: {
-    Enums: {
-      buckettype: ["STANDARD", "ANALYTICS", "VECTOR"],
-    },
-  },
+  "graphql_public": {
+          Enums: {
+            
+          }
+        },"public": {
+          Enums: {
+            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
+          }
+        },"storage": {
+          Enums: {
+            "buckettype": ["STANDARD", "ANALYTICS", "VECTOR"]
+          }
+        }
 } as const
-

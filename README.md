@@ -11,12 +11,33 @@ workers Python / Playwright pour les moteurs.
 ## Structure cible
 
 ```
-apps/web        application Next.js (MakerKit)
+apps/web        application Next.js (MakerKit), interface FR + EN
+apps/web/supabase/schemas/2x-leadmaker-*.sql   modèle de données LeadMaker (forfaits, crédits, espaces, campagnes, prospects, tentatives, tâches, géographie)
 packages/       paquets MakerKit (comptes, facturation, UI…)
-workers/        moteurs Python : découverte Google Maps, outreach formulaires (à créer au lot 1)
+workers/        workers Python : file de tâches Postgres, découverte et outreach (moteurs à brancher aux lots 1 et 2)
 legacy/         prototype interne et documents de cadrage
+```
+
+## Lancer en local
+
+```bash
+pnpm install
+pnpm supabase:web:start          # base locale (Docker), migrations et données de référence
+pnpm --filter web dev            # application sur http://localhost:3000 (ou 3001 si le port est pris)
+pnpm supabase:web:test           # tests de la base, dont l'isolation entre organisations
+cd workers && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres .venv/bin/python -m leadmaker_workers.main
 ```
 
 ## État
 
-Lot 0 non démarré. Voir la section 11 du cahier des charges.
+Lot 0 (fondations) démarré le 29/10/2026 :
+
+- [x] MakerKit renommé LeadMaker, comptes d'équipe uniquement, interface FR et EN
+- [x] Forfaits Growth / Business / Scale (prix Stripe à renseigner dans `.env`)
+- [x] Modèle de données de la section 5 avec isolation par organisation, testée
+- [x] Quotas d'espaces et de sièges par forfait, crédits découverte / outreach avec journal
+- [x] File de tâches et worker Python conteneurisé (tâche factice)
+- [x] GeoNames : 252 pays, ~198 000 villes
+- [ ] Stripe en mode test (clés à fournir), accès administrateur
+- [ ] Mesure des coûts réels (proxies) et calendrier réestimé

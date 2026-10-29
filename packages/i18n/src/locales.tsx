@@ -8,9 +8,9 @@ import { defaultLocale } from './default-locale';
  */
 export const locales: string[] = [
   defaultLocale,
+  'fr', // French
   // Add other locales here as needed
-  // Example: 'es', 'fr', 'de', etc.
+  // Example: 'es', 'de', etc.
   // Uncomment the locales below to enable them:
   // 'es', // Spanish
-  // 'fr', // French
 ];

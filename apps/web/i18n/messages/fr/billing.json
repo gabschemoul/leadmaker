@@ -1,0 +1,127 @@
+{
+  "units": {
+    "member_one": "membre",
+    "member_other": "membres"
+  },
+  "subscriptionTabSubheading": "Gérez votre abonnement et votre facturation",
+  "planCardTitle": "Votre offre",
+  "planCardDescription": "Voici les détails de votre offre actuelle. Vous pouvez changer d'offre ou résilier votre abonnement à tout moment.",
+  "planRenewal": "Renouvellement chaque {interval} pour {price}",
+  "planDetails": "Détails de l'offre",
+  "checkout": "Passer au paiement",
+  "trialAlertTitle": "Votre période d'essai se termine bientôt",
+  "trialAlertDescription": "Votre période d'essai se termine le {date}. Passez à une offre payante pour continuer à utiliser toutes les fonctionnalités.",
+  "billingPortalCardButton": "Accéder au portail de facturation",
+  "billingPortalCardTitle": "Gérez vos informations de facturation",
+  "billingPortalCardDescription": "Accédez à votre portail de facturation pour gérer votre abonnement et votre facturation. Vous pouvez modifier ou résilier votre offre, ou télécharger vos factures.",
+  "cancelAtPeriodEndDescription": "La résiliation de votre abonnement est prévue le {endDate}.",
+  "renewAtPeriodEndDescription": "Le renouvellement de votre abonnement est prévu le {endDate}",
+  "noPermissionsAlertHeading": "Vous n'avez pas les droits pour modifier les paramètres de facturation",
+  "noPermissionsAlertBody": "Veuillez contacter le propriétaire du compte pour modifier les paramètres de facturation de votre compte.",
+  "checkoutSuccessTitle": "C'est fait ! Tout est prêt.",
+  "checkoutSuccessDescription": "Merci pour votre abonnement, il a été traité avec succès ! Un e-mail de confirmation sera envoyé à {customerEmail}.",
+  "checkoutSuccessBackButton": "Accéder à l'application",
+  "cannotManageBillingAlertTitle": "Vous ne pouvez pas gérer la facturation",
+  "cannotManageBillingAlertDescription": "Vous n'avez pas les droits pour gérer la facturation. Veuillez contacter le propriétaire du compte.",
+  "manageTeamPlan": "Gérez l'offre de votre équipe",
+  "manageTeamPlanDescription": "Choisissez une offre adaptée aux besoins de votre équipe. Vous pouvez passer à une offre supérieure ou inférieure à tout moment.",
+  "basePlan": "Offre de base",
+  "billingInterval": {
+    "label": "Choisissez votre période de facturation",
+    "month": "Facturation mensuelle",
+    "year": "Facturation annuelle"
+  },
+  "perMonth": "mois",
+  "custom": "Offre sur mesure",
+  "lifetime": "À vie",
+  "trialPeriod": "{period} jours d'essai",
+  "perPeriod": "par {period}",
+  "redirectingToPayment": "Redirection vers le paiement. Veuillez patienter...",
+  "proceedToPayment": "Procéder au paiement",
+  "startTrial": "Démarrer l'essai",
+  "perTeamMember": "Par membre d'équipe",
+  "perUnitShort": "Par {unit}",
+  "perUnit": "Par {unit} utilisé",
+  "teamMembers": "Membres de l'équipe",
+  "includedUpTo": "Jusqu'à {upTo} {unit} inclus dans l'offre",
+  "fromPreviousTierUpTo": "par {unit} pour les {upTo} {unitPlural} suivants",
+  "andAbove": "au-delà de {previousTier} {unit}",
+  "startingAtPriceUnit": "À partir de {price}/{unit}",
+  "priceUnit": "{price}/{unit}",
+  "forEveryUnit": "par {unit}",
+  "setupFee": "plus {setupFee} de frais de mise en service",
+  "perUnitIncluded": "({included} inclus)",
+  "features": "Fonctionnalités",
+  "featuresLabel": "Fonctionnalités",
+  "detailsLabel": "Détails",
+  "planPickerLabel": "Choisissez votre offre",
+  "planCardLabel": "Gérez votre offre",
+  "planPickerAlertErrorTitle": "Erreur lors de la demande de paiement",
+  "planPickerAlertErrorDescription": "Une erreur est survenue lors de la demande de paiement. Veuillez réessayer plus tard.",
+  "subscriptionCancelled": "Abonnement résilié",
+  "cancelSubscriptionDate": "Votre abonnement sera résilié à la fin de la période de facturation, le {date}",
+  "noPlanChosen": "Veuillez choisir une offre",
+  "noIntervalPlanChosen": "Veuillez choisir une période de facturation",
+  "status": {
+    "free": {
+      "badge": "Offre gratuite",
+      "heading": "Vous utilisez actuellement l'offre gratuite",
+      "description": "Vous êtes sur une offre gratuite. Vous pouvez passer à une offre payante à tout moment."
+    },
+    "active": {
+      "badge": "Actif",
+      "heading": "Votre abonnement est actif",
+      "description": "Votre abonnement est actif. Vous pouvez gérer votre abonnement et votre facturation dans le portail client."
+    },
+    "trialing": {
+      "badge": "Essai",
+      "heading": "Vous êtes en période d'essai",
+      "description": "Vous pouvez profiter des avantages de l'offre jusqu'à la fin de la période d'essai"
+    },
+    "past_due": {
+      "badge": "En retard",
+      "heading": "Votre facture est en retard de paiement",
+      "description": "Votre facture est en retard de paiement. Veuillez mettre à jour votre moyen de paiement."
+    },
+    "canceled": {
+      "badge": "Résilié",
+      "heading": "Votre abonnement est résilié",
+      "description": "Votre abonnement est résilié. Il prendra fin à la fin de la période de facturation."
+    },
+    "unpaid": {
+      "badge": "Impayé",
+      "heading": "Votre facture est impayée",
+      "description": "Votre facture est impayée. Veuillez mettre à jour votre moyen de paiement."
+    },
+    "incomplete": {
+      "badge": "Incomplet",
+      "heading": "Nous attendons votre paiement",
+      "description": "Nous attendons la validation de votre paiement. Merci de votre patience."
+    },
+    "incomplete_expired": {
+      "badge": "Expiré",
+      "heading": "Votre paiement a expiré",
+      "description": "Votre paiement a expiré. Veuillez mettre à jour votre moyen de paiement."
+    },
+    "paused": {
+      "badge": "En pause",
+      "heading": "Votre abonnement est en pause",
+      "description": "Votre abonnement est en pause. Vous pouvez le reprendre à tout moment."
+    },
+    "succeeded": {
+      "badge": "Réussi",
+      "heading": "Votre paiement a été effectué",
+      "description": "Votre paiement a été effectué avec succès. Merci pour votre abonnement !"
+    },
+    "pending": {
+      "badge": "En attente",
+      "heading": "Votre paiement est en attente",
+      "description": "Votre paiement est en attente. Merci de votre patience."
+    },
+    "failed": {
+      "badge": "Échoué",
+      "heading": "Votre paiement a échoué",
+      "description": "Votre paiement a échoué. Veuillez mettre à jour votre moyen de paiement."
+    }
+  }
+}

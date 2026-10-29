@@ -52,6 +52,8 @@
   },
   "ignorePatterns": [
     "node_modules",
+    "legacy",
+    "workers",
     "database.types.ts",
     "playwright-report",
     "*.hbs",

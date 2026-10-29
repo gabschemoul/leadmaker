@@ -1,0 +1,12 @@
+[project]
+name = "leadmaker-workers"
+version = "0.1.0"
+description = "Workers LeadMaker : découverte Google Maps, préparation et envoi de formulaires"
+requires-python = ">=3.11"
+dependencies = ["psycopg[binary]>=3.2", "playwright>=1.49", "httpx>=0.27"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["leadmaker_workers*"]

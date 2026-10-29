@@ -117,6 +117,14 @@ class GMapsScraper:
         self._ctx = self._browser.new_context(
             user_agent=USER_AGENT, locale="en-US", viewport={"width": 1300, "height": 900}
         )
+        # Images, vidéos et polices ne servent pas à la lecture des fiches : on ne les télécharge pas
+        # (moins de bande passante, donc moins de coût de proxy).
+        self._ctx.route(
+            "**/*",
+            lambda route: route.abort()
+            if route.request.resource_type in ("image", "media", "font")
+            else route.continue_(),
+        )
         self.searches = 0
 
     def close(self):

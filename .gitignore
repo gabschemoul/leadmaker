@@ -62,3 +62,4 @@ credentials.json
 __pycache__/
 *.pyc
 workers/data/bench/
+.env*

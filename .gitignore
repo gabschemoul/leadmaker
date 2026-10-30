@@ -63,3 +63,6 @@ __pycache__/
 *.pyc
 workers/data/bench/
 .env*
+workers/.env.cloud
+workers/.hetzner-token
+workers/.dataimpulse

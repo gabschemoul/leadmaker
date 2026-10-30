@@ -9,7 +9,9 @@ x-robot: &robot
   build: .
   image: leadmaker-worker
   restart: unless-stopped
-  env_file: .env
+  env_file:
+    - path: .env
+      required: false
   shm_size: 1g                 # Chromium a besoin de mémoire partagée
   stop_grace_period: 3m        # un site en cours est terminé avant l'arrêt
   logging:

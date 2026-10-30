@@ -160,3 +160,34 @@ export const prepareProspectsAction = authActionClient
 
     return { queued: data?.[0]?.queued ?? 0, skipped: data?.[0]?.skipped ?? 0 };
   });
+
+/**
+ * Recherche l'e-mail sur le site des prospects sélectionnés (sans préparer de
+ * formulaire). Une tâche par prospect ; l'adresse apparaît dans la colonne E-mail.
+ */
+export const findEmailsAction = authActionClient
+  .inputSchema(ProspectIdsSchema)
+  .action(async ({ parsedInput: { accountId, ids }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client.rpc('lm_find_emails', { p_ids: ids });
+
+    if (error) {
+      const logger = await getLogger();
+      logger.error(
+        {
+          name: 'leadmaker.prospects.find-emails',
+          accountId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to queue email search',
+      );
+
+      throw new Error('prospects.actions.findEmailsFailed');
+    }
+
+    revalidatePath('/home/[account]/prospects', 'page');
+
+    return { queued: data?.[0]?.queued ?? 0, skipped: data?.[0]?.skipped ?? 0 };
+  });

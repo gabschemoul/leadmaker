@@ -261,7 +261,31 @@ class PrepareRunner:
                  (result.get("detail") or "")[:120])
         return {"status": result["status"], "found_email": result.get("found_email")}
 
+    def find_emails(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
+        """Relève l'e-mail sur le site d'un prospect (sans formulaire, sans envoi)."""
+        prospect_id = task.payload["prospect_id"]
+        prospect = conn.execute("select website, found_email from public.lm_prospects where id = %s", (prospect_id,)).fetchone()
+        if not prospect or not prospect["website"]:
+            conn.execute("select public.lm_finish_emails(%s, %s)", (prospect_id, None))
+            return {"skipped": "prospect sans site"}
+        started = time.monotonic()
+        if _social_host(prospect["website"]):
+            result: dict | None = {"found_email": None, "detail": "réseau social ou annuaire"}
+        else:
+            job = {"mode": "emails", "site": prospect["website"], "locale": "fr-FR",
+                   "headless": os.environ.get("HEADLESS", "true").lower() != "false"}
+            result = run_site_job(job, int(os.environ.get("EMAILS_TIMEOUT", "90")))
+        if result is None:
+            result = {"found_email": None, "detail": "site bloqué : passé au suivant"}
+        conn.execute("select public.lm_finish_emails(%s, %s)", (prospect_id, result.get("found_email")))
+        log.info("EMAIL %s → %s (%.1fs) %s", prospect["website"], result.get("found_email") or "aucun",
+                 time.monotonic() - started, (result.get("detail") or "")[:100])
+        return {"found_email": result.get("found_email"), "emails": result.get("emails") or []}
+
     def on_final_failure(self, task: Task, conn: psycopg.Connection) -> None:
+        if task.kind == "emails":
+            conn.execute("select public.lm_finish_emails(%s, %s)", (task.payload["prospect_id"], None))
+            return
         if task.kind == "send":
             # on ne sait pas si le message est parti : jamais de nouvel essai automatique
             conn.execute("select public.lm_finish_send(%s, %s)", (task.payload["attempt_id"], Jsonb(

@@ -35,6 +35,7 @@ export interface ProspectRow {
   phone: string | null;
   website: string | null;
   found_email: string | null;
+  email_checked_at?: string | null;
   is_chain: boolean;
   source: 'maps' | 'csv';
   excluded_at: string | null;
@@ -349,6 +350,8 @@ function buildColumns(params: {
           >
             {row.original.found_email}
           </a>
+        ) : row.original.email_checked_at ? (
+          <span className={'text-muted-foreground'}>{t('emailNotFound')}</span>
         ) : (
           '–'
         ),

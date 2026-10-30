@@ -2,7 +2,7 @@
 
     echo '<json>' | python -m leadmaker_workers.outreach.site_job
 
-Entrée (stdin) : {"mode": "prepare", "site": ..., "sender": {...}, "subject": ..., "body": ..., "short_body": ...,
+Entrée (stdin) : {"mode": "prepare" | "send" | "emails", "site": ..., "sender": {...}, "subject": ..., "body": ..., "short_body": ...,
                   "extra": {...}, "locale": "fr-FR", "headless": true}
 Sortie (stdout, dernière ligne) : {"status": ..., "form_url": ..., "filled": {...}, "missing": [...],
                   "detail": ..., "protection_type": ..., "short": bool, "found_email": ..., "screenshot_b64": ...}
@@ -13,11 +13,13 @@ import base64
 import json
 import os
 import sys
+from urllib.parse import urlparse
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
 from ..discovery.scraper import USER_AGENT, _proxy_settings
-from .formfill import Sender, SiteDown, best_email, detect_protection, fill_form, open_contact_form, submit
+from .formfill import (CONTACT_PATHS, Sender, SiteDown, _check_alive, _contact_links, _dismiss_cookies, best_email,
+                       detect_protection, fill_form, harvest_emails, legal_links, open_contact_form, own_email, submit)
 
 BLOCKED_RESOURCES = ("media", "font")  # les images restent : elles comptent dans la capture
 
@@ -41,7 +43,8 @@ def prepare(job: dict) -> dict:
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=job.get("headless", True), proxy=_proxy_settings())
         ctx = browser.new_context(user_agent=USER_AGENT, locale=job.get("locale", "en-US"),
-                                  viewport={"width": 1280, "height": 900})
+                                  viewport={"width": 1280, "height": 900},
+                                  ignore_https_errors=True)  # certificats expirés : on visite quand même (choix de Gabriel)
         ctx.set_default_timeout(15000)
         ctx.route("**/*", lambda route: route.abort() if route.request.resource_type in BLOCKED_RESOURCES
                   else route.continue_())
@@ -74,6 +77,7 @@ def prepare(job: dict) -> dict:
             out.update(status="unreachable", detail=f"site inaccessible : {type(e).__name__}: {str(e)[:150]}")
         finally:
             out["found_email"] = best_email(job["site"], emails)
+            out["visited"] = list(dict.fromkeys(visited))
             try:
                 ctx.close()
                 browser.close()
@@ -89,7 +93,8 @@ def send(job: dict) -> dict:
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=job.get("headless", True), proxy=_proxy_settings())
         ctx = browser.new_context(user_agent=USER_AGENT, locale=job.get("locale", "en-US"),
-                                  viewport={"width": 1280, "height": 900})
+                                  viewport={"width": 1280, "height": 900},
+                                  ignore_https_errors=True)  # certificats expirés : on visite quand même (choix de Gabriel)
         ctx.set_default_timeout(15000)
         page = ctx.new_page()
         try:
@@ -133,12 +138,69 @@ def send(job: dict) -> dict:
     return out
 
 
+def find_emails(job: dict) -> dict:
+    """Relève l'adresse e-mail du site sans remplir de formulaire : accueil, puis pages contact et mentions
+    légales jusqu'à trouver une adresse au domaine du site."""
+    site = job["site"]
+    emails: set[str] = set()
+    visited: list[str] = []
+    out: dict = {"found_email": None, "emails": [], "visited": [], "detail": ""}
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=job.get("headless", True), proxy=_proxy_settings())
+        ctx = browser.new_context(user_agent=USER_AGENT, locale=job.get("locale", "en-US"),
+                                  viewport={"width": 1280, "height": 900}, ignore_https_errors=True)
+        ctx.set_default_timeout(15000)
+        ctx.route("**/*", lambda route: route.abort() if route.request.resource_type in ("image", "media", "font")
+                  else route.continue_())
+        page = ctx.new_page()
+        try:
+            page.goto(site, wait_until="domcontentloaded", timeout=25000)
+            page.wait_for_timeout(1500)
+            _check_alive(page)
+            visited.append("accueil")
+            _dismiss_cookies(page)
+            harvest_emails(page, site, emails)
+            if not own_email(site, emails):
+                home = page.url
+                root = f"{urlparse(home).scheme}://{urlparse(home).netloc}"
+                candidates = _contact_links(page, home)[:3] + legal_links(page, home)
+                for path in CONTACT_PATHS[:2] + ["/mentions-legales", "/mentions-legales/"]:
+                    if root + path not in candidates:
+                        candidates.append(root + path)
+                for link in candidates[:7]:
+                    try:
+                        resp = page.goto(link, wait_until="domcontentloaded", timeout=15000)
+                    except PWTimeout:
+                        continue
+                    if resp is not None and resp.status >= 400:
+                        continue
+                    visited.append(urlparse(link).path or "/")
+                    page.wait_for_timeout(800)
+                    harvest_emails(page, site, emails)
+                    if own_email(site, emails):
+                        break
+        except SiteDown as e:
+            out["detail"] = f"site hors ligne ou en construction (« {e} »)"
+        except Exception as e:
+            out["detail"] = f"site inaccessible : {type(e).__name__}: {str(e)[:150]}"
+        finally:
+            out.update(found_email=best_email(site, emails), emails=sorted(emails), visited=list(dict.fromkeys(visited)))
+            try:
+                ctx.close()
+                browser.close()
+            except Exception:
+                pass
+    return out
+
+
 def main() -> None:
     job = json.loads(sys.stdin.read())
     if job.get("mode") == "send":
         result = send(job)
     elif job.get("mode") == "prepare":
         result = prepare(job)
+    elif job.get("mode") == "emails":
+        result = find_emails(job)
     else:
         raise SystemExit("mode inconnu")
     sys.stdout.write("\n" + json.dumps(result, ensure_ascii=False) + "\n")

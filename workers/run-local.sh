@@ -19,6 +19,6 @@ if [ "${SEND_WORKER:-0}" = "1" ]; then
   WORKER_KINDS=send WORKER_ID="send-1" .venv/bin/python -m leadmaker_workers.main >> logs/worker-send.log 2>&1 &
 fi
 for i in 1 2 3; do
-  WORKER_KINDS=prepare WORKER_ID="prepare-$i" .venv/bin/python -m leadmaker_workers.main >> logs/worker-prepare.log 2>&1 &
+  WORKER_KINDS=prepare,emails WORKER_ID="prepare-$i" .venv/bin/python -m leadmaker_workers.main >> logs/worker-prepare.log 2>&1 &
 done
 WORKER_KINDS=estimate,discovery exec .venv/bin/python -m leadmaker_workers.main >> logs/worker.log 2>&1

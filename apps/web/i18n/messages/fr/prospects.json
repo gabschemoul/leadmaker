@@ -79,7 +79,8 @@
     "export": "Exporter la sélection",
     "exclude": "Exclure",
     "restore": "Rétablir",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "findEmails": "Chercher les e-mails"
   },
   "confirm": {
     "excludeTitle": "Exclure {count, plural, one {ce prospect} other {ces # prospects}} ?",
@@ -100,11 +101,15 @@
     "nothingDone": "Aucun prospect n'a été modifié.",
     "excludeFailed": "L'exclusion a échoué. Réessayez dans un instant.",
     "restoreFailed": "Le rétablissement a échoué. Réessayez dans un instant.",
-    "deleteFailed": "La suppression a échoué. Réessayez dans un instant."
+    "deleteFailed": "La suppression a échoué. Réessayez dans un instant.",
+    "findEmailsDone": "{count, plural, one {# recherche lancée} other {# recherches lancées}} : les adresses apparaîtront dans la colonne E-mail d'ici quelques minutes (rechargez la page).",
+    "findEmailsNothing": "Rien à chercher : ces prospects ont déjà un e-mail, n'ont pas de site ou sont déjà en cours de recherche.",
+    "findEmailsFailed": "La recherche d'e-mails n'a pas pu démarrer. Réessayez dans un instant."
   },
   "export": {
     "button": "Exporter en CSV",
     "all": "Exporter en CSV",
     "filtered": "Exporter la liste filtrée"
-  }
+  },
+  "emailNotFound": "aucun trouvé"
 }

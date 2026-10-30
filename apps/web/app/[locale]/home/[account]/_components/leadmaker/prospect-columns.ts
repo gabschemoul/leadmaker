@@ -36,15 +36,15 @@ export function isProspectSortKey(id: string): id is ProspectSortKey {
   return SORTABLE_PROSPECT_COLUMNS.has(id as ProspectColumnId);
 }
 
-/** Colonnes masquées par défaut : adresse, e-mail, origine et campagne. */
+/** Colonnes masquées par défaut : adresse, origine et campagne. */
 export const DEFAULT_PROSPECT_COLUMN_VISIBILITY: VisibilityState = {
   address: false,
-  email: false,
   source: false,
   campaign: false,
 };
 
 /** Clé de stockage navigateur des colonnes choisies, par organisation. */
 export function prospectColumnsStorageKey(accountId: string) {
-  return `leadmaker.prospects.columns.${accountId}`;
+  // v2 : la colonne e-mail est devenue visible par défaut
+  return `leadmaker.prospects.columns.v2.${accountId}`;
 }

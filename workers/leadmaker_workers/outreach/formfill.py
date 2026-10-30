@@ -364,11 +364,45 @@ def harvest_emails(page: Page, site: str, found: set[str]) -> None:
             found.add(m.lower())
 
 
-def best_email(site: str, found: set[str]) -> str | None:
+def own_email(site: str, found: set[str]) -> str | None:
+    """Adresse au domaine du site (la plus sûre), ou None."""
     host = (urlparse(site if "://" in site else f"http://{site}").hostname or "").removeprefix("www.").lower()
     root = ".".join(host.split(".")[-2:])
     same = sorted(e for e in found if e.endswith("@" + host) or e.endswith("." + root) or e.endswith("@" + root))
-    return (same or sorted(found) or [None])[0]
+    return same[0] if same else None
+
+
+# Messageries grand public : une adresse chez elles appartient plausiblement à l'entreprise. Une adresse au
+# domaine d'une autre société (annuaire, agence web, plateforme) n'est jamais retenue.
+WEBMAIL = re.compile(r"@(gmail|googlemail|hotmail|outlook|live|msn|yahoo|ymail|icloud|me|mac|aol|proton|protonmail|pm"
+                     r"|gmx|web|mail|orange|wanadoo|free|sfr|neuf|laposte|bbox|numericable|club-internet|aliceadsl"
+                     r"|t-online|freenet|libero|virgilio|tiscali|telenet|skynet|ziggo|kpn|btinternet|sky|comcast|att"
+                     r"|verizon|bell|rogers|videotron|uol|bol|terra)\.[a-z.]+$", re.I)
+
+
+def best_email(site: str, found: set[str]) -> str | None:
+    """Adresse à retenir : celle du domaine du site, sinon une messagerie grand public, sinon rien."""
+    own = own_email(site, found)
+    if own:
+        return own
+    webmail = sorted(e for e in found if WEBMAIL.search(e))
+    return webmail[0] if webmail else None
+
+
+# Pages qui affichent souvent l'adresse e-mail : mentions légales, à propos, confidentialité
+LEGAL_LINK = re.compile(r"mentions|legal|impressum|imprint|aviso|note legali|privacy|confidentialit|a[- ]propos|about"
+                        r"|qui[- ]sommes|chi siamo|quienes somos|sobre|uber uns|over ons", re.I)
+
+
+def legal_links(page: Page, base: str) -> list[str]:
+    links = page.evaluate("""() => [...document.querySelectorAll('a[href]')].map(a => [a.href, (a.innerText || a.title || '').trim()])""")
+    out: list[str] = []
+    for href, text in links:
+        if href.startswith("http") and _same_site(href, base) and LEGAL_LINK.search(_norm(f"{text} {urlparse(href).path}")):
+            clean = href.split("#")[0]
+            if clean not in out:
+                out.append(clean)
+    return out[:3]
 
 
 def _check_alive(page: Page) -> None:

@@ -18,6 +18,7 @@ create table if not exists public.lm_prospects (
   website varchar(1000),
   site_key text not null,              -- domaine normalisé, clé de dédoublonnage
   found_email varchar(320),
+  email_checked_at timestamptz,        -- dernière recherche d'e-mail sur le site (même sans résultat)
   maps_url varchar(1000),
   source public.lm_prospect_source not null default 'maps',
   campaign_id uuid references public.lm_campaigns(id) on delete set null,

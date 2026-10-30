@@ -563,14 +563,14 @@ isOneToOne: false
                   ]
                 },"lm_prospects": {
                   Row: {
-                    "account_id": string,"address": string | null,"campaign_id": string | null,"category": string | null,"city": string | null,"country_code": string | null,"created_at": string,"created_by": string | null,"excluded_at": string | null,"found_email": string | null,"google_place_id": string | null,"id": string,"is_chain": boolean,"maps_url": string | null,"name": string,"phone": string | null,"rating": number | null,"review_count": number | null,"site_key": string,"source": Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at": string,"updated_by": string | null,"website": string | null
+                    "account_id": string,"address": string | null,"campaign_id": string | null,"category": string | null,"city": string | null,"country_code": string | null,"created_at": string,"created_by": string | null,"email_checked_at": string | null,"excluded_at": string | null,"found_email": string | null,"google_place_id": string | null,"id": string,"is_chain": boolean,"maps_url": string | null,"name": string,"phone": string | null,"rating": number | null,"review_count": number | null,"site_key": string,"source": Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at": string,"updated_by": string | null,"website": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"address"?: string | null,"campaign_id"?: string | null,"category"?: string | null,"city"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"excluded_at"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name": string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key": string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
+                    "account_id": string,"address"?: string | null,"campaign_id"?: string | null,"category"?: string | null,"city"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"email_checked_at"?: string | null,"excluded_at"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name": string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key": string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id": string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"address"?: string | null,"campaign_id"?: string | null,"category"?: string | null,"city"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"excluded_at"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name"?: string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
+                    "account_id"?: string,"address"?: string | null,"campaign_id"?: string | null,"category"?: string | null,"city"?: string | null,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"email_checked_at"?: string | null,"excluded_at"?: string | null,"found_email"?: string | null,"google_place_id"?: string | null,"id"?: string,"is_chain"?: boolean,"maps_url"?: string | null,"name"?: string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string,"source"?: Database["public"]['Enums']["lm_prospect_source"],"space_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"website"?: string | null
                   }
                   Relationships: [
                     {
@@ -1221,6 +1221,14 @@ isOneToOne: false
 "lm_fail_task":
 { Args: { "p_error": string,"p_id": number }; Returns: undefined
                            },
+"lm_find_emails":
+{ Args: { "p_ids": (string)[] }; Returns: {
+              "queued": number,"skipped": number
+            }[]
+                           },
+"lm_finish_emails":
+{ Args: { "p_email": string,"p_prospect_id": string }; Returns: boolean
+                           },
 "lm_finish_prepare":
 { Args: { "p_attempt_id": string,"p_result": Json }; Returns: boolean
                            },
@@ -1391,7 +1399,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy"|"estimate","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
+            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy"|"estimate"|"emails","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
           }
           CompositeTypes: {
             "invitation": {
@@ -1770,7 +1778,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy", "estimate"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
+            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy", "estimate", "emails"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
           }
         },"storage": {
           Enums: {

@@ -2,7 +2,15 @@
 
 import { useState } from 'react';
 
-import { Ban, Download, FileText, RotateCcw, Trash2, X } from 'lucide-react';
+import {
+  AtSign,
+  Ban,
+  Download,
+  FileText,
+  RotateCcw,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
@@ -22,6 +30,7 @@ import { Trans } from '@kit/ui/trans';
 import {
   deleteProspectsAction,
   excludeProspectsAction,
+  findEmailsAction,
   restoreProspectsAction,
 } from '../../prospects/_lib/server/server-actions';
 import {
@@ -41,6 +50,7 @@ export function ProspectsBulkActions(props: {
     id: string;
     excluded_at: string | null;
     website?: string | null;
+    found_email?: string | null;
     campaign?: { id: string; name: string } | null;
   }>;
   canDelete: boolean;
@@ -67,6 +77,12 @@ export function ProspectsBulkActions(props: {
   const needsCampaign =
     props.campaigns !== undefined &&
     preparable.some((prospect) => prospect.campaign === null);
+
+  // e-mail à chercher : non exclus, avec un site web, sans adresse connue
+  const emailSearchable = props.selected.filter(
+    (prospect) =>
+      !prospect.excluded_at && prospect.website && !prospect.found_email,
+  );
 
   const close = () => setPending(null);
 
@@ -95,6 +111,22 @@ export function ProspectsBulkActions(props: {
     restore: useAction(restoreProspectsAction, callbacks('restore')),
     delete: useAction(deleteProspectsAction, callbacks('delete')),
   };
+
+  const findEmails = useAction(findEmailsAction, {
+    onSuccess: ({ data }) => {
+      if (data && data.queued > 0) {
+        toast.success(t('actions.findEmailsDone', { count: data.queued }));
+      } else {
+        toast.info(t('actions.findEmailsNothing'));
+      }
+
+      props.onClear();
+      props.onMutated?.();
+    },
+    onError: ({ error }) => {
+      toast.error(t(error.serverError ?? 'actions.findEmailsFailed'));
+    },
+  });
 
   const isPending =
     actions.exclude.isPending ||
@@ -146,6 +178,27 @@ export function ProspectsBulkActions(props: {
 
             <span>
               <Trans i18nKey={'outreach.forms.prepare.button'} />
+            </span>
+          </Button>
+        ) : null}
+
+        {emailSearchable.length > 0 ? (
+          <Button
+            size={'sm'}
+            variant={'outline'}
+            disabled={findEmails.isPending}
+            data-test={'prospects-find-emails-button'}
+            onClick={() =>
+              findEmails.execute({
+                accountId: props.accountId,
+                ids: emailSearchable.map((prospect) => prospect.id),
+              })
+            }
+          >
+            <AtSign className={'w-4'} />
+
+            <span>
+              <Trans i18nKey={'prospects.selection.findEmails'} />
             </span>
           </Button>
         ) : null}

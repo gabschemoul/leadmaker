@@ -79,7 +79,8 @@
     "export": "Export selection",
     "exclude": "Exclude",
     "restore": "Restore",
-    "delete": "Delete"
+    "delete": "Delete",
+    "findEmails": "Find emails"
   },
   "confirm": {
     "excludeTitle": "Exclude {count, plural, one {this prospect} other {these # prospects}}?",
@@ -100,11 +101,15 @@
     "nothingDone": "No prospects were changed.",
     "excludeFailed": "Exclusion failed. Please try again in a moment.",
     "restoreFailed": "Restoring failed. Please try again in a moment.",
-    "deleteFailed": "Deletion failed. Please try again in a moment."
+    "deleteFailed": "Deletion failed. Please try again in a moment.",
+    "findEmailsDone": "{count, plural, one {# search started} other {# searches started}}: addresses will show up in the Email column within a few minutes (reload the page).",
+    "findEmailsNothing": "Nothing to search: these prospects already have an email, have no website, or are already being searched.",
+    "findEmailsFailed": "The email search could not start. Please try again in a moment."
   },
   "export": {
     "button": "Export CSV",
     "all": "Export CSV",
     "filtered": "Export filtered list"
-  }
+  },
+  "emailNotFound": "none found"
 }

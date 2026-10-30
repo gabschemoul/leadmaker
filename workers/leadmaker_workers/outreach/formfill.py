@@ -301,14 +301,19 @@ VALIDATE_JS = r"""
 }
 """
 
-EMAILS_JS = r"""
-() => {
+EMAILS_JS = "() => {" + QSA_JS + r"""
   const out = [];
-  document.querySelectorAll('a[href^="mailto:"]').forEach(a => out.push(a.getAttribute('href').slice(7).split('?')[0]));
+  qsa(document, 'a[href^="mailto:"]').forEach(a => out.push(decodeURIComponent(a.getAttribute('href').slice(7).split('?')[0])));
+  // protection Cloudflare : adresse chiffrée dans data-cfemail
+  qsa(document, '[data-cfemail]').forEach(el => { const h = el.getAttribute('data-cfemail'); const k = parseInt(h.slice(0, 2), 16);
+    let e = ''; for (let i = 2; i < h.length; i += 2) e += String.fromCharCode(parseInt(h.slice(i, i + 2), 16) ^ k); out.push(e); });
   out.push(document.body ? document.body.innerText : '');
   return out.join('\n');
 }
 """
+# adresses écrites « contact [at] site [dot] fr » ou « contact (arobase) site (point) fr »
+OBFUSCATED_AT = re.compile(r"\s*[\[\(\{]\s*(at|arobase|@)\s*[\]\)\}]\s*", re.I)
+OBFUSCATED_DOT = re.compile(r"\s*[\[\(\{]\s*(dot|point)\s*[\]\)\}]\s*", re.I)
 
 
 def classify(f: dict) -> str | None:
@@ -466,23 +471,76 @@ def _find_form_late(page: Page) -> Frame | None:
     return _find_form(page)
 
 
-def harvest_emails(page: Page, site: str, found: set[str]) -> None:
-    """Relève les adresses email visibles (liens mailto et texte) ; celles du domaine du site d'abord."""
+def harvest_emails(page: Page, site: str, found, where: str = "other") -> None:
+    """Relève les adresses e-mail visibles (liens mailto, texte, adresses masquées). `found` est un ensemble,
+    ou un dictionnaire adresse -> pages où elle apparaît (accueil, contact, legal, other)."""
     try:
         text = page.evaluate(EMAILS_JS)
     except Exception:
         return
-    for m in EMAIL.findall(text or ""):
-        if not EMAIL_SKIP.search(m):
+    text = OBFUSCATED_DOT.sub(".", OBFUSCATED_AT.sub("@", text or ""))
+    for m in EMAIL.findall(text):
+        if EMAIL_SKIP.search(m):
+            continue
+        if isinstance(found, dict):
+            found.setdefault(m.lower(), set()).add(where)
+        else:
             found.add(m.lower())
 
 
-def own_email(site: str, found: set[str]) -> str | None:
+def _host(site: str) -> str:
+    return (urlparse(site if "://" in site else f"http://{site}").hostname or "").removeprefix("www.").lower()
+
+
+def _tokens(text: str) -> set[str]:
+    """Mots significatifs d'un nom de domaine ou d'une raison sociale (≥ 4 lettres, sans accents)."""
+    stop = {"plomberie", "plombier", "electricite", "electricien", "chauffage", "renovation", "services", "service",
+            "entreprise", "societe", "groupe", "group", "france", "lyon", "paris", "sarl", "sas", "eurl", "contact",
+            "info", "mail", "email", "gmail", "hotmail", "orange", "free", "wanadoo", "outlook", "yahoo", "icloud"}
+    words = re.split(r"[^a-z0-9]+", _norm(text))
+    return {w for w in words if len(w) >= 4 and w not in stop and not w.isdigit()}
+
+
+def own_email(site: str, found) -> str | None:
     """Adresse au domaine du site (la plus sûre), ou None."""
-    host = (urlparse(site if "://" in site else f"http://{site}").hostname or "").removeprefix("www.").lower()
+    host = _host(site)
     root = ".".join(host.split(".")[-2:])
     same = sorted(e for e in found if e.endswith("@" + host) or e.endswith("." + root) or e.endswith("@" + root))
     return same[0] if same else None
+
+
+# Domaines d'agences web, plateformes et annuaires : une adresse chez eux n'est jamais celle de l'entreprise
+THIRD_PARTY = re.compile(r"agence|agency|webdesign|web-?design|digital|studio|creation|communication|marketing|seo\b"
+                         r"|forumconstruire|viteundevis|solocal|pagesjaunes|wix|godaddy|ovh|ionos|1and1|squarespace|jimdo"
+                         r"|webflow|houzz|yelp|facebook|google|wordpress|shopify|hostinger|o2switch|infomaniak|gandi"
+                         r"|site-solocal|e-monsite|weebly|strikingly|cloudflare|sentry|hubspot|mailchimp|sendinblue|brevo", re.I)
+
+
+def related_email(site: str, found, name: str = "") -> str | None:
+    """Adresse à un autre domaine, mais apparenté au site ou au nom de l'entreprise (ex. contact@klai.fr pour
+    klai-peinture.fr), ou None."""
+    host = _host(site)
+    keys = _tokens(host) | _tokens(name)
+    if not keys:
+        return None
+    for e in sorted(found):
+        local, _, domain = e.partition("@")
+        if THIRD_PARTY.search(domain):
+            continue
+        if _tokens(domain) & keys or _tokens(local) & keys:
+            return e
+    return None
+
+
+def plausible_email(found) -> str | None:
+    """Adresse vue sur une page contact ou mentions légales du site, hors plateformes connues (dictionnaire seul)."""
+    if not isinstance(found, dict):
+        return None
+    for e in sorted(found):
+        domain = e.partition("@")[2]
+        if found[e] & {"contact", "legal"} and not THIRD_PARTY.search(domain):
+            return e
+    return None
 
 
 # Messageries grand public : une adresse chez elles appartient plausiblement à l'entreprise. Une adresse au
@@ -493,13 +551,19 @@ WEBMAIL = re.compile(r"@(gmail|googlemail|hotmail|outlook|live|msn|yahoo|ymail|i
                      r"|verizon|bell|rogers|videotron|uol|bol|terra)\.[a-z.]+$", re.I)
 
 
-def best_email(site: str, found: set[str]) -> str | None:
-    """Adresse à retenir : celle du domaine du site, sinon une messagerie grand public, sinon rien."""
+def best_email(site: str, found, name: str = "") -> str | None:
+    """Adresse à retenir : domaine du site, sinon domaine apparenté (site ou raison sociale), sinon messagerie
+    grand public, sinon adresse vue sur une page contact / mentions légales hors plateformes, sinon rien."""
     own = own_email(site, found)
     if own:
         return own
+    related = related_email(site, found, name)
+    if related:
+        return related
     webmail = sorted(e for e in found if WEBMAIL.search(e))
-    return webmail[0] if webmail else None
+    if webmail:
+        return webmail[0]
+    return plausible_email(found)
 
 
 # Pages qui affichent souvent l'adresse e-mail : mentions légales, à propos, confidentialité

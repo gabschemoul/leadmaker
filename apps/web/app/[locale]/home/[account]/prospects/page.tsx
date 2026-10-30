@@ -218,6 +218,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
           basePath={basePath}
           state={state}
           space={spaceParam}
+          spaceId={space.id}
           prospects={prospects}
           accountId={account.id}
           campaignsPath={campaignsPath}

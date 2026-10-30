@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
 from ..discovery.scraper import USER_AGENT, _proxy_settings
-from .formfill import (CONTACT_PATHS, Sender, SiteDown, _check_alive, _contact_links, _dismiss_cookies, best_email,
+from .formfill import (CONTACT_PATHS, Sender, SiteDown, _check_alive, _contact_links, _dismiss_cookies, _same_site, best_email,
                        detect_protection, fill_form, harvest_emails, legal_links, open_contact_form, own_email, submit)
 
 BLOCKED_RESOURCES = ("media", "font")  # les images restent : elles comptent dans la capture
@@ -97,7 +97,7 @@ def prepare(job: dict) -> dict:
             out.update(status="unreachable", detail=f"site inaccessible : {type(e).__name__}: {str(e)[:150]}")
         finally:
             signal.alarm(0)
-            out["found_email"] = best_email(job["site"], emails)
+            out["found_email"] = best_email(job["site"], emails, job.get("name", ""))
             out["visited"] = list(dict.fromkeys(visited))
             try:
                 ctx.close()
@@ -173,7 +173,7 @@ def find_emails(job: dict) -> dict:
     """Relève l'adresse e-mail du site sans remplir de formulaire : accueil, puis pages contact et mentions
     légales jusqu'à trouver une adresse au domaine du site."""
     site = job["site"]
-    emails: set[str] = set()
+    emails: dict[str, set[str]] = {}
     visited: list[str] = []
     out: dict = {"found_email": None, "emails": [], "visited": [], "detail": ""}
     with sync_playwright() as pw:
@@ -191,15 +191,17 @@ def find_emails(job: dict) -> dict:
             _check_alive(page)
             visited.append("accueil")
             _dismiss_cookies(page)
-            harvest_emails(page, site, emails)
+            harvest_emails(page, site, emails, "accueil")
             if not own_email(site, emails):
                 home = page.url
                 root = f"{urlparse(home).scheme}://{urlparse(home).netloc}"
-                candidates = _contact_links(page, home)[:3] + legal_links(page, home)
+                contact = [c for c in _contact_links(page, home) if _same_site(c, home)][:3]
+                legal = legal_links(page, home)
+                candidates = contact + legal
                 for path in CONTACT_PATHS[:2] + ["/mentions-legales", "/mentions-legales/"]:
                     if root + path not in candidates:
                         candidates.append(root + path)
-                for link in candidates[:7]:
+                for link in candidates[:8]:
                     try:
                         resp = page.goto(link, wait_until="domcontentloaded", timeout=15000)
                     except PWTimeout:
@@ -208,7 +210,7 @@ def find_emails(job: dict) -> dict:
                         continue
                     visited.append(urlparse(link).path or "/")
                     page.wait_for_timeout(800)
-                    harvest_emails(page, site, emails)
+                    harvest_emails(page, site, emails, "legal" if link in legal or "mention" in link else "contact")
                     if own_email(site, emails):
                         break
         except SiteDown as e:
@@ -221,7 +223,8 @@ def find_emails(job: dict) -> dict:
             out["detail"] = f"site inaccessible : {type(e).__name__}: {str(e)[:150]}"
         finally:
             signal.alarm(0)
-            out.update(found_email=best_email(site, emails), emails=sorted(emails), visited=list(dict.fromkeys(visited)))
+            out.update(found_email=best_email(site, emails, job.get("name", "")), emails=sorted(emails),
+                       visited=list(dict.fromkeys(visited)))
             try:
                 ctx.close()
                 browser.close()

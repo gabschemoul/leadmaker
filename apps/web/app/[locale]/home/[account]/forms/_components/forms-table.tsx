@@ -14,7 +14,7 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
 import {
@@ -42,6 +42,7 @@ import {
 import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
 
+import { LocalDateTime } from '~/components/local-date-time';
 import {
   type AttemptGroup,
   hasAlert,
@@ -93,7 +94,6 @@ export function FormsTable(props: {
   preparing: number;
 }) {
   const t = useTranslations('outreach.forms');
-  const format = useFormatter();
   const router = useRouter();
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<BulkOperation | null>(null);
@@ -438,10 +438,11 @@ export function FormsTable(props: {
                 <TableCell
                   className={'text-muted-foreground text-xs tabular-nums'}
                 >
-                  {format.dateTime(new Date(row.updated_at), {
-                    dateStyle: 'short',
-                    timeStyle: 'short',
-                  })}
+                  <LocalDateTime
+                    value={row.updated_at}
+                    dateStyle={'short'}
+                    timeStyle={'short'}
+                  />
                 </TableCell>
               </TableRow>
             );

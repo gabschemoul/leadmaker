@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect } from 'react';
 
 import Link from 'next/link';
 
@@ -31,6 +31,8 @@ import {
 import { Progress } from '@kit/ui/progress';
 import { toast } from '@kit/ui/sonner';
 import { Trans } from '@kit/ui/trans';
+
+import { LocalDateTime } from '~/components/local-date-time';
 
 import { CampaignStatusBadge } from '../../_components/leadmaker/campaign-status-badge';
 import { ProspectsTable } from '../../_components/leadmaker/prospects-table';
@@ -440,7 +442,11 @@ function ProgressCard({ live }: { live: CampaignLive }) {
             label={'campaigns.detail.lastActivity'}
             value={
               progress.lastSearchAt ? (
-                <LocalDateTime value={progress.lastSearchAt} />
+                <LocalDateTime
+                  value={progress.lastSearchAt}
+                  dateStyle={'short'}
+                  timeStyle={'short'}
+                />
               ) : (
                 '–'
               )
@@ -480,33 +486,6 @@ function Stat(props: {
         </p>
       ) : null}
     </div>
-  );
-}
-
-const subscribeNoop = () => () => {};
-
-/**
- * Date et heure dans le fuseau du navigateur. Le serveur ne connaît pas ce
- * fuseau : il rend en UTC, puis le navigateur réaffiche l'heure locale juste
- * après l'hydratation.
- */
-function LocalDateTime(props: { value: string }) {
-  const format = useFormatter();
-
-  const timeZone = useSyncExternalStore(
-    subscribeNoop,
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-    () => 'UTC',
-  );
-
-  return (
-    <>
-      {format.dateTime(new Date(props.value), {
-        dateStyle: 'short',
-        timeStyle: 'short',
-        timeZone,
-      })}
-    </>
   );
 }
 

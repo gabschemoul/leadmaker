@@ -217,7 +217,8 @@ class PrepareRunner:
                    or {}).get("name")
         names = list(dict.fromkeys(COUNTRY_NAMES.get(country, []) + ([english] if english else [])))
         job = {
-            "mode": "prepare", "site": prospect["website"], "subject": subject, "body": body, "short_body": short_body,
+            "mode": "prepare", "site": prospect["website"], "name": prospect["name"], "subject": subject, "body": body,
+            "short_body": short_body,
             "extra": row["extra"] or {}, "locale": LOCALES.get(campaign["country_code"], "en-US"),
             "headless": os.environ.get("HEADLESS", "true").lower() != "false",
             "sender": {
@@ -264,7 +265,7 @@ class PrepareRunner:
     def find_emails(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
         """Relève l'e-mail sur le site d'un prospect (sans formulaire, sans envoi)."""
         prospect_id = task.payload["prospect_id"]
-        prospect = conn.execute("select website, found_email from public.lm_prospects where id = %s", (prospect_id,)).fetchone()
+        prospect = conn.execute("select name, website, found_email from public.lm_prospects where id = %s", (prospect_id,)).fetchone()
         if not prospect or not prospect["website"]:
             conn.execute("select public.lm_finish_emails(%s, %s)", (prospect_id, None))
             return {"skipped": "prospect sans site"}
@@ -272,7 +273,7 @@ class PrepareRunner:
         if _social_host(prospect["website"]):
             result: dict | None = {"found_email": None, "detail": "réseau social ou annuaire"}
         else:
-            job = {"mode": "emails", "site": prospect["website"], "locale": "fr-FR",
+            job = {"mode": "emails", "site": prospect["website"], "name": prospect["name"], "locale": "fr-FR",
                    "headless": os.environ.get("HEADLESS", "true").lower() != "false"}
             result = run_site_job(job, int(os.environ.get("EMAILS_TIMEOUT", "90")))
         if result is None:

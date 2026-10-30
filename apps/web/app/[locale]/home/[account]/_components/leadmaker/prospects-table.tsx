@@ -13,6 +13,8 @@ import { Checkbox } from '@kit/ui/checkbox';
 import { DataTable } from '@kit/ui/enhanced-data-table';
 import { Trans } from '@kit/ui/trans';
 
+import { LocalDateTime } from '~/components/local-date-time';
+
 import {
   DEFAULT_PROSPECT_COLUMN_VISIBILITY,
   PROSPECT_COLUMN_IDS,
@@ -22,6 +24,7 @@ import {
 } from './prospect-columns';
 import { ProspectsBulkActions } from './prospects-bulk-actions';
 import { ProspectsColumnsMenu } from './prospects-columns-menu';
+import { ProspectsLiveRefresh } from './prospects-live-refresh';
 import { useStoredColumnVisibility } from './use-stored-column-visibility';
 
 export interface ProspectRow {
@@ -92,6 +95,8 @@ export function ProspectsTable(props: {
   /** campagnes du dossier (préparation des prospects importés sans campagne) */
   campaigns?: Array<{ id: string; name: string }>;
   formsHref?: string;
+  /** dossier à suivre en temps réel (e-mails trouvés, prospects ajoutés) */
+  liveSpaceId?: string;
 }) {
   const t = useTranslations('prospects');
   const format = useFormatter();
@@ -131,6 +136,13 @@ export function ProspectsTable(props: {
 
   return (
     <div className={'flex flex-col gap-3'}>
+      {props.liveSpaceId ? (
+        <ProspectsLiveRefresh
+          spaceId={props.liveSpaceId}
+          paused={selected.length > 0}
+        />
+      ) : null}
+
       <div className={'flex flex-wrap items-center justify-between gap-2'}>
         <div className={'min-w-0 flex-1'}>
           {selected.length > 0 ? (
@@ -393,9 +405,7 @@ function buildColumns(params: {
       header: t('columns.date'),
       cell: ({ row }) => (
         <span className={'whitespace-nowrap'}>
-          {format.dateTime(new Date(row.original.created_at), {
-            dateStyle: 'medium',
-          })}
+          <LocalDateTime value={row.original.created_at} dateStyle={'medium'} />
         </span>
       ),
     },

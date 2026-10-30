@@ -30,6 +30,7 @@ export function ProspectsList(props: {
   noResultsMessage: React.ReactNode;
   campaigns: Array<{ id: string; name: string }>;
   formsHref: string;
+  spaceId: string;
 }) {
   const router = useRouter();
 
@@ -64,6 +65,7 @@ export function ProspectsList(props: {
       noResultsMessage={props.noResultsMessage}
       campaigns={props.campaigns}
       formsHref={props.formsHref}
+      liveSpaceId={props.spaceId}
     />
   );
 }

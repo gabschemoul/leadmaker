@@ -89,7 +89,19 @@
     "backToCampaign": "Back to the campaign",
     "detailButton": "Messages",
     "detailCount": "{count, plural, =0 {No message} one {# message} other {# messages}}",
-    "detailMissing": "Write at least one message before preparing forms."
+    "detailMissing": "Write at least one message before preparing forms.",
+    "dailyLimitInvalid": "Enter a number between 1 and 1000.",
+    "autoValidationPlan": "Automatic validation is not included in your plan.",
+    "sending": {
+      "title": "Sending",
+      "intro": "These settings apply to this campaign.",
+      "dailyLimit": "Maximum sends per day",
+      "dailyLimitHint": "The robot never sends more forms than this number per day for this campaign (your plan also sets a global cap).",
+      "autoValidation": "Automatic validation",
+      "autoValidationHint": "A form prepared without any warning is validated on its own, without review. Forms to complete or with a remark still wait for your review.",
+      "autoValidationPlanHint": "Available on the Business and Scale plans.",
+      "autoValidationWarning": "Warning: automatically validated forms will be sent as soon as sending is active, without your review."
+    }
   },
   "forms": {
     "pageTitle": "Forms",

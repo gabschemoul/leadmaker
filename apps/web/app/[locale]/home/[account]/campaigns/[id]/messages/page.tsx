@@ -26,6 +26,7 @@ import { loadTeamWorkspace } from '../../../_lib/server/team-account-workspace.l
 import { loadSenderProfile } from '../../../sender/_lib/server/sender.loader';
 import { CampaignMessagesForm } from '../../_components/campaign-messages-form';
 import {
+  loadAutoValidationAllowed,
   loadCampaign,
   loadPreviewProspects,
 } from '../../_lib/server/campaigns.loader';
@@ -79,9 +80,10 @@ async function MessagesContent({ params }: MessagesPageProps) {
     notFound();
   }
 
-  const [sender, prospects] = await Promise.all([
+  const [sender, prospects, autoValidationAllowed] = await Promise.all([
     loadSenderProfile(client, campaign.space_id),
     loadPreviewProspects(client, campaign.space_id),
+    loadAutoValidationAllowed(client, account.id),
   ]);
 
   const campaignHref = `${pathsConfig.app.accountCampaigns.replace('[account]', slug)}/${id}`;
@@ -128,6 +130,11 @@ async function MessagesContent({ params }: MessagesPageProps) {
           }
           senderHref={senderHref}
           prospects={prospects}
+          sending={{
+            dailyLimit: campaign.daily_limit,
+            autoValidation: campaign.auto_validation,
+            autoValidationAllowed,
+          }}
         />
       </div>
     </>

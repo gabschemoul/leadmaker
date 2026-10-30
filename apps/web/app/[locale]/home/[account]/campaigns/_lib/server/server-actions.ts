@@ -343,10 +343,19 @@ export const saveCampaignTemplatesAction = authActionClient
 
     const { error } = await client
       .from('lm_campaigns')
-      .update({ templates: { messages, short: parsedInput.short } })
+      .update({
+        templates: { messages, short: parsedInput.short },
+        daily_limit: parsedInput.dailyLimit,
+        auto_validation: parsedInput.autoValidation,
+      })
       .eq('id', parsedInput.campaignId);
 
     if (error) {
+      // validation automatique hors forfait (contrôle du déclencheur SQL)
+      if (error.hint === 'plan') {
+        throw new Error('outreach.messages.autoValidationPlan');
+      }
+
       const logger = await getLogger();
       logger.error(
         {

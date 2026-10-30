@@ -89,7 +89,19 @@
     "backToCampaign": "Retour à la campagne",
     "detailButton": "Messages",
     "detailCount": "{count, plural, =0 {Aucun message} one {# message} other {# messages}}",
-    "detailMissing": "Écrivez au moins un message avant de préparer les formulaires."
+    "detailMissing": "Écrivez au moins un message avant de préparer les formulaires.",
+    "dailyLimitInvalid": "Indiquez un nombre entre 1 et 1000.",
+    "autoValidationPlan": "La validation automatique n'est pas incluse dans votre forfait.",
+    "sending": {
+      "title": "Envoi",
+      "intro": "Ces réglages s'appliquent à cette campagne.",
+      "dailyLimit": "Envois par jour, au maximum",
+      "dailyLimitHint": "Le robot n'envoie jamais plus de formulaires que ce nombre en une journée pour cette campagne (le forfait fixe aussi un plafond global).",
+      "autoValidation": "Validation automatique",
+      "autoValidationHint": "Un formulaire préparé sans la moindre alerte est validé tout seul, sans relecture. Les formulaires à compléter ou avec une remarque restent à relire.",
+      "autoValidationPlanHint": "Disponible avec les forfaits Business et Scale.",
+      "autoValidationWarning": "Attention : les formulaires validés automatiquement partiront dès que l'envoi est actif, sans que vous les ayez relus."
+    }
   },
   "forms": {
     "pageTitle": "Formulaires",

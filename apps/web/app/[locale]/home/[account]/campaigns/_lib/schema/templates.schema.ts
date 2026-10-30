@@ -15,6 +15,8 @@ const MessageSchema = z.object({
   body: z.string().max(BODY_MAX, { message: TOO_LONG }),
 });
 
+export const DAILY_LIMIT_MAX = 1000;
+
 export const CampaignTemplatesFormSchema = z.object({
   messages: z.array(MessageSchema).max(MAX_MESSAGES),
   short: z.object({
@@ -23,6 +25,13 @@ export const CampaignTemplatesFormSchema = z.object({
       .string()
       .max(SHORT_BODY_MAX, { message: 'outreach.messages.shortTooLong' }),
   }),
+  // réglages d'envoi de la campagne
+  dailyLimit: z.coerce
+    .number()
+    .int()
+    .min(1, { message: 'outreach.messages.dailyLimitInvalid' })
+    .max(DAILY_LIMIT_MAX, { message: 'outreach.messages.dailyLimitInvalid' }),
+  autoValidation: z.boolean(),
 });
 
 export type CampaignTemplatesFormValues = z.infer<

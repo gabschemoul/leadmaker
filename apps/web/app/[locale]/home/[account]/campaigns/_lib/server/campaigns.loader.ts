@@ -35,7 +35,7 @@ export async function loadCampaign(client: Client, campaignId: string) {
   const { data, error } = await client
     .from('lm_campaigns')
     .select(
-      'id, account_id, space_id, name, status, country_code, created_at, templates, auto_validation',
+      'id, account_id, space_id, name, status, country_code, created_at, templates, auto_validation, daily_limit',
     )
     .eq('id', campaignId)
     .maybeSingle();
@@ -66,4 +66,20 @@ export async function loadPreviewProspects(client: Client, spaceId: string) {
   }
 
   return data ?? [];
+}
+
+/** Le forfait de l'organisation inclut-il la validation automatique des formulaires ? */
+export async function loadAutoValidationAllowed(
+  client: Client,
+  accountId: string,
+) {
+  const { data, error } = await client.rpc('lm_auto_validation_allowed', {
+    p_account_id: accountId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data === true;
 }

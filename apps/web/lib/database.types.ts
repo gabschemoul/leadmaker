@@ -1159,6 +1159,9 @@ isOneToOne: false
 "lm_attempt_repreparable":
 { Args: { "p_status": Database["public"]['Enums']["lm_attempt_status"] }; Returns: boolean
                            },
+"lm_auto_validation_allowed":
+{ Args: { "p_account_id": string }; Returns: boolean
+                           },
 "lm_campaign_progress":
 { Args: { "p_campaign_id": string }; Returns: {
               "abandoned": number,"cards": number,"categories": number,"in_flight": number,"last_search_at": string,"prospects": number,"searches_done": number,"searches_total": number,"zones": number

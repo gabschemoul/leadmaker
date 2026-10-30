@@ -108,6 +108,39 @@ select is(public.lm_skip_attempts(array(select id from public.lm_attempts)), 0, 
 select is((select count(*)::int from public.lm_attempt_counts((select space_id from ta))), 0, 'B ne voit pas les compteurs de A');
 select throws_ok($$ select public.lm_finish_prepare('00000000-0000-0000-0000-000000000000', '{}'::jsonb) $$, '42501', null, 'lm_finish_prepare réservé au rôle service');
 
+-- Validation automatique : option de campagne réservée aux forfaits qui l'incluent
+set local role postgres;
+update public.lm_spaces set ready_forms_cap = 100 where id = (select space_id from ta);
+select makerkit.authenticate_as('out_owner');
+select throws_ok(
+  $$ update public.lm_campaigns set auto_validation = true $$,
+  'P0001', null, 'Sans forfait, la validation automatique est refusée');
+select is((select auto_validation from public.lm_campaigns limit 1), false, 'Option restée désactivée');
+
+set local role service_role;
+select public.lm_reset_credits((select account_id from ta), 'business', now() + interval '30 days', 'test-auto-validation');
+set local role postgres;
+select makerkit.authenticate_as('out_owner');
+select is(public.lm_auto_validation_allowed((select account_id from ta)), true, 'Forfait Business : validation automatique incluse');
+select lives_ok($$ update public.lm_campaigns set auto_validation = true $$, 'Option activée avec le forfait');
+
+insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_key, website)
+select t.account_id, t.space_id, c.id, x.name, x.key, x.site
+  from ta t, public.lm_campaigns c, (values ('Cinq', 'cinq.fr', 'https://cinq.fr'), ('Six', 'six.fr', 'https://six.fr')) as x(name, key, site)
+ where c.name = 'Camp';
+select is((select queued from public.lm_prepare_prospects(array(select id from public.lm_prospects where name in ('Cinq', 'Six')))), 2, 'Deux nouvelles préparations');
+
+set local role service_role;
+select public.lm_finish_prepare((select a.id from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Cinq'),
+  '{"status":"ready","template_name":"M1","subject":"Objet","body":"Bonjour Cinq, ici Agence","form_url":"https://trois.fr/contact","filled":{"email":"Email","message":"Message"}}'::jsonb);
+select public.lm_finish_prepare((select a.id from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Six'),
+  '{"status":"ready","template_name":"M1","subject":"Objet","body":"Bonjour Six, ici Agence","form_url":"https://quatre.fr/contact","filled":{"email":"Email"},"detail":"pas de zone de message sur ce formulaire"}'::jsonb);
+set local role postgres;
+select makerkit.authenticate_as('out_owner');
+select is((select status::text from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Cinq'), 'validated', 'Formulaire prêt sans alerte validé automatiquement');
+select is((select validated_by from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Cinq'), null, 'Validation automatique sans validateur');
+select is((select status::text from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Six'), 'ready', 'Formulaire avec alerte laissé à relire');
+
 select * from finish();
 
 rollback;

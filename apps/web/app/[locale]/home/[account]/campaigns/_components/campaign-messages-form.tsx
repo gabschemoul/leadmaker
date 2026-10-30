@@ -30,6 +30,7 @@ import {
 } from '@kit/ui/form';
 import { Input } from '@kit/ui/input';
 import { toast } from '@kit/ui/sonner';
+import { Switch } from '@kit/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Trans } from '@kit/ui/trans';
@@ -47,7 +48,10 @@ import {
   unknownVariables,
 } from '~/lib/leadmaker/templates';
 
-import { CampaignTemplatesFormSchema } from '../_lib/schema/templates.schema';
+import {
+  CampaignTemplatesFormSchema,
+  DAILY_LIMIT_MAX,
+} from '../_lib/schema/templates.schema';
 import { saveCampaignTemplatesAction } from '../_lib/server/server-actions';
 
 type PreviewProspect = TemplateContext['prospect'] & { id: string };
@@ -61,6 +65,12 @@ export function CampaignMessagesForm(props: {
   sender: TemplateContext['sender'];
   senderHref: string;
   prospects: PreviewProspect[];
+  sending: {
+    dailyLimit: number;
+    autoValidation: boolean;
+    /** le forfait de l'organisation inclut la validation automatique */
+    autoValidationAllowed: boolean;
+  };
 }) {
   const t = useTranslations('outreach.messages');
 
@@ -82,6 +92,8 @@ export function CampaignMessagesForm(props: {
         body: props.templates.messages[index]?.body ?? '',
       })),
       short: props.templates.short,
+      dailyLimit: props.sending.dailyLimit,
+      autoValidation: props.sending.autoValidation,
     },
   });
 
@@ -379,6 +391,101 @@ export function CampaignMessagesForm(props: {
                 {renderSlot('short', SHORT_BODY_MAX)}
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card data-test={'campaign-sending-card'}>
+          <CardHeader>
+            <CardTitle>
+              <Trans i18nKey={'outreach.messages.sending.title'} />
+            </CardTitle>
+
+            <CardDescription>
+              <Trans i18nKey={'outreach.messages.sending.intro'} />
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className={'flex flex-col gap-6'}>
+            <FormField
+              name={'dailyLimit'}
+              render={({ field }) => (
+                <FormItem className={'max-w-xs'}>
+                  <FormLabel>
+                    <Trans i18nKey={'outreach.messages.sending.dailyLimit'} />
+                  </FormLabel>
+
+                  <FormControl>
+                    <Input
+                      type={'number'}
+                      min={1}
+                      max={DAILY_LIMIT_MAX}
+                      data-test={'sending-daily-limit'}
+                      {...field}
+                    />
+                  </FormControl>
+
+                  <p className={'text-muted-foreground text-sm'}>
+                    <Trans
+                      i18nKey={'outreach.messages.sending.dailyLimitHint'}
+                    />
+                  </p>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              name={'autoValidation'}
+              render={({ field }) => (
+                <FormItem>
+                  <div className={'flex items-start gap-3'}>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!props.sending.autoValidationAllowed}
+                        data-test={'sending-auto-validation'}
+                      />
+                    </FormControl>
+
+                    <div className={'flex flex-col gap-1'}>
+                      <FormLabel>
+                        <Trans
+                          i18nKey={'outreach.messages.sending.autoValidation'}
+                        />
+                      </FormLabel>
+
+                      <p className={'text-muted-foreground text-sm'}>
+                        <Trans
+                          i18nKey={
+                            props.sending.autoValidationAllowed
+                              ? 'outreach.messages.sending.autoValidationHint'
+                              : 'outreach.messages.sending.autoValidationPlanHint'
+                          }
+                        />
+                      </p>
+                    </div>
+                  </div>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {values.autoValidation ? (
+              <Alert
+                className={alertExtras.warning}
+                data-test={'sending-auto-validation-warning'}
+              >
+                <TriangleAlert className={'h-4'} />
+                <AlertDescription>
+                  <Trans
+                    i18nKey={'outreach.messages.sending.autoValidationWarning'}
+                  />
+                </AlertDescription>
+              </Alert>
+            ) : null}
           </CardContent>
         </Card>
 

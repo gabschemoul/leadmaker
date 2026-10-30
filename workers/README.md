@@ -36,12 +36,23 @@ set -a; source .env; set +a
 python -m leadmaker_workers.main
 ```
 
-## Conteneur
+## Serveur (Hetzner, Docker)
+
+Les robots tournent sur un serveur Hetzner (Ubuntu 24.04, CX32 : 4 vCPU / 8 Go pour une dizaine de robots).
+Mise en place, une seule fois :
 
 ```bash
-docker build -t leadmaker-worker workers/
-docker run --env-file workers/.env --network host leadmaker-worker
+# sur le serveur, en root
+apt-get update && apt-get install -y docker.io docker-compose-v2 git
+git clone https://github.com/gabschemoul/leadmaker.git /opt/leadmaker
+cd /opt/leadmaker/workers
+cp .env.server.example .env   # puis remplir DATABASE_URL (mot de passe de la base), SUPABASE_SERVICE_ROLE_KEY, PROXY_URL
+docker compose up -d --build  # 2 estimations, 1 découverte, 6 préparations / e-mails ; l'envoi reste coupé
 ```
+
+Mise à jour après un `git push` : `cd /opt/leadmaker && git pull && cd workers && docker compose up -d --build`.
+Robot d'envoi (décision de Gabriel) : `docker compose --profile send up -d` ; pour le couper : `docker compose stop send`.
+Suivi : `docker compose ps`, `docker compose logs -f prepare`. Chaque robot finit sa tâche en cours avant de s'arrêter.
 
 ## Charger les données de référence
 

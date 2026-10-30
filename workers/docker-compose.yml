@@ -1,0 +1,50 @@
+# Robots LeadMaker sur le serveur (Hetzner). Variables dans un fichier `.env` à côté (voir .env.server.example).
+#
+#   docker compose up -d --build          # 2 estimations, 1 découverte, 6 préparations / e-mails
+#   docker compose --profile send up -d   # + le robot d'envoi (seulement quand Gabriel dit « Envoie »)
+#   docker compose logs -f prepare        # suivre un type de robot
+#   docker compose down                   # tout arrêter (chaque robot finit sa tâche en cours)
+
+x-robot: &robot
+  build: .
+  image: leadmaker-worker
+  restart: unless-stopped
+  env_file: .env
+  shm_size: 1g                 # Chromium a besoin de mémoire partagée
+  stop_grace_period: 3m        # un site en cours est terminé avant l'arrêt
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  estimate:
+    <<: *robot
+    environment:
+      WORKER_KINDS: estimate
+    deploy:
+      replicas: 2
+      resources: { limits: { memory: 1500M } }
+
+  discovery:
+    <<: *robot
+    environment:
+      WORKER_KINDS: estimate,discovery
+    deploy:
+      resources: { limits: { memory: 1500M } }
+
+  prepare:
+    <<: *robot
+    environment:
+      WORKER_KINDS: prepare,emails
+    deploy:
+      replicas: 6
+      resources: { limits: { memory: 1500M } }
+
+  # Robot d'envoi : COUPÉ par défaut. Tant qu'il n'est pas lancé, les formulaires validés restent dans « Validés ».
+  send:
+    <<: *robot
+    profiles: ["send"]
+    environment:
+      WORKER_KINDS: send
+    deploy:
+      resources: { limits: { memory: 1500M } }

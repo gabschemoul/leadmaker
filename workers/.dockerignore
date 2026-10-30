@@ -1,0 +1,8 @@
+.venv
+logs
+data/bench
+data/test_contact_received.json
+__pycache__
+**/__pycache__
+.env
+.env.*

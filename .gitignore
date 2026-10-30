@@ -66,3 +66,4 @@ workers/data/bench/
 workers/.env.cloud
 workers/.hetzner-token
 workers/.dataimpulse
+workers/.hetzner-server

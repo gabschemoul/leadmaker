@@ -41,16 +41,21 @@ python -m leadmaker_workers.main
 Les robots tournent sur un serveur Hetzner (Ubuntu 24.04, CX32 : 4 vCPU / 8 Go pour une dizaine de robots).
 Mise en place, une seule fois :
 
+Serveur « leadmaker-robots-1 » (2.31.72.125, Falkenstein), créé par l'API Hetzner, clé SSH `~/.ssh/leadmaker_hetzner`
+sur le Mac de Gabriel. Le dépôt GitHub est privé : le code des robots est copié depuis le Mac (rsync), pas cloné.
+
 ```bash
-# sur le serveur, en root
-apt-get update && apt-get install -y docker.io docker-compose-v2 git
-git clone https://github.com/gabschemoul/leadmaker.git /opt/leadmaker
-cd /opt/leadmaker/workers
-cp .env.server.example .env   # puis remplir DATABASE_URL (mot de passe de la base), SUPABASE_SERVICE_ROLE_KEY, PROXY_URL
-docker compose up -d --build  # 2 estimations, 1 découverte, 6 préparations / e-mails ; l'envoi reste coupé
+# depuis le Mac, à la racine du dépôt : copie du code des robots (sans secrets ni données locales)
+rsync -az -e "ssh -i ~/.ssh/leadmaker_hetzner" --exclude .venv --exclude logs --exclude data/bench \
+  --exclude '.env*' --exclude '.hetzner*' --exclude '.dataimpulse' --exclude __pycache__ \
+  workers/ root@2.31.72.125:/opt/leadmaker/workers/
+# sur le serveur : /opt/leadmaker/workers/.env contient les variables (modèle : .env.server.example)
+ssh -i ~/.ssh/leadmaker_hetzner root@2.31.72.125 'cd /opt/leadmaker/workers && docker compose up -d --build prepare'
 ```
 
-Mise à jour après un `git push` : `cd /opt/leadmaker && git pull && cd workers && docker compose up -d --build`.
+`docker compose up -d --build` (sans nom de service) lance aussi les robots Google Maps (estimations, découverte) :
+à ne faire qu'avec `PROXY_URL` renseigné, sinon Google bloque l'adresse du serveur. Mise à jour : refaire le rsync puis
+`docker compose up -d --build`.
 Robot d'envoi (décision de Gabriel) : `docker compose --profile send up -d` ; pour le couper : `docker compose stop send`.
 Suivi : `docker compose ps`, `docker compose logs -f prepare`. Chaque robot finit sa tâche en cours avant de s'arrêter.
 

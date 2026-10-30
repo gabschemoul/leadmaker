@@ -60,7 +60,7 @@ def _social_host(url: str) -> bool:
 
 
 def _timeout() -> int:
-    return int(os.environ.get("PREPARE_TIMEOUT", "180"))
+    return int(os.environ.get("PREPARE_TIMEOUT", "100"))
 
 
 def run_site_job(job: dict, timeout: int) -> dict | None:

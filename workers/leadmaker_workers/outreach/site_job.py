@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import signal
 import sys
 from urllib.parse import urlparse
 
@@ -22,6 +23,21 @@ from .formfill import (CONTACT_PATHS, Sender, SiteDown, _check_alive, _contact_l
                        detect_protection, fill_form, harvest_emails, legal_links, open_contact_form, own_email, submit)
 
 BLOCKED_RESOURCES = ("media", "font")  # les images restent : elles comptent dans la capture
+# Garde-fou : une page qui ne répond plus (script bloqué, iframe muette) interrompt le travail au bout de ce délai,
+# et le résultat partiel (e-mails relevés, pages vues) est quand même renvoyé.
+SOFT_DEADLINE = int(os.environ.get("SITE_SOFT_DEADLINE", "70"))
+
+
+class SiteHang(BaseException):
+    """BaseException : ne doit pas être avalée par les « except Exception » du moteur."""
+
+
+def _arm_watchdog() -> None:
+    def _hang(*_: object) -> None:
+        raise SiteHang(f"page bloquée plus de {SOFT_DEADLINE} s")
+
+    signal.signal(signal.SIGALRM, _hang)
+    signal.alarm(SOFT_DEADLINE)
 
 
 def _screenshot(page, frame) -> str:
@@ -49,6 +65,7 @@ def prepare(job: dict) -> dict:
         ctx.route("**/*", lambda route: route.abort() if route.request.resource_type in BLOCKED_RESOURCES
                   else route.continue_())
         page = ctx.new_page()
+        _arm_watchdog()
         try:
             frame = open_contact_form(page, job["site"], emails=emails, visited=visited)
             if not frame:
@@ -73,9 +90,13 @@ def prepare(job: dict) -> dict:
                            protection_type=protection, short=r.short, screenshot_b64=_screenshot(page, frame))
         except SiteDown as e:
             out.update(status="unreachable", detail=f"site hors ligne ou en construction (« {e} »)")
+        except SiteHang as e:
+            out.update(status="unreachable", detail=f"site bloqué : {e} (pages vues : " + ", ".join(dict.fromkeys(visited)) + ")")
+            _finish_now(out, job["site"], emails, visited)
         except Exception as e:
             out.update(status="unreachable", detail=f"site inaccessible : {type(e).__name__}: {str(e)[:150]}")
         finally:
+            signal.alarm(0)
             out["found_email"] = best_email(job["site"], emails)
             out["visited"] = list(dict.fromkeys(visited))
             try:
@@ -84,6 +105,16 @@ def prepare(job: dict) -> dict:
             except Exception:
                 pass
     return out
+
+
+def _finish_now(out: dict, site: str, emails: set[str], visited: list[str]) -> None:
+    """Après un blocage, le navigateur peut ne plus répondre : on écrit le résultat et on sort sans attendre."""
+    signal.alarm(0)
+    out["found_email"] = best_email(site, emails)
+    out["visited"] = list(dict.fromkeys(visited))
+    sys.stdout.write("\n" + json.dumps(out, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+    os._exit(0)
 
 
 def send(job: dict) -> dict:
@@ -153,6 +184,7 @@ def find_emails(job: dict) -> dict:
         ctx.route("**/*", lambda route: route.abort() if route.request.resource_type in ("image", "media", "font")
                   else route.continue_())
         page = ctx.new_page()
+        _arm_watchdog()
         try:
             page.goto(site, wait_until="domcontentloaded", timeout=25000)
             page.wait_for_timeout(1500)
@@ -181,9 +213,14 @@ def find_emails(job: dict) -> dict:
                         break
         except SiteDown as e:
             out["detail"] = f"site hors ligne ou en construction (« {e} »)"
+        except SiteHang as e:
+            out["detail"] = f"site bloqué : {e}"
+            out["emails"] = sorted(emails)
+            _finish_now(out, site, emails, visited)
         except Exception as e:
             out["detail"] = f"site inaccessible : {type(e).__name__}: {str(e)[:150]}"
         finally:
+            signal.alarm(0)
             out.update(found_email=best_email(site, emails), emails=sorted(emails), visited=list(dict.fromkeys(visited)))
             try:
                 ctx.close()
@@ -195,6 +232,8 @@ def find_emails(job: dict) -> dict:
 
 def main() -> None:
     job = json.loads(sys.stdin.read())
+    if job.get("site") and "://" not in job["site"]:
+        job["site"] = "http://" + job["site"]
     if job.get("mode") == "send":
         result = send(job)
     elif job.get("mode") == "prepare":

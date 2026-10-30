@@ -9,7 +9,8 @@ banques et chaînes, enregistre un prospect par site et débite un crédit déco
 Un captcha Google met le worker en pause 30 min, puis 60, 120 et 240 min.
 
 Préparation des formulaires (`WORKER_KINDS=prepare`) : pour chaque tentative en attente, le worker ouvre le site du
-prospect dans un processus à part (coupé après `PREPARE_TIMEOUT`, 180 s), trouve le formulaire de contact, le remplit
+prospect dans un processus à part (coupé après `PREPARE_TIMEOUT`, 100 s ; une page qui ne répond plus est abandonnée
+après `SITE_SOFT_DEADLINE`, 70 s, en gardant les e-mails relevés), trouve le formulaire de contact, le remplit
 avec le profil expéditeur et un message tiré en rotation équilibrée, prend une capture (bucket `lm_screenshots`,
 `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` requis) et enregistre le résultat : prêt, à compléter, intervention requise
 (captcha détecté par type, jamais résolu ici), pas de formulaire, inaccessible. Rien n'est envoyé à cette étape.
@@ -53,3 +54,12 @@ python scripts/load_categories.py      # 4 053 catégories Google (générales, 
 ```bash
 python scripts/load_geonames.py        # télécharge cities500 et countryInfo, remplit lm_geo_cities et lm_country_coverage
 ```
+
+Recherche d'e-mails (`WORKER_KINDS=emails`, assurée par les mêmes workers que la préparation) : visite l'accueil, les pages
+contact et mentions légales du site et enregistre l'adresse du domaine du site (ou d'une messagerie grand public), jamais
+celle d'une autre société.
+
+Banc de test de la recherche de formulaires : `scripts/formbench.py sites.txt -o data/bench/run.json -j 8` rejoue le robot
+(mode préparation, rien n'est envoyé) sur une liste de sites et résume les statuts ; `--compare avant.json apres.json`
+montre les changements, `--previous run.json --only no_form,timeout` ne rejoue que certains statuts. `scripts/formdiag.py`
+décrit ce qu'une page contient (formulaires, champs, iframes, liens contact) pour comprendre un échec.

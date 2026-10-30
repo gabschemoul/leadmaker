@@ -8,6 +8,7 @@ jamais cochées ; les captchas sont détectés par type, jamais résolus ici.
 from __future__ import annotations
 
 import re
+import time
 import unicodedata
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
@@ -96,11 +97,39 @@ EMAIL_SKIP = re.compile(r"\.(png|jpe?g|gif|svg|webp|css|js)$|sentry|example\.|wi
 # Pages de domaine mort, boutique fermée, site en construction : inutile de chercher un formulaire
 DEAD_SITE = re.compile(r"site not found|boutique indisponible|shop (is )?(unavailable|closed)|domain (is )?for sale|ce domaine"
                        r"|domaine (est )?(a vendre|en vente)|site en construction|under construction|coming soon|parked"
-                       r"|account (has been )?suspended|site suspendu|page introuvable|404 not found|403 forbidden"
+                       r"|account (has been )?suspended|site suspendu|page introuvable|404 not found|403 forbidden|404: not found"
                        r"|en maintenance|maintenance mode|website (is )?(temporarily )?unavailable|site (temporairement )?indisponible"
-                       r"|hebergement (web )?(gratuit|offert)|this site is (currently )?unavailable|expired", re.I)
+                       r"|hebergement (web )?(gratuit|offert)|this site is (currently )?unavailable|expired"
+                       r"|site non installe|site web indisponible|wordpress . erreur|erreur de base de donnees|database error"
+                       r"|error establishing a database|is for sale|hugedomains|sedo\.com|dan\.com|default page|web server's default"
+                       r"|it works!|welcome to nginx|apache2 .*default|index of /|tunnel error|reconnect your domain"
+                       r"|future home of|bientot disponible|site en cours de creation|cette page est en construction"
+                       r"|\b40[34]\b|site (est )?hors ligne|this site is offline|not found", re.I)
+# Protections au niveau du site (pas du formulaire) : le robot est bloqué avant même de voir la page
+PROTECTED_SITE = re.compile(r"attention required|just a moment|checking your browser|verify you are human|un instant"
+                            r"|captcha-delivery|datadome|ddos-guard|access denied|acces refuse|bot detection", re.I)
+PROTECTED_FRAME = re.compile(r"captcha-delivery|datadome|challenges\.cloudflare|ddos-guard|perimeterx|px-cdn", re.I)
+# Formulaires hébergés ailleurs (le lien sort du site, on y va quand même)
+FORM_SERVICES = re.compile(r"typeform\.com|jotform\.com|docs\.google\.com/forms|forms\.gle|tally\.so|forms\.office\.com"
+                           r"|hsforms\.com|cognitoforms\.com|wufoo\.com|formstack\.com|123formbuilder|zohopublic|forms\.zoho"
+                           r"|airtable\.com/(app|shr)|paperform\.co|forms\.app|fillout\.com", re.I)
+HONEYPOT = re.compile(r"^(hp|honeypot|honey|bot-?field|_gotcha|url_hp|website_hp|fax|trap|leave-?blank|do-?not-?fill)$|honeypot|gotcha", re.I)
+# Budget de temps par site pour la recherche du formulaire (le dépassement arrête les pages suivantes)
+SITE_BUDGET = 55.0
 NEXT_BUTTON = re.compile(r"suivant|next|continuer|continue|etape suivante|weiter|siguiente|avanti|volgende|commencer|demarrer"
                          r"|start|c'est parti|valider (l'|cette )?etape", re.I)
+
+
+QSA_JS = r"""
+  const qsa = (root, sel) => { const out = [...root.querySelectorAll(sel)];
+    root.querySelectorAll('*').forEach(e => { if (e.shadowRoot) out.push(...qsa(e.shadowRoot, sel)); }); return out; };
+  const up = e => e.parentElement || (e.getRootNode() instanceof ShadowRoot ? e.getRootNode().host : null);
+  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+    // coordonnées dans le document (la page a pu être déroulée) : un champ placé hors écran est un piège
+    const left = r.left + scrollX, top = r.top + scrollY;
+    return r.width > 2 && r.height > 2 && left + r.width > 0 && top + r.height > 0 && left < innerWidth * 2
+      && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const labelFor = el => el.id ? (el.getRootNode().querySelector(`label[for="${CSS.escape(el.id)}"]`) || null) : null;"""
 
 
 class SiteDown(Exception):
@@ -152,23 +181,30 @@ def _same_site(url: str, base: str) -> bool:
 # retrouvés à partir de leurs champs.
 FIND_FORM_JS = r"""
 () => {
+  const qsa = (root, sel) => { const out = [...root.querySelectorAll(sel)];
+    root.querySelectorAll('*').forEach(e => { if (e.shadowRoot) out.push(...qsa(e.shadowRoot, sel)); }); return out; };
+  const up = e => e.parentElement || (e.getRootNode() instanceof ShadowRoot ? e.getRootNode().host : null);
   const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
-    return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+    // coordonnées dans le document (la page a pu être déroulée) : un champ placé hors écran est un piège
+    const left = r.left + scrollX, top = r.top + scrollY;
+    return r.width > 2 && r.height > 2 && left + r.width > 0 && top + r.height > 0 && left < innerWidth * 2
+      && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const labelFor = el => el.id ? (el.getRootNode().querySelector(`label[for="${CSS.escape(el.id)}"]`) || null) : null;
   const FIELD = 'input:not([type=hidden]),textarea,select';
-  const containers = [...document.querySelectorAll('form')].filter(f => !/^mailto:/i.test(f.getAttribute('action') || ''));
-  // Champs hors <form> : on remonte jusqu'à un bloc qui en contient au moins trois.
-  document.querySelectorAll('input[type=email],input[type=tel],textarea,input[type=text]').forEach(t => {
+  const isRoot = p => !p || p === document.body || p === document.documentElement;
+  const containers = qsa(document, 'form').filter(f => !/^mailto:/i.test(f.getAttribute('action') || ''));
+  // Champs hors <form> (React, Wix, composants web…) : on remonte jusqu'à un bloc qui en contient au moins trois.
+  qsa(document, 'input[type=email],input[type=tel],textarea,input[type=text]').forEach(t => {
     if (t.closest('form')) return;
-    let p = t.parentElement;
-    for (let i = 0; i < 8 && p && p !== document.body && p.querySelectorAll(FIELD).length < 3; i++) p = p.parentElement;
-    if (p && p !== document.body && !containers.includes(p) && !containers.some(c => c.contains(p) || p.contains(c))) containers.push(p);
+    let p = up(t);
+    for (let i = 0; i < 8 && !isRoot(p) && qsa(p, FIELD).length < 3; i++) p = up(p);
+    if (!isRoot(p) && !containers.includes(p) && !containers.some(c => c.contains(p) || p.contains(c))) containers.push(p);
   });
   const text = e => [e.type, e.name, e.id, e.placeholder, e.getAttribute('aria-label'),
-    e.id && (document.querySelector(`label[for="${CSS.escape(e.id)}"]`) || {}).innerText,
-    e.closest('label') && e.closest('label').innerText].join(' ');
+    (labelFor(e) || {}).innerText, e.closest('label') && e.closest('label').innerText].join(' ');
   let best = -1, bestScore = 0;
   containers.forEach((f, i) => {
-    const fields = [...f.querySelectorAll(FIELD)].filter(e => !['submit', 'button', 'image', 'reset'].includes(e.type));
+    const fields = qsa(f, FIELD).filter(e => !['submit', 'button', 'image', 'reset'].includes(e.type));
     if (fields.length < 2) return;
     const visible = fields.filter(vis).length;
     const ta = fields.filter(e => e.tagName === 'TEXTAREA').length;
@@ -177,8 +213,11 @@ FIND_FORM_JS = r"""
     const search = fields.filter(e => e.type === 'search' || /^(s|q|search|recherche|suche|busca)$/i.test(e.name||'')).length;
     const reply = fields.filter(e => e.tagName === 'INPUT' && (['email', 'tel'].includes(e.type)
       || /mail|courriel|correo|t[ée]l[ée]?phone|\btel\b|phone|portable|mobile|telefon|handy/i.test(text(e)))).length;
-    if (!reply || pwd || search >= fields.length / 2) return;
-    const score = (ta ? 5 : 0) + (msg ? 3 : 0) + 3 + Math.min(fields.length, 8) + (visible ? 2 : 0) - (f.tagName === 'FORM' ? 0 : 2);
+    const named = fields.filter(e => e.tagName === 'INPUT' && /\bnom\b|name|pr[ée]nom|first|last|vorname|nachname|nombre|nome|naam/i.test(text(e))).length;
+    if (pwd || search >= fields.length / 2) return;
+    // sans champ de réponse (email/téléphone), seul un formulaire « nom + message » est accepté
+    if (!reply && !(ta && named)) return;
+    const score = (ta ? 5 : 0) + (msg ? 3 : 0) + (reply ? 3 : 0) + Math.min(fields.length, 8) + (visible ? 2 : 0) - (f.tagName === 'FORM' ? 0 : 2);
     if (score > bestScore) { best = i; bestScore = score; }
   });
   if (best < 0) return null;
@@ -190,31 +229,38 @@ FIND_FORM_JS = r"""
 
 DESCRIBE_JS = r"""
 () => {
-  const form = document.querySelector('[data-ff-form]');
-  if (!form) return [];
+  const qsa = (root, sel) => { const out = [...root.querySelectorAll(sel)];
+    root.querySelectorAll('*').forEach(e => { if (e.shadowRoot) out.push(...qsa(e.shadowRoot, sel)); }); return out; };
+  const up = e => e.parentElement || (e.getRootNode() instanceof ShadowRoot ? e.getRootNode().host : null);
   const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
-    return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+    // coordonnées dans le document (la page a pu être déroulée) : un champ placé hors écran est un piège
+    const left = r.left + scrollX, top = r.top + scrollY;
+    return r.width > 2 && r.height > 2 && left + r.width > 0 && top + r.height > 0 && left < innerWidth * 2
+      && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const labelFor = el => el.id ? (el.getRootNode().querySelector(`label[for="${CSS.escape(el.id)}"]`) || null) : null;
+  const form = qsa(document, '[data-ff-form]')[0];
+  if (!form) return [];
   const labelOf = el => {
     let t = '';
-    if (el.id) { const l = document.querySelector(`label[for="${CSS.escape(el.id)}"]`); if (l) t += l.innerText; }
+    const l = labelFor(el); if (l) t += l.innerText;
     const pl = el.closest('label'); if (pl) t += ' ' + pl.innerText;
     if (el.getAttribute('aria-label')) t += ' ' + el.getAttribute('aria-label');
-    if (!t.trim()) { let p = el.parentElement; for (let i = 0; i < 2 && p; i++, p = p.parentElement) {
+    if (!t.trim()) { let p = up(el); for (let i = 0; i < 2 && p; i++, p = up(p)) {
       const txt = [...p.childNodes].filter(n => n.nodeType === 3 || ['LABEL','SPAN','P','DIV','LEGEND'].includes(n.tagName))
         .map(n => (n.innerText || n.textContent || '')).join(' ').trim();
       if (txt && txt.length < 120) { t = txt; break; } } }
     return t.replace(/\s+/g, ' ').trim().slice(0, 120);
   };
-  const labelVis = el => { const l = (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`)) || el.closest('label');
-    return !!(l && vis(l)); };
-  const captchaImg = !!form.querySelector('img[src*="captcha" i], input[name*="captcha" i]:not([type=hidden]), '
-    + 'img[id*="captcha" i], img[class*="captcha" i]');
-  return [...form.querySelectorAll('input,textarea,select')].map((el, i) => {
+  const labelVis = el => { const l = labelFor(el) || el.closest('label'); return !!(l && vis(l)); };
+  // image captcha à recopier (le logo reCAPTCHA/hCaptcha n'en est pas une)
+  const captchaImg = qsa(form, 'img[src*="captcha" i], input[name*="captcha" i]:not([type=hidden]), '
+    + 'img[id*="captcha" i], img[class*="captcha" i]').filter(e => !/recaptcha|hcaptcha|logo/i.test(e.src || '')).length > 0;
+  return qsa(form, 'input,textarea,select').map((el, i) => {
     el.setAttribute('data-ff-i', String(i));
     const box = el.type === 'checkbox' || el.type === 'radio';
     return { i, tag: el.tagName.toLowerCase(), type: (el.type || '').toLowerCase(), name: el.name || '', id: el.id || '',
       placeholder: el.placeholder || '', label: labelOf(el), required: el.required || el.getAttribute('aria-required') === 'true'
-        || /\*/.test(labelOf(el)), visible: vis(el) || (box && (labelVis(el) || (el.parentElement && vis(el.parentElement)))), autocomplete: el.autocomplete || '',
+        || /\*/.test(labelOf(el)), visible: vis(el) || (box && (labelVis(el) || (up(el) && vis(up(el))))), autocomplete: el.autocomplete || '',
       captchaImg,
       options: el.tagName === 'SELECT' ? [...el.options].map(o => o.text.trim()) : [] };
   });
@@ -223,9 +269,18 @@ DESCRIBE_JS = r"""
 
 VALIDATE_JS = r"""
 (prefs) => {
-  const form = document.querySelector('[data-ff-form]');
+  const qsa = (root, sel) => { const out = [...root.querySelectorAll(sel)];
+    root.querySelectorAll('*').forEach(e => { if (e.shadowRoot) out.push(...qsa(e.shadowRoot, sel)); }); return out; };
+  const up = e => e.parentElement || (e.getRootNode() instanceof ShadowRoot ? e.getRootNode().host : null);
+  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+    // coordonnées dans le document (la page a pu être déroulée) : un champ placé hors écran est un piège
+    const left = r.left + scrollX, top = r.top + scrollY;
+    return r.width > 2 && r.height > 2 && left + r.width > 0 && top + r.height > 0 && left < innerWidth * 2
+      && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const labelFor = el => el.id ? (el.getRootNode().querySelector(`label[for="${CSS.escape(el.id)}"]`) || null) : null;
+  const form = qsa(document, '[data-ff-form]')[0];
   if (!form) return {invalid: [], truncated: 0};
-  const els = [...form.querySelectorAll('[data-ff-i]')].filter(el => el.willValidate);
+  const els = qsa(form, '[data-ff-i]').filter(el => el.willValidate);
   const fire = el => ['input', 'change'].forEach(t => el.dispatchEvent(new Event(t, {bubbles: true})));
   const countries = (prefs.countries || []).map(c => c.toLowerCase());
   const civ = prefs.civility ? new RegExp(prefs.civility, 'i') : null;
@@ -237,11 +292,11 @@ VALIDATE_JS = r"""
         || (civ && ok.find(o => civ.test(o.text))) || ok[0];
       if (o) { el.value = o.value; fire(el); }
     } else if (el.type === 'radio' && el.name) {
-      const first = form.querySelector(`input[type=radio][name="${CSS.escape(el.name)}"]`);
+      const first = qsa(form, `input[type=radio][name="${CSS.escape(el.name)}"]`)[0];
       if (first) { first.checked = true; fire(first); }
     }
   }
-  const ta = [...form.querySelectorAll('textarea')].find(t => t.maxLength > 0 && t.value.length >= t.maxLength);
+  const ta = qsa(form, 'textarea').find(t => t.maxLength > 0 && t.value.length >= t.maxLength);
   return {invalid: els.filter(el => !el.checkValidity()).map(el => +el.dataset.ffI), truncated: ta ? ta.maxLength : 0};
 }
 """
@@ -305,8 +360,62 @@ def _civ_regex(sender: Sender):
     return CIV_M if sender.civility == "mr" else CIV_F if sender.civility == "mrs" else None
 
 
+# Iframes qui ne contiennent jamais de formulaire de contact (cartes, vidéos, pubs, pixels) : jamais interrogées,
+# certaines ne répondent jamais et bloqueraient le robot
+SKIP_FRAME = re.compile(r"google\.com/maps|maps\.google|openstreetmap|youtube|youtu\.be|vimeo|dailymotion|recaptcha|hcaptcha"
+                        r"|doubleclick|googlesyndication|googletagmanager|google-analytics|facebook\.com/plugins|facebook\.com/tr"
+                        r"|twitter\.com/widgets|platform\.twitter|instagram\.com/embed|tiktok\.com/embed|spotify|soundcloud"
+                        r"|cookie|consent|didomi|onetrust|axeptio|usercentrics|sourcepoint|quantcast|iubenda|cookiebot"
+                        r"|trustpilot|avis-verifies|hotjar|clarity\.ms|bing\.com|linkedin\.com/px|snapchat|pinterest|tawk\.to"
+                        r"|crisp\.chat|intercom|zendesk|livechat|calendly", re.I)
+
+
+REVEAL_BUTTON = re.compile(r"particulier|contact|devis|message|ecrire|rendez|demande|quote|get in touch|inquir|kontakt|anfrage"
+                           r"|contacto|presupuesto|contatt|preventivo|choisir", re.I)
+REVEAL_JS = "(args) => {" + QSA_JS + r"""
+  const [pattern, notPattern] = args; const rx = new RegExp(pattern, 'i'), bad = new RegExp(notPattern, 'i');
+  const cands = qsa(document, 'button, [role=button], a[href="#"], a[href^="#"], a[href^="javascript"], a:not([href]), [data-toggle], [data-popup], [data-elementor-open-popup], .elementor-button')
+    .filter(el => vis(el) && !/^(tel:|mailto:)/i.test(el.getAttribute('href') || ''));
+  for (const el of cands) {
+    const t = (el.innerText || el.getAttribute('aria-label') || el.title || '').trim();
+    if (t && t.length < 50 && rx.test(t) && !bad.test(t)) { el.scrollIntoView({block: 'center'}); el.click(); return t; }
+  }
+  return null;
+}
+"""
+
+
+def _click_reveal(page: Page) -> str | None:
+    """Clique sur un bouton qui semble ouvrir le formulaire (fenêtre, assistant « particulier / professionnel »)."""
+    try:
+        return page.main_frame.evaluate(REVEAL_JS, [REVEAL_BUTTON.pattern, NOT_CONTACT.pattern])
+    except Exception:
+        return None
+
+
+def _find_form_after_click(page: Page, visited: list[str]) -> Frame | None:
+    """Sans formulaire visible : un clic sur un bouton « contact / devis / particulier » peut l'afficher."""
+    label = _click_reveal(page)
+    if not label:
+        return None
+    page.wait_for_timeout(1500)
+    visited.append(f"clic « {label[:30]} »")
+    frame = _find_form(page)
+    if frame:
+        return frame
+    # assistant en deux temps (« Particulier » puis « Demander un devis »)
+    label = _click_reveal(page)
+    if label:
+        page.wait_for_timeout(1500)
+        visited.append(f"clic « {label[:30]} »")
+        return _find_form(page)
+    return None
+
+
 def _find_form(page: Page) -> Frame | None:
-    for frame in [page.main_frame, *[f for f in page.frames if f != page.main_frame]]:
+    # cadres sans adresse : jamais chargés (ou détachés), ils ne répondent pas aux appels
+    frames = [page.main_frame] + [f for f in page.frames if f != page.main_frame and f.url and not SKIP_FRAME.search(f.url)]
+    for frame in frames[:12]:
         try:
             if frame.evaluate(FIND_FORM_JS):
                 return frame
@@ -319,7 +428,11 @@ def _contact_links(page: Page, base: str) -> list[str]:
     links = page.evaluate("""() => [...document.querySelectorAll('a[href]')].map(a => [a.href, (a.innerText || a.title || a.getAttribute('aria-label') || '').trim()])""")
     scored = []
     for href, text in links:
-        if not href.startswith("http") or not _same_site(href, base):
+        if not href.startswith("http"):
+            continue
+        if not _same_site(href, base):
+            if FORM_SERVICES.search(href):  # formulaire hébergé ailleurs : essayé après les pages du site
+                scored.append((0, href))
             continue
         t = _norm(f"{text} {urlparse(href).path}")
         if CONTACT_LINK.search(t) and not NOT_CONTACT.search(t):
@@ -334,22 +447,22 @@ def _contact_links(page: Page, base: str) -> list[str]:
 
 
 def _scroll(page: Page):
-    for _ in range(4):
+    for _ in range(3):
         page.mouse.wheel(0, 2500)
-        page.wait_for_timeout(400)
+        page.wait_for_timeout(250)
 
 
 def _load(page: Page, url: str, timeout: int):
     page.goto(url, wait_until="domcontentloaded", timeout=timeout)
-    page.wait_for_timeout(2000)
+    page.wait_for_timeout(1500)
     _dismiss_cookies(page)
     _scroll(page)
-    page.wait_for_timeout(800)
+    page.wait_for_timeout(500)
 
 
 def _find_form_late(page: Page) -> Frame | None:
-    """Formulaires chargés après coup (Jotform, HubSpot, Typeform… dans une iframe) : 2,5 s de plus."""
-    page.wait_for_timeout(2500)
+    """Formulaires chargés après coup (Jotform, HubSpot, composants web…) : 2 s de plus."""
+    page.wait_for_timeout(2000)
     return _find_form(page)
 
 
@@ -405,16 +518,32 @@ def legal_links(page: Page, base: str) -> list[str]:
     return out[:3]
 
 
-def _check_alive(page: Page) -> None:
-    """Lève SiteDown pour une page de domaine mort / boutique fermée / site en construction."""
+PAGE_STATE_JS = r"""
+() => ({ title: document.title || '', text: (document.body ? document.body.innerText : '').trim(),
+         links: document.querySelectorAll('a[href]').length,
+         inputs: document.querySelectorAll('input:not([type=hidden]),textarea').length,
+         passwords: document.querySelectorAll('input[type=password]').length,
+         frames: [...document.querySelectorAll('iframe')].map(f => f.src || '').join(' ') })
+"""
+
+
+def _check_alive(page: Page, final: bool = False) -> None:
+    """Lève SiteDown pour une page morte (domaine à vendre, hébergeur, erreur), protégée contre les robots,
+    en maintenance (connexion seule) ou, après le délai de rendu (final), vide."""
     try:
-        title = page.title() or ""
-        body = page.inner_text("body", timeout=3000) or ""
+        st = page.evaluate(PAGE_STATE_JS)
     except Exception:
         return
-    short = len(body.strip()) < 800
+    title, body = st["title"], st["text"]
+    short = len(body) < 800
+    if PROTECTED_SITE.search(_norm(title)) or (short and PROTECTED_SITE.search(_norm(body))) or PROTECTED_FRAME.search(st["frames"]):
+        raise SiteDown(f"site protégé contre les robots (« {(title or body)[:60].strip()} »)")
     if DEAD_SITE.search(_norm(title)) or (short and DEAD_SITE.search(_norm(body))):
         raise SiteDown((title or body).strip()[:80])
+    if short and st["passwords"] and st["inputs"] <= 3 and st["links"] < 5:
+        raise SiteDown("site en maintenance : page de connexion seule")
+    if final and not body and st["links"] == 0 and st["inputs"] == 0 and len(page.frames) <= 1:
+        raise SiteDown("page vide : rien ne s'affiche")
 
 
 def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[str] | None = None,
@@ -423,6 +552,7 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
     `visited` reçoit les pages explorées (pour expliquer un échec)."""
     emails = emails if emails is not None else set()
     visited = visited if visited is not None else []
+    started = time.monotonic()
     _load(page, site, timeout)
     _check_alive(page)
     visited.append("accueil")
@@ -430,31 +560,47 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
     frame = _find_form(page) or _find_form_late(page)
     if frame:
         return frame
+    _check_alive(page, final=True)
     home = page.url
+    frame = _find_form_after_click(page, visited)
+    if frame:
+        return frame
     candidates = _contact_links(page, home)
+    external = [c for c in candidates if not _same_site(c, home)]
     root = f"{urlparse(home).scheme}://{urlparse(home).netloc}"
     for p in CONTACT_PATHS:  # adresses classiques en complément des liens trouvés
         if root + p not in candidates:
             candidates.append(root + p)
-    tried = 0
-    for link in candidates:
-        if tried >= 6:
-            break
+    tried: list[str] = []
+    while candidates and len(tried) < 8:
+        link = candidates.pop(0)
+        if link in tried or time.monotonic() - started > SITE_BUDGET:
+            continue
+        tried.append(link)
         try:
-            tried += 1
             resp = page.goto(link, wait_until="domcontentloaded", timeout=timeout)
             if resp is not None and resp.status >= 400:
                 continue
-            visited.append(urlparse(link).path or "/")
-            page.wait_for_timeout(1500)
+            visited.append((urlparse(link).path or "/") if _same_site(link, home) else urlparse(link).netloc)
+            page.wait_for_timeout(1000)
             _dismiss_cookies(page)
             _scroll(page)
             harvest_emails(page, site, emails)
-            frame = _find_form(page) or _find_form_late(page)
+            frame = _find_form(page) or _find_form_late(page) or (
+                _find_form_after_click(page, visited) if _same_site(link, home) else None)
             if frame:
                 return frame
+            # liens « contact » découverts sur cette page (ex. « Contactez-nous par mail ») : en priorité
+            if _same_site(link, home):
+                for extra in _contact_links(page, home):
+                    if extra not in tried and extra not in candidates:
+                        candidates.insert(0, extra)
+                        if not _same_site(extra, home):
+                            external.append(extra)
         except PWTimeout:
             continue
+    if external:
+        visited.append(f"formulaire externe non exploitable : {external[0][:80]}")
     return None
 
 
@@ -472,23 +618,39 @@ COOKIE_ACCEPT = re.compile(r"^\W*(tout accepter|accepter|j'accepte|oui,? j'accep
                            r"aceptar|aceptar todo|accetta|accetta tutto|aceitar|alles accepteren|accepteren)\b[^\n]{0,30}$", re.I)
 
 
+COOKIE_JS = r"""
+(args) => {
+  const qsa = (root, sel) => { const out = [...root.querySelectorAll(sel)];
+    root.querySelectorAll('*').forEach(e => { if (e.shadowRoot) out.push(...qsa(e.shadowRoot, sel)); }); return out; };
+  const up = e => e.parentElement || (e.getRootNode() instanceof ShadowRoot ? e.getRootNode().host : null);
+  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+    // coordonnées dans le document (la page a pu être déroulée) : un champ placé hors écran est un piège
+    const left = r.left + scrollX, top = r.top + scrollY;
+    return r.width > 2 && r.height > 2 && left + r.width > 0 && top + r.height > 0 && left < innerWidth * 2
+      && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const labelFor = el => el.id ? (el.getRootNode().querySelector(`label[for="${CSS.escape(el.id)}"]`) || null) : null;
+  const [selectors, pattern] = args; const rx = new RegExp(pattern, 'i');
+  for (const sel of selectors) for (const el of qsa(document, sel)) if (vis(el)) { el.click(); return sel; }
+  for (const el of qsa(document, 'button, a, [role=button]')) {
+    const t = (el.innerText || el.getAttribute('aria-label') || '').trim();
+    if (t && t.length < 60 && rx.test(t) && vis(el)) { el.click(); return t; }
+  }
+  return null;
+}
+"""
+CONSENT_FRAME = re.compile(r"consent|cookie|privacy|cmp|didomi|onetrust|axeptio|usercentrics|sourcepoint|quantcast|iubenda"
+                           r"|cookiebot|privacy-mgmt|cookielaw|trustarc|consentmanager", re.I)
+
+
 def _dismiss_cookies(page: Page):
-    """Accepte le bandeau cookies s'il y en a un (aussi dans les iframes de consentement)."""
-    for frame in page.frames:
+    """Accepte le bandeau cookies s'il y en a un : un seul appel au cadre principal puis aux cadres de
+    consentement (jamais aux autres iframes, dont certaines ne répondent jamais)."""
+    frames = [page.main_frame] + [f for f in page.frames if f != page.main_frame and CONSENT_FRAME.search(f.url or "")]
+    for frame in frames[:4]:
         try:
-            for sel in COOKIE_SELECTORS:
-                loc = frame.locator(f"{sel}:visible")
-                if loc.count():
-                    loc.first.click(timeout=2000)
-                    page.wait_for_timeout(700)
-                    return
-            for role in ("button", "link"):
-                loc = frame.get_by_role(role, name=COOKIE_ACCEPT)
-                for j in range(min(loc.count(), 3)):
-                    if loc.nth(j).is_visible():
-                        loc.nth(j).click(timeout=2000)
-                        page.wait_for_timeout(700)
-                        return
+            if frame.evaluate(COOKIE_JS, [COOKIE_SELECTORS, COOKIE_ACCEPT.pattern]):
+                page.wait_for_timeout(600)
+                return
         except Exception:
             continue
 
@@ -638,7 +800,7 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
         kind = kinds[f["i"]]
         if kind == "last_name" and lone_name:
             kind = "full_name"
-        if kind is None:
+        if kind is None or HONEYPOT.search(f["name"] or "") or HONEYPOT.search(f["id"] or ""):
             continue
         loc = frame.locator(f'[data-ff-i="{f["i"]}"]')
         label = f["label"] or f["placeholder"] or f["name"] or f["id"]
@@ -742,7 +904,7 @@ def submit(frame: Frame) -> tuple[bool | None, str]:
             btn.first.click(timeout=5000)
         except Exception:
             btn.first.evaluate("b => b.click()")
-    elif not frame.evaluate("""() => { const f = document.querySelector('[data-ff-form]');
+    elif not frame.evaluate("() => {" + QSA_JS + """ const f = qsa(document, '[data-ff-form]')[0];
                                       if (f && f.tagName === 'FORM' && f.requestSubmit) { f.requestSubmit(); return true; }
                                       return false; }"""):
         return False, "bouton d'envoi introuvable"

@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Lance les workers sur le Supabase local (Mac de développement) :
-# 2 workers réservés aux estimations (rapides, en parallèle), 3 workers préparation des formulaires,
+# 2 workers réservés aux estimations (rapides, en parallèle), 6 workers préparation des formulaires / e-mails,
 # 1 worker estimations puis campagnes.
 cd "$(dirname "$0")"
 export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
@@ -18,7 +18,7 @@ pgrep -f test_contact_site.py >/dev/null || (.venv/bin/python scripts/test_conta
 if [ "${SEND_WORKER:-0}" = "1" ]; then
   WORKER_KINDS=send WORKER_ID="send-1" .venv/bin/python -m leadmaker_workers.main >> logs/worker-send.log 2>&1 &
 fi
-for i in 1 2 3; do
+for i in 1 2 3 4 5 6; do
   WORKER_KINDS=prepare,emails WORKER_ID="prepare-$i" .venv/bin/python -m leadmaker_workers.main >> logs/worker-prepare.log 2>&1 &
 done
 WORKER_KINDS=estimate,discovery exec .venv/bin/python -m leadmaker_workers.main >> logs/worker.log 2>&1

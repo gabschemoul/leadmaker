@@ -182,6 +182,12 @@
     "startFailed": "La campagne n'a pas pu être lancée. Réessayez dans un instant.",
     "pauseFailed": "La campagne n'a pas pu être mise en pause. Réessayez dans un instant.",
     "updateFailed": "Les modifications n'ont pas pu être enregistrées. Réessayez dans un instant.",
-    "countryLocked": "Le pays ne peut plus changer une fois la campagne lancée."
+    "countryLocked": "Le pays ne peut plus changer une fois la campagne lancée.",
+    "duplicateFailed": "La campagne n'a pas pu être dupliquée. Réessayez dans un instant."
+  },
+  "duplicate": {
+    "button": "Dupliquer",
+    "pending": "Copie…",
+    "copyName": "{name} (copie)"
   }
 }

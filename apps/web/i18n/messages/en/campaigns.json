@@ -182,6 +182,12 @@
     "startFailed": "The campaign couldn't be launched. Please try again in a moment.",
     "pauseFailed": "The campaign couldn't be paused. Please try again in a moment.",
     "updateFailed": "The changes couldn't be saved. Please try again in a moment.",
-    "countryLocked": "The country can no longer change once the campaign has been launched."
+    "countryLocked": "The country can no longer change once the campaign has been launched.",
+    "duplicateFailed": "The campaign couldn't be duplicated. Please try again in a moment."
+  },
+  "duplicate": {
+    "button": "Duplicate",
+    "pending": "Copying…",
+    "copyName": "{name} (copy)"
   }
 }

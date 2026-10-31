@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
+  Copy,
   Download,
   FileText,
   MessageSquareText,
@@ -39,6 +40,7 @@ import { CampaignStatusBadge } from '../../_components/leadmaker/campaign-status
 import { ProspectsTable } from '../../_components/leadmaker/prospects-table';
 import { type CampaignLive, fetchCampaignLive } from '../_lib/campaign-live';
 import {
+  duplicateCampaignAction,
   pauseCampaignAction,
   prepareCampaignAction,
   startCampaignAction,
@@ -60,6 +62,8 @@ export function CampaignDetailView(props: {
   messagesHref: string;
   /** formulaire de modification (nom, villes, activités, filtres) */
   editHref: string;
+  accountSlug: string;
+  campaignName: string;
   /** nombre de messages rédigés (0 = la préparation des formulaires est impossible) */
   messagesCount: number;
   formsHref: string;
@@ -161,6 +165,12 @@ export function CampaignDetailView(props: {
               <Trans i18nKey={'campaigns.detail.edit'} />
             </span>
           </Button>
+
+          <DuplicateCampaignButton
+            campaignId={props.campaignId}
+            campaignName={props.campaignName}
+            accountSlug={props.accountSlug}
+          />
 
           <Button
             variant={'outline'}
@@ -336,6 +346,50 @@ function CampaignActions(props: {
   }
 
   return null;
+}
+
+/** Copie la campagne en brouillon et ouvre le formulaire de la copie. */
+function DuplicateCampaignButton(props: {
+  campaignId: string;
+  campaignName: string;
+  accountSlug: string;
+}) {
+  const t = useTranslations();
+
+  const duplicate = useAction(duplicateCampaignAction, {
+    onError: ({ error }) => {
+      toast.error(t(error.serverError ?? 'campaigns.errors.duplicateFailed'));
+    },
+  });
+
+  return (
+    <Button
+      variant={'outline'}
+      data-test={'campaign-duplicate-button'}
+      disabled={duplicate.isPending}
+      onClick={() =>
+        duplicate.execute({
+          campaignId: props.campaignId,
+          accountSlug: props.accountSlug,
+          name: t('campaigns.duplicate.copyName', {
+            name: props.campaignName,
+          }).slice(0, 255),
+        })
+      }
+    >
+      <Copy className={'w-4'} />
+
+      <span>
+        <Trans
+          i18nKey={
+            duplicate.isPending
+              ? 'campaigns.duplicate.pending'
+              : 'campaigns.duplicate.button'
+          }
+        />
+      </span>
+    </Button>
+  );
 }
 
 /** Met en préparation tous les prospects de la campagne pas encore traités. */

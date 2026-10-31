@@ -279,6 +279,12 @@ export const CampaignIdSchema = z.object({
   campaignId: z.string().uuid(),
 });
 
+export const DuplicateCampaignSchema = CampaignIdSchema.extend({
+  accountSlug: z.string().min(1),
+  /** nom de la copie, traduit côté client (« X (copie) ») */
+  name: z.string().trim().min(1).max(255),
+});
+
 /** Filtres tels qu'enregistrés en base (clés absentes = valeurs par défaut du formulaire). */
 const StoredFiltersSchema = z
   .object({

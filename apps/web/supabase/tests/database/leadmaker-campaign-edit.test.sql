@@ -116,11 +116,24 @@ select is((select filters ->> 'paused_reason' from public.lm_campaigns where id 
 select is((select removed from public.lm_campaign_categories where campaign_id = 'a0000000-0000-4000-8000-00000000e001' and gcid = 'gcid:test_salon'),
   true, 'L''activité retirée est marquée');
 
+-- Duplication : copie en brouillon avec ciblage, filtres, messages et réglages d'envoi
+update public.lm_campaigns set templates = '{"messages":[{"subject":"Bonjour","body":"Test {company}"}]}', daily_limit = 42
+ where id = 'a0000000-0000-4000-8000-00000000e001';
+select lives_ok($$ select public.lm_duplicate_campaign('a0000000-0000-4000-8000-00000000e001', 'Campagne E2 (copie)') $$, 'Duplication acceptée');
+select is((select (c.status::text, c.country_code, c.daily_limit, c.templates ->> 'messages' is not null, c.targeting = s.targeting, c.filters ? 'paused_reason')::text
+             from public.lm_campaigns c, (select targeting from public.lm_campaigns where id = 'a0000000-0000-4000-8000-00000000e001') s
+            where c.name = 'Campagne E2 (copie)'),
+  '(draft,ZZ,42,t,t,f)', 'Copie en brouillon, même ciblage, raison de pause non copiée');
+select is((select count(*)::int from public.lm_campaign_zones z join public.lm_campaigns c on c.id = z.campaign_id where c.name = 'Campagne E2 (copie)'),
+  0, 'La copie n''a pas de zone (pas encore lancée)');
+
 -- Isolation : B ne peut pas modifier la campagne de A
 select makerkit.authenticate_as('edit_b');
 select throws_ok($$ select public.lm_update_campaign('a0000000-0000-4000-8000-00000000e001', 'Piratée', 'ZZ', '{}', '{}') $$,
   'P0002', null, 'B ne peut pas modifier la campagne de A');
 select is((select name from public.lm_campaigns where id = 'a0000000-0000-4000-8000-00000000e001'), null, 'B ne voit pas la campagne de A');
+select throws_ok($$ select public.lm_duplicate_campaign('a0000000-0000-4000-8000-00000000e001', 'Volée') $$,
+  'P0002', null, 'B ne peut pas dupliquer la campagne de A');
 
 select * from finish();
 

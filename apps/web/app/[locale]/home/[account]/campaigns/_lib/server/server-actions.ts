@@ -13,6 +13,7 @@ import {
   RequestEstimateSchema,
   CampaignIdSchema,
   CreateCampaignSchema,
+  DuplicateCampaignSchema,
   EstimateCampaignSchema,
   SearchCategoriesSchema,
   SearchCitiesSchema,
@@ -270,6 +271,37 @@ export const updateCampaignAction = authActionClient
     revalidatePath('/home/[account]/campaigns', 'layout');
 
     redirect(`/home/${values.accountSlug}/campaigns/${values.campaignId}`);
+  });
+
+/** Copie une campagne en brouillon et ouvre le formulaire de la copie. */
+export const duplicateCampaignAction = authActionClient
+  .inputSchema(DuplicateCampaignSchema)
+  .action(async ({ parsedInput: { campaignId, accountSlug, name }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data: id, error } = await client.rpc('lm_duplicate_campaign', {
+      p_campaign_id: campaignId,
+      p_name: name,
+    });
+
+    if (error || !id) {
+      const logger = await getLogger();
+      logger.error(
+        {
+          name: 'leadmaker.campaigns.duplicate',
+          campaignId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to duplicate campaign',
+      );
+
+      throw new Error('campaigns.errors.duplicateFailed');
+    }
+
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    redirect(`/home/${accountSlug}/campaigns/${id}/edit`);
   });
 
 const START_ERRORS: Record<string, string> = {

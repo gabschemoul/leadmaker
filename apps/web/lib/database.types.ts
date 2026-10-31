@@ -1210,6 +1210,9 @@ isOneToOne: false
 "lm_delete_prospects":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },
+"lm_duplicate_campaign":
+{ Args: { "p_campaign_id": string,"p_name": string }; Returns: string
+                           },
 "lm_estimate_campaign":
 { Args: { "p_country_code": string,"p_filters"?: Json,"p_targeting": Json }; Returns: {
               "categories": number,"cities": number,"expected_prospects": number,"rate": number,"searches": number

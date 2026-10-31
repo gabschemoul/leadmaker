@@ -44,6 +44,7 @@ import { CountrySelect } from '../../_components/leadmaker/country-select';
 import {
   type CategoryRef,
   CampaignFormSchema,
+  type CampaignFormValues,
   type CityRef,
   MAX_CITIES_LIMIT,
   buildTargeting,
@@ -52,6 +53,7 @@ import {
   createCampaignAction,
   searchCategoriesAction,
   searchCitiesAction,
+  updateCampaignAction,
 } from '../_lib/server/server-actions';
 import { CampaignEstimate } from './campaign-estimate';
 import { SearchPicker } from './search-picker';
@@ -68,10 +70,19 @@ export function CampaignForm(props: {
   spaces: SpaceOption[];
   countries: CountryOption[];
   discoveryBalance: number;
+  /** campagne existante : le formulaire la modifie au lieu d'en créer une */
+  campaign?: {
+    id: string;
+    values: CampaignFormValues;
+    /** déjà lancée : le pays est figé, les villes ajoutées rejoignent le scan */
+    launched: boolean;
+  };
 }) {
   const t = useTranslations('campaigns');
   const locale = useLocale();
   const [error, setError] = useState<string | null>(null);
+
+  const editing = Boolean(props.campaign);
 
   // Une seule entrée = l'espace par défaut : le choix du dossier client est masqué.
   const defaultSpace =
@@ -79,16 +90,25 @@ export function CampaignForm(props: {
 
   const showSpaceSelect = props.spaces.length > 1;
 
-  const { execute, isPending } = useAction(createCampaignAction, {
+  const create = useAction(createCampaignAction, {
     onExecute: () => setError(null),
     onError: ({ error }) => {
       setError(error.serverError ?? 'campaigns.errors.createFailed');
     },
   });
 
+  const update = useAction(updateCampaignAction, {
+    onExecute: () => setError(null),
+    onError: ({ error }) => {
+      setError(error.serverError ?? 'campaigns.errors.updateFailed');
+    },
+  });
+
+  const isPending = create.isPending || update.isPending;
+
   const form = useForm({
     resolver: zodResolver(CampaignFormSchema),
-    defaultValues: {
+    defaultValues: props.campaign?.values ?? {
       name: '',
       spaceId: defaultSpace?.id ?? '',
       countryCode: locale.startsWith('fr') ? 'FR' : 'US',
@@ -186,14 +206,28 @@ export function CampaignForm(props: {
         data-test={'campaign-form'}
         className={'grid grid-cols-1 gap-6 pb-32 lg:grid-cols-3'}
         onSubmit={form.handleSubmit((data) =>
-          execute({
-            ...data,
-            accountId: props.accountId,
-            accountSlug: props.accountSlug,
-          }),
+          props.campaign
+            ? update.execute({
+                ...data,
+                campaignId: props.campaign.id,
+                accountSlug: props.accountSlug,
+              })
+            : create.execute({
+                ...data,
+                accountId: props.accountId,
+                accountSlug: props.accountSlug,
+              }),
         )}
       >
         <div className={'flex flex-col gap-6 lg:col-span-2'}>
+          <If condition={props.campaign?.launched}>
+            <Alert data-test={'campaign-edit-launched-alert'}>
+              <AlertDescription>
+                <Trans i18nKey={'campaigns.form.editLaunchedHint'} />
+              </AlertDescription>
+            </Alert>
+          </If>
+
           <Card>
             <CardHeader>
               <CardTitle>
@@ -238,6 +272,7 @@ export function CampaignForm(props: {
                           <NativeSelect
                             className={'w-full'}
                             data-test={'campaign-folder-select'}
+                            disabled={editing}
                             value={field.value}
                             onChange={(event) =>
                               field.onChange(event.target.value)
@@ -274,8 +309,15 @@ export function CampaignForm(props: {
                           countries={props.countries}
                           value={field.value}
                           onChange={changeCountry}
+                          disabled={props.campaign?.launched}
                         />
                       </FormControl>
+
+                      <If condition={props.campaign?.launched}>
+                        <FormDescription>
+                          <Trans i18nKey={'campaigns.form.countryLocked'} />
+                        </FormDescription>
+                      </If>
 
                       <FormMessage />
                     </FormItem>
@@ -309,7 +351,11 @@ export function CampaignForm(props: {
             >
               <Trans
                 i18nKey={
-                  disabled ? 'campaigns.form.saving' : 'campaigns.form.save'
+                  disabled
+                    ? 'campaigns.form.saving'
+                    : editing
+                      ? 'campaigns.form.saveChanges'
+                      : 'campaigns.form.save'
                 }
               />
             </Button>

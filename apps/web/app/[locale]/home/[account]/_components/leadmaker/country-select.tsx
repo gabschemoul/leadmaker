@@ -13,6 +13,7 @@ export function CountrySelect({
   countries: CountryOption[];
   value: string;
   onChange: (code: string) => void;
+  disabled?: boolean;
   'data-test'?: string;
 }) {
   return (

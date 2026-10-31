@@ -73,7 +73,8 @@
     "new": "Nouvelle",
     "sender": "Expéditeur",
     "messages": "Messages",
-    "forms": "Formulaires"
+    "forms": "Formulaires",
+    "edit": "Modifier"
   },
   "roles": {
     "owner": {

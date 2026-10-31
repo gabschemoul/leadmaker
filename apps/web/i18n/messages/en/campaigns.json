@@ -93,7 +93,11 @@
     "ratingRange": "The maximum rating must be greater than or equal to the minimum rating.",
     "numberInvalid": "Enter a number.",
     "numberOutOfRange": "This value isn't allowed.",
-    "mainCategoryOnlyLabel": "Only businesses whose main activity this is (recommended)"
+    "mainCategoryOnlyLabel": "Only businesses whose main activity this is (recommended)",
+    "editPageTitle": "Edit campaign",
+    "saveChanges": "Save changes",
+    "countryLocked": "The country can no longer change once the campaign has been launched.",
+    "editLaunchedHint": "This campaign has already been launched. Cities and activities you add will be scanned next; those you remove will no longer be scanned, but prospects already found are kept."
   },
   "estimate": {
     "title": "Estimate",
@@ -143,7 +147,8 @@
     "lastActivity": "Last activity",
     "latestProspectsTitle": "Latest prospects",
     "latestProspectsDescription": "The last 50 businesses found by this campaign.",
-    "noProspects": "No prospects yet."
+    "noProspects": "No prospects yet.",
+    "edit": "Edit"
   },
   "import": {
     "button": "Import a CSV file",
@@ -175,6 +180,8 @@
     "campaignLimit": "Your plan doesn't allow more running campaigns. Pause one or change your plan.",
     "noCities": "No city matches your criteria. Widen the radius or lower the minimum population.",
     "startFailed": "The campaign couldn't be launched. Please try again in a moment.",
-    "pauseFailed": "The campaign couldn't be paused. Please try again in a moment."
+    "pauseFailed": "The campaign couldn't be paused. Please try again in a moment.",
+    "updateFailed": "The changes couldn't be saved. Please try again in a moment.",
+    "countryLocked": "The country can no longer change once the campaign has been launched."
   }
 }

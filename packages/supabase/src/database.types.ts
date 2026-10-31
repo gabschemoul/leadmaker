@@ -249,14 +249,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_categories": {
                   Row: {
-                    "abandoned": boolean,"account_id": string,"campaign_id": string,"cards": number,"cards_new": number,"gcid": string,"in_flight": number,"is_generic": boolean,"kept": number,"next_zone_idx": number,"searches": number
+                    "abandoned": boolean,"account_id": string,"campaign_id": string,"cards": number,"cards_new": number,"gcid": string,"in_flight": number,"is_generic": boolean,"kept": number,"next_zone_idx": number,"removed": boolean,"searches": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandoned"?: boolean,"account_id": string,"campaign_id": string,"cards"?: number,"cards_new"?: number,"gcid": string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"searches"?: number
+                    "abandoned"?: boolean,"account_id": string,"campaign_id": string,"cards"?: number,"cards_new"?: number,"gcid": string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"removed"?: boolean,"searches"?: number
                   }
                   Update: {
-                    "abandoned"?: boolean,"account_id"?: string,"campaign_id"?: string,"cards"?: number,"cards_new"?: number,"gcid"?: string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"searches"?: number
+                    "abandoned"?: boolean,"account_id"?: string,"campaign_id"?: string,"cards"?: number,"cards_new"?: number,"gcid"?: string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"removed"?: boolean,"searches"?: number
                   }
                   Relationships: [
                     {
@@ -293,14 +293,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_zones": {
                   Row: {
-                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude": number | null,"longitude": number | null,"population": number,"zoom": number | null
+                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude": number | null,"longitude": number | null,"population": number,"removed": boolean,"zoom": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"zoom"?: number | null
+                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"removed"?: boolean,"zoom"?: number | null
                   }
                   Update: {
-                    "account_id"?: string,"campaign_id"?: string,"geoname_id"?: number,"idx"?: number,"label"?: string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"zoom"?: number | null
+                    "account_id"?: string,"campaign_id"?: string,"geoname_id"?: number,"idx"?: number,"label"?: string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"removed"?: boolean,"zoom"?: number | null
                   }
                   Relationships: [
                     {
@@ -1341,6 +1341,9 @@ isOneToOne: false
                            },
 "lm_update_attempt":
 { Args: { "p_body": string,"p_extra": Json,"p_id": string,"p_subject": string }; Returns: boolean
+                           },
+"lm_update_campaign":
+{ Args: { "p_campaign_id": string,"p_country_code": string,"p_filters": Json,"p_name": string,"p_targeting": Json }; Returns: string
                            },
 "lm_validate_attempts":
 { Args: { "p_ids": (string)[] }; Returns: number

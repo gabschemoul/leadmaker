@@ -112,6 +112,11 @@ export const CreateCampaignSchema = CampaignFieldsSchema.extend({
   accountSlug: z.string().min(1),
 }).superRefine(refineCampaign);
 
+export const UpdateCampaignSchema = CampaignFieldsSchema.extend({
+  campaignId: z.string().uuid(),
+  accountSlug: z.string().min(1),
+}).superRefine(refineCampaign);
+
 export const TargetingSchema = z.object({
   cities: z.discriminatedUnion('mode', [
     z.object({
@@ -273,3 +278,64 @@ export const SearchCategoriesSchema = z.object({
 export const CampaignIdSchema = z.object({
   campaignId: z.string().uuid(),
 });
+
+/** Filtres tels qu'enregistrés en base (clés absentes = valeurs par défaut du formulaire). */
+const StoredFiltersSchema = z
+  .object({
+    rating_min: z.number().optional(),
+    rating_max: z.number().optional(),
+    min_reviews: z.number().int().optional(),
+    website: z.enum(['with', 'without', 'all']).optional(),
+    exclude_public: z.boolean().optional(),
+    main_category_only: z.boolean().optional(),
+    extra_exclusions: z.array(z.string()).optional(),
+  })
+  .loose();
+
+/**
+ * Valeurs du formulaire d'une campagne existante. Les villes et activités sont
+ * passées déjà résolues (nom, population, libellé) : la base ne stocke que
+ * leurs identifiants.
+ */
+export function campaignToFormValues(campaign: {
+  name: string;
+  space_id: string;
+  country_code: string;
+  targeting: unknown;
+  filters: unknown;
+  cities: CityRef[];
+  categories: CategoryRef[];
+}): CampaignFormValues {
+  const targeting = TargetingSchema.safeParse(campaign.targeting);
+  const filters = StoredFiltersSchema.safeParse(campaign.filters);
+  const cities = targeting.success ? targeting.data.cities : null;
+  const categories = targeting.success ? targeting.data.categories : null;
+  const f = filters.success ? filters.data : {};
+
+  const radiusCity =
+    cities?.mode === 'radius'
+      ? (campaign.cities.find((city) => city.geonameId === cities.geoname_id) ??
+        null)
+      : null;
+
+  return {
+    name: campaign.name,
+    spaceId: campaign.space_id,
+    countryCode: campaign.country_code,
+    citiesMode: cities?.mode ?? 'country',
+    minPopulation: cities?.mode === 'country' ? cities.min_population : 0,
+    radiusCity,
+    radiusKm: cities?.mode === 'radius' ? cities.radius_km : 30,
+    cities: cities?.mode === 'list' ? campaign.cities : [],
+    maxCities: MAX_CITIES_LIMIT,
+    categoriesMode: categories?.mode ?? 'generic',
+    categories: categories?.mode === 'list' ? campaign.categories : [],
+    ratingMin: f.rating_min ?? 0.8,
+    ratingMax: f.rating_max ?? 3.5,
+    minReviews: f.min_reviews ?? 1,
+    website: f.website ?? 'with',
+    excludePublic: f.exclude_public ?? true,
+    mainCategoryOnly: f.main_category_only ?? true,
+    extraExclusions: (f.extra_exclusions ?? []).join(', '),
+  };
+}

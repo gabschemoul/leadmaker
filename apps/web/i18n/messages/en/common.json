@@ -73,7 +73,8 @@
     "new": "New",
     "sender": "Sender",
     "messages": "Messages",
-    "forms": "Forms"
+    "forms": "Forms",
+    "edit": "Edit"
   },
   "roles": {
     "owner": {

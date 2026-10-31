@@ -89,10 +89,12 @@ create table if not exists public.lm_campaign_zones (
   latitude double precision,
   longitude double precision,
   zoom smallint,
+  -- Ville retirée du ciblage après le lancement : sautée par la planification, les recherches faites restent
+  removed boolean not null default false,
   primary key (campaign_id, idx)
 );
 
-comment on table public.lm_campaign_zones is 'Zones (villes) parcourues par une campagne, figées au lancement';
+comment on table public.lm_campaign_zones is 'Zones (villes) parcourues par une campagne, fixées au lancement puis complétées à chaque modification du ciblage';
 
 alter table public.lm_campaign_zones enable row level security;
 
@@ -123,6 +125,8 @@ create table if not exists public.lm_campaign_categories (
   cards_new integer not null default 0,
   kept integer not null default 0,
   abandoned boolean not null default false,
+  -- Activité retirée du ciblage après le lancement
+  removed boolean not null default false,
   primary key (campaign_id, gcid)
 );
 
@@ -510,7 +514,7 @@ begin
         from public.lm_campaign_categories cc
         join public.lm_categories cat using (gcid)
        where cc.campaign_id = v_campaign.id
-         and not cc.abandoned
+         and not cc.abandoned and not cc.removed
          and cc.next_zone_idx < v_zone_count
        order by (cc.searches + cc.in_flight > 0),
                 cc.is_generic desc,
@@ -523,6 +527,14 @@ begin
 
       select * into v_zone from public.lm_campaign_zones
        where campaign_id = v_campaign.id and idx = v_pick.next_zone_idx;
+
+      -- Ville retirée après le lancement : on passe à la suivante sans rien planifier
+      if v_zone.removed then
+        update public.lm_campaign_categories set next_zone_idx = next_zone_idx + 1
+         where campaign_id = v_campaign.id and gcid = v_pick.gcid;
+        v_pick := null;
+        continue;
+      end if;
 
       insert into public.lm_tasks (account_id, kind, payload, idempotency_key)
       values (v_campaign.account_id, 'discovery',
@@ -552,7 +564,8 @@ begin
     -- Plus rien à chercher et plus rien en cours : campagne terminée
     if not exists (
       select 1 from public.lm_campaign_categories cc
-       where cc.campaign_id = v_campaign.id and (cc.in_flight > 0 or (not cc.abandoned and cc.next_zone_idx < v_zone_count))
+       where cc.campaign_id = v_campaign.id
+         and (cc.in_flight > 0 or (not cc.abandoned and not cc.removed and cc.next_zone_idx < v_zone_count))
     ) then
       update public.lm_campaigns set status = 'completed' where id = v_campaign.id;
     end if;
@@ -731,12 +744,13 @@ set search_path = ''
 language sql
 stable
 as $$
-  select (select count(*)::integer from public.lm_campaign_zones z where z.campaign_id = p_campaign_id),
-         count(cc.gcid)::integer,
-         (select count(*) from public.lm_campaign_zones z where z.campaign_id = p_campaign_id) * count(cc.gcid),
+  select (select count(*)::integer from public.lm_campaign_zones z where z.campaign_id = p_campaign_id and not z.removed),
+         count(cc.gcid) filter (where not cc.removed)::integer,
+         (select count(*) from public.lm_campaign_zones z where z.campaign_id = p_campaign_id and not z.removed)
+           * count(cc.gcid) filter (where not cc.removed),
          coalesce(sum(cc.searches), 0),
          coalesce(sum(cc.in_flight), 0),
-         count(*) filter (where cc.abandoned)::integer,
+         count(*) filter (where cc.abandoned and not cc.removed)::integer,
          (select count(*) from public.lm_credit_ledger l where l.campaign_id = p_campaign_id and l.kind = 'discovery' and l.delta < 0),
          coalesce(sum(cc.cards), 0),
          (select max(s.created_at) from public.lm_searches s where s.campaign_id = p_campaign_id)
@@ -745,6 +759,96 @@ as $$
 $$;
 
 grant execute on function public.lm_campaign_progress(uuid) to authenticated, service_role;
+
+-- Modification d'une campagne (nom, ciblage, filtres), même après le lancement.
+-- Après le lancement : le pays ne change plus ; les villes et activités ajoutées rejoignent la file de scan,
+-- celles retirées sont sautées (les recherches déjà faites et les prospects trouvés restent).
+-- Une campagne terminée qui reçoit de nouvelles villes repasse en pause, prête à reprendre.
+-- Renvoie le statut de la campagne après la mise à jour.
+create or replace function public.lm_update_campaign(
+  p_campaign_id uuid, p_name text, p_country_code text, p_targeting jsonb, p_filters jsonb
+) returns text
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_campaign public.lm_campaigns%rowtype;
+  v_launched boolean;
+  v_next_idx integer;
+  v_zone_count integer;
+begin
+  select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
+
+  if v_campaign.id is null or not public.has_role_on_account(v_campaign.account_id) then
+    raise exception 'campaign not found' using errcode = 'P0002';
+  end if;
+
+  v_launched := exists (select 1 from public.lm_campaign_zones where campaign_id = p_campaign_id);
+
+  if v_launched and upper(p_country_code) <> v_campaign.country_code then
+    raise exception 'country cannot change after launch' using errcode = 'P0001', hint = 'country_locked';
+  end if;
+
+  update public.lm_campaigns
+     set name = p_name,
+         country_code = upper(p_country_code),
+         targeting = p_targeting,
+         -- la raison de pause est gérée par lm_pause_campaign, on la conserve
+         filters = p_filters || case when filters ? 'paused_reason'
+                                     then jsonb_build_object('paused_reason', filters -> 'paused_reason')
+                                     else '{}'::jsonb end
+   where id = p_campaign_id;
+
+  if not v_launched then
+    return v_campaign.status::text;
+  end if;
+
+  -- Villes : celles qui sortent du ciblage sont sautées, celles qui y reviennent reprennent
+  update public.lm_campaign_zones z
+     set removed = (z.geoname_id, z.label) not in (
+           select t.geoname_id, t.label from public.lm_target_zones(v_campaign.country_code, p_targeting) t)
+   where z.campaign_id = p_campaign_id;
+
+  -- Nouvelles villes : à la fin de la file, des plus peuplées aux moins peuplées
+  select coalesce(max(idx), -1) + 1 into v_next_idx from public.lm_campaign_zones where campaign_id = p_campaign_id;
+
+  insert into public.lm_campaign_zones (campaign_id, idx, account_id, geoname_id, label, population, latitude, longitude, zoom)
+    select p_campaign_id, v_next_idx + (row_number() over (order by t.population desc, t.geoname_id, t.label)) - 1,
+           v_campaign.account_id, t.geoname_id, t.label, t.population, t.latitude, t.longitude, t.zoom
+      from public.lm_target_zones(v_campaign.country_code, p_targeting) t
+     where not exists (select 1 from public.lm_campaign_zones z
+                        where z.campaign_id = p_campaign_id and z.geoname_id = t.geoname_id and z.label = t.label);
+
+  -- Activités : même logique (une activité abandonnée pour faible rendement le reste)
+  update public.lm_campaign_categories cc
+     set removed = cc.gcid not in (select t.gcid from public.lm_target_categories(p_targeting) t)
+   where cc.campaign_id = p_campaign_id;
+
+  insert into public.lm_campaign_categories (campaign_id, gcid, account_id, is_generic)
+    select p_campaign_id, t.gcid, v_campaign.account_id, t.is_generic
+      from public.lm_target_categories(p_targeting) t
+  on conflict (campaign_id, gcid) do nothing;
+
+  -- Campagne terminée mais du travail est revenu : elle repasse en pause (« Reprendre » la relance)
+  select count(*) into v_zone_count from public.lm_campaign_zones where campaign_id = p_campaign_id;
+
+  if v_campaign.status = 'completed' and exists (
+       select 1 from public.lm_campaign_categories cc
+        where cc.campaign_id = p_campaign_id and not cc.abandoned and not cc.removed
+          and exists (select 1 from public.lm_campaign_zones z
+                       where z.campaign_id = p_campaign_id and not z.removed and z.idx >= cc.next_zone_idx)) then
+    update public.lm_campaigns set status = 'paused' where id = p_campaign_id;
+    return 'paused';
+  end if;
+
+  return v_campaign.status::text;
+end;
+$$;
+
+revoke all on function public.lm_update_campaign(uuid, text, text, jsonb, jsonb) from public;
+
+grant execute on function public.lm_update_campaign(uuid, text, text, jsonb, jsonb) to authenticated;
 
 -- Import CSV : prospects ajoutés sans crédit, dédoublonnés par site dans l'espace
 create or replace function public.lm_import_prospects(p_space_id uuid, p_rows jsonb) returns table (inserted integer, duplicates integer)

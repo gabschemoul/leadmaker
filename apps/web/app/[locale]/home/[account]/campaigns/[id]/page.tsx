@@ -130,6 +130,7 @@ async function CampaignContent({ params }: { params: Params }) {
         countryLabel={countryLabel}
         billingPath={pathsConfig.app.accountBilling.replace('[account]', slug)}
         messagesHref={`${pathsConfig.app.accountCampaigns.replace('[account]', slug)}/${id}/messages`}
+        editHref={`${pathsConfig.app.accountCampaigns.replace('[account]', slug)}/${id}/edit`}
         formsHref={`${pathsConfig.app.accountForms.replace('[account]', slug)}?space=${campaign.space_id}`}
         messagesCount={
           usableMessages(parseTemplates(campaign.templates)).length

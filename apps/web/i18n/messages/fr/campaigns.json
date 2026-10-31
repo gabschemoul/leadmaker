@@ -93,7 +93,11 @@
     "ratingRange": "La note maximale doit être supérieure ou égale à la note minimale.",
     "numberInvalid": "Indiquez un nombre.",
     "numberOutOfRange": "Cette valeur n'est pas autorisée.",
-    "mainCategoryOnlyLabel": "Uniquement les entreprises dont c'est l'activité principale (recommandé)"
+    "mainCategoryOnlyLabel": "Uniquement les entreprises dont c'est l'activité principale (recommandé)",
+    "editPageTitle": "Modifier la campagne",
+    "saveChanges": "Enregistrer les modifications",
+    "countryLocked": "Le pays ne peut plus changer une fois la campagne lancée.",
+    "editLaunchedHint": "Cette campagne a déjà été lancée. Les villes et activités que vous ajoutez seront scannées à la suite ; celles que vous retirez ne seront plus scannées, mais les prospects déjà trouvés restent."
   },
   "estimate": {
     "title": "Estimation",
@@ -143,7 +147,8 @@
     "lastActivity": "Dernière activité",
     "latestProspectsTitle": "Derniers prospects",
     "latestProspectsDescription": "Les 50 dernières entreprises trouvées par cette campagne.",
-    "noProspects": "Aucun prospect pour l'instant."
+    "noProspects": "Aucun prospect pour l'instant.",
+    "edit": "Modifier"
   },
   "import": {
     "button": "Importer un fichier CSV",
@@ -175,6 +180,8 @@
     "campaignLimit": "Votre forfait ne permet pas d'autres campagnes en cours. Mettez-en une en pause ou changez de forfait.",
     "noCities": "Aucune ville ne correspond à vos critères. Élargissez le rayon ou baissez le nombre minimum d'habitants.",
     "startFailed": "La campagne n'a pas pu être lancée. Réessayez dans un instant.",
-    "pauseFailed": "La campagne n'a pas pu être mise en pause. Réessayez dans un instant."
+    "pauseFailed": "La campagne n'a pas pu être mise en pause. Réessayez dans un instant.",
+    "updateFailed": "Les modifications n'ont pas pu être enregistrées. Réessayez dans un instant.",
+    "countryLocked": "Le pays ne peut plus changer une fois la campagne lancée."
   }
 }

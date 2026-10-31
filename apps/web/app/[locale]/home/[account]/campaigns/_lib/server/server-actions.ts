@@ -16,6 +16,7 @@ import {
   EstimateCampaignSchema,
   SearchCategoriesSchema,
   SearchCitiesSchema,
+  UpdateCampaignSchema,
   buildFilters,
   buildTargeting,
 } from '../schema/campaign.schema';
@@ -213,6 +214,62 @@ export const createCampaignAction = authActionClient
     revalidatePath('/home/[account]/campaigns', 'page');
 
     redirect(`/home/${values.accountSlug}/campaigns/${data.id}`);
+  });
+
+/**
+ * Modifie une campagne, même lancée : les villes et activités ajoutées
+ * rejoignent la file de scan, celles retirées sont sautées. Une campagne
+ * terminée qui reçoit du travail est relancée.
+ */
+export const updateCampaignAction = authActionClient
+  .inputSchema(UpdateCampaignSchema)
+  .action(async ({ parsedInput: values, ctx }) => {
+    const targeting = buildTargeting(values);
+
+    if (!targeting) {
+      throw new Error('campaigns.errors.targetingIncomplete');
+    }
+
+    const client = getSupabaseServerClient();
+
+    const { data: status, error } = await client.rpc('lm_update_campaign', {
+      p_campaign_id: values.campaignId,
+      p_name: values.name,
+      p_country_code: values.countryCode,
+      p_targeting: targeting,
+      p_filters: buildFilters(values),
+    });
+
+    if (error) {
+      if (error.hint === 'country_locked') {
+        throw new Error('campaigns.errors.countryLocked');
+      }
+
+      const logger = await getLogger();
+      logger.error(
+        {
+          name: 'leadmaker.campaigns.update',
+          campaignId: values.campaignId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to update campaign',
+      );
+
+      throw new Error('campaigns.errors.updateFailed');
+    }
+
+    // Terminée puis complétée : on la relance tout de suite. Si la reprise est
+    // refusée (crédits, forfait), la campagne reste en pause avec « Reprendre ».
+    if (status === 'paused') {
+      await client.rpc('lm_start_campaign', {
+        p_campaign_id: values.campaignId,
+      });
+    }
+
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    redirect(`/home/${values.accountSlug}/campaigns/${values.campaignId}`);
   });
 
 const START_ERRORS: Record<string, string> = {

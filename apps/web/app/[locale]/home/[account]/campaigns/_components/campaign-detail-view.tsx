@@ -11,6 +11,7 @@ import {
   FileText,
   MessageSquareText,
   Pause,
+  Pencil,
   Play,
   TriangleAlert,
 } from 'lucide-react';
@@ -57,6 +58,8 @@ export function CampaignDetailView(props: {
   billingPath: string;
   /** page des messages de la campagne */
   messagesHref: string;
+  /** formulaire de modification (nom, villes, activités, filtres) */
+  editHref: string;
   /** nombre de messages rédigés (0 = la préparation des formulaires est impossible) */
   messagesCount: number;
   formsHref: string;
@@ -143,6 +146,19 @@ export function CampaignDetailView(props: {
                 values={{ count: props.messagesCount }}
               />
               )
+            </span>
+          </Button>
+
+          <Button
+            variant={'outline'}
+            nativeButton={false}
+            data-test={'campaign-edit-button'}
+            render={<Link href={props.editHref} />}
+          >
+            <Pencil className={'w-4'} />
+
+            <span>
+              <Trans i18nKey={'campaigns.detail.edit'} />
             </span>
           </Button>
 

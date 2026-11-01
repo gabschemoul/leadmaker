@@ -46,7 +46,7 @@
   "home": {
     "pill": "Nouveau",
     "pillText": "Prospection locale, partout dans le monde",
-    "title": "Contactez des milliers d'entreprises locales, automatiquement.",
+    "title": "Contactez des milliers d'entreprises <hl>locales</hl>, automatiquement.",
     "subtitle": "Prospectigo trouve les entreprises sur Google Maps, repère leur formulaire de contact et leur dépose votre message. Vous choisissez la zone et le métier, le robot fait le reste.",
     "heroImageAlt": "Une campagne Prospectigo en cours",
     "howTitle": "Comment ça marche",

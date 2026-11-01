@@ -13,7 +13,7 @@ export const HeroTitle: React.FC<
     props: {
       ...props,
       className: cn(
-        'hero-title flex flex-col text-center font-sans text-4xl font-medium tracking-tighter sm:text-6xl lg:max-w-5xl lg:text-7xl xl:max-w-6xl dark:text-white',
+        'hero-title font-heading flex flex-col text-center text-4xl font-extrabold tracking-tighter sm:text-6xl lg:max-w-5xl lg:text-7xl xl:max-w-6xl dark:text-white',
         className,
       ),
       children,

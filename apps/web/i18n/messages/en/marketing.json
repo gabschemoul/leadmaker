@@ -46,7 +46,7 @@
   "home": {
     "pill": "New",
     "pillText": "Local outreach, anywhere in the world",
-    "title": "Reach thousands of local businesses, automatically.",
+    "title": "Reach thousands of <hl>local</hl> businesses, automatically.",
     "subtitle": "Prospectigo finds businesses on Google Maps, locates their contact form and drops your message in it. You pick the area and the trade, the robot does the rest.",
     "heroImageAlt": "A Prospectigo campaign in progress",
     "howTitle": "How it works",

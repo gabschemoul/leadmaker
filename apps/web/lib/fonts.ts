@@ -1,11 +1,14 @@
-import { Inter as SansFont } from 'next/font/google';
+import {
+  Figtree as SansFont,
+  Schibsted_Grotesk as HeadingFont,
+} from 'next/font/google';
 
 import { cn } from '@kit/ui/utils';
 
 /**
  * @sans
  * @description Define here the sans font.
- * By default, it uses the Inter font from Google Fonts.
+ * Prospectigo : Figtree pour le texte.
  */
 const sans = SansFont({
   subsets: ['latin'],
@@ -17,9 +20,15 @@ const sans = SansFont({
 
 /**
  * @heading
- * @description Define here the heading font.
+ * @description Prospectigo : Schibsted Grotesk pour les titres.
  */
-const heading = sans;
+const heading = HeadingFont({
+  subsets: ['latin'],
+  variable: '--font-heading-face',
+  fallback: ['system-ui', 'Helvetica Neue', 'Helvetica', 'Arial'],
+  preload: true,
+  weight: ['500', '600', '700', '800'],
+});
 
 // we export these fonts into the root layout
 export { sans, heading };

@@ -340,6 +340,14 @@ export const updateCampaignAction = authActionClient
 
     const client = getSupabaseServerClient();
 
+    // statut AVANT la modification : seule une campagne terminée est relancée
+    // d'office ; une campagne mise en pause par l'utilisateur reste en pause
+    const { data: before } = await client
+      .from('lm_campaigns')
+      .select('status')
+      .eq('id', values.campaignId)
+      .maybeSingle();
+
     const { data: status, error } = await client.rpc('lm_update_campaign', {
       p_campaign_id: values.campaignId,
       p_name: values.name,
@@ -369,7 +377,8 @@ export const updateCampaignAction = authActionClient
 
     // Terminée puis complétée : on la relance tout de suite. Si la reprise est
     // refusée (crédits, forfait), la campagne reste en pause avec « Reprendre ».
-    if (status === 'paused') {
+    // Une campagne déjà en pause avant la modification n'est jamais relancée.
+    if (before?.status === 'completed' && status === 'paused') {
       await client.rpc('lm_start_campaign', {
         p_campaign_id: values.campaignId,
       });

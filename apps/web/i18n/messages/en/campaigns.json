@@ -295,5 +295,76 @@
       "formsTitle": "Forms of this campaign",
       "formsEmpty": "Nothing to review yet. Click “Prepare the forms”: results will show up here as they come."
     }
+  },
+  "nextAction": {
+    "title": "Your next actions",
+    "description": "One line per campaign: where it stands, and what to do now.",
+    "newCampaign": "New campaign",
+    "emptyTitle": "No campaign yet",
+    "emptyDescription": "Pick an area and a trade: Prospectigo finds the businesses on Google Maps and drops your message in their contact form.",
+    "emptyButton": "Create my first campaign",
+    "kpi": {
+      "toReview": "To review",
+      "toReviewHint": "forms waiting for you",
+      "activeCampaigns": "Running campaigns",
+      "of": "of {max} allowed",
+      "unlimited": "no limit",
+      "outreach": "Send credits",
+      "discovery": "Discovery credits",
+      "perMonth": "{max} per month",
+      "noPlan": "no plan"
+    },
+    "launch": {
+      "text": "Targeting ready, search not launched yet",
+      "button": "Launch the search"
+    },
+    "sender": {
+      "text": "Sender missing",
+      "button": "Fill in the sender"
+    },
+    "message": {
+      "text": "{count, plural, =0 {Message missing} one {# prospect found · message missing} other {# prospects found · message missing}}",
+      "button": "Write the message"
+    },
+    "review": {
+      "text": "{count, plural, one {# form ready to review} other {# forms ready to review}}",
+      "button": "Review"
+    },
+    "verifySent": {
+      "text": "{count, plural, one {# send to confirm} other {# sends to confirm}}: the robot saw no confirmation",
+      "button": "Decide"
+    },
+    "complete": {
+      "text": "{count, plural, one {# form to complete} other {# forms to complete}}: a detail is missing",
+      "button": "Complete"
+    },
+    "preparing": {
+      "text": "The robot is preparing {count, plural, one {# form} other {# forms}}",
+      "button": "Follow"
+    },
+    "sending": {
+      "text": "Sending: {sent, number} sent, {validated, number} validated waiting",
+      "button": "Follow"
+    },
+    "searching": {
+      "text": "Search running · {count, plural, =0 {nothing yet} one {# prospect found} other {# prospects found}}",
+      "button": "Follow"
+    },
+    "prepare": {
+      "text": "{count, plural, one {# prospect found} other {# prospects found}}, no form prepared",
+      "button": "Prepare the forms"
+    },
+    "finished": {
+      "text": "Finished · {sent, plural, one {# sent} other {# sent}}",
+      "button": "See the results"
+    },
+    "resume": {
+      "text": "Search paused · {count, plural, one {# prospect} other {# prospects}}",
+      "button": "Resume"
+    },
+    "noProspects": {
+      "text": "Search finished with no result: widen the targeting",
+      "button": "Edit targeting"
+    }
   }
 }

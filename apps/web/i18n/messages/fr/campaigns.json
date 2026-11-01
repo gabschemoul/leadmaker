@@ -295,5 +295,76 @@
       "formsTitle": "Formulaires de cette campagne",
       "formsEmpty": "Rien à vérifier pour l'instant. Cliquez sur « Préparer les formulaires » : les résultats apparaîtront ici au fur et à mesure."
     }
+  },
+  "nextAction": {
+    "title": "Vos prochaines actions",
+    "description": "Une ligne par campagne : où elle en est, et quoi faire maintenant.",
+    "newCampaign": "Nouvelle campagne",
+    "emptyTitle": "Aucune campagne pour l'instant",
+    "emptyDescription": "Choisissez une zone et un métier, Prospectigo trouve les entreprises sur Google Maps et leur dépose votre message.",
+    "emptyButton": "Créer ma première campagne",
+    "kpi": {
+      "toReview": "À vérifier",
+      "toReviewHint": "formulaires qui attendent votre regard",
+      "activeCampaigns": "Campagnes en cours",
+      "of": "sur {max} autorisées",
+      "unlimited": "sans limite",
+      "outreach": "Crédits d'envoi",
+      "discovery": "Crédits découverte",
+      "perMonth": "{max} par mois",
+      "noPlan": "aucun forfait"
+    },
+    "launch": {
+      "text": "Ciblage prêt, recherche pas encore lancée",
+      "button": "Lancer la recherche"
+    },
+    "sender": {
+      "text": "Il manque l'expéditeur",
+      "button": "Renseigner l'expéditeur"
+    },
+    "message": {
+      "text": "{count, plural, =0 {Il manque le message} one {# prospect trouvé · il manque le message} other {# prospects trouvés · il manque le message}}",
+      "button": "Rédiger le message"
+    },
+    "review": {
+      "text": "{count, plural, one {# formulaire prêt à vérifier} other {# formulaires prêts à vérifier}}",
+      "button": "Vérifier"
+    },
+    "verifySent": {
+      "text": "{count, plural, one {# envoi à confirmer} other {# envois à confirmer}} : le robot n'a pas vu de confirmation",
+      "button": "Trancher"
+    },
+    "complete": {
+      "text": "{count, plural, one {# formulaire à compléter} other {# formulaires à compléter}} : il manque une information",
+      "button": "Compléter"
+    },
+    "preparing": {
+      "text": "Le robot prépare {count, plural, one {# formulaire} other {# formulaires}}",
+      "button": "Suivre"
+    },
+    "sending": {
+      "text": "Envoi en cours : {sent, number} envoyés, {validated, number} validés en attente",
+      "button": "Suivre"
+    },
+    "searching": {
+      "text": "Recherche en cours · {count, plural, =0 {rien encore} one {# prospect trouvé} other {# prospects trouvés}}",
+      "button": "Suivre"
+    },
+    "prepare": {
+      "text": "{count, plural, one {# prospect trouvé} other {# prospects trouvés}}, aucun formulaire préparé",
+      "button": "Préparer les formulaires"
+    },
+    "finished": {
+      "text": "Terminée · {sent, plural, one {# envoyé} other {# envoyés}}",
+      "button": "Voir le bilan"
+    },
+    "resume": {
+      "text": "Recherche en pause · {count, plural, one {# prospect} other {# prospects}}",
+      "button": "Reprendre"
+    },
+    "noProspects": {
+      "text": "Recherche terminée sans résultat : élargissez le ciblage",
+      "button": "Modifier le ciblage"
+    }
   }
 }

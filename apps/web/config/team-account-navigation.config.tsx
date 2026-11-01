@@ -1,5 +1,4 @@
 import {
-  ClipboardCheck,
   Contact,
   CreditCard,
   FolderKanban,
@@ -37,16 +36,6 @@ const getRoutes = (account: string) => [
         path: createPath(pathsConfig.app.accountProspects, account),
         Icon: <UserSearch className={iconClasses} />,
       },
-      {
-        label: 'common.routes.forms',
-        path: createPath(pathsConfig.app.accountForms, account),
-        Icon: <ClipboardCheck className={iconClasses} />,
-      },
-      {
-        label: 'common.routes.sender',
-        path: createPath(pathsConfig.app.accountSender, account),
-        Icon: <Contact className={iconClasses} />,
-      },
     ],
   },
   {
@@ -54,9 +43,9 @@ const getRoutes = (account: string) => [
     collapsible: false,
     children: [
       {
-        label: 'common.routes.settings',
-        path: createPath(pathsConfig.app.accountSettings, account),
-        Icon: <Settings className={iconClasses} />,
+        label: 'common.routes.sender',
+        path: createPath(pathsConfig.app.accountSender, account),
+        Icon: <Contact className={iconClasses} />,
       },
       {
         label: 'common.routes.members',
@@ -75,6 +64,11 @@ const getRoutes = (account: string) => [
             Icon: <CreditCard className={iconClasses} />,
           }
         : undefined,
+      {
+        label: 'common.routes.settings',
+        path: createPath(pathsConfig.app.accountSettings, account),
+        Icon: <Settings className={iconClasses} />,
+      },
     ].filter(Boolean),
   },
 ];

@@ -21,7 +21,7 @@
     "nameRequired": "Indiquez un nom.",
     "nameTooLong": "Le nom ne doit pas dépasser 100 caractères.",
     "nameTaken": "Un dossier client porte déjà ce nom.",
-    "quotaReached": "Votre forfait ne permet pas d'autres dossiers clients.",
+    "quotaReached": "Impossible de créer ce dossier client pour le moment. Réessayez dans un instant.",
     "createError": "Le dossier n'a pas pu être créé. Réessayez dans un instant."
   },
   "list": {

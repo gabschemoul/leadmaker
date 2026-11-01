@@ -21,7 +21,7 @@
     "nameRequired": "Enter a name.",
     "nameTooLong": "The name must be 100 characters or fewer.",
     "nameTaken": "A client folder with this name already exists.",
-    "quotaReached": "Your plan doesn't allow more client folders.",
+    "quotaReached": "This client folder could not be created right now. Try again in a moment.",
     "createError": "The folder couldn't be created. Please try again in a moment."
   },
   "list": {

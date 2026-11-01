@@ -44,8 +44,7 @@
     "title": "Campaign messages",
     "intro": "Write up to 4 messages: they are sent in turn to see which one works best. Variables in braces are replaced for each business. If a piece of information is missing for a business (no rating, no reviews…), the sentence containing it is removed automatically.",
     "messageTab": "Message {index}",
-    "shortTab": "Short version",
-    "shortIntro": "Some sites limit the message length. This version of at most 200 characters is used instead.",
+    "shortIntro": "Some websites limit the message length. This version of up to 200 characters is then sent instead of this message.",
     "nameLabel": "Message name",
     "subjectLabel": "Subject",
     "subjectPlaceholder": "Example: Your Google rating",
@@ -101,7 +100,9 @@
       "autoValidationHint": "A form prepared without any warning is validated on its own, without review. Forms to complete or with a remark still wait for your review.",
       "autoValidationPlanHint": "Available on the Business and Scale plans.",
       "autoValidationWarning": "Warning: automatically validated forms will be sent as soon as sending is active, without your review."
-    }
+    },
+    "shortLabel": "Short version (optional)",
+    "shortPlaceholder": "Hello, we have a simple idea for '{company}'…"
   },
   "forms": {
     "pageTitle": "Forms",

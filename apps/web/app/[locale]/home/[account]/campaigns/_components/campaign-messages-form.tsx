@@ -56,7 +56,10 @@ import { saveCampaignTemplatesAction } from '../_lib/server/server-actions';
 
 type PreviewProspect = TemplateContext['prospect'] & { id: string };
 
-type Slot = `messages.${number}` | 'short';
+type Slot = `messages.${number}`;
+
+/** zone de texte d'un message : le message complet ou sa version courte */
+type TextField = 'body' | 'short';
 
 export function CampaignMessagesForm(props: {
   accountId: string;
@@ -90,8 +93,8 @@ export function CampaignMessagesForm(props: {
         name: props.templates.messages[index]?.name ?? `Message ${index + 1}`,
         subject: props.templates.messages[index]?.subject ?? '',
         body: props.templates.messages[index]?.body ?? '',
+        short: props.templates.messages[index]?.short ?? '',
       })),
-      short: props.templates.short,
       dailyLimit: props.sending.dailyLimit,
       autoValidation: props.sending.autoValidation,
     },
@@ -99,18 +102,20 @@ export function CampaignMessagesForm(props: {
 
   const values = useWatch({ control: form.control });
   const [previewIndex, setPreviewIndex] = useState(0);
-  const textareas = useRef<Partial<Record<Slot, HTMLTextAreaElement | null>>>(
-    {},
-  );
+  const textareas = useRef<
+    Partial<Record<`${Slot}.${TextField}`, HTMLTextAreaElement | null>>
+  >({});
+  // zone de texte où vont les variables : la dernière où l'on a cliqué
+  const activeField = useRef<Partial<Record<Slot, TextField>>>({});
 
   const disabled = isPending || form.formState.isSubmitting;
   const company = props.sender?.company ?? null;
 
-  /** Insère une variable à l'endroit du curseur de la zone de texte du message. */
+  /** Insère une variable à l'endroit du curseur de la zone de texte active. */
   const insertVariable = (slot: Slot, token: string) => {
-    const field = `${slot}.body` as const;
+    const field = `${slot}.${activeField.current[slot] ?? 'body'}` as const;
     const current = (form.getValues(field) as string) ?? '';
-    const element = textareas.current[slot];
+    const element = textareas.current[field];
     const start = element?.selectionStart ?? current.length;
     const end = element?.selectionEnd ?? current.length;
     const next = `${current.slice(0, start)}{${token}}${current.slice(end)}`;
@@ -127,44 +132,33 @@ export function CampaignMessagesForm(props: {
   const prospect = props.prospects[previewIndex] ?? props.prospects[0];
 
   const renderSlot = (slot: Slot, max: number) => {
-    const slotValues =
-      slot === 'short'
-        ? values.short
-        : values.messages?.[Number(slot.split('.')[1])];
+    const slotValues = values.messages?.[Number(slot.split('.')[1])];
     const body = slotValues?.body ?? '';
+    const short = slotValues?.short ?? '';
     const subject = slotValues?.subject ?? '';
-    const unknown = unknownVariables(`${subject} ${body}`);
+    const unknown = unknownVariables(`${subject} ${body} ${short}`);
     const companyMissing =
-      body.trim() !== '' && !mentionsCompany(body, company);
+      (body.trim() !== '' && !mentionsCompany(body, company)) ||
+      (short.trim() !== '' && !mentionsCompany(short, company));
 
     return (
       <div className={'flex flex-col gap-6'}>
-        {slot === 'short' ? (
-          <p className={'text-muted-foreground text-sm'}>
-            <Trans i18nKey={'outreach.messages.shortIntro'} />
-          </p>
-        ) : (
-          <FormField
-            name={`${slot}.name`}
-            render={({ field }) => (
-              <FormItem className={'max-w-sm'}>
-                <FormLabel>
-                  <Trans i18nKey={'outreach.messages.nameLabel'} />
-                </FormLabel>
+        <FormField
+          name={`${slot}.name`}
+          render={({ field }) => (
+            <FormItem className={'max-w-sm'}>
+              <FormLabel>
+                <Trans i18nKey={'outreach.messages.nameLabel'} />
+              </FormLabel>
 
-                <FormControl>
-                  <Input
-                    data-test={`${slot}-name`}
-                    maxLength={100}
-                    {...field}
-                  />
-                </FormControl>
+              <FormControl>
+                <Input data-test={`${slot}-name`} maxLength={100} {...field} />
+              </FormControl>
 
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           name={`${slot}.subject`}
@@ -203,9 +197,10 @@ export function CampaignMessagesForm(props: {
                   maxLength={max}
                   placeholder={t('bodyPlaceholder')}
                   {...field}
+                  onFocus={() => (activeField.current[slot] = 'body')}
                   ref={(element) => {
                     field.ref(element);
-                    textareas.current[slot] = element;
+                    textareas.current[`${slot}.body`] = element;
                   }}
                 />
               </FormControl>
@@ -216,6 +211,48 @@ export function CampaignMessagesForm(props: {
                 }
               >
                 {t('charCount', { count: body.length, max })}
+              </div>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          name={`${slot}.short`}
+          render={({ field }) => (
+            <FormItem
+              className={'bg-muted/40 rounded-lg border border-dashed p-4'}
+            >
+              <FormLabel>
+                <Trans i18nKey={'outreach.messages.shortLabel'} />
+              </FormLabel>
+
+              <p className={'text-muted-foreground text-sm'}>
+                <Trans i18nKey={'outreach.messages.shortIntro'} />
+              </p>
+
+              <FormControl>
+                <Textarea
+                  data-test={`${slot}-short`}
+                  className={'bg-background min-h-20'}
+                  maxLength={SHORT_BODY_MAX}
+                  placeholder={t('shortPlaceholder')}
+                  {...field}
+                  onFocus={() => (activeField.current[slot] = 'short')}
+                  ref={(element) => {
+                    field.ref(element);
+                    textareas.current[`${slot}.short`] = element;
+                  }}
+                />
+              </FormControl>
+
+              <div
+                className={
+                  'text-muted-foreground flex justify-end text-xs tabular-nums'
+                }
+              >
+                {t('charCount', { count: short.length, max: SHORT_BODY_MAX })}
               </div>
 
               <FormMessage />
@@ -308,6 +345,20 @@ export function CampaignMessagesForm(props: {
                     <p className={'whitespace-pre-wrap'}>
                       {renderTemplate(body, { prospect, sender: props.sender })}
                     </p>
+
+                    {short.trim() !== '' ? (
+                      <div className={'mt-2 border-t border-dashed pt-3'}>
+                        <p className={'text-muted-foreground text-xs'}>
+                          <Trans i18nKey={'outreach.messages.shortLabel'} />
+                        </p>
+                        <p className={'whitespace-pre-wrap'}>
+                          {renderTemplate(short, {
+                            prospect,
+                            sender: props.sender,
+                          })}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </>
@@ -370,11 +421,6 @@ export function CampaignMessagesForm(props: {
                     {values.messages?.[index]?.body?.trim() ? ' •' : ''}
                   </TabsTrigger>
                 ))}
-
-                <TabsTrigger value={'short'} data-test={'messages-tab-short'}>
-                  {t('shortTab')}
-                  {values.short?.body?.trim() ? ' •' : ''}
-                </TabsTrigger>
               </TabsList>
 
               {Array.from({ length: MAX_MESSAGES }, (_, index) => (
@@ -386,10 +432,6 @@ export function CampaignMessagesForm(props: {
                   {renderSlot(`messages.${index}`, BODY_MAX)}
                 </TabsContent>
               ))}
-
-              <TabsContent value={'short'} className={'pt-4'}>
-                {renderSlot('short', SHORT_BODY_MAX)}
-              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>

@@ -119,7 +119,7 @@ class PrepareRunner:
             """update public.lm_attempts a set status = 'sending'
                 where a.id = %s and a.status = 'validated'
             returning a.id, a.account_id, a.space_id, a.campaign_id, a.prospect_id, a.extra, a.subject, a.body,
-                      a.form_url, a.template_used""",
+                      a.form_url, a.template_name, a.template_used""",
             (attempt_id,),
         ).fetchone()
         if not row:
@@ -137,7 +137,8 @@ class PrepareRunner:
             return {"status": "failed"}
         prospect, sender_dict, campaign, sender_job = ctx
         messages, short = parse_templates(campaign["templates"])
-        short_t = short_version(messages, short)
+        template = next((m for m in messages if m["name"] == row["template_name"]), None)
+        short_t = short_version(template, messages, short)
         short_body = render(short_t["body"], prospect, sender_dict) if short_t else ""
         job = {
             "mode": "send", "site": prospect["website"], "form_url": row["form_url"], "subject": row["subject"] or "",
@@ -210,7 +211,7 @@ class PrepareRunner:
         sender_dict = dict(sender)
         subject = render(template["subject"], prospect, sender_dict)
         body = render(template["body"], prospect, sender_dict)
-        short_t = short_version(messages, short)
+        short_t = short_version(template, messages, short)
         short_body = render(short_t["body"], prospect, sender_dict) if short_t and short_t is not template else ""
         country = sender["country_code"] or campaign["country_code"]
         english = (conn.execute("select name from public.lm_country_coverage where country_code = %s", (country,)).fetchone()

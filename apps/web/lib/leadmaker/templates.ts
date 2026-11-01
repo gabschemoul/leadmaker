@@ -1,7 +1,7 @@
 /**
  * Modèles de messages d'une campagne : jusqu'à quatre messages (objet + texte)
- * tirés en rotation équilibrée, plus une variante courte pour les sites qui
- * limitent la longueur. Stockés dans la colonne jsonb `templates` de
+ * tirés en rotation équilibrée. Chaque message a sa propre version courte
+ * (facultative) pour les sites qui limitent la longueur. Stockés dans la colonne jsonb `templates` de
  * lm_campaigns ; le worker Python applique les mêmes variables.
  */
 
@@ -14,11 +14,12 @@ export interface MessageTemplate {
   name: string;
   subject: string;
   body: string;
+  /** version courte du message (200 caractères au plus), facultative */
+  short: string;
 }
 
 export interface CampaignTemplates {
   messages: MessageTemplate[];
-  short: { subject: string; body: string };
 }
 
 /** Variables disponibles ; les alias français du prototype restent acceptés. */
@@ -59,7 +60,7 @@ export interface TemplateContext {
 }
 
 export function emptyTemplates(): CampaignTemplates {
-  return { messages: [], short: { subject: '', body: '' } };
+  return { messages: [] };
 }
 
 function asString(value: unknown) {
@@ -76,6 +77,13 @@ export function parseTemplates(raw: unknown): CampaignTemplates {
       ? ((raw as { messages: unknown[] }).messages ?? [])
       : [];
 
+  // avant le 1/11/2026 : une seule version courte pour toute la campagne,
+  // reprise sous chaque message qui n'a pas encore la sienne
+  const legacyShort =
+    raw && typeof raw === 'object' && !Array.isArray(raw)
+      ? asString((raw as { short?: Record<string, unknown> }).short?.body)
+      : '';
+
   const messages = list
     .filter((item): item is Record<string, unknown> =>
       Boolean(item && typeof item === 'object'),
@@ -85,20 +93,10 @@ export function parseTemplates(raw: unknown): CampaignTemplates {
       name: asString(item.name) || `Message ${index + 1}`,
       subject: asString(item.subject),
       body: asString(item.body),
+      short: asString(item.short) || legacyShort,
     }));
 
-  const shortRaw =
-    raw && typeof raw === 'object' && !Array.isArray(raw)
-      ? (raw as { short?: Record<string, unknown> }).short
-      : undefined;
-
-  return {
-    messages,
-    short: {
-      subject: asString(shortRaw?.subject),
-      body: asString(shortRaw?.body),
-    },
-  };
+  return { messages };
 }
 
 const TOKEN_PATTERN = /\{([a-z_]+)\}/gi;

@@ -13,18 +13,16 @@ const MessageSchema = z.object({
   name: z.string().trim().max(100, { message: TOO_LONG }),
   subject: z.string().trim().max(SUBJECT_MAX, { message: TOO_LONG }),
   body: z.string().max(BODY_MAX, { message: TOO_LONG }),
+  // version courte du message, pour les sites qui limitent la longueur
+  short: z
+    .string()
+    .max(SHORT_BODY_MAX, { message: 'outreach.messages.shortTooLong' }),
 });
 
 export const DAILY_LIMIT_MAX = 1000;
 
 export const CampaignTemplatesFormSchema = z.object({
   messages: z.array(MessageSchema).max(MAX_MESSAGES),
-  short: z.object({
-    subject: z.string().trim().max(SUBJECT_MAX, { message: TOO_LONG }),
-    body: z
-      .string()
-      .max(SHORT_BODY_MAX, { message: 'outreach.messages.shortTooLong' }),
-  }),
   // réglages d'envoi de la campagne
   dailyLimit: z.coerce
     .number()

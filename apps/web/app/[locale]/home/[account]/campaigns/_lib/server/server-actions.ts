@@ -528,13 +528,16 @@ export const saveCampaignTemplatesAction = authActionClient
         name: message.name || `Message ${index + 1}`,
         subject: message.subject,
         body: message.body,
+        short: message.body.trim() ? message.short : '',
       }))
       .filter((message) => message.body.trim() !== '');
 
-    const filled = [
-      ...messages,
-      ...(parsedInput.short.body.trim() ? [parsedInput.short] : []),
-    ];
+    const filled = messages.flatMap((message) => [
+      message,
+      ...(message.short.trim()
+        ? [{ subject: message.subject, body: message.short }]
+        : []),
+    ]);
 
     for (const message of filled) {
       if (unknownVariables(`${message.subject} ${message.body}`).length > 0) {
@@ -549,7 +552,7 @@ export const saveCampaignTemplatesAction = authActionClient
     const { error } = await client
       .from('lm_campaigns')
       .update({
-        templates: { messages, short: parsedInput.short },
+        templates: { messages },
         daily_limit: parsedInput.dailyLimit,
         auto_validation: parsedInput.autoValidation,
       })

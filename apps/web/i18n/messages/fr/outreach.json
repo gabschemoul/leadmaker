@@ -44,8 +44,7 @@
     "title": "Messages de la campagne",
     "intro": "Écrivez jusqu'à 4 messages : ils sont envoyés à tour de rôle pour voir lequel marche le mieux. Les variables entre accolades sont remplacées pour chaque entreprise. Si une info manque pour une entreprise (pas de note, pas d'avis…), la phrase qui la contient est retirée automatiquement.",
     "messageTab": "Message {index}",
-    "shortTab": "Version courte",
-    "shortIntro": "Certains sites limitent la longueur du message. Cette version de 200 caractères maximum est utilisée à leur place.",
+    "shortIntro": "Certains sites limitent la longueur du message. Cette version de 200 caractères maximum est alors envoyée à la place de ce message.",
     "nameLabel": "Nom du message",
     "subjectLabel": "Objet",
     "subjectPlaceholder": "Exemple : Votre note Google",
@@ -101,7 +100,9 @@
       "autoValidationHint": "Un formulaire préparé sans la moindre alerte est validé tout seul, sans relecture. Les formulaires à compléter ou avec une remarque restent à relire.",
       "autoValidationPlanHint": "Disponible avec les forfaits Business et Scale.",
       "autoValidationWarning": "Attention : les formulaires validés automatiquement partiront dès que l'envoi est actif, sans que vous les ayez relus."
-    }
+    },
+    "shortLabel": "Version courte (facultative)",
+    "shortPlaceholder": "Bonjour, nous avons une idée simple pour '{company}'…"
   },
   "forms": {
     "pageTitle": "Formulaires",

@@ -14,7 +14,9 @@ TOKEN = re.compile(r"\{([a-z_]+)\}", re.I)
 
 
 def parse_templates(raw: Any) -> tuple[list[dict], dict]:
-    """(messages, variante courte) depuis la colonne jsonb (tableau du lot 0 ou objet)."""
+    """(messages, ancienne variante courte commune) depuis la colonne jsonb (tableau du lot 0 ou objet).
+    Depuis le 1/11/2026 chaque message porte sa propre version courte (clé « short », texte seul) ;
+    la variante commune ne sert plus que pour les campagnes enregistrées avant."""
     if isinstance(raw, list):
         messages, short = raw, {}
     elif isinstance(raw, dict):
@@ -27,8 +29,9 @@ def parse_templates(raw: Any) -> tuple[list[dict], dict]:
             continue
         body = str(m.get("body") or "")
         if body.strip():
+            short_body = m.get("short")
             out.append({"name": str(m.get("name") or f"Message {i + 1}"), "subject": str(m.get("subject") or ""),
-                        "body": body})
+                        "body": body, "short": short_body if isinstance(short_body, str) else ""})
     short = {"subject": str(short.get("subject") or ""), "body": str(short.get("body") or "")}
     return out, short
 
@@ -85,8 +88,12 @@ def pick_balanced(messages: list[dict], counts: dict[str, int]) -> dict | None:
     return random.choice([m for m in messages if counts.get(m["name"], 0) == least])
 
 
-def short_version(messages: list[dict], short: dict) -> dict | None:
-    """Variante courte explicite, sinon le message le plus court."""
+def short_version(template: dict | None, messages: list[dict], short: dict) -> dict | None:
+    """Texte de repli pour les sites qui limitent la longueur du message : la version courte du message
+    choisi, sinon l'ancienne variante commune, sinon le message le plus court de la campagne."""
+    if template and template.get("short", "").strip():
+        return {"name": f"{template['name']} (version courte)", "subject": template["subject"],
+                "body": template["short"]}
     if short.get("body", "").strip():
         return {"name": "Version courte", "subject": short.get("subject", ""), "body": short["body"]}
     return min(messages, key=lambda m: len(m["body"])) if messages else None

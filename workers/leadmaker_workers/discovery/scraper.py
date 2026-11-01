@@ -332,8 +332,13 @@ class GMapsScraper:
                 if rating is not None and not _rating_ok(rating, filters):
                     yield "skip", place
                     continue
+                # Sans bouton « Website » sur la carte, on ne sait pas encore : les restaurants, hôtels…
+                # affichent « Réserver » ou « Commander » à la place. Il faut alors ouvrir la fiche.
+                site_unknown = not c["site"] and filters.website != "all"
                 if not c.get("single"):
-                    if (rating is None and not filters.include_unrated) or not _website_ok(c["site"], filters):
+                    if (rating is None and not filters.include_unrated) or (
+                        not site_unknown and not _website_ok(c["site"], filters)
+                    ):
                         yield "skip", place
                         continue
                     if filters.min_reviews and place.review_count is not None and place.review_count < filters.min_reviews:
@@ -342,7 +347,7 @@ class GMapsScraper:
 
                 # La carte suffit (activité, note, site, adresse, téléphone) : on n'ouvre la fiche que s'il manque
                 # l'essentiel. Moins de pages demandées à Google : plus rapide, moins cher, moins de risque de blocage.
-                if place.card_category and place.rating is not None and not c.get("single"):
+                if place.card_category and place.rating is not None and not c.get("single") and not site_unknown:
                     place.category = place.card_category
                     place.address, place.phone = card_details(c.get("text", ""))
                 else:

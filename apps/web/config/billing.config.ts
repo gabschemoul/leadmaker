@@ -60,7 +60,6 @@ export default createBillingSchema({
       features: [
         '15 000 prospects par mois',
         '5 000 prises de contact par mois',
-        '500 prises de contact par jour',
         '3 espaces, 2 sièges',
         '1 campagne active',
         'Support email',
@@ -112,7 +111,6 @@ export default createBillingSchema({
       features: [
         '45 000 prospects par mois',
         '15 000 prises de contact par mois',
-        '1 000 prises de contact par jour',
         '5 espaces, 5 sièges',
         '3 campagnes actives',
         'Auto-validation (activation explicite)',
@@ -163,7 +161,6 @@ export default createBillingSchema({
       features: [
         '105 000 prospects par mois',
         '35 000 prises de contact par mois',
-        '1 500 prises de contact par jour',
         '10 espaces, sièges illimités',
         'Campagnes illimitées',
         'Auto-validation (activation explicite)',

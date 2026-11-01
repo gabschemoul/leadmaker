@@ -46,6 +46,24 @@ Pistes à discuter :
 - **Option** : rechargement automatique quand le solde passe sous un seuil.
 - Dépend du branchement de Stripe en mode réel (voir plus bas).
 
+### 6. Plusieurs profils d'expéditeur 🟡
+- **Aujourd'hui** : un seul expéditeur par dossier client (nom, société, e-mail, téléphone…).
+- **Demain** : plusieurs expéditeurs par dossier, par exemple un par commercial ou un par marque. On choisit l'expéditeur dans chaque campagne, et un expéditeur par défaut est proposé.
+- **À trancher** : pouvoir alterner automatiquement entre plusieurs expéditeurs dans une même campagne, pour répartir les réponses.
+
+### 7. Beaucoup plus de champs remplis dans les formulaires 🟡
+- **Aujourd'hui** : le robot remplit les champs classiques. Civilité, prénom, nom, fonction, société, e-mail, téléphone, site web, adresse, code postal, ville, pays, objet et message.
+- **Demain** : des champs plus rares, renseignés une fois dans l'expéditeur et reconnus par le robot. Exemples :
+  - Téléphone mobile et téléphone fixe séparés, fax.
+  - Numéro d'entreprise (SIRET, TVA intracommunautaire, numéro d'entreprise étranger).
+  - Secteur d'activité, taille de l'entreprise, nombre de salariés.
+  - Département ou région, langue préférée.
+  - Budget, délai ou date souhaitée, objet de la demande dans une liste.
+  - « Comment nous avez-vous connu ? », moyen de contact préféré, créneau de rappel.
+  - Profil LinkedIn, numéro de client.
+- **Champs libres** : l'utilisateur ajoute ses propres champs (un libellé et une valeur), utilisés quand le robot reconnaît le libellé sur un site.
+- **Plus tard** : l'IA du robot (point 8 de la liste ci-dessous) devine la bonne réponse quand un champ ne correspond à rien de connu.
+
 ---
 
 ## Déjà prévu (liste du 31 octobre)

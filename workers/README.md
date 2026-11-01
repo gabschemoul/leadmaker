@@ -56,6 +56,7 @@ ssh -i ~/.ssh/leadmaker_hetzner root@2.31.72.125 'cd /opt/leadmaker/workers && d
 `docker compose up -d --build` (sans nom de service) lance aussi les robots Google Maps (estimations, découverte) :
 à ne faire qu'avec `PROXY_URL` renseigné, sinon Google bloque l'adresse du serveur. Mise à jour : refaire le rsync puis
 `docker compose up -d --build`.
+Base de données : les robots passent par le pooler Supabase en MODE TRANSACTION (port 6543, `scripts/switch-db-transaction-mode.sh`) : une connexion Postgres est partagée entre plusieurs robots. En mode session (5432), chaque robot garde sa connexion et la base Micro (60 max) sature au-delà de ~25 robots. `scripts/send-robots.sh N` règle le nombre de robots d'envoi.
 Robot d'envoi : serveur dédié « leadmaker-envoi-1 » (cx53, créé par `scripts/setup-send-server.sh`, SEND_REPLICAS=30 dans son .env). Mise à jour : `scripts/deploy-robots.sh --send` (ou `--all`). Pour couper l'envoi : `docker compose --profile send stop send` sur ce serveur.
 Suivi : `docker compose ps`, `docker compose logs -f prepare`. Chaque robot finit sa tâche en cours avant de s'arrêter.
 

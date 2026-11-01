@@ -30,10 +30,13 @@ class Task:
 
 
 def connect() -> psycopg.Connection:
+    """Connexion en autocommit, une requête = une transaction : compatible avec le pooler Supabase en
+    mode transaction (port 6543), où des dizaines de robots se partagent quelques connexions Postgres.
+    prepare_threshold=None : pas de requêtes préparées côté serveur (interdites par ce mode)."""
     url = os.environ.get("DATABASE_URL")
     if not url:
         raise RuntimeError("DATABASE_URL manquant")
-    return psycopg.connect(url, row_factory=dict_row, autocommit=True)
+    return psycopg.connect(url, row_factory=dict_row, autocommit=True, prepare_threshold=None)
 
 
 def worker_id() -> str:

@@ -38,6 +38,42 @@ export async function loadAttemptCounts(client: Client, spaceId: string) {
   return counts;
 }
 
+/**
+ * Nombre de formulaires par groupe pour UNE campagne (onglet Contacter).
+ * Un comptage par groupe, en parallèle : léger quelle que soit la taille de
+ * la campagne.
+ */
+export async function loadCampaignAttemptCounts(
+  client: Client,
+  campaignId: string,
+) {
+  const groups = Object.keys(ATTEMPT_GROUPS) as AttemptGroup[];
+
+  const results = await Promise.all(
+    groups.map((group) =>
+      client
+        .from('lm_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', campaignId)
+        .in('status', [...ATTEMPT_GROUPS[group]]),
+    ),
+  );
+
+  const counts = {} as Record<AttemptGroup, number>;
+
+  groups.forEach((group, index) => {
+    const result = results[index]!;
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    counts[group] = result.count ?? 0;
+  });
+
+  return counts;
+}
+
 const COLUMNS =
   'id, status, template_name, template_used, subject, body, form_url, filled, missing, extra, protection_type, screenshot_before, screenshot_after, detail, sent_at, updated_at, created_at, prospect:lm_prospects!inner(id, name, website, city, category, found_email)';
 
@@ -47,13 +83,19 @@ const COLUMNS =
  */
 export async function loadAttempts(
   client: Client,
-  params: { spaceId: string; group: AttemptGroup },
+  params: { spaceId: string; group: AttemptGroup; campaignId?: string },
 ) {
-  const { data, error } = await client
+  let query = client
     .from('lm_attempts')
     .select(COLUMNS)
     .eq('space_id', params.spaceId)
-    .in('status', [...ATTEMPT_GROUPS[params.group]])
+    .in('status', [...ATTEMPT_GROUPS[params.group]]);
+
+  if (params.campaignId) {
+    query = query.eq('campaign_id', params.campaignId);
+  }
+
+  const { data, error } = await query
     .order('updated_at', { ascending: false })
     .limit(ATTEMPTS_PAGE_LIMIT);
 

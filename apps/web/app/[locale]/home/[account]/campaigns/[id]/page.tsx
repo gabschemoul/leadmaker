@@ -2,12 +2,13 @@ import { Suspense } from 'react';
 
 import { notFound } from 'next/navigation';
 
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import * as z from 'zod';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { PageBody } from '@kit/ui/page';
+import { Trans } from '@kit/ui/trans';
 
 import {
   CardSkeleton,
@@ -15,6 +16,7 @@ import {
   PageHeaderSkeleton,
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
+import { type AttemptGroup, isAttemptGroup } from '~/lib/leadmaker/attempts';
 import { buildProspectsHref } from '~/lib/leadmaker/prospects-query';
 import { parseTemplates, usableMessages } from '~/lib/leadmaker/templates';
 
@@ -24,15 +26,37 @@ import {
   loadSpaces,
 } from '../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../_lib/server/team-account-workspace.loader';
-import { CampaignDetailView } from '../_components/campaign-detail-view';
+import {
+  loadAttempts,
+  loadCampaignAttemptCounts,
+} from '../../forms/_lib/server/forms.loader';
+import { loadSenderProfile } from '../../sender/_lib/server/sender.loader';
+import { CampaignHeaderActions } from '../_components/campaign-header-actions';
+import { CampaignStepsRail } from '../_components/steps/campaign-steps-rail';
+import { ContactStep } from '../_components/steps/contact-step';
+import { DiscoverStep } from '../_components/steps/discover-step';
+import { TargetStep } from '../_components/steps/target-step';
+import { WriteStep } from '../_components/steps/write-step';
 import { fetchCampaignLive } from '../_lib/campaign-live';
-import { loadCampaign } from '../_lib/server/campaigns.loader';
+import {
+  loadAutoValidationAllowed,
+  loadCampaign,
+  loadCampaignForEdit,
+  loadPreviewProspects,
+} from '../_lib/server/campaigns.loader';
+import {
+  type CampaignStep,
+  type CampaignStepFacts,
+  defaultStep,
+  isCampaignStep,
+} from '../_lib/steps';
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 interface CampaignPageProps {
   params: Promise<{ account: string; id: string }>;
+  searchParams: SearchParams;
 }
-
-type Params = CampaignPageProps['params'];
 
 export const generateMetadata = async () => {
   const t = await getTranslations('campaigns');
@@ -43,10 +67,12 @@ export const generateMetadata = async () => {
 };
 
 /**
+ * La page d'une campagne : son parcours en quatre étapes (Cibler, Trouver,
+ * Rédiger, Contacter), chaque étape étant un onglet `?etape=`.
  * L'en-tête porte le nom de la campagne : il attend donc les mêmes données
  * que le contenu et partage sa frontière.
  */
-function CampaignPage({ params }: CampaignPageProps) {
+function CampaignPage({ params, searchParams }: CampaignPageProps) {
   return (
     <PageBody>
       <Suspense
@@ -55,13 +81,13 @@ function CampaignPage({ params }: CampaignPageProps) {
             <PageHeaderSkeleton />
 
             <Delayed className={'flex flex-col gap-6'}>
-              <CardSkeleton rows={3} />
+              <CardSkeleton rows={1} />
               <CardSkeleton rows={6} />
             </Delayed>
           </>
         }
       >
-        <CampaignContent params={params} />
+        <CampaignContent params={params} searchParams={searchParams} />
       </Suspense>
     </PageBody>
   );
@@ -69,8 +95,11 @@ function CampaignPage({ params }: CampaignPageProps) {
 
 export default CampaignPage;
 
-async function CampaignContent({ params }: { params: Params }) {
-  const { account: slug, id } = await params;
+async function CampaignContent({ params, searchParams }: CampaignPageProps) {
+  const [{ account: slug, id }, rawSearchParams] = await Promise.all([
+    params,
+    searchParams,
+  ]);
 
   if (!z.string().uuid().safeParse(id).success) {
     notFound();
@@ -78,7 +107,6 @@ async function CampaignContent({ params }: { params: Params }) {
 
   // vérifie l'appartenance à l'organisation (et redirige sinon)
   const { account } = await loadTeamWorkspace(slug);
-
   const client = getSupabaseServerClient();
 
   const [campaign, countries, spaces] = await Promise.all([
@@ -91,7 +119,26 @@ async function CampaignContent({ params }: { params: Params }) {
     notFound();
   }
 
-  const live = await fetchCampaignLive(client, id);
+  const [live, counts, sender] = await Promise.all([
+    fetchCampaignLive(client, id),
+    loadCampaignAttemptCounts(client, id),
+    loadSenderProfile(client, campaign.space_id),
+  ]);
+
+  const templates = parseTemplates(campaign.templates);
+  const messagesCount = usableMessages(templates).length;
+
+  const facts: CampaignStepFacts = {
+    status: live.status,
+    prospects: live.progress.prospects,
+    messagesCount,
+    hasSender: sender !== null,
+    attempts: counts,
+  };
+
+  const step: CampaignStep = isCampaignStep(rawSearchParams.etape)
+    ? rawSearchParams.etape
+    : defaultStep(facts);
 
   const countryLabel =
     countries.find((country) => country.code === campaign.country_code)
@@ -103,42 +150,202 @@ async function CampaignContent({ params }: { params: Params }) {
       ? (spaces.find((space) => space.id === campaign.space_id)?.label ?? null)
       : null;
 
+  const campaignsPath = pathsConfig.app.accountCampaigns.replace(
+    '[account]',
+    slug,
+  );
+  const basePath = `${campaignsPath}/${id}`;
+  const stepHref = (target: CampaignStep) => `${basePath}?etape=${target}`;
+  const formsHref = `${pathsConfig.app.accountForms.replace('[account]', slug)}?space=${campaign.space_id}`;
+  const senderHref = `${pathsConfig.app.accountSender.replace('[account]', slug)}?space=${campaign.space_id}`;
+
   return (
     <>
       <TeamAccountLayoutPageHeader
         account={slug}
         title={campaign.name}
         description={<AppBreadcrumbs values={{ [id]: campaign.name }} />}
-      />
+      >
+        <CampaignHeaderActions
+          campaignId={id}
+          campaignName={campaign.name}
+          accountSlug={slug}
+        />
+      </TeamAccountLayoutPageHeader>
 
-      <CampaignDetailView
-        campaignId={id}
-        accountId={account.id}
-        campaignsPath={pathsConfig.app.accountCampaigns.replace(
-          '[account]',
-          slug,
-        )}
-        allProspectsHref={buildProspectsHref(
-          pathsConfig.app.accountProspects.replace('[account]', slug),
-          {
-            space: spaces.length > 1 ? campaign.space_id : undefined,
-            filters: { campaign: id, status: 'all' },
-          },
-        )}
-        canDelete={account.permissions.includes('settings.manage')}
-        folderName={folderName}
-        countryLabel={countryLabel}
-        billingPath={pathsConfig.app.accountBilling.replace('[account]', slug)}
-        messagesHref={`${pathsConfig.app.accountCampaigns.replace('[account]', slug)}/${id}/messages`}
-        accountSlug={slug}
-        campaignName={campaign.name}
-        editHref={`${pathsConfig.app.accountCampaigns.replace('[account]', slug)}/${id}/edit`}
-        formsHref={`${pathsConfig.app.accountForms.replace('[account]', slug)}?space=${campaign.space_id}`}
-        messagesCount={
-          usableMessages(parseTemplates(campaign.templates)).length
-        }
-        initialData={live}
-      />
+      <div className={'flex flex-col gap-5 pb-32'}>
+        {folderName ? (
+          <p
+            className={'text-muted-foreground text-sm'}
+            data-test={'campaign-folder'}
+          >
+            <Trans i18nKey={'campaigns.detail.folder'} />{' '}
+            <span className={'text-foreground'}>{folderName}</span>
+          </p>
+        ) : null}
+
+        <CampaignStepsRail
+          basePath={basePath}
+          active={step}
+          facts={facts}
+          countryLabel={countryLabel}
+          zones={live.progress.zones}
+          categories={live.progress.categories}
+        />
+
+        {step === 'cibler' ? (
+          <TargetStepContent
+            campaignId={id}
+            countryLabel={countryLabel}
+            editHref={`${basePath}/edit`}
+            nextHref={stepHref('trouver')}
+          />
+        ) : null}
+
+        {step === 'trouver' ? (
+          <DiscoverStep
+            campaignId={id}
+            accountId={account.id}
+            campaignsPath={campaignsPath}
+            allProspectsHref={buildProspectsHref(
+              pathsConfig.app.accountProspects.replace('[account]', slug),
+              {
+                space: spaces.length > 1 ? campaign.space_id : undefined,
+                filters: { campaign: id, status: 'all' },
+              },
+            )}
+            canDelete={account.permissions.includes('settings.manage')}
+            billingPath={pathsConfig.app.accountBilling.replace(
+              '[account]',
+              slug,
+            )}
+            formsHref={formsHref}
+            writeHref={stepHref('rediger')}
+            readyToWrite={messagesCount > 0 && sender !== null}
+            initialData={live}
+          />
+        ) : null}
+
+        {step === 'rediger' ? (
+          <WriteStepContent
+            accountId={account.id}
+            campaign={campaign}
+            templates={templates}
+            sender={sender}
+            senderHref={senderHref}
+          />
+        ) : null}
+
+        {step === 'contacter' ? (
+          <ContactStepContent
+            campaign={campaign}
+            accountId={account.id}
+            basePath={basePath}
+            facts={facts}
+            group={
+              isAttemptGroup(rawSearchParams.statut)
+                ? rawSearchParams.statut
+                : 'ready'
+            }
+            writeHref={stepHref('rediger')}
+            discoverHref={stepHref('trouver')}
+          />
+        ) : null}
+      </div>
     </>
+  );
+}
+
+type Campaign = NonNullable<Awaited<ReturnType<typeof loadCampaign>>>;
+
+async function TargetStepContent(props: {
+  campaignId: string;
+  countryLabel: string;
+  editHref: string;
+  nextHref: string;
+}) {
+  const client = getSupabaseServerClient();
+  const locale = await getLocale();
+  const campaign = await loadCampaignForEdit(client, props.campaignId, locale);
+
+  if (!campaign) {
+    notFound();
+  }
+
+  return (
+    <TargetStep
+      campaign={campaign}
+      countryLabel={props.countryLabel}
+      editHref={props.editHref}
+      nextHref={props.nextHref}
+    />
+  );
+}
+
+async function WriteStepContent(props: {
+  accountId: string;
+  campaign: Campaign;
+  templates: ReturnType<typeof parseTemplates>;
+  sender: Awaited<ReturnType<typeof loadSenderProfile>>;
+  senderHref: string;
+}) {
+  const client = getSupabaseServerClient();
+
+  const [prospects, autoValidationAllowed] = await Promise.all([
+    loadPreviewProspects(client, props.campaign.space_id),
+    loadAutoValidationAllowed(client, props.accountId),
+  ]);
+
+  return (
+    <WriteStep
+      accountId={props.accountId}
+      campaignId={props.campaign.id}
+      templates={props.templates}
+      sender={props.sender}
+      senderHref={props.senderHref}
+      prospects={prospects}
+      sending={{
+        dailyLimit: props.campaign.daily_limit,
+        autoValidation: props.campaign.auto_validation,
+        autoValidationAllowed,
+      }}
+    />
+  );
+}
+
+async function ContactStepContent(props: {
+  campaign: Campaign;
+  accountId: string;
+  basePath: string;
+  facts: CampaignStepFacts;
+  group: AttemptGroup;
+  writeHref: string;
+  discoverHref: string;
+}) {
+  const client = getSupabaseServerClient();
+
+  const rows = await loadAttempts(client, {
+    spaceId: props.campaign.space_id,
+    campaignId: props.campaign.id,
+    group: props.group,
+  });
+
+  return (
+    <ContactStep
+      campaignId={props.campaign.id}
+      accountId={props.accountId}
+      spaceId={props.campaign.space_id}
+      basePath={props.basePath}
+      prospects={props.facts.prospects}
+      messagesCount={props.facts.messagesCount}
+      hasSender={props.facts.hasSender}
+      dailyLimit={props.campaign.daily_limit}
+      autoValidation={props.campaign.auto_validation}
+      counts={props.facts.attempts}
+      group={props.group}
+      rows={rows}
+      writeHref={props.writeHref}
+      discoverHref={props.discoverHref}
+    />
   );
 }

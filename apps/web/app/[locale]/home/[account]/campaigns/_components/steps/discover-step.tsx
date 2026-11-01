@@ -5,17 +5,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowRight,
-  Copy,
-  Download,
-  FileText,
-  MessageSquareText,
-  Pause,
-  Pencil,
-  Play,
-  TriangleAlert,
-} from 'lucide-react';
+import { ArrowRight, Pause, PenLine, Play, TriangleAlert } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
@@ -36,37 +26,31 @@ import { Trans } from '@kit/ui/trans';
 
 import { LocalDateTime } from '~/components/local-date-time';
 
-import { CampaignStatusBadge } from '../../_components/leadmaker/campaign-status-badge';
-import { ProspectsTable } from '../../_components/leadmaker/prospects-table';
-import { type CampaignLive, fetchCampaignLive } from '../_lib/campaign-live';
+import { CampaignStatusBadge } from '../../../_components/leadmaker/campaign-status-badge';
+import { ProspectsTable } from '../../../_components/leadmaker/prospects-table';
+import { type CampaignLive, fetchCampaignLive } from '../../_lib/campaign-live';
 import {
-  duplicateCampaignAction,
   pauseCampaignAction,
-  prepareCampaignAction,
   startCampaignAction,
-} from '../_lib/server/server-actions';
+} from '../../_lib/server/server-actions';
 
 const REFRESH_INTERVAL = 10_000;
 
-export function CampaignDetailView(props: {
+/**
+ * Étape 2, Trouver : la recherche Google Maps (lancer, mettre en pause),
+ * son avancement en direct et les derniers prospects trouvés.
+ */
+export function DiscoverStep(props: {
   campaignId: string;
   accountId: string;
   campaignsPath: string;
-  /** page Prospects filtrée sur cette campagne */
   allProspectsHref: string;
   canDelete: boolean;
-  folderName: string | null;
-  countryLabel: string;
   billingPath: string;
-  /** page des messages de la campagne */
-  messagesHref: string;
-  /** formulaire de modification (nom, villes, activités, filtres) */
-  editHref: string;
-  accountSlug: string;
-  campaignName: string;
-  /** nombre de messages rédigés (0 = la préparation des formulaires est impossible) */
-  messagesCount: number;
   formsHref: string;
+  writeHref: string;
+  /** message rédigé et expéditeur renseignés */
+  readyToWrite: boolean;
   initialData: CampaignLive;
 }) {
   const client = useSupabase();
@@ -85,122 +69,11 @@ export function CampaignDetailView(props: {
 
   useCampaignRealtime(props.campaignId, queryKey);
 
-  const exportHref = `/api/leadmaker/export?campaign_id=${props.campaignId}`;
   const noCredits =
     data.status === 'paused' && data.pausedReason === 'no_credits';
 
   return (
-    <div className={'flex flex-col gap-6 pb-32'}>
-      <div
-        className={
-          'flex flex-col gap-4 md:flex-row md:items-center md:justify-between'
-        }
-      >
-        <div
-          className={
-            'text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-sm'
-          }
-        >
-          <CampaignStatusBadge status={data.status} />
-
-          {props.folderName ? (
-            <span data-test={'campaign-folder'}>
-              <Trans i18nKey={'campaigns.detail.folder'} />{' '}
-              <span className={'text-foreground'}>{props.folderName}</span>
-            </span>
-          ) : null}
-
-          <span>
-            <Trans i18nKey={'campaigns.detail.country'} />{' '}
-            <span className={'text-foreground'}>{props.countryLabel}</span>
-          </span>
-        </div>
-
-        <div className={'flex flex-wrap gap-2'}>
-          <CampaignActions
-            campaignId={props.campaignId}
-            status={data.status}
-            queryKey={queryKey}
-          />
-
-          <PrepareCampaignButton
-            campaignId={props.campaignId}
-            disabled={
-              props.messagesCount === 0 || data.progress.prospects === 0
-            }
-            formsHref={props.formsHref}
-          />
-
-          <Button
-            variant={'outline'}
-            nativeButton={false}
-            data-test={'campaign-messages-button'}
-            render={<Link href={props.messagesHref} />}
-          >
-            <MessageSquareText className={'w-4'} />
-
-            <span>
-              <Trans i18nKey={'outreach.messages.detailButton'} />
-            </span>
-
-            <span className={'text-muted-foreground'}>
-              (
-              <Trans
-                i18nKey={'outreach.messages.detailCount'}
-                values={{ count: props.messagesCount }}
-              />
-              )
-            </span>
-          </Button>
-
-          <Button
-            variant={'outline'}
-            nativeButton={false}
-            data-test={'campaign-edit-button'}
-            render={<Link href={props.editHref} />}
-          >
-            <Pencil className={'w-4'} />
-
-            <span>
-              <Trans i18nKey={'campaigns.detail.edit'} />
-            </span>
-          </Button>
-
-          <DuplicateCampaignButton
-            campaignId={props.campaignId}
-            campaignName={props.campaignName}
-            accountSlug={props.accountSlug}
-          />
-
-          <Button
-            variant={'outline'}
-            nativeButton={false}
-            data-test={'campaign-export-button'}
-            render={<a href={exportHref} download />}
-          >
-            <Download className={'w-4'} />
-
-            <span>
-              <Trans i18nKey={'prospects.export.button'} />
-            </span>
-          </Button>
-        </div>
-      </div>
-
-      {props.messagesCount === 0 ? (
-        <Alert data-test={'no-messages-alert'}>
-          <MessageSquareText className={'h-4'} />
-
-          <AlertDescription className={'flex flex-wrap gap-x-2'}>
-            <Trans i18nKey={'outreach.messages.detailMissing'} />
-
-            <Link className={'underline'} href={props.messagesHref}>
-              <Trans i18nKey={'outreach.messages.detailButton'} />
-            </Link>
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
+    <div className={'flex flex-col gap-4'} data-test={'campaign-step-discover'}>
       {noCredits ? (
         <Alert className={alertExtras.warning} data-test={'no-credits-alert'}>
           <TriangleAlert className={'h-4'} />
@@ -224,7 +97,43 @@ export function CampaignDetailView(props: {
         </Alert>
       ) : null}
 
-      <ProgressCard live={data} />
+      <ProgressCard live={data}>
+        <div className={'flex flex-wrap items-center gap-2'}>
+          <CampaignActions
+            campaignId={props.campaignId}
+            status={data.status}
+            queryKey={queryKey}
+          />
+
+          {data.status !== 'draft' && !props.readyToWrite ? (
+            <Button
+              variant={'secondary'}
+              nativeButton={false}
+              data-test={'campaign-write-meanwhile'}
+              render={<Link href={props.writeHref} />}
+            >
+              <PenLine className={'w-4'} />
+              <span>
+                <Trans i18nKey={'campaigns.steps.discover.whileRunning'} />
+              </span>
+            </Button>
+          ) : null}
+
+          {data.status !== 'draft' && props.readyToWrite ? (
+            <Button
+              variant={'outline'}
+              nativeButton={false}
+              data-test={'campaign-step-next'}
+              render={<Link href={props.writeHref} />}
+            >
+              <span>
+                <Trans i18nKey={'campaigns.steps.discover.next'} />
+              </span>
+              <ArrowRight className={'w-4'} />
+            </Button>
+          ) : null}
+        </div>
+      </ProgressCard>
 
       <Card>
         <CardHeader>
@@ -319,7 +228,7 @@ function CampaignActions(props: {
           <Trans
             i18nKey={
               props.status === 'draft'
-                ? 'campaigns.detail.start'
+                ? 'campaigns.steps.discover.launch'
                 : 'campaigns.detail.resume'
             }
           />
@@ -348,95 +257,10 @@ function CampaignActions(props: {
   return null;
 }
 
-/** Copie la campagne en brouillon et ouvre le formulaire de la copie. */
-function DuplicateCampaignButton(props: {
-  campaignId: string;
-  campaignName: string;
-  accountSlug: string;
-}) {
-  const t = useTranslations();
-
-  const duplicate = useAction(duplicateCampaignAction, {
-    onError: ({ error }) => {
-      toast.error(t(error.serverError ?? 'campaigns.errors.duplicateFailed'));
-    },
-  });
-
-  return (
-    <Button
-      variant={'outline'}
-      data-test={'campaign-duplicate-button'}
-      disabled={duplicate.isPending}
-      onClick={() =>
-        duplicate.execute({
-          campaignId: props.campaignId,
-          accountSlug: props.accountSlug,
-          name: t('campaigns.duplicate.copyName', {
-            name: props.campaignName,
-          }).slice(0, 255),
-        })
-      }
-    >
-      <Copy className={'w-4'} />
-
-      <span>
-        <Trans
-          i18nKey={
-            duplicate.isPending
-              ? 'campaigns.duplicate.pending'
-              : 'campaigns.duplicate.button'
-          }
-        />
-      </span>
-    </Button>
-  );
-}
-
-/** Met en préparation tous les prospects de la campagne pas encore traités. */
-function PrepareCampaignButton(props: {
-  campaignId: string;
-  disabled: boolean;
-  formsHref: string;
-}) {
-  const t = useTranslations('outreach.forms.prepare');
-
-  const prepare = useAction(prepareCampaignAction, {
-    onSuccess: ({ data }) =>
-      toast.success(
-        t('done', { queued: data?.queued ?? 0, skipped: data?.skipped ?? 0 }),
-        {
-          action: {
-            label: t('goToForms'),
-            onClick: () => window.location.assign(props.formsHref),
-          },
-        },
-      ),
-    onError: ({ error }) =>
-      toast.error(
-        t(
-          (error.serverError ?? 'outreach.forms.prepare.failed').replace(
-            'outreach.forms.prepare.',
-            '',
-          ),
-        ),
-      ),
-  });
-
-  return (
-    <Button
-      variant={'outline'}
-      data-test={'campaign-prepare-button'}
-      disabled={props.disabled || prepare.isPending}
-      onClick={() => prepare.execute({ campaignId: props.campaignId })}
-    >
-      <FileText className={'w-4'} />
-
-      <span>{t('campaignButton')}</span>
-    </Button>
-  );
-}
-
-function ProgressCard({ live }: { live: CampaignLive }) {
+function ProgressCard({
+  live,
+  children,
+}: React.PropsWithChildren<{ live: CampaignLive }>) {
   const format = useFormatter();
   const locale = useLocale();
   const { progress } = live;
@@ -452,21 +276,32 @@ function ProgressCard({ live }: { live: CampaignLive }) {
   return (
     <Card data-test={'campaign-progress'}>
       <CardHeader>
-        <CardTitle>
-          <Trans i18nKey={'campaigns.detail.progressTitle'} />
-        </CardTitle>
+        <div
+          className={
+            'flex flex-col gap-3 md:flex-row md:items-start md:justify-between'
+          }
+        >
+          <div className={'flex flex-col gap-1.5'}>
+            <CardTitle className={'flex items-center gap-3'}>
+              <Trans i18nKey={'campaigns.steps.discover.title'} />
+              <CampaignStatusBadge status={live.status} />
+            </CardTitle>
 
-        <CardDescription>
-          <Trans
-            i18nKey={
-              live.status === 'running'
-                ? 'campaigns.detail.progressLive'
-                : live.status === 'draft'
-                  ? 'campaigns.detail.progressDraft'
-                  : 'campaigns.detail.progressDescription'
-            }
-          />
-        </CardDescription>
+            <CardDescription>
+              <Trans
+                i18nKey={
+                  live.status === 'running'
+                    ? 'campaigns.detail.progressLive'
+                    : live.status === 'draft'
+                      ? 'campaigns.detail.progressDraft'
+                      : 'campaigns.detail.progressDescription'
+                }
+              />
+            </CardDescription>
+          </div>
+
+          {children}
+        </div>
       </CardHeader>
 
       <CardContent className={'flex flex-col gap-6'}>
@@ -543,7 +378,7 @@ function Stat(props: {
       <dd
         className={
           props.highlight
-            ? 'text-2xl font-semibold tabular-nums'
+            ? 'font-heading text-2xl font-semibold tabular-nums'
             : 'text-lg font-medium tabular-nums'
         }
       >

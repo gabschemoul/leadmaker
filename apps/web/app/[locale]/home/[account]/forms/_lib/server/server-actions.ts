@@ -23,6 +23,8 @@ const RPC_BY_OPERATION = {
 function revalidateForms() {
   revalidatePath('/home/[account]/forms', 'page');
   revalidatePath('/home/[account]/prospects', 'page');
+  // les formulaires se vérifient aussi dans l'étape Contacter d'une campagne
+  revalidatePath('/home/[account]/campaigns', 'layout');
 }
 
 async function runBulk(

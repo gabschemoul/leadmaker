@@ -21,7 +21,12 @@ api() { curl -sS -H "Authorization: Bearer $TOKEN" -H "Content-Type: application
 IP=$(api "$API/servers?name=$NAME" | python3 -c "import sys,json;s=json.load(sys.stdin)['servers'];print(s[0]['public_net']['ipv4']['ip'] if s else '')")
 
 if [ -z "$IP" ]; then
-  echo "→ création du serveur $NAME ($TYPE, Falkenstein)…"
+  # Hetzner manque souvent de place sur les petits modèles : on essaie plusieurs modèles et
+  # plusieurs centres de données, et on réessaie pendant RETRY_MINUTES (30 par défaut).
+  # cax41 = processeur ARM (l'image Playwright existe en ARM, Docker la construit sur place).
+  CANDIDATES=${SEND_SERVER_TYPES:-"cx53 cx43 cax41"}
+  LOCATIONS=${SEND_SERVER_LOCATIONS:-"fsn1 nbg1 hel1"}
+  RETRY_MINUTES=${RETRY_MINUTES:-30}
   USER_DATA='#cloud-config
 package_update: true
 packages: [docker.io, docker-compose-v2, rsync]
@@ -29,9 +34,22 @@ runcmd:
   - systemctl enable --now docker
   - mkdir -p /opt/leadmaker/workers
 '
-  BODY=$(python3 -c "import json,sys;print(json.dumps({'name':'$NAME','server_type':'$TYPE','image':'ubuntu-24.04','location':'fsn1','ssh_keys':[131980158],'labels':{'role':'envoi'},'user_data':sys.stdin.read()}))" <<<"$USER_DATA")
-  IP=$(api -X POST "$API/servers" -d "$BODY" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['server']['public_net']['ipv4']['ip']) if 'server' in d else (print('ERREUR', d, file=sys.stderr), sys.exit(1))")
-  echo "   serveur créé : $IP"
+  DEADLINE=$(( $(date +%s) + RETRY_MINUTES * 60 ))
+  while [ -z "$IP" ]; do
+    for T in $CANDIDATES; do
+      for L in $LOCATIONS; do
+        BODY=$(python3 -c "import json,sys;print(json.dumps({'name':'$NAME','server_type':'$T','image':'ubuntu-24.04','location':'$L','ssh_keys':[131980158],'labels':{'role':'envoi'},'user_data':sys.stdin.read()}))" <<<"$USER_DATA")
+        OUT=$(api -X POST "$API/servers" -d "$BODY")
+        IP=$(python3 -c "import sys,json;d=json.loads(sys.argv[1]);print(d['server']['public_net']['ipv4']['ip'] if 'server' in d else '')" "$OUT")
+        if [ -n "$IP" ]; then echo "   serveur créé : $T à $L → $IP"; break 2; fi
+        CODE=$(python3 -c "import sys,json;print(json.loads(sys.argv[1]).get('error',{}).get('code',''))" "$OUT")
+        if [ "$CODE" != "resource_unavailable" ]; then echo "ERREUR $OUT"; exit 1; fi
+        echo "   pas de place : $T à $L"
+      done
+    done
+    if [ "$(date +%s)" -ge "$DEADLINE" ]; then echo "Aucun serveur disponible après $RETRY_MINUTES min. Réessayez plus tard, ou SEND_SERVER_TYPES=cpx62 (130 €/mois)."; exit 1; fi
+    echo "   nouvel essai dans 60 s…"; sleep 60
+  done
 else
   echo "→ serveur $NAME déjà présent : $IP"
 fi

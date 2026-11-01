@@ -14,7 +14,7 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 - **Demain** : au moment de dupliquer, on choisit l'équipe de destination parmi celles dont on est membre.
 - **Décidé (1/11)** : au moment de dupliquer, une case « Copier aussi les contacts » laisse le choix de prendre les prospects déjà trouvés ou seulement les réglages (villes, activités, messages).
 
-### 2. Choisir « une ville et ses alentours » d'un seul clic 🟡 — EN COURS (1/11)
+### 2. Choisir « une ville et ses alentours » d'un seul clic 🟡 — LIVRÉ (1/11)
 - **Le problème** : il a fallu 2 h pour saisir Lyon, Villeurbanne, Bron, etc. une par une.
 - **La solution** : en tapant « Lyon », une option « Lyon et alentours » apparaît, avec un rayon réglable (10, 20, 30 km). Un clic ajoute toutes les communes dans ce rayon.
 - **Bonus** : la liste ajoutée s'affiche avant de valider, pour retirer une commune en trop.
@@ -62,3 +62,4 @@ Pistes à discuter :
 - ~~Modifier une campagne, même lancée~~ (31/10)
 - ~~Dupliquer une campagne~~ (31/10)
 - ~~Le lien d'invitation n'est plus perdu à l'inscription~~ (1/11)
+- ~~Ajouter une ville et ses alentours en un clic~~ (1/11)

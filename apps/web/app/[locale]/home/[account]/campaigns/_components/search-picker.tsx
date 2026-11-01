@@ -23,6 +23,12 @@ export function SearchPicker<Item>(props: {
   renderItem: (item: Item) => React.ReactNode;
   onSelect: (item: Item) => void;
   isSelected?: (item: Item) => boolean;
+  /** petit bouton à droite de chaque suggestion (ex. « + alentours ») */
+  secondaryAction?: {
+    label: React.ReactNode;
+    onSelect: (item: Item) => void;
+    'data-test'?: string;
+  };
   placeholder?: string;
   minLength?: number;
   'data-test'?: string;
@@ -135,7 +141,31 @@ export function SearchPicker<Item>(props: {
                   setState((prev) => ({ ...prev, active: index }))
                 }
               >
-                {props.renderItem(item)}
+                <span
+                  className={
+                    'flex min-w-0 flex-1 items-center justify-between gap-2'
+                  }
+                >
+                  {props.renderItem(item)}
+                </span>
+
+                {props.secondaryAction ? (
+                  <button
+                    type={'button'}
+                    data-test={props.secondaryAction['data-test']}
+                    className={
+                      'border-border bg-background hover:bg-primary hover:text-primary-foreground shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium'
+                    }
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      props.secondaryAction?.onSelect(item);
+                      setState({ input: '', open: false, active: 0 });
+                    }}
+                  >
+                    {props.secondaryAction.label}
+                  </button>
+                ) : null}
               </li>
             );
           })}

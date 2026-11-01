@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X } from 'lucide-react';
+import { MapPin, X } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm, useWatch } from 'react-hook-form';
@@ -47,6 +47,7 @@ import {
   type CampaignFormValues,
   type CityRef,
   MAX_CITIES_LIMIT,
+  MAX_LIST_CITIES,
   buildTargeting,
 } from '../_lib/schema/campaign.schema';
 import {
@@ -56,6 +57,7 @@ import {
   updateCampaignAction,
 } from '../_lib/server/server-actions';
 import { CampaignEstimate } from './campaign-estimate';
+import { NearbyCitiesDialog } from './nearby-cities-dialog';
 import { SearchPicker } from './search-picker';
 
 interface SpaceOption {
@@ -539,60 +541,161 @@ function CitiesSection(props: { countryCode: string }) {
         <If condition={mode === 'list'}>
           <FormField
             name={'cities'}
-            render={({ field }) => {
-              const cities = (field.value ?? []) as CityRef[];
-
-              return (
-                <FormItem>
-                  <FormLabel>
-                    <Trans i18nKey={'campaigns.form.citiesListLabel'} />
-                  </FormLabel>
-
-                  <FormControl>
-                    <SearchPicker
-                      data-test={'campaign-cities-search'}
-                      queryKey={['lm-cities', props.countryCode]}
-                      search={searchCities}
-                      getKey={(item) => String(item.geonameId)}
-                      renderItem={renderCity}
-                      isSelected={(item) =>
-                        cities.some((c) => c.geonameId === item.geonameId)
-                      }
-                      onSelect={(item) => {
-                        if (
-                          !cities.some((c) => c.geonameId === item.geonameId)
-                        ) {
-                          field.onChange([...cities, item]);
-                        }
-                      }}
-                      placeholder={t('form.citySearchPlaceholder')}
-                    />
-                  </FormControl>
-
-                  <ChipList>
-                    {cities.map((city) => (
-                      <SelectedChip
-                        key={city.geonameId}
-                        label={city.name}
-                        onRemove={() =>
-                          field.onChange(
-                            cities.filter(
-                              (c) => c.geonameId !== city.geonameId,
-                            ),
-                          )
-                        }
-                      />
-                    ))}
-                  </ChipList>
-
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
+            render={({ field }) => (
+              <CitiesListField
+                cities={(field.value ?? []) as CityRef[]}
+                onChange={field.onChange}
+                countryCode={props.countryCode}
+                searchCities={searchCities}
+                renderCity={renderCity}
+              />
+            )}
           />
         </If>
       </CardContent>
     </Card>
+  );
+}
+
+/** Nombre de villes affichées avant « Tout afficher ». */
+const CITIES_PREVIEW = 40;
+
+function CitiesListField(props: {
+  cities: CityRef[];
+  onChange: (cities: CityRef[]) => void;
+  countryCode: string;
+  searchCities: (query: string) => Promise<CityRef[]>;
+  renderCity: (city: CityRef) => React.ReactNode;
+}) {
+  const t = useTranslations('campaigns');
+  const { cities, onChange } = props;
+
+  const [nearby, setNearby] = useState<{
+    open: boolean;
+    center: CityRef | null;
+  }>({ open: false, center: null });
+  const [showAll, setShowAll] = useState(false);
+
+  const existingIds = useMemo(
+    () => new Set(cities.map((city) => city.geonameId)),
+    [cities],
+  );
+
+  const addCities = (added: CityRef[]) => {
+    const fresh = added.filter((city) => !existingIds.has(city.geonameId));
+
+    onChange([...cities, ...fresh].slice(0, MAX_LIST_CITIES));
+  };
+
+  const visible = showAll ? cities : cities.slice(0, CITIES_PREVIEW);
+
+  return (
+    <FormItem>
+      <div className={'flex flex-wrap items-center justify-between gap-2'}>
+        <FormLabel>
+          <Trans i18nKey={'campaigns.form.citiesListLabel'} />
+        </FormLabel>
+
+        <Button
+          type={'button'}
+          size={'sm'}
+          variant={'outline'}
+          data-test={'campaign-nearby-open'}
+          onClick={() => setNearby({ open: true, center: null })}
+        >
+          <MapPin className={'mr-1.5 size-4'} />
+          <Trans i18nKey={'campaigns.form.nearbyOpen'} />
+        </Button>
+      </div>
+
+      <FormControl>
+        <SearchPicker
+          data-test={'campaign-cities-search'}
+          queryKey={['lm-cities', props.countryCode]}
+          search={props.searchCities}
+          getKey={(item) => String(item.geonameId)}
+          renderItem={props.renderCity}
+          isSelected={(item) => existingIds.has(item.geonameId)}
+          onSelect={(item) => addCities([item])}
+          secondaryAction={{
+            label: t('form.nearbyButton'),
+            'data-test': 'campaign-city-nearby',
+            onSelect: (item) => setNearby({ open: true, center: item }),
+          }}
+          placeholder={t('form.citySearchPlaceholder')}
+        />
+      </FormControl>
+
+      <FormDescription>
+        <Trans i18nKey={'campaigns.form.nearbyHint'} />
+      </FormDescription>
+
+      <If condition={cities.length > 0}>
+        <div className={'flex items-center justify-between gap-2 text-sm'}>
+          <span className={'text-muted-foreground'}>
+            <Trans
+              i18nKey={'campaigns.form.citiesCount'}
+              values={{ count: cities.length }}
+            />
+          </span>
+
+          <Button
+            type={'button'}
+            size={'sm'}
+            variant={'ghost'}
+            data-test={'campaign-cities-clear'}
+            onClick={() => onChange([])}
+          >
+            <Trans i18nKey={'campaigns.form.citiesClear'} />
+          </Button>
+        </div>
+      </If>
+
+      <ChipList>
+        {visible.map((city) => (
+          <SelectedChip
+            key={city.geonameId}
+            label={city.name}
+            onRemove={() =>
+              onChange(cities.filter((c) => c.geonameId !== city.geonameId))
+            }
+          />
+        ))}
+
+        {cities.length > CITIES_PREVIEW ? (
+          <Button
+            type={'button'}
+            size={'sm'}
+            variant={'link'}
+            className={'h-7'}
+            onClick={() => setShowAll((value) => !value)}
+          >
+            <Trans
+              i18nKey={
+                showAll
+                  ? 'campaigns.form.citiesShowLess'
+                  : 'campaigns.form.citiesShowAll'
+              }
+              values={{ count: cities.length - CITIES_PREVIEW }}
+            />
+          </Button>
+        ) : null}
+      </ChipList>
+
+      <FormMessage />
+
+      <NearbyCitiesDialog
+        open={nearby.open}
+        onOpenChange={(open) => setNearby((prev) => ({ ...prev, open }))}
+        countryCode={props.countryCode}
+        initialCenter={nearby.center}
+        existingIds={existingIds}
+        remaining={MAX_LIST_CITIES - cities.length}
+        searchCities={props.searchCities}
+        renderCity={props.renderCity}
+        onAdd={addCities}
+      />
+    </FormItem>
   );
 }
 

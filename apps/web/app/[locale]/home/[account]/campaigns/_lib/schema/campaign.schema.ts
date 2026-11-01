@@ -39,6 +39,9 @@ export type CategoryRef = z.infer<typeof CategoryRefSchema>;
 
 export const MAX_CITIES_LIMIT = 20000;
 
+/** Villes au plus dans le mode « Villes précises ». */
+export const MAX_LIST_CITIES = 1000;
+
 const CampaignFieldsSchema = z.object({
   name: z
     .string()
@@ -53,7 +56,7 @@ const CampaignFieldsSchema = z.object({
   minPopulation: integer(0, 100_000_000),
   radiusCity: CityRefSchema.nullable(),
   radiusKm: decimal(1, 500),
-  cities: z.array(CityRefSchema).max(1000),
+  cities: z.array(CityRefSchema).max(MAX_LIST_CITIES),
   maxCities: integer(1, MAX_CITIES_LIMIT),
   categoriesMode: z.enum(['generic', 'all', 'list']),
   categories: z.array(CategoryRefSchema).max(1000),
@@ -269,6 +272,14 @@ export const RequestEstimateSchema = z.object({
 export const SearchCitiesSchema = z.object({
   countryCode: z.string().regex(/^[A-Z]{2}$/),
   query: z.string().trim().min(1).max(100),
+});
+
+/** Villes à moins de `radiusKm` d'une ville centre (« Lyon et alentours »). */
+export const NearbyCitiesSchema = z.object({
+  countryCode: z.string().regex(/^[A-Z]{2}$/),
+  geonameId: z.number().int(),
+  radiusKm: z.number().min(1).max(100),
+  minPopulation: z.number().int().min(0).max(10_000_000),
 });
 
 export const SearchCategoriesSchema = z.object({

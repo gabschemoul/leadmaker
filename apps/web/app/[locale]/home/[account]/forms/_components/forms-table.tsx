@@ -92,6 +92,8 @@ export function FormsTable(props: {
   accountId: string;
   spaceId: string;
   preparing: number;
+  /** données tenues par le parent (ex. onglet d'une campagne) à recharger aussi */
+  onRefresh?: () => void;
 }) {
   const t = useTranslations('outreach.forms');
   const router = useRouter();
@@ -116,7 +118,10 @@ export function FormsTable(props: {
   const ids = [...selection].filter((id) =>
     props.rows.some((row) => row.id === id),
   );
-  const refresh = () => router.refresh();
+  const refresh = () => {
+    router.refresh();
+    props.onRefresh?.();
+  };
   const clear = () => setSelection(new Set());
   const close = () => setPending(null);
 
@@ -193,6 +198,7 @@ export function FormsTable(props: {
         spaceId={props.spaceId}
         preparing={props.preparing}
         paused={isPending || pending !== null || openId !== null}
+        onRefresh={props.onRefresh}
       />
 
       <div className={'flex flex-wrap items-center gap-2 text-sm'}>

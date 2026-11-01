@@ -12,18 +12,12 @@ import { Alert, AlertDescription } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
-import { Trans } from '@kit/ui/trans';
-import { cn } from '@kit/ui/utils';
 
-import {
-  ALWAYS_VISIBLE_GROUPS,
-  ATTEMPT_GROUP_ORDER,
-  type AttemptGroup,
-} from '~/lib/leadmaker/attempts';
+import type { AttemptGroup } from '~/lib/leadmaker/attempts';
+import type { AttemptRow } from '~/lib/leadmaker/attempts-query';
 
-import { FormsTable } from '../../../forms/_components/forms-table';
-import type { AttemptRow } from '../../../forms/_lib/server/forms.loader';
 import { attemptsTotal } from '../../_lib/steps';
+import { CampaignFormsPanel } from './campaign-forms-panel';
 import { PrepareCampaignButton } from './prepare-campaign-button';
 
 /**
@@ -56,10 +50,6 @@ export async function ContactStep(props: {
 
   const groupHref = (target: AttemptGroup) =>
     `${props.basePath}?etape=contacter${target === 'ready' ? '' : `&statut=${target}`}`;
-
-  const visibleGroups = ATTEMPT_GROUP_ORDER.filter(
-    (item) => ALWAYS_VISIBLE_GROUPS.includes(item) || counts[item] > 0,
-  );
 
   return (
     <div className={'flex flex-col gap-4'} data-test={'campaign-step-contact'}>
@@ -190,59 +180,15 @@ export async function ContactStep(props: {
         </StepCard>
       </div>
 
-      <Card>
-        <CardHeader className={'flex flex-col gap-4'}>
-          <CardTitle>{t('formsTitle')}</CardTitle>
-
-          <nav className={'flex flex-wrap gap-2'} data-test={'forms-groups'}>
-            {visibleGroups.map((item) => (
-              <Button
-                key={item}
-                size={'sm'}
-                variant={item === props.group ? 'default' : 'outline'}
-                nativeButton={false}
-                data-test={`forms-group-${item}`}
-                render={<Link href={groupHref(item)} />}
-              >
-                <Trans i18nKey={`outreach.forms.groups.${item}`} />
-
-                <span
-                  className={cn(
-                    'tabular-nums',
-                    item === props.group
-                      ? 'opacity-80'
-                      : 'text-muted-foreground',
-                  )}
-                >
-                  {counts[item]}
-                </span>
-              </Button>
-            ))}
-          </nav>
-
-          <p
-            className={'text-muted-foreground text-sm'}
-            data-test={'forms-group-hint'}
-          >
-            {total === 0 ? (
-              t('formsEmpty')
-            ) : (
-              <Trans i18nKey={`outreach.forms.groupHints.${props.group}`} />
-            )}
-          </p>
-        </CardHeader>
-
-        <CardContent>
-          <FormsTable
-            key={`${props.campaignId}:${props.group}`}
-            rows={props.rows}
-            group={props.group}
-            accountId={props.accountId}
-            spaceId={props.spaceId}
-            preparing={counts.preparing}
-          />
-        </CardContent>
-      </Card>
+      <CampaignFormsPanel
+        campaignId={props.campaignId}
+        spaceId={props.spaceId}
+        accountId={props.accountId}
+        counts={counts}
+        initialGroup={props.group}
+        initialRows={props.rows}
+        total={total}
+      />
     </div>
   );
 }

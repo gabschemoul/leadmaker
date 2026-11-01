@@ -25,6 +25,7 @@ export function FormsLiveRefresh(props: {
   spaceId: string;
   preparing: number;
   paused: boolean;
+  onRefresh?: () => void;
 }) {
   const client = useSupabase();
   const router = useRouter();
@@ -32,10 +33,12 @@ export function FormsLiveRefresh(props: {
   const dirty = useRef(false);
   const lastRefresh = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onRefresh = useRef(props.onRefresh);
 
   useEffect(() => {
     paused.current = props.paused;
-  }, [props.paused]);
+    onRefresh.current = props.onRefresh;
+  }, [props.paused, props.onRefresh]);
 
   useEffect(() => {
     const refresh = () => {
@@ -59,6 +62,7 @@ export function FormsLiveRefresh(props: {
         lastRefresh.current = Date.now();
         dirty.current = false;
         router.refresh();
+        onRefresh.current?.();
       }, wait);
     };
 
@@ -96,6 +100,7 @@ export function FormsLiveRefresh(props: {
       dirty.current = false;
       lastRefresh.current = Date.now();
       router.refresh();
+      onRefresh.current?.();
     }
   }, [props.paused, router]);
 

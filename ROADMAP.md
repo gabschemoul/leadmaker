@@ -91,7 +91,8 @@ Pistes à discuter :
 8. **IA dans le robot** pour les cas douteux : choisir la bonne adresse e-mail, reconnaître un formulaire atypique, juger si le message est bien parti.
 9. **Réserve partagée des fiches Google Maps** : une zone déjà scannée il y a moins de 30 jours est servie sans retourner sur Google.
 10. **Captchas** : module fait par l'équipe.
-11. **Base de données séparée pour la pré-production** (décidé le 1/11, à faire plus tard, quand de vrais clients seront en ligne). Aujourd'hui staging.prospectigo.com partage les données de prospectigo.com.
+11. **Remettre les plafonds d'envoi** avant le premier client : le 1/11 Gabriel a demandé l'envoi illimité (plafond des forfaits et des campagnes de Namma Booster / Review Cleaner passés à 100 000 par jour, saisie jusqu'à 100 000). À remettre : Growth 500, Business 1 000, Scale 1 500 par jour, saisie max 1 000.
+12. **Base de données séparée pour la pré-production** (décidé le 1/11, à faire plus tard, quand de vrais clients seront en ligne). Aujourd'hui staging.prospectigo.com partage les données de prospectigo.com.
 
 ---
 

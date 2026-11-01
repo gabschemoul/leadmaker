@@ -89,7 +89,7 @@
     "detailButton": "Messages",
     "detailCount": "{count, plural, =0 {No message} one {# message} other {# messages}}",
     "detailMissing": "Write at least one message before preparing forms.",
-    "dailyLimitInvalid": "Enter a number between 1 and 1000.",
+    "dailyLimitInvalid": "Enter a number between 1 and 100,000.",
     "autoValidationPlan": "Automatic validation is not included in your plan.",
     "sending": {
       "title": "Sending",

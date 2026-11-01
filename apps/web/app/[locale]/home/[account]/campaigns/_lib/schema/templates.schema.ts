@@ -19,7 +19,9 @@ const MessageSchema = z.object({
     .max(SHORT_BODY_MAX, { message: 'outreach.messages.shortTooLong' }),
 });
 
-export const DAILY_LIMIT_MAX = 1000;
+// Plafond de saisie très haut tant qu'il n'y a pas de client (décision Gabriel 1/11/2026) ;
+// le vrai plafond est celui du forfait, appliqué par la base à chaque mise en file.
+export const DAILY_LIMIT_MAX = 100_000;
 
 export const CampaignTemplatesFormSchema = z.object({
   messages: z.array(MessageSchema).max(MAX_MESSAGES),

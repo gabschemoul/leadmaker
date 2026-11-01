@@ -89,7 +89,7 @@
     "detailButton": "Messages",
     "detailCount": "{count, plural, =0 {Aucun message} one {# message} other {# messages}}",
     "detailMissing": "Écrivez au moins un message avant de préparer les formulaires.",
-    "dailyLimitInvalid": "Indiquez un nombre entre 1 et 1000.",
+    "dailyLimitInvalid": "Indiquez un nombre entre 1 et 100 000.",
     "autoValidationPlan": "La validation automatique n'est pas incluse dans votre forfait.",
     "sending": {
       "title": "Envoi",

@@ -47,10 +47,12 @@ services:
       resources: { limits: { memory: 1500M } }
 
   # Robot d'envoi : COUPÉ par défaut. Tant qu'il n'est pas lancé, les formulaires validés restent dans « Validés ».
+  # 4 envois en parallèle (sites différents à chaque fois : peu de risque de blocage).
   send:
     <<: *robot
     profiles: ["send"]
     environment:
       WORKER_KINDS: send
     deploy:
+      replicas: 4
       resources: { limits: { memory: 1500M } }

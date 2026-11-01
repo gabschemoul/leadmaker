@@ -41,12 +41,14 @@ runcmd:
         BODY=$(python3 -c "import json,sys;print(json.dumps({'name':'$NAME','server_type':'$T','image':'ubuntu-24.04','location':'$L','ssh_keys':[131980158],'labels':{'role':'envoi'},'user_data':sys.stdin.read()}))" <<<"$USER_DATA")
         OUT=$(api -X POST "$API/servers" -d "$BODY")
         IP=$(python3 -c "import sys,json;d=json.loads(sys.argv[1]);print(d['server']['public_net']['ipv4']['ip'] if 'server' in d else '')" "$OUT")
-        if [ -n "$IP" ]; then echo "   serveur créé : $T à $L → $IP"; break 2; fi
+        if [ -n "$IP" ]; then echo "   serveur créé : $T à $L → $IP"; break; fi
         CODE=$(python3 -c "import sys,json;print(json.loads(sys.argv[1]).get('error',{}).get('code',''))" "$OUT")
         if [ "$CODE" != "resource_unavailable" ]; then echo "ERREUR $OUT"; exit 1; fi
         echo "   pas de place : $T à $L"
       done
+      [ -n "$IP" ] && break
     done
+    [ -n "$IP" ] && break
     if [ "$(date +%s)" -ge "$DEADLINE" ]; then echo "Aucun serveur disponible après $RETRY_MINUTES min. Réessayez plus tard, ou SEND_SERVER_TYPES=cpx62 (130 €/mois)."; exit 1; fi
     echo "   nouvel essai dans 60 s…"; sleep 60
   done
@@ -70,10 +72,10 @@ rsync -az -e "ssh -i $KEY -o StrictHostKeyChecking=accept-new" --exclude .venv -
   --exclude '.env*' --exclude '.hetzner*' --exclude '.dataimpulse' --exclude __pycache__ \
   workers/ root@"$IP":/opt/leadmaker/workers/
 
-echo "→ lancement de $REPLICAS robots d'envoi sur $IP…"
+echo "→ lancement de $REPLICAS robots d'envoi sur ${IP}…"
 $SSH root@"$IP" "cd /opt/leadmaker/workers && docker compose --profile send up -d --build send && sleep 20 && docker compose --profile send ps --format '{{.Service}} {{.State}}' | sort | uniq -c"
 
-echo "→ arrêt des robots d'envoi du serveur principal ($MAIN)…"
+echo "→ arrêt des robots d'envoi du serveur principal (${MAIN})…"
 $SSH root@$MAIN 'cd /opt/leadmaker/workers && docker compose --profile send stop send && docker compose --profile send rm -f send >/dev/null && docker compose ps --format "{{.Service}} {{.State}}" | sort | uniq -c'
 
 echo "$IP" > workers/.send-server-ip

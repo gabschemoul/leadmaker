@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Iterator
 from urllib.parse import quote_plus, urlparse
 
-from playwright.sync_api import Page, TimeoutError as PWTimeout, sync_playwright
+from playwright.sync_api import Error as PWError, Page, TimeoutError as PWTimeout, sync_playwright
 
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -68,6 +68,12 @@ def coords(href: str) -> tuple[float | None, float | None]:
 
 class BlockedError(RuntimeError):
     """Google a affiché une page de vérification (captcha) : il faut ralentir ou changer d'adresse."""
+
+
+class ProxyDown(RuntimeError):
+    """La page de recherche Google Maps ne s'ouvre pas du tout (proxy en panne, réseau coupé).
+
+    Ce n'est pas la faute de la recherche : elle est remise en file sans perdre d'essai et le robot attend."""
 
 
 @dataclass
@@ -227,6 +233,19 @@ class GMapsScraper:
         time.sleep(self.delay * factor * random.uniform(0.7, 1.3))
 
     @staticmethod
+    def _open_search(page: Page, query: str, country_code: str, center: tuple[float, float, int] | None) -> None:
+        at = f"/@{center[0]:.5f},{center[1]:.5f},{center[2]}z" if center else ""
+        try:
+            page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}{at}?hl=en&gl={country_code.lower()}",
+                      wait_until="domcontentloaded")
+        except PWTimeout as exc:
+            raise ProxyDown(f"Google Maps ne répond pas (délai dépassé) : {str(exc).splitlines()[0]}") from exc
+        except PWError as exc:
+            if "net::ERR_" in str(exc):
+                raise ProxyDown(f"Google Maps injoignable : {str(exc).splitlines()[0]}") from exc
+            raise
+
+    @staticmethod
     def _accept_consent(page: Page):
         if "consent." not in page.url:
             return
@@ -315,9 +334,7 @@ class GMapsScraper:
         self._meter(page)
         self._meter(detail)
         try:
-            at = f"/@{center[0]:.5f},{center[1]:.5f},{center[2]}z" if center else ""
-            page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}{at}?hl=en&gl={country_code.lower()}",
-                      wait_until="domcontentloaded")
+            self._open_search(page, query, country_code, center)
             self._accept_consent(page)
             if "/sorry/" in page.url:
                 raise BlockedError("Google a bloqué la recherche (captcha)")
@@ -416,9 +433,7 @@ class GMapsScraper:
         page = self._ctx.new_page()
         self._meter(page)
         try:
-            at = f"/@{center[0]:.5f},{center[1]:.5f},{center[2]}z" if center else ""
-            page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}{at}?hl=en&gl={country_code.lower()}",
-                      wait_until="domcontentloaded")
+            self._open_search(page, query, country_code, center)
             self._accept_consent(page)
             if "/sorry/" in page.url:
                 raise BlockedError("Google a bloqué la recherche (captcha)")

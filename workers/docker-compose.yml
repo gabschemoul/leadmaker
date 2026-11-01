@@ -7,7 +7,7 @@
 
 x-robot: &robot
   build: .
-  image: leadmaker-worker
+  image: leadmaker-worker:${ROBOT_IMAGE_TAG:-latest}
   restart: unless-stopped
   env_file:
     - path: .env

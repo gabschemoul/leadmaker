@@ -17,6 +17,8 @@ from . import handlers, queue
 
 log = logging.getLogger("leadmaker.worker")
 
+OUTAGE_WAITS = (60, 120, 300, 600, 900)  # secondes d'attente après 1, 2, 3, 4, 5+ pannes de proxy d'affilée
+
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -26,6 +28,7 @@ def main() -> None:
     worker = queue.worker_id()
     stop = False
     backoff = 0.0
+    outage = 0  # pannes de proxy d'affilée
     last_housekeeping = 0.0
 
     def _stop(*_: object) -> None:
@@ -80,6 +83,17 @@ def main() -> None:
                 handlers.shutdown()
                 pause(min(wait, 3600))
                 continue
+            if type(exc).__name__ == "ProxyDown":
+                # Proxy ou réseau en panne : la recherche n'y est pour rien. Elle repart sans perdre d'essai
+                # (aucun quartier sauté) et le robot attend 1, 2, 5, 10 puis 15 min avant de réessayer.
+                wait = OUTAGE_WAITS[min(outage, len(OUTAGE_WAITS) - 1)]
+                outage += 1
+                queue.requeue(conn, task.id, delay_seconds=wait, error=str(exc))
+                log.warning("PANNE PROXY (%d d'affilée) : %s — recherche remise en file, pause de %d min",
+                            outage, exc, wait // 60)
+                handlers.shutdown()
+                pause(wait)
+                continue
             if type(exc).__name__ == "BlockedError":
                 # Captcha Google : la tâche repart sans compter d'essai, ce worker se met en pause (30, 60, 120, 240 min)
                 backoff = min(max(backoff * 2, base_backoff), 240)
@@ -98,6 +112,7 @@ def main() -> None:
             continue
 
         backoff = 0.0
+        outage = 0
         result["duration_ms"] = int((time.monotonic() - started) * 1000)
         queue.complete(conn, task.id, result)
         log.info("tâche %s terminée en %s ms", task.id, result["duration_ms"])

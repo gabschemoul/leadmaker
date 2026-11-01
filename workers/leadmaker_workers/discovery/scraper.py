@@ -20,11 +20,10 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
 )
 END_OF_LIST = re.compile(r"reached the end of the list|arrivé à la fin de la liste", re.I)
-BLOCKED_URLS = [
-    "*/maps/vt*", "*/kh/v=*", "*/vt?*", "*googleusercontent.com*", "*ggpht.com*", "*streetviewpixels*",
-    "*.png*", "*.jpg*", "*.jpeg*", "*.gif*", "*.webp*", "*.woff2*", "*.woff*", "*.ttf*", "*.mp4*",
-    "*fonts.gstatic.com*", "*/maps/preview/log*", "*/gen_204*", "*/log?*",
-]
+BLOCKED_URL_PARTS = (
+    "/maps/vt", "/kh/v=", "googleusercontent.com", "ggpht.com", "streetviewpixels", "fonts.gstatic.com",
+    "/maps/preview/log", "/gen_204", "/log?",
+)
 PLACE_ID = re.compile(r"!1s(0x[0-9a-f]+:0x[0-9a-f]+)")
 COORDS = re.compile(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)")
 STATUS = re.compile(r"^(open|closed|opens|closes|temporarily|permanently|\d)", re.I)
@@ -176,14 +175,19 @@ class GMapsScraper:
 
     def open(self):
         self._pw = sync_playwright().start()
-        # Images désactivées dans le navigateur lui-même. On n'intercepte PAS les requêtes (route) :
-        # l'interception désactive le cache, et chaque fiche ouverte retéléchargeait alors toute
-        # l'application Google Maps (~2 Mo), facturés par le proxy.
-        self._browser = self._pw.chromium.launch(
-            headless=self.headless, proxy=_proxy_settings(), args=["--blink-settings=imagesEnabled=false"]
-        )
+        self._browser = self._pw.chromium.launch(headless=self.headless, proxy=_proxy_settings())
         self._ctx = self._browser.new_context(
             user_agent=USER_AGENT, locale="en-US", viewport={"width": 1300, "height": 900}
+        )
+        # Images, vidéos, polices et tuiles de carte ne servent pas à lire les fiches : on ne les télécharge
+        # pas. L'interception (route) reste nécessaire : sans elle, Chromium n'envoie pas l'identifiant du
+        # proxy et les pages ne chargent plus (vérifié le 1/11/2026). Elle désactive le cache du navigateur.
+        self._ctx.route(
+            "**/*",
+            lambda route: route.abort()
+            if route.request.resource_type in ("image", "media", "font")
+            or any(part in route.request.url for part in BLOCKED_URL_PARTS)
+            else route.continue_(),
         )
         self.searches = 0
 
@@ -207,8 +211,6 @@ class GMapsScraper:
         try:
             cdp = self._ctx.new_cdp_session(page)
             cdp.send("Network.enable")
-            # Tuiles de carte, photos, vidéos et polices : inutiles pour lire les fiches
-            cdp.send("Network.setBlockedURLs", {"urls": BLOCKED_URLS})
 
             def add(event: dict) -> None:
                 self.bytes += int(event.get("encodedDataLength") or 0)

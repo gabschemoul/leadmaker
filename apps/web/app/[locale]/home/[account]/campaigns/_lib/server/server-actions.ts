@@ -15,6 +15,7 @@ import {
   CreateCampaignSchema,
   DuplicateCampaignSchema,
   EstimateCampaignSchema,
+  FamilyCategoriesSchema,
   NearbyCitiesSchema,
   SearchCategoriesSchema,
   SearchCitiesSchema,
@@ -173,6 +174,74 @@ export const nearbyCitiesAction = authActionClient
         );
     },
   );
+
+/**
+ * Familles d'activités (catalogue Google, 25 familles) avec leur nombre
+ * d'activités, pour parcourir les activités sans connaître leur nom exact.
+ */
+export const listCategoryFamiliesAction = authActionClient.action(async () => {
+  const client = getSupabaseServerClient();
+
+  const { data, error } = await client
+    .from('lm_categories')
+    .select('family')
+    .eq('is_excluded', false)
+    .limit(10000);
+
+  if (error) {
+    const logger = await getLogger();
+    logger.error(
+      { name: 'leadmaker.categories.families', error },
+      'Category families failed',
+    );
+
+    throw new Error('campaigns.errors.searchFailed');
+  }
+
+  const counts = new Map<string, number>();
+
+  for (const row of data ?? []) {
+    counts.set(row.family, (counts.get(row.family) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([family, count]) => ({ family, count }))
+    .sort((a, b) => a.family.localeCompare(b.family, 'fr'));
+});
+
+/** Les activités d'une famille : les plus courantes d'abord, puis par ordre alphabétique. */
+export const listFamilyCategoriesAction = authActionClient
+  .inputSchema(FamilyCategoriesSchema)
+  .action(async ({ parsedInput: { family } }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client
+      .from('lm_categories')
+      .select('gcid, label_fr, label_en, family, is_generic')
+      .eq('is_excluded', false)
+      .eq('family', family)
+      .order('is_generic', { ascending: false })
+      .order('label_fr', { ascending: true })
+      .limit(1000);
+
+    if (error) {
+      const logger = await getLogger();
+      logger.error(
+        { name: 'leadmaker.categories.family', error },
+        'Family categories failed',
+      );
+
+      throw new Error('campaigns.errors.searchFailed');
+    }
+
+    return (data ?? []).map((category) => ({
+      gcid: category.gcid,
+      labelFr: category.label_fr,
+      labelEn: category.label_en,
+      family: category.family,
+      common: category.is_generic,
+    }));
+  });
 
 /** Autocomplétion des catégories Google (libellé français ou anglais). */
 export const searchCategoriesAction = authActionClient

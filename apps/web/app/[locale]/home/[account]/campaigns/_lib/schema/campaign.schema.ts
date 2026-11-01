@@ -282,6 +282,11 @@ export const NearbyCitiesSchema = z.object({
   minPopulation: z.number().int().min(0).max(10_000_000),
 });
 
+/** Activités d'une famille (catalogue « Parcourir les activités »). */
+export const FamilyCategoriesSchema = z.object({
+  family: z.string().trim().min(1).max(200),
+});
+
 export const SearchCategoriesSchema = z.object({
   query: z.string().trim().min(1).max(100),
 });

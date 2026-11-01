@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { MapPin, X } from 'lucide-react';
+import { ListTree, MapPin, X } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm, useWatch } from 'react-hook-form';
@@ -57,6 +57,7 @@ import {
   updateCampaignAction,
 } from '../_lib/server/server-actions';
 import { CampaignEstimate } from './campaign-estimate';
+import { CategoryBrowserDialog } from './category-browser-dialog';
 import { NearbyCitiesDialog } from './nearby-cities-dialog';
 import { SearchPicker } from './search-picker';
 
@@ -120,7 +121,9 @@ export function CampaignForm(props: {
       radiusKm: 30,
       cities: [],
       maxCities: MAX_CITIES_LIMIT,
-      categoriesMode: 'generic' as const,
+      // aucune activité présélectionnée : l'utilisateur choisit (une campagne
+      // « Restauration » lancée sur les activités courantes ramenait des pharmacies)
+      categoriesMode: 'list' as const,
       categories: [],
       ratingMin: 0.8,
       ratingMax: 3.5,
@@ -344,6 +347,8 @@ export function CampaignForm(props: {
               </Alert>
             )}
           </If>
+
+          <CampaignRecap />
 
           <div className={'flex justify-end'}>
             <Button
@@ -703,6 +708,7 @@ function CategoriesSection() {
   const t = useTranslations('campaigns');
   const locale = useLocale();
   const mode = useWatch({ name: 'categoriesMode' });
+  const [browsing, setBrowsing] = useState(false);
 
   const searchCategories = async (query: string) => {
     const result = await searchCategoriesAction({ query });
@@ -742,6 +748,11 @@ function CategoriesSection() {
                   onChange={field.onChange}
                   options={[
                     {
+                      value: 'list',
+                      label: 'campaigns.form.categoriesList',
+                      description: 'campaigns.form.categoriesListHint',
+                    },
+                    {
                       value: 'generic',
                       label: 'campaigns.form.categoriesGeneric',
                       description: 'campaigns.form.categoriesGenericHint',
@@ -751,7 +762,6 @@ function CategoriesSection() {
                       label: 'campaigns.form.categoriesAll',
                       description: 'campaigns.form.categoriesAllHint',
                     },
-                    { value: 'list', label: 'campaigns.form.categoriesList' },
                   ]}
                 />
               </FormControl>
@@ -769,9 +779,26 @@ function CategoriesSection() {
 
               return (
                 <FormItem>
-                  <FormLabel>
-                    <Trans i18nKey={'campaigns.form.categoriesListLabel'} />
-                  </FormLabel>
+                  <div
+                    className={
+                      'flex flex-wrap items-center justify-between gap-2'
+                    }
+                  >
+                    <FormLabel>
+                      <Trans i18nKey={'campaigns.form.categoriesListLabel'} />
+                    </FormLabel>
+
+                    <Button
+                      type={'button'}
+                      size={'sm'}
+                      variant={'outline'}
+                      data-test={'campaign-categories-browse'}
+                      onClick={() => setBrowsing(true)}
+                    >
+                      <ListTree className={'mr-1.5 size-4'} />
+                      <Trans i18nKey={'campaigns.form.browseOpen'} />
+                    </Button>
+                  </div>
 
                   <FormControl>
                     <SearchPicker
@@ -801,6 +828,30 @@ function CategoriesSection() {
                     />
                   </FormControl>
 
+                  <If condition={categories.length > 0}>
+                    <div
+                      className={
+                        'flex items-center justify-between gap-2 text-sm'
+                      }
+                    >
+                      <span className={'text-muted-foreground'}>
+                        <Trans
+                          i18nKey={'campaigns.form.browseSelected'}
+                          values={{ count: categories.length }}
+                        />
+                      </span>
+
+                      <Button
+                        type={'button'}
+                        size={'sm'}
+                        variant={'ghost'}
+                        onClick={() => field.onChange([])}
+                      >
+                        <Trans i18nKey={'campaigns.form.citiesClear'} />
+                      </Button>
+                    </div>
+                  </If>
+
                   <ChipList>
                     {categories.map((category) => (
                       <SelectedChip
@@ -817,6 +868,16 @@ function CategoriesSection() {
                   </ChipList>
 
                   <FormMessage />
+
+                  <CategoryBrowserDialog
+                    open={browsing}
+                    onOpenChange={setBrowsing}
+                    selected={categories}
+                    onChange={(next) =>
+                      field.onChange(next, { shouldValidate: true })
+                    }
+                    max={1000}
+                  />
                 </FormItem>
               );
             }}
@@ -1021,6 +1082,75 @@ function FiltersSection() {
         />
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Résumé en une phrase de ce que la campagne va chercher, juste avant le
+ * bouton d'enregistrement : on voit tout de suite un ciblage qui ne
+ * correspond pas à l'intention (activités, villes).
+ */
+function CampaignRecap() {
+  const t = useTranslations('campaigns.form.recap');
+  const values = useWatch() as Partial<CampaignFormValues>;
+  const categories = (values.categories ?? []) as CategoryRef[];
+  const cities = (values.cities ?? []) as CityRef[];
+
+  const preview = (labels: string[]) =>
+    labels.length <= 3
+      ? labels.join(', ')
+      : t('andMore', {
+          list: labels.slice(0, 3).join(', '),
+          count: labels.length - 3,
+        });
+
+  const what =
+    values.categoriesMode === 'generic'
+      ? t('whatGeneric')
+      : values.categoriesMode === 'all'
+        ? t('whatAll')
+        : categories.length === 0
+          ? null
+          : preview(categories.map((category) => category.label));
+
+  const where =
+    values.citiesMode === 'radius'
+      ? values.radiusCity
+        ? t('whereRadius', {
+            city: (values.radiusCity as CityRef).name,
+            km: values.radiusKm ?? 30,
+          })
+        : null
+      : values.citiesMode === 'list'
+        ? cities.length === 0
+          ? null
+          : preview(cities.map((city) => city.name))
+        : (values.minPopulation ?? 0) > 0
+          ? t('whereCountryMin', { min: values.minPopulation ?? 0 })
+          : t('whereCountry');
+
+  return (
+    <Alert data-test={'campaign-recap'}>
+      <AlertDescription className={'flex flex-col gap-1'}>
+        <span className={'text-foreground font-medium'}>{t('title')}</span>
+        <span>
+          {t('what')}{' '}
+          {what ? (
+            <strong className={'text-foreground'}>{what}</strong>
+          ) : (
+            <span className={'text-destructive'}>{t('whatMissing')}</span>
+          )}
+        </span>
+        <span>
+          {t('where')}{' '}
+          {where ? (
+            <strong className={'text-foreground'}>{where}</strong>
+          ) : (
+            <span className={'text-destructive'}>{t('whereMissing')}</span>
+          )}
+        </span>
+      </AlertDescription>
+    </Alert>
   );
 }
 

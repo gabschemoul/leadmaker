@@ -56,7 +56,7 @@ ssh -i ~/.ssh/leadmaker_hetzner root@2.31.72.125 'cd /opt/leadmaker/workers && d
 `docker compose up -d --build` (sans nom de service) lance aussi les robots Google Maps (estimations, découverte) :
 à ne faire qu'avec `PROXY_URL` renseigné, sinon Google bloque l'adresse du serveur. Mise à jour : refaire le rsync puis
 `docker compose up -d --build`.
-Robot d'envoi (décision de Gabriel) : `docker compose --profile send up -d` ; pour le couper : `docker compose stop send`.
+Robot d'envoi : serveur dédié « leadmaker-envoi-1 » (cx53, créé par `scripts/setup-send-server.sh`, SEND_REPLICAS=30 dans son .env). Mise à jour : `scripts/deploy-robots.sh --send` (ou `--all`). Pour couper l'envoi : `docker compose --profile send stop send` sur ce serveur.
 Suivi : `docker compose ps`, `docker compose logs -f prepare`. Chaque robot finit sa tâche en cours avant de s'arrêter.
 
 ## Charger les données de référence

@@ -84,7 +84,7 @@ export function loadAttempts(
   return fetchAttempts(client, params);
 }
 
-/** Solde de crédits d'envoi de l'organisation (0 sans forfait). */
+/** Solde de crédits de prise de contact de l'organisation (0 sans forfait). */
 export async function loadOutreachBalance(client: Client, accountId: string) {
   const { data, error } = await client
     .from('lm_account_credits')

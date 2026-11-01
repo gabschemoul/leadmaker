@@ -94,7 +94,7 @@
     "sending": {
       "title": "Envoi",
       "intro": "Ces réglages s'appliquent à cette campagne.",
-      "dailyLimit": "Envois par jour, au maximum",
+      "dailyLimit": "Prises de contact par jour, au maximum",
       "dailyLimitHint": "Le robot n'envoie jamais plus de formulaires que ce nombre en une journée pour cette campagne (le forfait fixe aussi un plafond global).",
       "autoValidation": "Validation automatique",
       "autoValidationHint": "Un formulaire préparé sans la moindre alerte est validé tout seul, sans relecture. Les formulaires à compléter ou avec une remarque restent à relire.",
@@ -146,7 +146,7 @@
       "no_form": "Aucun formulaire de contact trouvé. Quand une adresse email a été repérée sur le site, elle est notée sur le prospect.",
       "unreachable": "Site injoignable, erreur, ou envoi qui a échoué. Vous pouvez relancer la préparation depuis la page Prospects.",
       "skipped": "Formulaires passés sans envoi.",
-      "sent": "Formulaires envoyés (confirmation vue sur le site). Un crédit d'envoi a été débité par formulaire.",
+      "sent": "Formulaires envoyés (confirmation vue sur le site). Un crédit de prise de contact a été débité par formulaire.",
       "excluded": "Entreprises à ne jamais contacter.",
       "to_verify": "Le robot a cliqué sur Envoyer mais n'a pas vu de confirmation claire. Regardez la capture après envoi et tranchez : bien arrivé ou pas arrivé."
     },
@@ -247,6 +247,6 @@
       "failed": "La préparation n'a pas pu être lancée. Réessayez dans un instant."
     },
     "preparingBanner": "Le robot travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page.",
-    "balance": "Crédits d'envoi restants : {count, number}."
+    "balance": "Crédits de prise de contact restants : {count, number}."
   }
 }

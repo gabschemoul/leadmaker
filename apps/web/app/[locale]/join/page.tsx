@@ -108,6 +108,7 @@ async function JoinTeamAccountContent(props: JoinTeamAccountPageProps) {
     } else {
       const urlParams = new URLSearchParams({
         invite_token: token,
+        next: `${pathsConfig.app.joinTeam}?invite_token=${token}`,
       });
 
       const nextUrl = `${pathsConfig.auth.signUp}?${urlParams.toString()}`;

@@ -251,7 +251,11 @@ async function joinTeamMiddleware(req: NextRequest, res: NextResponse) {
   }
 
   if (!session.claims) {
-    const params = new URLSearchParams({ invite_token: token });
+    const params = new URLSearchParams({
+      invite_token: token,
+      // repris par le lien de confirmation e-mail, pour revenir ici après l'inscription
+      next: `${pathsConfig.app.joinTeam}?invite_token=${token}`,
+    });
 
     return NextResponse.redirect(
       new URL(`${pathsConfig.auth.signUp}?${params.toString()}`, origin).href,

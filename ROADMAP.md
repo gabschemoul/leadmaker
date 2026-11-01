@@ -69,12 +69,13 @@ Pistes à discuter :
 - **Décisions du 1/11** :
   - La campagne devient le fil conducteur, en 4 onglets dans l'ordre : Cibler, Trouver, Rédiger, Contacter. Chaque onglet a son propre bouton.
   - Le message doit exister avant de préparer les formulaires (rappel avec bouton dans Contacter).
-  - Première connexion guidée en 3 questions : qui envoie, qui cibler, quel message.
+  - Première connexion guidée en 3 questions : qui envoie, qui cibler, quel message. **Pas en V1** (décidé le 1/11), la maquette reste pour plus tard.
   - Tableau de bord = « vos prochaines actions », une ligne par campagne.
   - Menu simplifié : Tableau de bord, Campagnes, Prospects ; le reste dans Réglages.
   - Dossier client caché par défaut. À activer de façon maligne : question à l'inscription (« pour vous ou pour vos clients ? ») ou lié au forfait (Business/Scale = agences). À trancher.
 - **Décidé (1/11)** : en V1, les formulaires s'affichent uniquement dans la campagne. La vue « Tout à vérifier » viendra plus tard.
-- **Maquette cliquable** (1/11) : https://claude.ai/artifact/9V1UaisbvCMCc4i18cMYnD (campagne en 4 onglets, première connexion, tableau de bord). En attente du retour de Gabriel.
+- **Maquette cliquable** (1/11) : https://claude.ai/artifact/9V1UaisbvCMCc4i18cMYnD (campagne en 4 onglets, première connexion, tableau de bord). Validée par Gabriel le 1/11.
+- **Découpage V1** : 1) page de campagne en 4 onglets, 2) tableau de bord « prochaines actions » + menu simplifié, 3) dossier client caché quand il n'y en a qu'un.
 
 ---
 

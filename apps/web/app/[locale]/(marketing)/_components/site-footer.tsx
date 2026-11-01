@@ -35,19 +35,16 @@ export async function SiteFooter() {
       }
       sections={[
         {
-          heading: <Trans i18nKey="marketing.about" />,
+          heading: <Trans i18nKey="marketing.product" />,
           links: [
-            { href: '/blog', label: <Trans i18nKey="marketing.blog" /> },
-            { href: '/contact', label: <Trans i18nKey="marketing.contact" /> },
+            { href: '/pricing', label: <Trans i18nKey="marketing.pricing" /> },
+            { href: '/faq', label: <Trans i18nKey="marketing.faq" /> },
           ],
         },
         {
-          heading: <Trans i18nKey="marketing.product" />,
+          heading: <Trans i18nKey="marketing.about" />,
           links: [
-            {
-              href: '/docs',
-              label: <Trans i18nKey="marketing.documentation" />,
-            },
+            { href: '/contact', label: <Trans i18nKey="marketing.contact" /> },
           ],
         },
         {

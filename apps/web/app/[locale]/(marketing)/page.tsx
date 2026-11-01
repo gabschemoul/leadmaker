@@ -1,7 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { ArrowRightIcon, LayoutDashboard } from 'lucide-react';
+import { ArrowRightIcon, Sparkles } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 
 import { PricingTable } from '@kit/billing-gateway/marketing';
 import {
@@ -21,14 +22,27 @@ import { Trans } from '@kit/ui/trans';
 import billingConfig from '~/config/billing.config';
 import pathsConfig from '~/config/paths.config';
 
-function Home() {
+/** Page d'accueil Prospectigo (V1). Les textes vivent dans marketing.json. */
+async function Home() {
+  const t = await getTranslations('marketing.home');
+
+  const steps = ['step1', 'step2', 'step3'] as const;
+  const features = [
+    'feature1',
+    'feature2',
+    'feature3',
+    'feature4',
+    'feature5',
+    'feature6',
+  ] as const;
+
   return (
     <div className={'mt-4 flex flex-col space-y-24 py-14'}>
       <div className={'container mx-auto'}>
         <Hero
           pill={
-            <Pill label={'New'}>
-              <span>The SaaS Starter Kit for ambitious developers</span>
+            <Pill label={t('pill')}>
+              <span>{t('pillText')}</span>
               <PillActionButton
                 render={
                   <Link href={'/auth/sign-up'}>
@@ -39,17 +53,9 @@ function Home() {
             </Pill>
           }
           title={
-            <span className="text-secondary-foreground">
-              <span>Ship a SaaS faster than ever.</span>
-            </span>
+            <span className="text-secondary-foreground">{t('title')}</span>
           }
-          subtitle={
-            <span>
-              Makerkit gives you a production-ready boilerplate to build your
-              SaaS faster than ever before with the next-gen SaaS Starter Kit.
-              Get started in minutes.
-            </span>
-          }
+          subtitle={<span>{t('subtitle')}</span>}
           cta={<MainCallToActionButton />}
           image={
             <Image
@@ -57,13 +63,37 @@ function Home() {
               className={
                 'dark:border-primary/10 w-full rounded-lg border border-gray-200'
               }
-              width={3558}
-              height={2222}
-              src={`/images/dashboard.webp`}
-              alt={`App Image`}
+              width={2880}
+              height={1800}
+              src={`/images/prospectigo-campaign.png`}
+              alt={t('heroImageAlt')}
             />
           }
         />
+      </div>
+
+      <div className={'container mx-auto'}>
+        <div
+          className={
+            'flex flex-col items-center justify-center space-y-12 py-4 xl:py-8'
+          }
+        >
+          <SecondaryHero
+            heading={t('howTitle')}
+            subheading={t('howSubtitle')}
+          />
+
+          <FeatureGrid>
+            {steps.map((step) => (
+              <FeatureCard
+                key={step}
+                className={'relative col-span-1 overflow-hidden'}
+                label={t(`${step}Label`)}
+                description={t(step)}
+              />
+            ))}
+          </FeatureGrid>
+        </div>
       </div>
 
       <div className={'container mx-auto'}>
@@ -72,58 +102,30 @@ function Home() {
             heading={
               <>
                 <b className="font-medium tracking-tight dark:text-white">
-                  The ultimate SaaS Starter Kit
+                  {t('featuresTitle')}
                 </b>
                 .{' '}
                 <span className="text-secondary-foreground/70 block font-normal tracking-tight">
-                  Unleash your creativity and build your SaaS faster than ever
-                  with Makerkit.
+                  {t('featuresSubtitle')}
                 </span>
               </>
             }
             icon={
               <FeatureShowcaseIconContainer>
-                <LayoutDashboard className="h-4 w-4" />
-                <span>All-in-one solution</span>
+                <Sparkles className="h-4 w-4" />
+                <span>{t('featuresIcon')}</span>
               </FeatureShowcaseIconContainer>
             }
           >
             <FeatureGrid>
-              <FeatureCard
-                className={'relative col-span-1 overflow-hidden'}
-                label={'Beautiful Dashboard'}
-                description={`Makerkit provides a beautiful dashboard to manage your SaaS business.`}
-              ></FeatureCard>
-
-              <FeatureCard
-                className={'relative col-span-1 w-full overflow-hidden'}
-                label={'Authentication'}
-                description={`Makerkit provides a variety of providers to allow your users to sign in.`}
-              ></FeatureCard>
-
-              <FeatureCard
-                className={'relative col-span-1 overflow-hidden'}
-                label={'Multi Tenancy'}
-                description={`Multi tenant memberships for your SaaS business.`}
-              />
-
-              <FeatureCard
-                className={'relative col-span-1 overflow-hidden'}
-                label={'Billing'}
-                description={`Makerkit supports multiple payment gateways to charge your customers.`}
-              />
-
-              <FeatureCard
-                className={'relative col-span-1 overflow-hidden'}
-                label={'Plugins'}
-                description={`Extend your SaaS with plugins that you can install using the CLI.`}
-              />
-
-              <FeatureCard
-                className={'relative col-span-1 overflow-hidden'}
-                label={'Documentation'}
-                description={`Makerkit provides a comprehensive documentation to help you get started.`}
-              />
+              {features.map((feature) => (
+                <FeatureCard
+                  key={feature}
+                  className={'relative col-span-1 overflow-hidden'}
+                  label={t(`${feature}Label`)}
+                  description={t(feature)}
+                />
+              ))}
             </FeatureGrid>
           </FeatureShowcase>
         </div>
@@ -131,15 +133,15 @@ function Home() {
 
       <div className={'container mx-auto'}>
         <EcosystemShowcase
-          heading="The ultimate SaaS Starter Kit for founders."
-          description="Unleash your creativity and build your SaaS faster than ever with Makerkit. Get started in minutes and ship your SaaS in no time."
+          heading={t('controlTitle')}
+          description={t('controlText')}
         >
           <Image
-            className="rounded-md"
-            src={'/images/sign-in.webp'}
-            alt="Sign in"
-            width={1000}
-            height={1000}
+            className="dark:border-primary/10 rounded-md border border-gray-200"
+            src={'/images/prospectigo-forms.png'}
+            alt={t('controlImageAlt')}
+            width={2880}
+            height={1150}
           />
         </EcosystemShowcase>
       </div>
@@ -151,9 +153,9 @@ function Home() {
           }
         >
           <SecondaryHero
-            pill={<Pill label="Start for free">No credit card required.</Pill>}
-            heading="Fair pricing for all types of businesses"
-            subheading="Get started on our free plan and upgrade when you are ready."
+            pill={<Pill label={t('pricingPill')}>{t('pricingPillText')}</Pill>}
+            heading={t('pricingTitle')}
+            subheading={t('pricingSubtitle')}
           />
 
           <div className={'w-full'}>

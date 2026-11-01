@@ -7,18 +7,6 @@ import { MobileSiteNavigation } from './mobile-site-navigation';
 import { SiteNavigationItem, SiteNavigationLink } from './site-navigation-item';
 
 const links = {
-  Blog: {
-    label: 'marketing.blog',
-    path: '/blog',
-  },
-  Changelog: {
-    label: 'marketing.changelog',
-    path: '/changelog',
-  },
-  Docs: {
-    label: 'marketing.documentation',
-    path: '/docs',
-  },
   Pricing: {
     label: 'marketing.pricing',
     path: '/pricing',
@@ -26,6 +14,10 @@ const links = {
   FAQ: {
     label: 'marketing.faq',
     path: '/faq',
+  },
+  Contact: {
+    label: 'marketing.contact',
+    path: '/contact',
   },
   SignIn: {
     label: 'auth.signIn',

@@ -64,7 +64,7 @@ Pistes à discuter :
 - **Champs libres** : l'utilisateur ajoute ses propres champs (un libellé et une valeur), utilisés quand le robot reconnaît le libellé sur un site.
 - **Plus tard** : l'IA du robot (point 8 de la liste ci-dessous) devine la bonne réponse quand un champ ne correspond à rien de connu.
 
-### 8. Mettre les utilisateurs sur des rails (refonte du parcours) 🔴 — EN RÉFLEXION (1/11)
+### 8. Mettre les utilisateurs sur des rails (refonte du parcours) 🔴 — V1 EN PRÉ-PROD (1/11)
 - **Le problème** : à la première connexion on ne sait pas par où commencer ; campagnes, prospects, formulaires et expéditeur sont au même niveau.
 - **Décisions du 1/11** :
   - La campagne devient le fil conducteur, en 4 onglets dans l'ordre : Cibler, Trouver, Rédiger, Contacter. Chaque onglet a son propre bouton.
@@ -75,7 +75,7 @@ Pistes à discuter :
   - Dossier client caché par défaut. À activer de façon maligne : question à l'inscription (« pour vous ou pour vos clients ? ») ou lié au forfait (Business/Scale = agences). À trancher.
 - **Décidé (1/11)** : en V1, les formulaires s'affichent uniquement dans la campagne. La vue « Tout à vérifier » viendra plus tard.
 - **Maquette cliquable** (1/11) : https://claude.ai/artifact/9V1UaisbvCMCc4i18cMYnD (campagne en 4 onglets, première connexion, tableau de bord). Validée par Gabriel le 1/11.
-- **Découpage V1** : 1) page de campagne en 4 onglets, 2) tableau de bord « prochaines actions » + menu simplifié, 3) dossier client caché quand il n'y en a qu'un.
+- **Découpage V1** : 1) page de campagne en 4 onglets ✅, 2) tableau de bord « prochaines actions » + menu simplifié ✅, 3) dossier client caché quand il n'y en a qu'un ✅ (le 1/11, en pré-production, à publier).
 
 ---
 

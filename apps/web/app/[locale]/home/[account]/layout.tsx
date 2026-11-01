@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 
 import * as z from 'zod';
 
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { TeamAccountWorkspaceContextProvider } from '@kit/team-accounts/components';
 import { Page, PageMobileNavigation, PageNavigation } from '@kit/ui/page';
 import { SidebarProvider } from '@kit/ui/sidebar';
@@ -17,6 +18,7 @@ import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.co
 import { TeamAccountLayoutMobileNavigation } from './_components/team-account-layout-mobile-navigation';
 import { TeamAccountLayoutSidebar } from './_components/team-account-layout-sidebar';
 import { TeamAccountNavigationMenu } from './_components/team-account-navigation-menu';
+import { hasSeveralSpaces } from './_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from './_lib/server/team-account-workspace.loader';
 
 type TeamWorkspaceLayoutProps = React.PropsWithChildren<{
@@ -94,18 +96,27 @@ async function HydratedWorkspace({
 
 async function TeamAccountHeaderNavigation({ account }: { account: string }) {
   const data = await loadTeamWorkspace(account);
+  const showSpaces = await hasSeveralSpaces(
+    getSupabaseServerClient(),
+    data.account.id,
+  );
 
-  return <TeamAccountNavigationMenu workspace={data} />;
+  return <TeamAccountNavigationMenu workspace={data} showSpaces={showSpaces} />;
 }
 
 async function TeamAccountMobileNavigation({ account }: { account: string }) {
   const data = await loadTeamWorkspace(account);
+  const showSpaces = await hasSeveralSpaces(
+    getSupabaseServerClient(),
+    data.account.id,
+  );
 
   return (
     <TeamAccountLayoutMobileNavigation
       userId={data.user.id}
       accounts={toAccountModels(data)}
       account={account}
+      showSpaces={showSpaces}
     />
   );
 }

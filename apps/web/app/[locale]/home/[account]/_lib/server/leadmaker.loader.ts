@@ -26,6 +26,20 @@ export async function getSpaceLabeler() {
  * Dossiers clients (espaces) de l'organisation : l'espace par défaut en
  * premier, puis du plus ancien au plus récent. Il y en a toujours au moins un.
  */
+/** L'organisation a-t-elle plusieurs dossiers clients ? (menu « Dossiers clients ») */
+export async function hasSeveralSpaces(client: Client, accountId: string) {
+  const { count, error } = await client
+    .from('lm_spaces')
+    .select('id', { count: 'exact', head: true })
+    .eq('account_id', accountId);
+
+  if (error) {
+    throw error;
+  }
+
+  return (count ?? 0) > 1;
+}
+
 export async function loadSpaces(client: Client, accountId: string) {
   const [{ data, error }, label] = await Promise.all([
     client

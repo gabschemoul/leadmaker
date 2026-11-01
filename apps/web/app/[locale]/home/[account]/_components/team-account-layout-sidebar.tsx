@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { If } from '@kit/ui/if';
 import { Sidebar, SidebarContent, SidebarHeader } from '@kit/ui/sidebar';
 
@@ -9,12 +10,15 @@ import featureFlagsConfig from '~/config/feature-flags.config';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
 import { TeamAccountNotifications } from '~/home/[account]/_components/team-account-notifications';
 
+import { hasSeveralSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { TeamAccountLayoutSidebarNavigation } from './team-account-layout-sidebar-navigation';
 
 /**
  * Frame and navigation come from config, so they render immediately and the
- * sidebar never shifts. Only the header widget waits on the workspace.
+ * sidebar never shifts. Only the header widget waits on the workspace, and
+ * the « Dossiers clients » entry waits on the number of folders (the
+ * fallback is the same navigation without it).
  */
 export function TeamAccountLayoutSidebar({ account }: { account: string }) {
   const config = getTeamAccountSidebarConfig(account);
@@ -28,9 +32,25 @@ export function TeamAccountLayoutSidebar({ account }: { account: string }) {
       </SidebarHeader>
 
       <SidebarContent className="h-[calc(100%-160px)] overflow-y-auto">
-        <TeamAccountLayoutSidebarNavigation config={config} />
+        <Suspense
+          fallback={<TeamAccountLayoutSidebarNavigation config={config} />}
+        >
+          <TeamAccountSidebarNavigation account={account} />
+        </Suspense>
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+async function TeamAccountSidebarNavigation({ account }: { account: string }) {
+  const data = await loadTeamWorkspace(account);
+  const client = getSupabaseServerClient();
+  const showSpaces = await hasSeveralSpaces(client, data.account.id);
+
+  return (
+    <TeamAccountLayoutSidebarNavigation
+      config={getTeamAccountSidebarConfig(account, { showSpaces })}
+    />
   );
 }
 

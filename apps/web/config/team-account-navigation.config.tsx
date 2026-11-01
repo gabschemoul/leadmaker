@@ -16,7 +16,12 @@ import pathsConfig from '~/config/paths.config';
 
 const iconClasses = 'w-4';
 
-const getRoutes = (account: string) => [
+/**
+ * `showSpaces` : l'entrée « Dossiers clients » n'apparaît que quand
+ * l'organisation en a plusieurs (une PME qui prospecte pour elle-même n'en
+ * a pas besoin). Par défaut cachée, le temps de charger le nombre de dossiers.
+ */
+const getRoutes = (account: string, showSpaces: boolean) => [
   {
     label: 'common.routes.application',
     children: [
@@ -52,11 +57,13 @@ const getRoutes = (account: string) => [
         path: createPath(pathsConfig.app.accountMembers, account),
         Icon: <Users className={iconClasses} />,
       },
-      {
-        label: 'common.routes.spaces',
-        path: createPath(pathsConfig.app.accountSpaces, account),
-        Icon: <FolderKanban className={iconClasses} />,
-      },
+      showSpaces
+        ? {
+            label: 'common.routes.spaces',
+            path: createPath(pathsConfig.app.accountSpaces, account),
+            Icon: <FolderKanban className={iconClasses} />,
+          }
+        : undefined,
       featureFlagsConfig.enableTeamAccountBilling
         ? {
             label: 'common.routes.billing',
@@ -73,9 +80,12 @@ const getRoutes = (account: string) => [
   },
 ];
 
-export function getTeamAccountSidebarConfig(account: string) {
+export function getTeamAccountSidebarConfig(
+  account: string,
+  options: { showSpaces?: boolean } = {},
+) {
   return NavigationConfigSchema.parse({
-    routes: getRoutes(account),
+    routes: getRoutes(account, options.showSpaces ?? false),
     style: process.env.NEXT_PUBLIC_TEAM_NAVIGATION_STYLE,
     sidebarCollapsed: process.env.NEXT_PUBLIC_TEAM_SIDEBAR_COLLAPSED,
     sidebarCollapsedStyle: process.env.NEXT_PUBLIC_SIDEBAR_COLLAPSIBLE_STYLE,

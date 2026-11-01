@@ -131,8 +131,18 @@ def _website_ok(site: str, f: Filters) -> bool:
 
 
 def _proxy_settings() -> dict | None:
-    """PROXY_URL=http://user:pass@host:port (fournisseur de proxies résidentiels), facultatif."""
-    url = os.environ.get("PROXY_URL", "").strip()
+    """Proxy de la recherche Google Maps : PROXY_URL=http://user:pass@host:port (proxies résidentiels)."""
+    return proxy_from_env("PROXY_URL")
+
+
+def proxy_from_env(name: str) -> dict | None:
+    """Proxy lu dans la variable `name`, facultatif.
+
+    Les robots qui visitent les sites des entreprises (préparation, e-mails, envoi) lisent
+    OUTREACH_PROXY_URL, vide par défaut : ces sites ne bloquent pas, et passer par le proxy
+    résidentiel, facturé au volume, coûterait cher pour rien. Seul Google Maps en a besoin.
+    """
+    url = os.environ.get(name, "").strip()
     if not url:
         return None
     p = urlparse(url)

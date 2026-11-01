@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
-from ..discovery.scraper import USER_AGENT, _proxy_settings
+from ..discovery.scraper import USER_AGENT, proxy_from_env
 from .formfill import (CONTACT_PATHS, Sender, SiteDown, _check_alive, _contact_links, _dismiss_cookies, _same_site, best_email,
                        detect_protection, fill_form, harvest_emails, legal_links, open_contact_form, own_email, submit)
 
@@ -57,7 +57,7 @@ def prepare(job: dict) -> dict:
     visited: list[str] = []
     out: dict = {"status": "unreachable", "filled": {}, "missing": [], "detail": ""}
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=job.get("headless", True), proxy=_proxy_settings())
+        browser = pw.chromium.launch(headless=job.get("headless", True), proxy=proxy_from_env("OUTREACH_PROXY_URL"))
         ctx = browser.new_context(user_agent=USER_AGENT, locale=job.get("locale", "en-US"),
                                   viewport={"width": 1280, "height": 900},
                                   ignore_https_errors=True)  # certificats expirés : on visite quand même (choix de Gabriel)
@@ -122,7 +122,7 @@ def send(job: dict) -> dict:
     sender = Sender(**job["sender"])
     out: dict = {"status": "failed", "submitted": False, "filled": {}, "missing": [], "detail": ""}
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=job.get("headless", True), proxy=_proxy_settings())
+        browser = pw.chromium.launch(headless=job.get("headless", True), proxy=proxy_from_env("OUTREACH_PROXY_URL"))
         ctx = browser.new_context(user_agent=USER_AGENT, locale=job.get("locale", "en-US"),
                                   viewport={"width": 1280, "height": 900},
                                   ignore_https_errors=True)  # certificats expirés : on visite quand même (choix de Gabriel)
@@ -177,7 +177,7 @@ def find_emails(job: dict) -> dict:
     visited: list[str] = []
     out: dict = {"found_email": None, "emails": [], "visited": [], "detail": ""}
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=job.get("headless", True), proxy=_proxy_settings())
+        browser = pw.chromium.launch(headless=job.get("headless", True), proxy=proxy_from_env("OUTREACH_PROXY_URL"))
         ctx = browser.new_context(user_agent=USER_AGENT, locale=job.get("locale", "en-US"),
                                   viewport={"width": 1280, "height": 900}, ignore_https_errors=True)
         ctx.set_default_timeout(15000)

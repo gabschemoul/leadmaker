@@ -3,6 +3,11 @@
 Liste vivante des idées et améliorations. On ajoute au fil de l'eau, on coche quand c'est livré.
 Dernière mise à jour : 1er novembre 2026.
 
+**Comment on publie** (depuis le 1er novembre 2026) :
+1. Chaque développement part d'abord en pré-production, sur https://staging.prospectigo.com.
+2. Gabriel teste là-bas.
+3. prospectigo.com n'est mis à jour que quand Gabriel dit « publie ».
+
 Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) · 🔴 gros (plusieurs jours)
 
 ---

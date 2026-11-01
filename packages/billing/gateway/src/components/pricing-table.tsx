@@ -219,8 +219,12 @@ function PricingItem(
             </b>
           </div>
 
+          {/* hauteur réservée pour deux lignes : les prix et les boutons
+              restent alignés d'une carte à l'autre (Prospectigo) */}
           <span
-            className={cn(`text-muted-foreground text-base tracking-tight`)}
+            className={cn(
+              `text-muted-foreground min-h-[3.25rem] text-base leading-relaxed tracking-tight`,
+            )}
           >
             <Trans
               i18nKey={props.product.description}

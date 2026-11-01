@@ -60,6 +60,7 @@ Pistes à discuter :
 8. **IA dans le robot** pour les cas douteux : choisir la bonne adresse e-mail, reconnaître un formulaire atypique, juger si le message est bien parti.
 9. **Réserve partagée des fiches Google Maps** : une zone déjà scannée il y a moins de 30 jours est servie sans retourner sur Google.
 10. **Captchas** : module fait par l'équipe.
+11. **Base de données séparée pour la pré-production** (décidé le 1/11, à faire plus tard, quand de vrais clients seront en ligne). Aujourd'hui staging.prospectigo.com partage les données de prospectigo.com.
 
 ---
 

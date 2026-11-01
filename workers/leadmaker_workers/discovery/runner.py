@@ -11,6 +11,7 @@ from typing import Any
 import psycopg
 from psycopg.types.json import Jsonb
 
+from .. import proxy_budget
 from ..queue import Task
 from .exclusions import exclusion_reason
 from .scraper import BlockedError, Filters, GMapsScraper, Place
@@ -106,6 +107,7 @@ class DiscoveryRunner:
 
     def run(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
         p = task.payload
+        proxy_budget.check(conn)
         campaign = conn.execute(
             "select id, status, space_id, country_code, filters from public.lm_campaigns where id = %s",
             (p["campaign_id"],),
@@ -153,6 +155,7 @@ class DiscoveryRunner:
         started = time.monotonic()
         cards = new = kept = 0
         stopped = None
+        bytes_before = self._scraper().bytes
         center = None
         if p.get("latitude") is not None and p.get("longitude") is not None:
             center = (float(p["latitude"]), float(p["longitude"]), int(p.get("zoom") or 15))
@@ -192,8 +195,10 @@ class DiscoveryRunner:
             "select public.lm_finish_search(%s, %s, %s, %s, %s, %s, %s, %s)",
             (p["campaign_id"], p["gcid"], p["zone_idx"], cards, new, kept, duration_ms, stopped),
         )
-        log.info("%s | %d fiches, %d nouvelles, %d retenues (%.1fs)", p["query"], cards, new, kept, duration_ms / 1000)
-        return {"cards": cards, "new": new, "kept": kept, "stopped": stopped}
+        proxy_bytes = self._scraper().bytes - bytes_before
+        log.info("%s | %d fiches, %d nouvelles, %d retenues (%.1fs, %.1f Mo)", p["query"], cards, new, kept,
+                 duration_ms / 1000, proxy_bytes / 1e6)
+        return {"cards": cards, "new": new, "kept": kept, "stopped": stopped, "proxy_bytes": proxy_bytes}
 
     def on_final_failure(self, task: Task, conn: psycopg.Connection) -> None:
         """Recherche abandonnée après plusieurs échecs : on libère sa place (campagne) ou on la compte vide (estimation)."""
@@ -208,6 +213,7 @@ class DiscoveryRunner:
         est = conn.execute("select status, filters from public.lm_estimates where id = %s", (p["estimate_id"],)).fetchone()
         if not est or est["status"] != "running":
             return {"skipped": "estimation terminée ou remplacée"}
+        proxy_budget.check(conn)
         f = est["filters"] or {}
         rating_min = float(f.get("rating_min", 0))
         rating_max = float(f.get("rating_max", 5))
@@ -219,7 +225,9 @@ class DiscoveryRunner:
         center = None
         if p.get("latitude") is not None and p.get("longitude") is not None:
             center = (float(p["latitude"]), float(p["longitude"]), int(p.get("zoom") or 15))
+        bytes_before = self._scraper().bytes
         cards = self._scraper().list_cards(p["query"], p["country_code"], center=center)
+        proxy_bytes = self._scraper().bytes - bytes_before
         matching = []
         for c in cards:
             if in_area and not in_area(c):
@@ -241,7 +249,7 @@ class DiscoveryRunner:
         conn.execute("select public.lm_record_estimate_search(%s, %s, %s, %s)",
                      (p["estimate_id"], len(cards), matching, bool(p.get("is_grid"))))
         log.info("estimation | %s | %d fiches, %d correspondent", p["query"], len(cards), len(matching))
-        return {"cards": len(cards), "matching": len(matching)}
+        return {"cards": len(cards), "matching": len(matching), "proxy_bytes": proxy_bytes}
 
 
 __all__ = ["DiscoveryRunner", "BlockedError"]

@@ -20,6 +20,11 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
 )
 END_OF_LIST = re.compile(r"reached the end of the list|arrivé à la fin de la liste", re.I)
+BLOCKED_URLS = [
+    "*/maps/vt*", "*/kh/v=*", "*/vt?*", "*googleusercontent.com*", "*ggpht.com*", "*streetviewpixels*",
+    "*.png*", "*.jpg*", "*.jpeg*", "*.gif*", "*.webp*", "*.woff2*", "*.woff*", "*.ttf*", "*.mp4*",
+    "*fonts.gstatic.com*", "*/maps/preview/log*", "*/gen_204*", "*/log?*",
+]
 PLACE_ID = re.compile(r"!1s(0x[0-9a-f]+:0x[0-9a-f]+)")
 COORDS = re.compile(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)")
 STATUS = re.compile(r"^(open|closed|opens|closes|temporarily|permanently|\d)", re.I)
@@ -159,6 +164,8 @@ class GMapsScraper:
         self.stop_flag = stop_flag or (lambda: False)
         self._pw = self._browser = self._ctx = None
         self.searches = 0
+        # octets reçus à travers le proxy depuis l'ouverture (voir _meter)
+        self.bytes = 0
 
     def __enter__(self):
         self.open()
@@ -169,17 +176,14 @@ class GMapsScraper:
 
     def open(self):
         self._pw = sync_playwright().start()
-        self._browser = self._pw.chromium.launch(headless=self.headless, proxy=_proxy_settings())
+        # Images désactivées dans le navigateur lui-même. On n'intercepte PAS les requêtes (route) :
+        # l'interception désactive le cache, et chaque fiche ouverte retéléchargeait alors toute
+        # l'application Google Maps (~2 Mo), facturés par le proxy.
+        self._browser = self._pw.chromium.launch(
+            headless=self.headless, proxy=_proxy_settings(), args=["--blink-settings=imagesEnabled=false"]
+        )
         self._ctx = self._browser.new_context(
             user_agent=USER_AGENT, locale="en-US", viewport={"width": 1300, "height": 900}
-        )
-        # Images, vidéos et polices ne servent pas à la lecture des fiches : on ne les télécharge pas
-        # (moins de bande passante, donc moins de coût de proxy).
-        self._ctx.route(
-            "**/*",
-            lambda route: route.abort()
-            if route.request.resource_type in ("image", "media", "font")
-            else route.continue_(),
         )
         self.searches = 0
 
@@ -196,6 +200,22 @@ class GMapsScraper:
             except Exception:
                 pass
         self._pw = self._browser = self._ctx = None
+
+    def _meter(self, page: Page) -> None:
+        """Compte les octets réellement reçus par cette page (protocole Chrome) : sert au plafond
+        quotidien de proxy. Images, vidéos et polices, bloquées, ne comptent pas."""
+        try:
+            cdp = self._ctx.new_cdp_session(page)
+            cdp.send("Network.enable")
+            # Tuiles de carte, photos, vidéos et polices : inutiles pour lire les fiches
+            cdp.send("Network.setBlockedURLs", {"urls": BLOCKED_URLS})
+
+            def add(event: dict) -> None:
+                self.bytes += int(event.get("encodedDataLength") or 0)
+
+            cdp.on("Network.loadingFinished", add)
+        except Exception:
+            pass  # la mesure ne doit jamais empêcher une recherche
 
     @property
     def is_open(self) -> bool:
@@ -290,6 +310,8 @@ class GMapsScraper:
         self.searches += 1
         page = self._ctx.new_page()
         detail = self._ctx.new_page()
+        self._meter(page)
+        self._meter(detail)
         try:
             at = f"/@{center[0]:.5f},{center[1]:.5f},{center[2]}z" if center else ""
             page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}{at}?hl=en&gl={country_code.lower()}",
@@ -390,6 +412,7 @@ class GMapsScraper:
             self.open()
         self.searches += 1
         page = self._ctx.new_page()
+        self._meter(page)
         try:
             at = f"/@{center[0]:.5f},{center[1]:.5f},{center[2]}z" if center else ""
             page.goto(f"https://www.google.com/maps/search/{quote_plus(query)}{at}?hl=en&gl={country_code.lower()}",

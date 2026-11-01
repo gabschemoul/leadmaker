@@ -3,7 +3,8 @@
     python -m leadmaker_workers.main
 
 Variables : DATABASE_URL, WORKER_KINDS (ex. « discovery »), WORKER_ID, WORKER_IDLE_SECONDS,
-HEADLESS (true/false), SCRAPE_DELAY (secondes), PROXY_URL (facultatif), BLOCK_BACKOFF_MINUTES.
+HEADLESS (true/false), SCRAPE_DELAY (secondes), PROXY_URL (facultatif), BLOCK_BACKOFF_MINUTES,
+PROXY_DAILY_BUDGET_GB (plafond quotidien du proxy, 3 Go par défaut, 0 = sans plafond).
 """
 from __future__ import annotations
 
@@ -71,6 +72,14 @@ def main() -> None:
         try:
             result = handlers.run(task, conn)
         except Exception as exc:
+            if type(exc).__name__ == "BudgetExceeded":
+                # Plafond quotidien de proxy atteint : la recherche attend le lendemain, ce robot aussi
+                wait = float(getattr(exc, "seconds_left", 3600))
+                queue.requeue(conn, task.id, delay_seconds=wait, error=str(exc))
+                log.warning("%s : recherches en pause jusqu'à demain (%d min)", exc, wait // 60)
+                handlers.shutdown()
+                pause(min(wait, 3600))
+                continue
             if type(exc).__name__ == "BlockedError":
                 # Captcha Google : la tâche repart sans compter d'essai, ce worker se met en pause (30, 60, 120, 240 min)
                 backoff = min(max(backoff * 2, base_backoff), 240)

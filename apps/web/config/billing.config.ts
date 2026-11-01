@@ -62,7 +62,7 @@ export default createBillingSchema({
         '5 000 prises de contact par mois',
         '1 siège',
         '1 campagne active',
-        'Support email',
+        'Support et onboarding',
       ],
     },
     {
@@ -113,8 +113,7 @@ export default createBillingSchema({
         '15 000 prises de contact par mois',
         '3 sièges',
         '3 campagnes actives',
-        'Auto-validation (activation explicite)',
-        'Support email prioritaire',
+        'Support et onboarding',
       ],
     },
     {
@@ -163,8 +162,7 @@ export default createBillingSchema({
         '35 000 prises de contact par mois',
         '6 sièges',
         '10 campagnes actives',
-        'Auto-validation (activation explicite)',
-        'Support prioritaire et onboarding dédié',
+        'Support prioritaire et onboarding',
       ],
     },
   ],

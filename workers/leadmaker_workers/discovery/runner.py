@@ -56,12 +56,33 @@ def _area_fn(conn: psycopg.Connection, geoname_id: int | None):
     return in_area
 
 
+def _category_matches(category: str, wanted: str) -> bool:
+    """L'activité de la fiche correspond-elle à l'activité recherchée ?
+
+    Google donne souvent une activité plus précise que celle cherchée : « French restaurant » ou
+    « Pizza restaurant » pour « Restaurant », « Emergency plumber » pour « Plumber ». On garde donc
+    la fiche quand tous les mots de l'activité cherchée apparaissent, entiers, dans la sienne
+    (pluriels tolérés). « Restaurant supply store » reste écarté pour « Restaurant » : c'est un
+    magasin, son dernier mot n'est pas l'activité cherchée.
+    """
+    def words(text: str) -> list[str]:
+        return [w[:-1] if len(w) > 3 and w.endswith("s") else w for w in re.findall(r"[a-z0-9]+", normalize(text))]
+
+    have, need = words(category), words(wanted)
+    if not need:
+        return True
+    if have == need:
+        return True
+    # tous les mots cherchés présents, et l'activité de la fiche se termine par le dernier mot cherché
+    # (« French restaurant » ✓, « Restaurant supply store » ✗)
+    return all(w in have for w in need) and have[-1:] == need[-1:]
+
+
 def _category_fn(filters: dict[str, Any], label: str | None):
     """Garde seulement les entreprises dont l'activité principale est celle recherchée (réglage par défaut)."""
     if not label or not filters.get("main_category_only", True):
         return None
-    wanted = normalize(label).strip()
-    return lambda category: not category or normalize(category).strip() == wanted
+    return lambda category: not category or _category_matches(category, label)
 
 
 class DiscoveryRunner:

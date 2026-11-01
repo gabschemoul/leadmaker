@@ -12,6 +12,17 @@ if ! [[ "$URL" =~ ^https?://[^:@/]+:[^@/]+@[^:/]+:[0-9]+/?$ ]]; then
   exit 1
 fi
 HOST=$(echo "$URL" | sed -E 's#^https?://[^@]+@##')
+CURRENT=$(ssh -i ~/.ssh/leadmaker_hetzner root@2.31.72.125 "grep '^PROXY_URL=' /opt/leadmaker/workers/.env | cut -d= -f2-" || true)
+if [ "$URL" = "$CURRENT" ]; then
+  echo "C'est déjà le proxy en place sur le serveur : copiez les identifiants de l'AUTRE forfait."
+  exit 1
+fi
+echo "→ test du proxy depuis le serveur…"
+CODE=$(ssh -i ~/.ssh/leadmaker_hetzner root@2.31.72.125 "curl -s -o /dev/null -w '%{http_code}' --max-time 20 -x '$URL' https://www.google.com/ ; true")
+if [ "$CODE" != "200" ] && [ "$CODE" != "302" ]; then
+  echo "Ce proxy ne fonctionne pas (réponse $CODE) : forfait épuisé ou identifiants faux. Rien n'a été changé."
+  exit 1
+fi
 echo "→ proxy de recherche : ***@$HOST"
 ssh -i ~/.ssh/leadmaker_hetzner root@2.31.72.125 "cd /opt/leadmaker/workers && cp .env .env.bak-proxy && grep -v '^PROXY_URL=' .env > .env.new && printf 'PROXY_URL=%s\n' '$URL' >> .env.new && mv .env.new .env && chmod 600 .env"
 ./workers/scripts/deploy-robots.sh --all

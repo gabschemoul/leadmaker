@@ -77,6 +77,13 @@ Pistes à discuter :
 - **Maquette cliquable** (1/11) : https://claude.ai/artifact/9V1UaisbvCMCc4i18cMYnD (campagne en 4 onglets, première connexion, tableau de bord). Validée par Gabriel le 1/11.
 - **Découpage V1** : 1) page de campagne en 4 onglets ✅, 2) tableau de bord « prochaines actions » + menu simplifié ✅, 3) dossier client caché quand il n'y en a qu'un ✅ (le 1/11, en pré-production, à publier).
 
+### 9. Adaptation automatique des robots 🔴 — VALIDÉ (1/11)
+- **Le principe** : 6 robots de recherche garantis par campagne active (pas par compte). Des serveurs Hetzner, facturés à l'heure, sont créés quand des campagnes démarrent et supprimés quand la file est vide.
+- **Coût** : environ 1,5 centime de serveur par heure et par campagne active, plus le proxy consommé.
+- **Garde-fous** : la limite de campagnes actives par forfait (1 / 3 / 10) et le plafond quotidien de proxy (fait le 1/11, 3 Go par jour).
+- **À prévoir** : demander à Hetzner d'augmenter la limite de serveurs du compte ; base Supabase à agrandir au-delà de 100-150 robots.
+- **Aussi** : adapter le seuil d'abandon des activités (5 % après 40 recherches) aux campagnes très sélectives, comme « mauvaises notes ».
+
 ---
 
 ## Déjà prévu (liste du 31 octobre)

@@ -73,8 +73,8 @@ Pistes à discuter :
   - Tableau de bord = « vos prochaines actions », une ligne par campagne.
   - Menu simplifié : Tableau de bord, Campagnes, Prospects ; le reste dans Réglages.
   - Dossier client caché par défaut. À activer de façon maligne : question à l'inscription (« pour vous ou pour vos clients ? ») ou lié au forfait (Business/Scale = agences). À trancher.
-- **Plus tard** : une vue « Tout à vérifier » qui regroupe les formulaires de toutes les campagnes.
-- **Prochaine étape** : maquette cliquable de la page de campagne et de la première connexion, avant de coder.
+- **Décidé (1/11)** : en V1, les formulaires s'affichent uniquement dans la campagne. La vue « Tout à vérifier » viendra plus tard.
+- **Maquette cliquable** (1/11) : https://claude.ai/artifact/9V1UaisbvCMCc4i18cMYnD (campagne en 4 onglets, première connexion, tableau de bord). En attente du retour de Gabriel.
 
 ---
 

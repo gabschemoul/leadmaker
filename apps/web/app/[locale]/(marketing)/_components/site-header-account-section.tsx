@@ -86,7 +86,8 @@ function AuthButtons() {
         </If>
       </div>
 
-      <div className={'md:hidden'}>
+      {/* sur téléphone, le thème se change depuis le menu (manque de place) */}
+      <div className={'hidden sm:flex md:hidden'}>
         <If condition={features.enableThemeToggle}>
           <MobileModeToggle />
         </If>

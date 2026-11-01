@@ -23,6 +23,7 @@ const links = {
     label: 'auth.signIn',
     path: '/auth/sign-in',
     showOn: 'mobile',
+    variant: 'outline' as const,
   },
   SignUp: {
     label: 'auth.signUp',

@@ -45,7 +45,7 @@
   "copyright": "© Copyright {year} {product}. Tous droits réservés.",
   "home": {
     "pill": "Nouveau",
-    "pillText": "Prospection locale automatisée, dans le monde entier",
+    "pillText": "Prospection locale, partout dans le monde",
     "title": "Contactez des milliers d'entreprises locales, automatiquement.",
     "subtitle": "Prospectigo trouve les entreprises sur Google Maps, repère leur formulaire de contact et leur dépose votre message. Vous choisissez la zone et le métier, le robot fait le reste.",
     "heroImageAlt": "Une campagne Prospectigo en cours",
@@ -76,7 +76,7 @@
     "controlText": "Avant chaque envoi, Prospectigo vous montre le formulaire rempli. Vous validez, vous passez, ou vous laissez la validation automatique travailler. Le nombre d'envois par jour se règle campagne par campagne.",
     "controlImageAlt": "La page Formulaires de Prospectigo",
     "pricingPill": "Tarifs",
-    "pricingPillText": "Sans engagement : mensuel ou annuel, résiliable à tout moment.",
+    "pricingPillText": "Sans engagement, résiliable à tout moment",
     "pricingTitle": "Des forfaits selon votre volume",
     "pricingSubtitle": "Growth pour une entreprise, Business et Scale pour les agences."
   },
@@ -93,5 +93,6 @@
     "a5": "Oui. Créez un dossier par client, avec son propre expéditeur et ses campagnes. Invitez vos collaborateurs selon le nombre de sièges de votre forfait.",
     "q6": "Y a-t-il un engagement ?",
     "a6": "Non. Les forfaits sont mensuels ou annuels et résiliables à tout moment depuis vos réglages de facturation."
-  }
+  },
+  "theme": "Thème clair / sombre"
 }

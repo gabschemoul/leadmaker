@@ -45,7 +45,7 @@
   "copyright": "© Copyright {year} {product}. All Rights Reserved.",
   "home": {
     "pill": "New",
-    "pillText": "Automated local outreach, worldwide",
+    "pillText": "Local outreach, anywhere in the world",
     "title": "Reach thousands of local businesses, automatically.",
     "subtitle": "Prospectigo finds businesses on Google Maps, locates their contact form and drops your message in it. You pick the area and the trade, the robot does the rest.",
     "heroImageAlt": "A Prospectigo campaign in progress",
@@ -76,7 +76,7 @@
     "controlText": "Before each send, Prospectigo shows you the filled form. You approve, skip, or let automatic validation do the work. The daily send limit is set per campaign.",
     "controlImageAlt": "The Prospectigo Forms page",
     "pricingPill": "Pricing",
-    "pricingPillText": "No commitment: monthly or yearly, cancel anytime.",
+    "pricingPillText": "No commitment, cancel anytime",
     "pricingTitle": "Plans that match your volume",
     "pricingSubtitle": "Growth for a single business, Business and Scale for agencies."
   },
@@ -93,5 +93,6 @@
     "a5": "Yes. Create one folder per client, with its own sender and campaigns. Invite teammates up to your plan's seat count.",
     "q6": "Is there a commitment?",
     "a6": "No. Plans are monthly or yearly and can be cancelled anytime from your billing settings."
-  }
+  },
+  "theme": "Light / dark theme"
 }

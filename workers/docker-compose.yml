@@ -19,19 +19,23 @@ x-robot: &robot
     options: { max-size: "20m", max-file: "5" }
 
 services:
+  # Estimations seules : 1 robot, les robots de recherche en font aussi quand ils sont libres.
   estimate:
     <<: *robot
     environment:
       WORKER_KINDS: estimate
     deploy:
-      replicas: 2
+      replicas: 1
       resources: { limits: { memory: 1500M } }
 
+  # Recherches Google Maps : 6 en parallèle (chaque robot = une recherche, deux onglets).
+  # Demande de Gabriel du 1/11/2026. Surveiller les blocages Google ; chaque robot sort par le proxy.
   discovery:
     <<: *robot
     environment:
       WORKER_KINDS: estimate,discovery
     deploy:
+      replicas: 6
       resources: { limits: { memory: 1500M } }
 
   prepare:

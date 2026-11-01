@@ -64,6 +64,18 @@ Pistes à discuter :
 - **Champs libres** : l'utilisateur ajoute ses propres champs (un libellé et une valeur), utilisés quand le robot reconnaît le libellé sur un site.
 - **Plus tard** : l'IA du robot (point 8 de la liste ci-dessous) devine la bonne réponse quand un champ ne correspond à rien de connu.
 
+### 8. Mettre les utilisateurs sur des rails (refonte du parcours) 🔴 — EN RÉFLEXION (1/11)
+- **Le problème** : à la première connexion on ne sait pas par où commencer ; campagnes, prospects, formulaires et expéditeur sont au même niveau.
+- **Décisions du 1/11** :
+  - La campagne devient le fil conducteur, en 4 onglets dans l'ordre : Cibler, Trouver, Rédiger, Contacter. Chaque onglet a son propre bouton.
+  - Le message doit exister avant de préparer les formulaires (rappel avec bouton dans Contacter).
+  - Première connexion guidée en 3 questions : qui envoie, qui cibler, quel message.
+  - Tableau de bord = « vos prochaines actions », une ligne par campagne.
+  - Menu simplifié : Tableau de bord, Campagnes, Prospects ; le reste dans Réglages.
+  - Dossier client caché par défaut. À activer de façon maligne : question à l'inscription (« pour vous ou pour vos clients ? ») ou lié au forfait (Business/Scale = agences). À trancher.
+- **Plus tard** : une vue « Tout à vérifier » qui regroupe les formulaires de toutes les campagnes.
+- **Prochaine étape** : maquette cliquable de la page de campagne et de la première connexion, avant de coder.
+
 ---
 
 ## Déjà prévu (liste du 31 octobre)

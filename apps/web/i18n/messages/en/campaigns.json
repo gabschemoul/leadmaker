@@ -154,8 +154,11 @@
       "sampleHint": "Measured on {sample} random searches out of {total}, then extrapolated.",
       "changed": "Your criteria changed: run the estimate again.",
       "failed": "The estimate did not complete. Please try again.",
-      "again": "Run again"
-    }
+      "again": "Run again",
+      "pricing": "Rate: {count, plural, one {# prospecting credit} other {# prospecting credits}} per prospect",
+      "pricingHint": "{rate}% of the businesses read match your filters. The more selective the filters, the more credits each prospect costs. The rate is fixed when the campaign launches."
+    },
+    "creditsHintPriced": "Each prospect found will use {count, plural, one {# prospecting credit} other {# prospecting credits}} (rate fixed at launch)."
   },
   "detail": {
     "pageTitle": "Campaign",
@@ -184,7 +187,17 @@
     "latestProspectsTitle": "Latest prospects",
     "latestProspectsDescription": "The last 50 businesses found by this campaign.",
     "noProspects": "No prospects yet.",
-    "edit": "Edit"
+    "edit": "Edit",
+    "pricingTitle": "Rate per prospect",
+    "pricingValue": "{count, plural, one {# credit} other {# credits}}",
+    "pricingFrozenHint": "Fixed at launch: {rate}% of businesses matched your filters.",
+    "pricingFrozenHintNoRate": "Fixed when the campaign launched.",
+    "pricingPreviewHint": "From your estimate ({rate}% of businesses match your filters). Fixed at launch.",
+    "pricingMeasuring": "Measuring: {done} of {total}",
+    "pricingMeasuringHint": "We read Google Maps to measure the share of businesses matching your filters. Click “Launch” when it is done.",
+    "pricingUnknown": "Measured at launch",
+    "pricingUnknownHint": "When you click “Launch”, we read Google Maps for about a minute to fix the rate, then you launch.",
+    "estimateStarted": "We first measure the difficulty (about a minute). The rate will show here, then click “Launch” again."
   },
   "import": {
     "button": "Import a CSV file",

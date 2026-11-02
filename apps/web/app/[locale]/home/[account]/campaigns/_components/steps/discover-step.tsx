@@ -22,6 +22,7 @@ import {
 } from '@kit/ui/card';
 import { Progress } from '@kit/ui/progress';
 import { toast } from '@kit/ui/sonner';
+import { Spinner } from '@kit/ui/spinner';
 import { Trans } from '@kit/ui/trans';
 
 import { LocalDateTime } from '~/components/local-date-time';
@@ -62,9 +63,14 @@ export function DiscoverStep(props: {
     queryFn: () => fetchCampaignLive(client, props.campaignId),
     initialData: props.initialData,
     staleTime: 5_000,
-    // filet de sécurité : le temps réel (useCampaignRealtime) rafraîchit dès qu'il se passe quelque chose
+    // filet de sécurité : le temps réel (useCampaignRealtime) rafraîchit dès qu'il se passe quelque chose ;
+    // pendant la mesure de la difficulté (estimation avant lancement), on suit l'avancement de près
     refetchInterval: (query) =>
-      query.state.data?.status === 'running' ? REFRESH_INTERVAL : false,
+      query.state.data?.pricing.estimateStatus === 'running'
+        ? 3_000
+        : query.state.data?.status === 'running'
+          ? REFRESH_INTERVAL
+          : false,
   });
 
   useCampaignRealtime(props.campaignId, queryKey);
@@ -199,14 +205,30 @@ function CampaignActions(props: {
     },
   });
 
-  const start = useAction(
-    startCampaignAction,
-    callbacks(
+  const start = useAction(startCampaignAction, {
+    ...callbacks(
       props.status === 'paused'
         ? 'campaigns.detail.resumed'
         : 'campaigns.detail.started',
     ),
-  );
+    onSuccess: ({ data }) => {
+      // Pas encore d'estimation : la mesure de la difficulté vient d'être lancée, le tarif
+      // s'affichera dans la carte d'avancement, puis l'utilisateur relance (roadmap n°13)
+      if (data?.estimateRequested) {
+        toast.info(t('campaigns.detail.estimateStarted'));
+      } else {
+        toast.success(
+          t(
+            props.status === 'paused'
+              ? 'campaigns.detail.resumed'
+              : 'campaigns.detail.started',
+          ),
+        );
+      }
+
+      void queryClient.invalidateQueries({ queryKey: props.queryKey });
+    },
+  });
 
   const pause = useAction(
     pauseCampaignAction,
@@ -353,6 +375,8 @@ function ProgressCard({
             hint={'campaigns.detail.abandonedHint'}
           />
 
+          <PricingStat live={live} />
+
           <Stat
             label={'campaigns.detail.lastActivity'}
             value={
@@ -373,10 +397,84 @@ function ProgressCard({
   );
 }
 
+/**
+ * Tarif en crédits de prospection par prospect (roadmap n°13) : figé au lancement, sinon celui de la
+ * dernière estimation (terminée ou en cours de mesure), sinon mesuré au premier clic sur « Lancer ».
+ */
+function PricingStat({ live }: { live: CampaignLive }) {
+  const { pricing } = live;
+  const rate =
+    pricing.rate === null ? null : Math.round(pricing.rate * 1000) / 10;
+
+  if (pricing.creditsPerProspect !== null) {
+    return (
+      <Stat
+        label={'campaigns.detail.pricingTitle'}
+        value={
+          <span data-test={'campaign-pricing'}>
+            <Trans
+              i18nKey={'campaigns.detail.pricingValue'}
+              values={{ count: pricing.creditsPerProspect }}
+            />
+          </span>
+        }
+        hint={
+          <Trans
+            i18nKey={
+              pricing.frozen
+                ? rate === null
+                  ? 'campaigns.detail.pricingFrozenHintNoRate'
+                  : 'campaigns.detail.pricingFrozenHint'
+                : 'campaigns.detail.pricingPreviewHint'
+            }
+            values={{ rate: rate ?? 0 }}
+          />
+        }
+      />
+    );
+  }
+
+  if (pricing.estimateStatus === 'running') {
+    return (
+      <Stat
+        label={'campaigns.detail.pricingTitle'}
+        value={
+          <span
+            className={'flex items-center gap-2 text-base'}
+            data-test={'campaign-pricing-measuring'}
+          >
+            <Spinner className={'size-4'} />
+            <Trans
+              i18nKey={'campaigns.detail.pricingMeasuring'}
+              values={{
+                done: pricing.doneSearches,
+                total: pricing.sampleSearches,
+              }}
+            />
+          </span>
+        }
+        hint={<Trans i18nKey={'campaigns.detail.pricingMeasuringHint'} />}
+      />
+    );
+  }
+
+  return (
+    <Stat
+      label={'campaigns.detail.pricingTitle'}
+      value={
+        <span className={'text-base'} data-test={'campaign-pricing-unknown'}>
+          <Trans i18nKey={'campaigns.detail.pricingUnknown'} />
+        </span>
+      }
+      hint={<Trans i18nKey={'campaigns.detail.pricingUnknownHint'} />}
+    />
+  );
+}
+
 function Stat(props: {
   label: string;
   value: React.ReactNode;
-  hint?: string;
+  hint?: React.ReactNode;
   highlight?: boolean;
 }) {
   return (
@@ -397,7 +495,11 @@ function Stat(props: {
 
       {props.hint ? (
         <p className={'text-muted-foreground text-xs'}>
-          <Trans i18nKey={props.hint} />
+          {typeof props.hint === 'string' ? (
+            <Trans i18nKey={props.hint} />
+          ) : (
+            props.hint
+          )}
         </p>
       ) : null}
     </div>

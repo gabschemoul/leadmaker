@@ -249,14 +249,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_categories": {
                   Row: {
-                    "abandoned": boolean,"account_id": string,"campaign_id": string,"cards": number,"cards_new": number,"gcid": string,"in_flight": number,"is_generic": boolean,"kept": number,"next_zone_idx": number,"removed": boolean,"searches": number
+                    "abandoned": boolean,"account_id": string,"campaign_id": string,"cards": number,"cards_new": number,"gcid": string,"in_flight": number,"is_generic": boolean,"kept": number,"next_zone_idx": number,"proxy_bytes": number,"removed": boolean,"searches": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandoned"?: boolean,"account_id": string,"campaign_id": string,"cards"?: number,"cards_new"?: number,"gcid": string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"removed"?: boolean,"searches"?: number
+                    "abandoned"?: boolean,"account_id": string,"campaign_id": string,"cards"?: number,"cards_new"?: number,"gcid": string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"removed"?: boolean,"searches"?: number
                   }
                   Update: {
-                    "abandoned"?: boolean,"account_id"?: string,"campaign_id"?: string,"cards"?: number,"cards_new"?: number,"gcid"?: string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"removed"?: boolean,"searches"?: number
+                    "abandoned"?: boolean,"account_id"?: string,"campaign_id"?: string,"cards"?: number,"cards_new"?: number,"gcid"?: string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"removed"?: boolean,"searches"?: number
                   }
                   Relationships: [
                     {
@@ -331,14 +331,14 @@ isOneToOne: false
                   ]
                 },"lm_campaigns": {
                   Row: {
-                    "account_id": string,"auto_validation": boolean,"country_code": string,"created_at": string,"created_by": string | null,"daily_limit": number,"filters": NonNullable<Json>,"id": string,"name": string,"space_id": string,"status": Database["public"]['Enums']["lm_campaign_status"],"targeting": NonNullable<Json>,"templates": NonNullable<Json>,"updated_at": string,"updated_by": string | null
+                    "account_id": string,"auto_validation": boolean,"country_code": string,"created_at": string,"created_by": string | null,"credits_per_prospect": number,"daily_limit": number,"estimate_id": string | null,"filters": NonNullable<Json>,"id": string,"name": string,"space_id": string,"status": Database["public"]['Enums']["lm_campaign_status"],"targeting": NonNullable<Json>,"templates": NonNullable<Json>,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"auto_validation"?: boolean,"country_code": string,"created_at"?: string,"created_by"?: string | null,"daily_limit"?: number,"filters"?: NonNullable<Json>,"id"?: string,"name": string,"space_id": string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id": string,"auto_validation"?: boolean,"country_code": string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"id"?: string,"name": string,"space_id": string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"auto_validation"?: boolean,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"daily_limit"?: number,"filters"?: NonNullable<Json>,"id"?: string,"name"?: string,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id"?: string,"auto_validation"?: boolean,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"id"?: string,"name"?: string,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -429,14 +429,14 @@ isOneToOne: false
                   ]
                 },"lm_discovery_settings": {
                   Row: {
-                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"default_rate": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"prior": number,"tasks_per_campaign": number,"updated_at": string
+                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"prior": number,"tasks_per_campaign": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"default_rate"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"default_rate"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -463,14 +463,14 @@ isOneToOne: false
                   ]
                 },"lm_estimates": {
                   Row: {
-                    "account_id": string,"cards": number,"country_code": string,"created_at": string,"created_by": string | null,"done_searches": number,"expected": number | null,"expected_high": number | null,"expected_low": number | null,"filters": NonNullable<Json>,"finished_at": string | null,"id": string,"matching": number,"mode": string,"overlap": number,"sample_searches": number,"status": string,"targeting": NonNullable<Json>,"total_searches": number,"updated_at": string,"updated_by": string | null
+                    "account_id": string,"cards": number,"country_code": string,"created_at": string,"created_by": string | null,"credits_per_prospect": number | null,"done_searches": number,"expected": number | null,"expected_high": number | null,"expected_low": number | null,"filters": NonNullable<Json>,"finished_at": string | null,"id": string,"matching": number,"mode": string,"overlap": number,"rate": number | null,"sample_searches": number,"status": string,"targeting": NonNullable<Json>,"total_searches": number,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"cards"?: number,"country_code": string,"created_at"?: string,"created_by"?: string | null,"done_searches"?: number,"expected"?: number | null,"expected_high"?: number | null,"expected_low"?: number | null,"filters"?: NonNullable<Json>,"finished_at"?: string | null,"id"?: string,"matching"?: number,"mode": string,"overlap"?: number,"sample_searches": number,"status"?: string,"targeting": NonNullable<Json>,"total_searches": number,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id": string,"cards"?: number,"country_code": string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number | null,"done_searches"?: number,"expected"?: number | null,"expected_high"?: number | null,"expected_low"?: number | null,"filters"?: NonNullable<Json>,"finished_at"?: string | null,"id"?: string,"matching"?: number,"mode": string,"overlap"?: number,"rate"?: number | null,"sample_searches": number,"status"?: string,"targeting": NonNullable<Json>,"total_searches": number,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"cards"?: number,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"done_searches"?: number,"expected"?: number | null,"expected_high"?: number | null,"expected_low"?: number | null,"filters"?: NonNullable<Json>,"finished_at"?: string | null,"id"?: string,"matching"?: number,"mode"?: string,"overlap"?: number,"sample_searches"?: number,"status"?: string,"targeting"?: NonNullable<Json>,"total_searches"?: number,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id"?: string,"cards"?: number,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number | null,"done_searches"?: number,"expected"?: number | null,"expected_high"?: number | null,"expected_low"?: number | null,"filters"?: NonNullable<Json>,"finished_at"?: string | null,"id"?: string,"matching"?: number,"mode"?: string,"overlap"?: number,"rate"?: number | null,"sample_searches"?: number,"status"?: string,"targeting"?: NonNullable<Json>,"total_searches"?: number,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -645,14 +645,14 @@ isOneToOne: true
                   ]
                 },"lm_searches": {
                   Row: {
-                    "account_id": string,"campaign_id": string,"cards_kept": number,"cards_new": number,"cards_seen": number,"category": string,"country_code": string,"created_at": string,"duration_ms": number | null,"error": string | null,"id": number,"wave": number,"zone_key": string
+                    "account_id": string,"campaign_id": string,"cards_kept": number,"cards_new": number,"cards_seen": number,"category": string,"country_code": string,"created_at": string,"duration_ms": number | null,"error": string | null,"id": number,"proxy_bytes": number,"wave": number,"zone_key": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"campaign_id": string,"cards_kept"?: number,"cards_new"?: number,"cards_seen"?: number,"category": string,"country_code": string,"created_at"?: string,"duration_ms"?: number | null,"error"?: string | null,"id"?: never,"wave"?: number,"zone_key": string
+                    "account_id": string,"campaign_id": string,"cards_kept"?: number,"cards_new"?: number,"cards_seen"?: number,"category": string,"country_code": string,"created_at"?: string,"duration_ms"?: number | null,"error"?: string | null,"id"?: never,"proxy_bytes"?: number,"wave"?: number,"zone_key": string
                   }
                   Update: {
-                    "account_id"?: string,"campaign_id"?: string,"cards_kept"?: number,"cards_new"?: number,"cards_seen"?: number,"category"?: string,"country_code"?: string,"created_at"?: string,"duration_ms"?: number | null,"error"?: string | null,"id"?: never,"wave"?: number,"zone_key"?: string
+                    "account_id"?: string,"campaign_id"?: string,"cards_kept"?: number,"cards_new"?: number,"cards_seen"?: number,"category"?: string,"country_code"?: string,"created_at"?: string,"duration_ms"?: number | null,"error"?: string | null,"id"?: never,"proxy_bytes"?: number,"wave"?: number,"zone_key"?: string
                   }
                   Relationships: [
                     {
@@ -1151,6 +1151,9 @@ isOneToOne: false
 "is_team_member":
 { Args: { "account_id": string,"user_id": string }; Returns: boolean
                            },
+"lm_add_search_bytes":
+{ Args: { "p_bytes": number,"p_task_id": number }; Returns: undefined
+                           },
 "lm_attempt_counts":
 { Args: { "p_space_id": string }; Returns: {
               "status": Database["public"]['Enums']["lm_attempt_status"],"total": number
@@ -1161,6 +1164,11 @@ isOneToOne: false
                            },
 "lm_auto_validation_allowed":
 { Args: { "p_account_id": string }; Returns: boolean
+                           },
+"lm_campaign_pricing":
+{ Args: { "p_campaign_id": string }; Returns: {
+              "credits_per_prospect": number,"done_searches": number,"estimate_id": string,"estimate_status": string,"frozen": boolean,"rate": number,"sample_searches": number
+            }[]
                            },
 "lm_campaign_progress":
 { Args: { "p_campaign_id": string }; Returns: {
@@ -1203,6 +1211,9 @@ isOneToOne: false
       } },
 "lm_complete_task":
 { Args: { "p_id": number,"p_result": Json }; Returns: undefined
+                           },
+"lm_credits_for_rate":
+{ Args: { "p_rate": number }; Returns: number
                            },
 "lm_debit_credits":
 { Args: { "p_account_id": string,"p_campaign_id"?: string,"p_event_ref": string,"p_kind": Database["public"]['Enums']["lm_credit_kind"],"p_quantity": number,"p_reason": string }; Returns: boolean
@@ -1290,6 +1301,9 @@ isOneToOne: false
                            },
 "lm_release_search":
 { Args: { "p_campaign_id": string,"p_gcid": string }; Returns: undefined
+                           },
+"lm_request_campaign_estimate":
+{ Args: { "p_campaign_id": string }; Returns: string
                            },
 "lm_request_estimate":
 { Args: { "p_account_id": string,"p_country_code": string,"p_filters": Json,"p_targeting": Json }; Returns: string

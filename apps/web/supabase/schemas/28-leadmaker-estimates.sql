@@ -25,6 +25,9 @@ create table if not exists public.lm_estimates (
   expected bigint,
   expected_low bigint,
   expected_high bigint,
+  -- Roadmap n°13 : part des fiches lues qui passent les filtres, et crédits par prospect qui en découlent
+  rate numeric(6,4),
+  credits_per_prospect integer,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   finished_at timestamptz,
@@ -185,6 +188,13 @@ begin
     return;
   end if;
 
+  -- Difficulté : part des fiches lues qui passent les filtres → crédits par prospect (roadmap n°13)
+  update public.lm_estimates
+     set rate = round(case when v_est.cards > 0 then v_est.matching::numeric / v_est.cards else 0 end, 4),
+         credits_per_prospect = public.lm_credits_for_rate(
+           case when v_est.cards > 0 then v_est.matching::numeric / v_est.cards end)
+   where id = p_estimate_id;
+
   if v_est.mode = 'exact' then
     update public.lm_estimates
        set status = 'done', finished_at = now(), overlap = 1,
@@ -220,3 +230,60 @@ as $$
 $$;
 
 revoke all on function public.lm_skip_estimate_search(uuid) from public;
+
+-- Tarif d'une campagne, lisible par ses membres : figé si elle a déjà été lancée, sinon celui de la dernière
+-- estimation faite avec exactement son ciblage et ses filtres (terminée, en cours ou aucune).
+create or replace function public.lm_campaign_pricing(p_campaign_id uuid)
+returns table (frozen boolean, credits_per_prospect integer, rate numeric, estimate_id uuid, estimate_status text,
+               done_searches integer, sample_searches integer)
+set search_path = ''
+language sql
+stable
+as $$
+  with c as (
+    select c.*, exists (select 1 from public.lm_campaign_zones z where z.campaign_id = c.id) as launched
+      from public.lm_campaigns c where c.id = p_campaign_id
+  ), e as (
+    select e.* from public.lm_estimates e, c
+     where e.account_id = c.account_id and e.country_code = c.country_code
+       and e.targeting = c.targeting and e.filters = (c.filters - 'paused_reason')
+     order by (e.status = 'done') desc, e.created_at desc
+     limit 1
+  )
+  select c.launched,
+         case when c.launched then c.credits_per_prospect
+              when e.status = 'done' then e.credits_per_prospect end,
+         case when c.launched then (select e2.rate from public.lm_estimates e2 where e2.id = c.estimate_id)
+              when e.status = 'done' then e.rate end,
+         case when c.launched then c.estimate_id else e.id end,
+         case when c.launched then null else e.status end,
+         case when c.launched then null else e.done_searches end,
+         case when c.launched then null else e.sample_searches end
+    from c left join e on true;
+$$;
+
+grant execute on function public.lm_campaign_pricing(uuid) to authenticated, service_role;
+
+-- Lance l'estimation d'une campagne avec exactement son ciblage et ses filtres (pour fixer son tarif).
+create or replace function public.lm_request_campaign_estimate(p_campaign_id uuid) returns uuid
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_campaign public.lm_campaigns%rowtype;
+begin
+  select * into v_campaign from public.lm_campaigns where id = p_campaign_id;
+
+  if v_campaign.id is null or not public.has_role_on_account(v_campaign.account_id) then
+    raise exception 'campaign not found' using errcode = 'P0002';
+  end if;
+
+  return public.lm_request_estimate(v_campaign.account_id, v_campaign.country_code, v_campaign.targeting,
+                                    v_campaign.filters - 'paused_reason');
+end;
+$$;
+
+revoke all on function public.lm_request_campaign_estimate(uuid) from public;
+
+grant execute on function public.lm_request_campaign_estimate(uuid) to authenticated, service_role;

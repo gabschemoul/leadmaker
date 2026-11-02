@@ -28,6 +28,10 @@ type EstimateRow = {
   expected: number | null;
   expected_low: number | null;
   expected_high: number | null;
+  /** part des fiches lues qui passent les filtres (0 à 1) */
+  rate: number | null;
+  /** crédits de prospection par prospect qui en découlent (roadmap n°13) */
+  credits_per_prospect: number | null;
 };
 
 export type RealEstimateState = ReturnType<typeof useRealEstimate>;
@@ -52,7 +56,7 @@ export function useRealEstimate(accountId: string, key: string | null) {
       const { data, error } = await client
         .from('lm_estimates')
         .select(
-          'id, status, mode, total_searches, sample_searches, done_searches, expected, expected_low, expected_high',
+          'id, status, mode, total_searches, sample_searches, done_searches, expected, expected_low, expected_high, rate, credits_per_prospect',
         )
         .eq('id', state!.id)
         .single();

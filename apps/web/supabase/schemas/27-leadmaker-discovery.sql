@@ -55,10 +55,18 @@ create table if not exists public.lm_discovery_settings (
   explore_share numeric(4,3) not null default 0.25,
   -- Une activité sans aucun prospect après ce nombre de recherches est abandonnée
   abandon_zero_after integer not null default 5,
+  -- Roadmap n°13 : crédits par prospect selon la part des entreprises qui passent les filtres (estimation).
+  -- Du palier le plus facile au plus difficile : taux >= min_rate → credits. Seuils provisoires, à caler après
+  -- une semaine de mesures.
+  credit_tiers jsonb not null default '[{"min_rate": 0.10, "credits": 1}, {"min_rate": 0.03, "credits": 2}, {"min_rate": 0.01, "credits": 3}, {"min_rate": 0, "credits": 4}]'::jsonb,
+  -- Trafic proxy attendu d'une recherche dont on n'a pas encore de mesure (Mo), pour classer les activités
+  -- par prospects par Mo
+  default_search_mb numeric(6,2) not null default 4,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (id),
   constraint lm_discovery_settings_single_row check (id),
+  constraint lm_discovery_settings_search_mb check (default_search_mb > 0),
   constraint lm_discovery_settings_positive check (
     prior >= 0 and min_searches > 0 and min_rate >= 0 and chain_min > 1 and max_results > 0 and tasks_per_campaign > 0
   ),
@@ -131,6 +139,10 @@ create table if not exists public.lm_campaign_categories (
   cards integer not null default 0,
   cards_new integer not null default 0,
   kept integer not null default 0,
+  -- Trafic réseau réel consommé par les recherches de cette activité (octets, proxy facturé au poids) :
+  -- le planificateur classe les activités par prospects par Mo, pas par recherche (« Hotel » rapporte
+  -- mais coûte ~35 Mo par recherche, roadmap n°13)
+  proxy_bytes bigint not null default 0,
   abandoned boolean not null default false,
   -- Activité retirée du ciblage après le lancement
   removed boolean not null default false,
@@ -422,6 +434,8 @@ declare
   v_limit integer;
   v_running integer;
   v_balance integer;
+  v_estimate_id uuid;
+  v_credits integer;
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
 
@@ -448,8 +462,27 @@ begin
     raise exception 'active campaign limit reached' using errcode = 'P0001', hint = 'campaign_limit';
   end if;
 
-  -- Premier lancement : on fige les villes et les catégories
+  -- Premier lancement : on fige les villes, les catégories et le tarif (crédits par prospect)
   if not exists (select 1 from public.lm_campaign_zones where campaign_id = p_campaign_id) then
+    -- Le tarif vient de l'estimation faite avec exactement ce ciblage et ces filtres (roadmap n°13).
+    -- Sans estimation, la campagne ne part pas : l'application en lance une (lm_request_campaign_estimate).
+    select e.id, e.credits_per_prospect into v_estimate_id, v_credits
+      from public.lm_estimates e
+     where e.account_id = v_campaign.account_id and e.status = 'done'
+       and e.country_code = v_campaign.country_code
+       and e.targeting = v_campaign.targeting
+       and e.filters = (v_campaign.filters - 'paused_reason')
+     order by e.created_at desc
+     limit 1;
+
+    if v_estimate_id is null then
+      raise exception 'estimate required before launch' using errcode = 'P0001', hint = 'estimate_required';
+    end if;
+
+    update public.lm_campaigns
+       set credits_per_prospect = coalesce(v_credits, 1), estimate_id = v_estimate_id
+     where id = p_campaign_id;
+
     insert into public.lm_campaign_zones (campaign_id, idx, account_id, geoname_id, label, population,
                                           latitude, longitude, zoom)
       select p_campaign_id, (row_number() over (order by t.population desc, t.geoname_id, t.label)) - 1,
@@ -524,8 +557,9 @@ grant execute on function public.lm_pause_campaign(uuid, text) to authenticated,
 -- Les places (TASKS_PER_CAMPAIGN par campagne) se partagent entre deux régimes :
 --   exploration (EXPLORE_SHARE des places, au moins une) : une activité jamais essayée, générales d'abord ;
 --   exploitation (le reste) : l'activité qui rapporte le plus, classée par
---     fiches retenues / (recherches faites + recherches en cours + PRIOR),
---     ce qui répartit naturellement les places entre les meilleures activités.
+--     fiches retenues / Mo de proxy attendus (trafic mesuré, recherches en cours et PRIOR compris),
+--     ce qui répartit naturellement les places entre les meilleures activités et écarte celles qui
+--     coûtent cher pour peu de prospects (roadmap n°13).
 -- Les activités essayées sans aucun prospect passent en dernier dans les deux régimes ;
 -- quand un régime n'a plus de candidate, l'autre prend la place.
 -- Abandon (lm_finish_search) : aucun prospect après ABANDON_ZERO_AFTER recherches,
@@ -589,7 +623,13 @@ begin
                   else 2
                 end,
                 (cc.searches + cc.in_flight = 0 and cc.is_generic) desc,
-                cc.kept::numeric / (cc.searches + cc.in_flight + v_settings.prior) desc,
+                -- prospects par Mo de proxy attendu : trafic mesuré de l'activité (sa moyenne par recherche
+                -- s'applique aussi aux recherches en cours et au lissage), sinon le trafic par défaut
+                cc.kept::numeric / case
+                  when cc.proxy_bytes > 0 and cc.searches > 0
+                    then cc.proxy_bytes / 1e6 * (cc.searches + cc.in_flight + v_settings.prior) / cc.searches
+                  else v_settings.default_search_mb * (cc.searches + cc.in_flight + v_settings.prior)
+                end desc,
                 random()
        limit 1
        for update of cc skip locked;
@@ -709,7 +749,8 @@ revoke all on function public.lm_site_known(uuid, text) from public;
 
 grant execute on function public.lm_site_known(uuid, text) to service_role;
 
--- Enregistre un prospect découvert et débite un crédit découverte.
+-- Enregistre un prospect découvert et débite les crédits de prospection de la campagne
+-- (credits_per_prospect, fixé au lancement selon la difficulté, roadmap n°13).
 -- Renvoie 'kept', 'duplicate' (site déjà présent) ou 'no_credits' (campagne mise en pause).
 create or replace function public.lm_record_prospect(p_campaign_id uuid, p_place jsonb) returns text
 set search_path = ''
@@ -735,8 +776,8 @@ begin
     return 'duplicate';
   end if;
 
-  if not public.lm_debit_credits(v_campaign.account_id, 'discovery', 1, 'prospect:' || v_id,
-                                 'discovery', p_campaign_id) then
+  if not public.lm_debit_credits(v_campaign.account_id, 'discovery', greatest(v_campaign.credits_per_prospect, 1),
+                                 'prospect:' || v_id, 'discovery', p_campaign_id) then
     delete from public.lm_prospects where id = v_id;
     perform public.lm_pause_campaign(p_campaign_id, 'no_credits');
     return 'no_credits';
@@ -812,6 +853,63 @@ $$;
 revoke all on function public.lm_release_search(uuid, text) from public;
 
 grant execute on function public.lm_release_search(uuid, text) to service_role;
+
+-- Trafic réseau réel d'une recherche (mesuré par le robot sur la carte réseau, essais ratés compris) :
+-- ajouté à l'activité de la campagne et au journal de la recherche. Sert au classement par prospects par Mo.
+create or replace function public.lm_add_search_bytes(p_task_id bigint, p_bytes bigint) returns void
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_task public.lm_tasks%rowtype;
+begin
+  if p_bytes is null or p_bytes <= 0 then
+    return;
+  end if;
+
+  select * into v_task from public.lm_tasks where id = p_task_id and kind = 'discovery';
+
+  if v_task.id is null then
+    return;
+  end if;
+
+  update public.lm_campaign_categories
+     set proxy_bytes = proxy_bytes + p_bytes
+   where campaign_id = (v_task.payload ->> 'campaign_id')::uuid and gcid = v_task.payload ->> 'gcid';
+
+  update public.lm_searches s
+     set proxy_bytes = s.proxy_bytes + p_bytes
+   where s.id = (select s2.id from public.lm_searches s2
+                  where s2.campaign_id = (v_task.payload ->> 'campaign_id')::uuid
+                    and s2.category = v_task.payload ->> 'gcid'
+                    and s2.zone_key = v_task.payload ->> 'zone'
+                  order by s2.wave desc limit 1);
+end;
+$$;
+
+revoke all on function public.lm_add_search_bytes(bigint, bigint) from public;
+
+grant execute on function public.lm_add_search_bytes(bigint, bigint) to service_role;
+
+-- Crédits de prospection par prospect selon la part des entreprises qui passent les filtres (roadmap n°13).
+-- Paliers dans lm_discovery_settings.credit_tiers ; sans taux mesurable, le palier le plus facile.
+create or replace function public.lm_credits_for_rate(p_rate numeric) returns integer
+set search_path = ''
+language sql
+stable
+as $$
+  select coalesce(
+    (select (t ->> 'credits')::integer
+       from public.lm_discovery_settings s, jsonb_array_elements(s.credit_tiers) t
+      where s.id and p_rate is not null and p_rate >= (t ->> 'min_rate')::numeric
+      order by (t ->> 'min_rate')::numeric desc
+      limit 1),
+    1);
+$$;
+
+grant execute on function public.lm_credits_for_rate(numeric) to authenticated, service_role;
+
 
 -- Avancement d'une campagne, lisible par ses membres
 create or replace function public.lm_campaign_progress(p_campaign_id uuid)

@@ -506,6 +506,32 @@ export const startCampaignAction = authActionClient
     });
 
     if (error) {
+      // Premier lancement sans estimation : le tarif (crédits par prospect) se fixe d'après la
+      // difficulté mesurée. On lance la mesure avec exactement le ciblage de la campagne ;
+      // l'utilisateur relance quand elle est finie (roadmap n°13).
+      if (error.hint === 'estimate_required') {
+        const estimate = await client.rpc('lm_request_campaign_estimate', {
+          p_campaign_id: campaignId,
+        });
+
+        if (estimate.error) {
+          const logger = await getLogger();
+          logger.error(
+            {
+              name: 'leadmaker.campaigns.start-estimate',
+              campaignId,
+              userId: ctx.user.id,
+              error: estimate.error,
+            },
+            'Failed to request the campaign estimate before launch',
+          );
+
+          throw new Error('campaigns.errors.estimateFailed');
+        }
+
+        return { success: false, estimateRequested: true };
+      }
+
       const known = error.hint ? START_ERRORS[error.hint] : undefined;
 
       if (known) {
@@ -528,7 +554,7 @@ export const startCampaignAction = authActionClient
 
     revalidatePath('/home/[account]/campaigns', 'layout');
 
-    return { success: true };
+    return { success: true, estimateRequested: false };
   });
 
 /** Met une campagne en pause. */

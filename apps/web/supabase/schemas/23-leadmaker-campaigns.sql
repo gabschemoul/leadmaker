@@ -15,6 +15,11 @@ create table if not exists public.lm_campaigns (
   templates jsonb not null default '[]'::jsonb,   -- jusqu'à 4 modèles + variante courte
   daily_limit integer not null default 100,
   auto_validation boolean not null default false,
+  -- Roadmap n°13 : crédits de prospection débités par prospect, fixés au premier lancement d'après la
+  -- difficulté mesurée par l'estimation (part des entreprises qui passent les filtres) ; figés ensuite.
+  credits_per_prospect integer not null default 1,
+  -- Estimation (lm_estimates) qui a servi à fixer ce tarif (pas de clé étrangère : la table est déclarée après)
+  estimate_id uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -22,7 +27,8 @@ create table if not exists public.lm_campaigns (
   primary key (id),
   constraint lm_campaigns_name_not_blank check (length(trim(name)) > 0),
   constraint lm_campaigns_country_code_upper check (country_code = upper(country_code)),
-  constraint lm_campaigns_daily_limit_positive check (daily_limit > 0)
+  constraint lm_campaigns_daily_limit_positive check (daily_limit > 0),
+  constraint lm_campaigns_credits_per_prospect check (credits_per_prospect between 1 and 10)
 );
 
 comment on table public.lm_campaigns is 'Campagnes de prospection d''un espace';
@@ -88,6 +94,8 @@ create table if not exists public.lm_searches (
   cards_kept integer not null default 0,
   duration_ms integer,
   error text,
+  -- Trafic réseau réel de la recherche à travers le proxy (octets), ajouté après coup par lm_add_search_bytes
+  proxy_bytes bigint not null default 0,
   created_at timestamptz not null default now(),
   primary key (id),
   constraint lm_searches_unique_per_wave unique (campaign_id, category, zone_key, wave)

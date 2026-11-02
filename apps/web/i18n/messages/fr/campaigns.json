@@ -154,8 +154,11 @@
       "sampleHint": "Mesuré sur {sample} recherches tirées au hasard parmi {total}, puis extrapolé.",
       "changed": "Vos critères ont changé : relancez l'estimation.",
       "failed": "L'estimation n'a pas abouti. Réessayez.",
-      "again": "Relancer"
-    }
+      "again": "Relancer",
+      "pricing": "Tarif : {count, plural, one {# crédit de prospection} other {# crédits de prospection}} par prospect",
+      "pricingHint": "{rate} % des entreprises lues passent vos filtres. Plus les filtres sont sélectifs, plus chaque prospect coûte de crédits. Le tarif est fixé au lancement de la campagne."
+    },
+    "creditsHintPriced": "Chaque prospect trouvé utilisera {count, plural, one {# crédit} other {# crédits}} de prospection (tarif fixé au lancement)."
   },
   "detail": {
     "pageTitle": "Campagne",
@@ -184,7 +187,17 @@
     "latestProspectsTitle": "Derniers prospects",
     "latestProspectsDescription": "Les 50 dernières entreprises trouvées par cette campagne.",
     "noProspects": "Aucun prospect pour l'instant.",
-    "edit": "Modifier"
+    "edit": "Modifier",
+    "pricingTitle": "Tarif par prospect",
+    "pricingValue": "{count, plural, one {# crédit} other {# crédits}}",
+    "pricingFrozenHint": "Fixé au lancement : {rate} % des entreprises passaient vos filtres.",
+    "pricingFrozenHintNoRate": "Fixé au lancement de la campagne.",
+    "pricingPreviewHint": "D'après votre estimation ({rate} % des entreprises passent vos filtres). Fixé au lancement.",
+    "pricingMeasuring": "Mesure : {done} sur {total}",
+    "pricingMeasuringHint": "On lit Google Maps pour mesurer la part d'entreprises qui passent vos filtres. Cliquez sur « Lancer » quand c'est fini.",
+    "pricingUnknown": "Mesuré au lancement",
+    "pricingUnknownHint": "Au clic sur « Lancer », on lit Google Maps une minute pour fixer le tarif, puis vous lancez.",
+    "estimateStarted": "On mesure d'abord la difficulté (environ une minute). Le tarif s'affichera ici, puis cliquez de nouveau sur « Lancer »."
   },
   "import": {
     "button": "Importer un fichier CSV",

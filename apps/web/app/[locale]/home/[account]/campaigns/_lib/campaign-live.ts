@@ -11,13 +11,14 @@ export async function fetchCampaignLive(
   client: SupabaseClient<Database>,
   campaignId: string,
 ) {
-  const [campaign, progress, prospects] = await Promise.all([
+  const [campaign, progress, pricing, prospects] = await Promise.all([
     client
       .from('lm_campaigns')
       .select('status, filters')
       .eq('id', campaignId)
       .single(),
     client.rpc('lm_campaign_progress', { p_campaign_id: campaignId }),
+    client.rpc('lm_campaign_pricing', { p_campaign_id: campaignId }),
     client
       .from('lm_prospects')
       .select(
@@ -34,6 +35,9 @@ export async function fetchCampaignLive(
 
   const filters = (campaign.data.filters ?? {}) as Record<string, unknown>;
   const row = progress.data?.[0];
+  // La pré-production partage la base de la production : tant que la migration du n°13 n'y est pas,
+  // la fonction n'existe pas. On affiche alors « mesuré au lancement » plutôt que de casser la page.
+  const price = pricing.error ? undefined : pricing.data?.[0];
 
   return {
     status: campaign.data.status,
@@ -49,6 +53,18 @@ export async function fetchCampaignLive(
       productive: row?.productive ?? 0,
       prospects: Number(row?.prospects ?? 0),
       lastSearchAt: row?.last_search_at ?? null,
+    },
+    /**
+     * Tarif en crédits de prospection par prospect (roadmap n°13) : figé au lancement,
+     * sinon celui de la dernière estimation faite avec ce ciblage (terminée ou en cours).
+     */
+    pricing: {
+      frozen: price?.frozen ?? false,
+      creditsPerProspect: price?.credits_per_prospect ?? null,
+      rate: price?.rate ?? null,
+      estimateStatus: price?.estimate_status ?? null,
+      doneSearches: price?.done_searches ?? 0,
+      sampleSearches: price?.sample_searches ?? 0,
     },
     prospects: prospects.data ?? [],
   };

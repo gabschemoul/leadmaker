@@ -83,9 +83,14 @@ export function CampaignEstimate(props: {
 
   const real = useRealEstimate(props.accountId, realKey);
 
+  const credits =
+    real.result?.status === 'done' && !real.stale
+      ? (real.result.credits_per_prospect ?? 1)
+      : null;
+
   const exceedsBalance =
     real.result?.status === 'done' &&
-    (real.result.expected ?? 0) > props.balance;
+    (real.result.expected ?? 0) * (credits ?? 1) > props.balance;
 
   return (
     <Card data-test={'campaign-estimate'}>
@@ -145,7 +150,14 @@ export function CampaignEstimate(props: {
           </div>
 
           <p className={'text-muted-foreground mt-1 text-xs'}>
-            <Trans i18nKey={'campaigns.estimate.creditsHint'} />
+            {credits !== null ? (
+              <Trans
+                i18nKey={'campaigns.estimate.creditsHintPriced'}
+                values={{ count: credits }}
+              />
+            ) : (
+              <Trans i18nKey={'campaigns.estimate.creditsHint'} />
+            )}
           </p>
         </div>
 
@@ -236,6 +248,23 @@ function RealEstimate(props: {
                 }}
               />
             )}
+          </p>
+
+          <p
+            className={'mt-1 text-sm font-medium'}
+            data-test={'real-estimate-pricing'}
+          >
+            <Trans
+              i18nKey={'campaigns.estimate.real.pricing'}
+              values={{ count: result.credits_per_prospect ?? 1 }}
+            />
+          </p>
+
+          <p className={'text-muted-foreground text-xs'}>
+            <Trans
+              i18nKey={'campaigns.estimate.real.pricingHint'}
+              values={{ rate: Math.round((result.rate ?? 0) * 1000) / 10 }}
+            />
           </p>
         </div>
       ) : running && !stale ? (

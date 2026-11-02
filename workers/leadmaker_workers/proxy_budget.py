@@ -55,6 +55,20 @@ def add_task_bytes(conn: psycopg.Connection, task_id: int, nbytes: int) -> None:
     )
 
 
+def add_search_bytes(conn: psycopg.Connection, task_id: int, nbytes: int) -> None:
+    """Ajoute le trafic d'une recherche à son activité dans la campagne (lm_campaign_categories.proxy_bytes)
+    et à son journal : le planificateur classe les activités par prospects par Mo (roadmap n°13).
+    Ne doit jamais faire échouer une tâche (base plus ancienne sans la fonction, par exemple)."""
+    if nbytes <= 0:
+        return
+    try:
+        conn.execute("select public.lm_add_search_bytes(%s, %s)", (task_id, nbytes))
+    except Exception:
+        import logging
+        logging.getLogger("leadmaker.worker").warning("trafic de la recherche %s non attribué à son activité",
+                                                      task_id, exc_info=True)
+
+
 def previous_task_bytes(conn: psycopg.Connection, task_id: int) -> int:
     row = conn.execute(
         "select coalesce((result ->> 'proxy_bytes')::bigint, 0) as b from public.lm_tasks where id = %s", (task_id,)

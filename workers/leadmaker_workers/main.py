@@ -88,6 +88,8 @@ def main() -> None:
                     if type(exc).__name__ == "BudgetExceeded":
                         used = 0  # rien n'a été téléchargé : le plafond est vérifié avant la recherche
                     proxy_budget.add_task_bytes(conn, task.id, used)
+                    if task.kind == "discovery":
+                        proxy_budget.add_search_bytes(conn, task.id, used)
                 except Exception:
                     log.exception("consommation du proxy non enregistrée")
             if type(exc).__name__ == "CampaignPaused":
@@ -139,7 +141,10 @@ def main() -> None:
         if net_before is not None:
             try:
                 result["proxy_bytes_browser"] = result.get("proxy_bytes")
-                result["proxy_bytes"] = proxy_budget.previous_task_bytes(conn, task.id) + spent()
+                used = spent()
+                result["proxy_bytes"] = proxy_budget.previous_task_bytes(conn, task.id) + used
+                if task.kind == "discovery" and not result.get("skipped"):
+                    proxy_budget.add_search_bytes(conn, task.id, used)
             except Exception:
                 log.exception("consommation du proxy non mesurée")
         result["duration_ms"] = int((time.monotonic() - started) * 1000)

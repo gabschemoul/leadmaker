@@ -4,8 +4,8 @@ import { emailTheme } from './theme';
 
 /**
  * Logo Prospectigo « Le repère » (2/11/2026), comme dans l'application
- * (apps/web/components/app-logo.tsx) : une barre surmontée d'un point orange,
- * puis le nom. Dessiné avec des blocs colorés et du texte, pas d'image : il
+ * (apps/web/components/app-logo.tsx) : un gros point orange au-dessus d'un petit
+ * trait, puis le nom. Dessiné avec des blocs colorés et du texte, pas d'image : il
  * s'affiche même quand le client mail bloque les images.
  */
 export function EmailLogo({ productName }: { productName: string }) {
@@ -23,26 +23,26 @@ export function EmailLogo({ productName }: { productName: string }) {
       <span
         style={{
           display: 'inline-block',
-          width: '6px',
-          marginRight: '4px',
+          width: '11px',
+          marginRight: '8px',
           verticalAlign: 'baseline',
         }}
       >
         <span
           style={{
             display: 'block',
-            width: '6px',
-            height: '6px',
-            borderRadius: '6px',
+            width: '11px',
+            height: '11px',
+            borderRadius: '11px',
             backgroundColor: emailTheme.brand,
           }}
         />
         <span
           style={{
             display: 'block',
-            width: '3px',
-            height: '8px',
-            margin: '2px auto 0 auto',
+            width: '5px',
+            height: '2px',
+            margin: '3px auto 0 auto',
             backgroundColor: emailTheme.ink,
           }}
         />

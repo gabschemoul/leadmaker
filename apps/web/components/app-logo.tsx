@@ -3,26 +3,24 @@ import Link from 'next/link';
 import { cn } from '@kit/ui/utils';
 
 /**
- * Logo Prospectigo « Le repère » (choisi le 2/11/2026), dans l'esprit du logo
- * d'ElevenLabs : un symbole fait avec les lettres elles-mêmes. Une barre
- * surmontée d'un point orange (l'épingle Google Maps réduite au minimum),
- * posée devant le nom.
+ * Logo Prospectigo « Le repère » (choisi le 2/11/2026, version validée sur
+ * le téléphone de Gabriel) : un gros point orange posé au-dessus d'un petit
+ * trait, comme une épingle au-dessus de son point d'ancrage, devant le nom.
  *
- * Les proportions sont mesurées sur Host Grotesk graisse 600 (unités pour
- * 1000 em) : hauteur des capitales 700, épaisseur du fût 120. Le point fait
- * 2,15 fûts de diamètre, l'espace au-dessus de la barre 0,55 fût, l'espace
- * avant le nom 1,45 fût. Les mêmes chiffres servent aux icônes (favicon) et
- * aux e-mails.
+ * Proportions en unités pour 1000 em (Host Grotesk 600, capitales = 700) :
+ * point de 498 de diamètre aligné sur le haut des capitales, trait de
+ * 234 × 62 posé sur la ligne de base, 373 d'espace avant le nom. Les mêmes
+ * chiffres servent aux icônes (favicon) et aux e-mails.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg
       aria-hidden
-      viewBox={'0 0 258 700'}
-      className={cn('h-[0.7em] w-[0.258em] shrink-0', className)}
+      viewBox={'0 0 498 700'}
+      className={cn('h-[0.7em] w-[0.498em] shrink-0', className)}
     >
-      <circle cx={129} cy={129} r={129} className={'fill-brand'} />
-      <rect x={69} y={324} width={120} height={376} fill={'currentColor'} />
+      <circle cx={249} cy={249} r={249} className={'fill-brand'} />
+      <rect x={132} y={638} width={234} height={62} fill={'currentColor'} />
     </svg>
   );
 }
@@ -40,7 +38,7 @@ export function LogoImage({
         className,
       )}
     >
-      <LogoMark className={'mr-[0.174em]'} />
+      <LogoMark className={'mr-[0.373em]'} />
       Prospectigo
     </span>
   );

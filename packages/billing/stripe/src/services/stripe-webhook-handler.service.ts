@@ -209,7 +209,22 @@ export class StripeWebhookHandlerService implements BillingWebhookHandlerService
     const session = event.data.object;
     const isSubscription = session.mode === 'subscription';
 
-    const accountId = session.client_reference_id!;
+    // Le compte Stripe est partagé avec une autre activité (Review Cleaner) :
+    // un paiement qui ne vient pas de l'app n'a pas d'organisation et n'est pas
+    // pour nous. On l'ignore (réponse 200) au lieu d'échouer, sinon Stripe
+    // relance l'événement puis finit par désactiver le webhook.
+    if (!session.client_reference_id) {
+      const logger = await getLogger();
+
+      logger.info(
+        { sessionId: session.id },
+        'Checkout session without client_reference_id: not ours, ignored.',
+      );
+
+      return;
+    }
+
+    const accountId = session.client_reference_id;
     const customerId = session.customer as string;
 
     // if it's a subscription, we need to retrieve the subscription
@@ -321,7 +336,19 @@ export class StripeWebhookHandlerService implements BillingWebhookHandlerService
     const stripe = await this.loadStripe();
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-    const accountId = subscription.metadata.accountId as string;
+    const accountId = subscription.metadata?.accountId as string | undefined;
+
+    // Abonnement d'une autre activité du même compte Stripe : pas pour nous.
+    if (!accountId) {
+      const logger = await getLogger();
+
+      logger.info(
+        { subscriptionId },
+        'Subscription without accountId metadata: not ours, ignored.',
+      );
+
+      return;
+    }
 
     const subscriptionPayloadBuilderService =
       createStripeSubscriptionPayloadBuilderService();
@@ -428,7 +455,17 @@ export class StripeWebhookHandlerService implements BillingWebhookHandlerService
     }
 
     // retrieve account ID from the metadata
-    const accountId = subscription.metadata?.accountId as string;
+    const accountId = subscription.metadata?.accountId as string | undefined;
+
+    // Facture d'une autre activité du même compte Stripe : pas pour nous.
+    if (!accountId) {
+      logger.info(
+        { subscriptionId, customerId },
+        'Invoice subscription without accountId metadata: not ours, ignored.',
+      );
+
+      return;
+    }
 
     const periodStartsAt =
       subscriptionPayloadBuilderService.getPeriodStartsAt(subscription);

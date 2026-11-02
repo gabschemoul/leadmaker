@@ -177,6 +177,7 @@ Pistes à discuter :
 - **Choix du message (2/11)** : on coche un ou plusieurs des 4 messages de l'étape Rédiger ; plusieurs cochés = test A/B, envoyés à parts égales. Pour savoir lequel « gagne », il faut le suivi des réponses (lot 3) : sans lui, on ne compte que les envois par message.
 - **Mode Avancé** : l'écran actuel (a/b/c).
 - **Maquette cliquable** : https://claude.ai/artifact/9NemsP4RpCnLuPMCL8PZ6W
+- Vocabulaire (2/11) : ne plus écrire « robot » dans l'app et le site, mais « Prospectigo » (≈ 23 textes à reprendre, dans la même livraison).
 - À revoir aussi plus tard : l'étape 3 « Rédiger ».
 
 ## Déjà prévu (liste du 31 octobre)

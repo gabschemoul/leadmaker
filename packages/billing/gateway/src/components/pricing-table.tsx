@@ -189,20 +189,13 @@ function PricingItem(
     >
       <div className={'flex flex-col gap-y-4'}>
         {/* Carte du haut façon ElevenLabs : nom en haut, prix en bas. L'offre
-            mise en avant reçoit le dégradé de la marque. */}
+            mise en avant reçoit le fond liquide de la marque, texte noir. */}
         <div
           className={cn(
             'relative flex min-h-[11.5rem] flex-col justify-between overflow-hidden rounded-2xl p-4',
-            highlighted ? 'text-white' : 'bg-muted',
+            // bg-fluid : fond liquide irisé de la marque (apps/web/styles/visuals.css)
+            highlighted ? 'bg-fluid text-black' : 'bg-muted',
           )}
-          style={
-            highlighted
-              ? {
-                  background:
-                    'radial-gradient(120% 90% at 0% 0%, #2b7fff 0%, transparent 60%), radial-gradient(110% 110% at 100% 100%, #ff8a4c 0%, transparent 55%), #e0441a',
-                }
-              : undefined
-          }
         >
           <div className={'flex flex-col gap-y-1.5'}>
             <div className={'flex items-center justify-between gap-x-2'}>
@@ -220,7 +213,7 @@ function PricingItem(
                   className={cn(
                     'inline-flex h-6 items-center rounded-full px-2.5 text-xs',
                     highlighted
-                      ? 'ring-1 ring-white/70'
+                      ? 'bg-white/75 text-black'
                       : 'bg-card ring-pill-ring shadow-soft ring-[0.5px]',
                   )}
                 >
@@ -237,7 +230,7 @@ function PricingItem(
             <span
               className={cn(
                 `min-h-[2.6rem] text-[0.875rem] leading-[1.45] tracking-[0.01em]`,
-                highlighted ? 'text-white/80' : 'text-muted-foreground',
+                highlighted ? 'text-black/65' : 'text-muted-foreground',
               )}
             >
               <Trans
@@ -275,7 +268,7 @@ function PricingItem(
               <span
                 className={cn(
                   `flex items-center gap-x-1 text-xs first-letter:uppercase`,
-                  highlighted ? 'text-white/80' : 'text-muted-foreground',
+                  highlighted ? 'text-black/65' : 'text-muted-foreground',
                 )}
               >
                 <span>
@@ -420,7 +413,7 @@ function Price({
         <span
           className={cn(
             'text-sm',
-            highlighted ? 'text-white/80' : 'text-muted-foreground',
+            highlighted ? 'text-black/65' : 'text-muted-foreground',
           )}
         >
           <span>/</span>

@@ -219,6 +219,59 @@ export function SectionIntro({
 }
 
 /**
+ * Bandeau de fin de page sur le fond liquide irisé (façon Apollo) : grand
+ * titre noir et pilules noir/blanc, identiques en mode clair et sombre.
+ */
+export function CtaBand({
+  title,
+  primary,
+  secondary,
+}: {
+  title: React.ReactNode;
+  primary: { href: string; label: React.ReactNode };
+  secondary?: { href: string; label: React.ReactNode };
+}) {
+  return (
+    <Band>
+      <div className={'py-6 sm:px-3'}>
+        <div
+          className={
+            'bg-fluid flex min-h-[15rem] flex-col justify-center gap-y-6 overflow-hidden rounded-2xl px-6 py-10 sm:px-10 md:min-h-[18rem]'
+          }
+        >
+          <DisplayTitle size={'section'} className={'max-w-[30rem] text-black'}>
+            {title}
+          </DisplayTitle>
+
+          <div className={'flex flex-wrap gap-2'}>
+            <PillLink
+              href={primary.href}
+              size={'lg'}
+              className={'bg-black text-white hover:bg-stone-800'}
+            >
+              {primary.label}
+            </PillLink>
+
+            {secondary ? (
+              <PillLink
+                href={secondary.href}
+                size={'lg'}
+                variant={'secondary'}
+                className={
+                  'bg-white text-black hover:bg-white/80 dark:hover:bg-white/80'
+                }
+              >
+                {secondary.label}
+              </PillLink>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </Band>
+  );
+}
+
+/**
  * Carte grise façon ElevenLabs : pas de bordure, pas d'ombre, le texte posé
  * en bas (libellé gris puis phrase noire). `visual` occupe le haut.
  */

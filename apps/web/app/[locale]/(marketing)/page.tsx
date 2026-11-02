@@ -1,14 +1,4 @@
-import Image from 'next/image';
-
-import {
-  Copy,
-  FolderKanban,
-  Mail,
-  MapPin,
-  Search,
-  Send,
-  ShieldCheck,
-} from 'lucide-react';
+import { Copy, FolderKanban, Mail, ShieldCheck } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 import { PricingTable } from '@kit/billing-gateway/marketing';
@@ -19,26 +9,34 @@ import pathsConfig from '~/config/paths.config';
 import {
   Band,
   BandBody,
+  CtaBand,
   DisplayTitle,
   GrayCard,
   PillLink,
   SectionIntro,
 } from './_components/el';
-import { HomeDemo } from './_components/home-demo';
-import { Aura, FormVisual, MapVisual } from './_components/home-visuals';
+import {
+  BeamScene,
+  FiltersScene,
+  FormScene,
+  LineArt,
+  PilotScene,
+  RobotScene,
+} from './_components/scenes';
 
 /**
- * Page d'accueil Prospectigo, DA « façon ElevenLabs » (relooking du 2/11/2026).
- * Les textes vivent dans marketing.json.
+ * Page d'accueil Prospectigo, DA « façon ElevenLabs » (relooking du 2/11/2026)
+ * et visuels « façon Apollo » (scenes.tsx). Les textes vivent dans
+ * marketing.json.
  */
 async function Home() {
   const t = await getTranslations('marketing.home');
   const tCommon = await getTranslations('common');
 
   const steps = [
-    { key: 'step1', icon: <MapPin /> },
-    { key: 'step2', icon: <Search /> },
-    { key: 'step3', icon: <Send /> },
+    { key: 'step1', art: 'target' },
+    { key: 'step2', art: 'find' },
+    { key: 'step3', art: 'contact' },
   ] as const;
 
   const smallFeatures = [
@@ -52,7 +50,8 @@ async function Home() {
 
   return (
     <div className={'flex flex-col'}>
-      {/* Héros : titre fin à gauche, phrase à droite, deux pilules, puis la démo */}
+      {/* Héros : titre fin à gauche, phrase à droite, deux pilules, puis le
+          robot au travail sur le fond liquide */}
       <Band topRule={false} innerClassName={'sm:border-x-0'}>
         <div className={'flex flex-col gap-y-12 pt-16 pb-20 md:pt-28'}>
           <div className={'grid gap-x-12 gap-y-6 md:grid-cols-2'}>
@@ -80,7 +79,7 @@ async function Home() {
             </p>
           </div>
 
-          <HomeDemo />
+          <RobotScene />
         </div>
       </Band>
 
@@ -131,7 +130,7 @@ async function Home() {
             {steps.map((step) => (
               <GrayCard
                 key={step.key}
-                icon={step.icon}
+                visual={<LineArt kind={step.art} />}
                 label={t(`${step.key}Label`)}
                 description={t(step.key)}
               />
@@ -160,25 +159,13 @@ async function Home() {
                 className={'min-h-[28rem]'}
                 label={t('feature1Label')}
                 description={t('feature1')}
-                visual={
-                  <div className={'absolute inset-0 -mx-4 -mt-4'}>
-                    <Aura className={'top-10 left-1/4'} />
-                    <MapVisual />
-                  </div>
-                }
+                visual={<BeamScene />}
               />
               <GrayCard
                 className={'min-h-[28rem]'}
                 label={t('feature2Label')}
                 description={t('feature2')}
-                visual={
-                  <>
-                    <Aura className={'top-0 right-1/4'} />
-                    <div className={'relative flex w-full justify-center'}>
-                      <FormVisual />
-                    </div>
-                  </>
-                }
+                visual={<FormScene />}
               />
             </div>
 
@@ -196,7 +183,7 @@ async function Home() {
         </BandBody>
       </Band>
 
-      {/* Contrôle : capture de l'application dans un cadre gris */}
+      {/* Contrôle : les filtres et le pilote automatique */}
       <Band>
         <BandBody>
           <SectionIntro
@@ -205,20 +192,18 @@ async function Home() {
             intro={t('controlText')}
           />
 
-          <div className={'bg-muted mt-10 rounded-2xl p-2.5 sm:-mx-4 sm:p-3'}>
-            <Image
-              className={'w-full rounded-xl dark:hidden'}
-              src={'/images/prospectigo-forms-v3.png'}
-              alt={t('controlImageAlt')}
-              width={1568}
-              height={610}
+          <div className={'mt-10 grid gap-2.5 sm:-mx-4 md:grid-cols-2'}>
+            <GrayCard
+              className={'min-h-[28rem]'}
+              label={t('controlCard1Label')}
+              description={t('controlCard1')}
+              visual={<FiltersScene />}
             />
-            <Image
-              className={'hidden w-full rounded-xl dark:block'}
-              src={'/images/prospectigo-forms-dark-v3.png'}
-              alt={t('controlImageAlt')}
-              width={1568}
-              height={610}
+            <GrayCard
+              className={'min-h-[28rem]'}
+              label={t('controlCard2Label')}
+              description={t('controlCard2')}
+              visual={<PilotScene />}
             />
           </div>
         </BandBody>
@@ -257,25 +242,15 @@ async function Home() {
         </BandBody>
       </Band>
 
-      {/* Bandeau final : une ligne, deux pilules */}
-      <Band>
-        <div
-          className={
-            'flex flex-col gap-6 py-12 sm:px-7 md:flex-row md:items-center md:justify-between'
-          }
-        >
-          <DisplayTitle size={'section'}>{t('ctaTitle')}</DisplayTitle>
-
-          <div className={'flex flex-wrap gap-2'}>
-            <PillLink href={'/contact'} variant={'secondary'} size={'lg'}>
-              {tCommon('contactUs')}
-            </PillLink>
-            <PillLink href={pathsConfig.auth.signUp} size={'lg'}>
-              {tCommon('getStarted')}
-            </PillLink>
-          </div>
-        </div>
-      </Band>
+      {/* Bandeau final sur le fond liquide */}
+      <CtaBand
+        title={t('ctaTitle')}
+        primary={{
+          href: pathsConfig.auth.signUp,
+          label: tCommon('getStarted'),
+        }}
+        secondary={{ href: '/contact', label: tCommon('contactUs') }}
+      />
     </div>
   );
 }

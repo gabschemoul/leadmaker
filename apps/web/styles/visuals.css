@@ -1,0 +1,192 @@
+/*
+* visuals.css
+*
+* Visuels du site vitrine « façon Apollo » (2/11/2026) : dégradé irisé de la
+* marque (orange → rose → bleu), fond liquide animé, liseré sous les cartes et
+* animations des scènes. Utilisé par (marketing)/_components/scenes.tsx.
+ */
+
+:root {
+  --iri-1: #ff4704;
+  --iri-2: #ff9b5e;
+  --iri-3: #ffc9d6;
+  --iri-4: #bfe3ff;
+  --iri-5: #6fb0ff;
+  --iri-6: #2b7fff;
+}
+
+@layer components {
+  /* Le dégradé irisé « à plat » : liserés, petites surfaces. */
+  .bg-iridescent {
+    background-image: linear-gradient(
+      100deg,
+      var(--iri-1) 0%,
+      var(--iri-2) 20%,
+      var(--iri-3) 42%,
+      var(--iri-4) 66%,
+      var(--iri-5) 84%,
+      var(--iri-6) 100%
+    );
+  }
+
+  /* Le fond liquide : grandes taches de couleur qui dérivent lentement, avec
+     un léger grain. Le texte posé dessus reste noir, même en mode sombre. */
+  .bg-fluid {
+    position: relative;
+    isolation: isolate;
+    background-color: #ffe9dc;
+    background-image:
+      radial-gradient(40% 55% at 18% 30%, var(--iri-1) 0%, transparent 70%),
+      radial-gradient(45% 60% at 82% 25%, var(--iri-3) 0%, transparent 70%),
+      radial-gradient(50% 60% at 60% 85%, #9fd3ff 0%, transparent 70%),
+      radial-gradient(35% 45% at 35% 80%, var(--iri-2) 0%, transparent 70%),
+      radial-gradient(60% 60% at 95% 90%, var(--iri-6) 0%, transparent 70%);
+    background-size: 140% 140%;
+    animation: fluid-drift 18s ease-in-out infinite alternate;
+  }
+
+  .bg-fluid::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.35;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  .dark .bg-fluid {
+    filter: brightness(0.92) saturate(0.95);
+  }
+
+  /* Le liseré : le dégradé dépasse de 10 px sous la carte, comme un reflet.
+     Le parent doit isoler (classe `isolate`) pour que le dégradé passe sous
+     le fond blanc de la carte et non sous toute la page. */
+  .lisere {
+    position: relative;
+  }
+
+  .lisere::before {
+    content: '';
+    position: absolute;
+    inset: -1px -1px -10px -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: linear-gradient(
+      100deg,
+      var(--iri-1) 0%,
+      var(--iri-2) 20%,
+      var(--iri-3) 42%,
+      var(--iri-4) 66%,
+      var(--iri-5) 84%,
+      var(--iri-6) 100%
+    );
+  }
+
+  /* Scène « robot au travail » : chaque étape s'allume à son tour. */
+  .scene-step {
+    animation: scene-lit 12.5s infinite;
+  }
+
+  .scene-ring {
+    animation: scene-ring 12.5s infinite;
+  }
+
+  .scene-caret {
+    animation: scene-blink 1s steps(1) infinite;
+  }
+
+  .scene-pulse {
+    animation: scene-pulse 1.8s infinite;
+  }
+
+  .scene-enter {
+    animation: scene-enter 6s ease-out infinite;
+  }
+}
+
+@keyframes fluid-drift {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+@keyframes scene-lit {
+  0%,
+  22% {
+    color: #000;
+  }
+  26%,
+  100% {
+    color: rgb(0 0 0 / 0.32);
+  }
+}
+
+@keyframes scene-ring {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  6% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  20% {
+    opacity: 1;
+  }
+  26%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes scene-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes scene-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(47 168 79 / 0.5);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgb(47 168 79 / 0);
+  }
+}
+
+@keyframes scene-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.97);
+  }
+  10%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-fluid,
+  .scene-caret,
+  .scene-pulse,
+  .scene-enter {
+    animation: none;
+  }
+
+  .scene-step {
+    animation: none;
+    color: #000;
+  }
+
+  .scene-ring {
+    animation: none;
+    opacity: 0;
+  }
+}

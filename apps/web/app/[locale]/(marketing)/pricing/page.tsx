@@ -5,8 +5,8 @@ import { PricingTable } from '@kit/billing-gateway/marketing';
 import {
   Band,
   BandBody,
+  CtaBand,
   DisplayTitle,
-  PillLink,
 } from '~/(marketing)/_components/el';
 import { SitePageHeader } from '~/(marketing)/_components/site-page-header';
 import billingConfig from '~/config/billing.config';
@@ -82,24 +82,14 @@ async function PricingPage() {
         </BandBody>
       </Band>
 
-      <Band>
-        <div
-          className={
-            'flex flex-col gap-6 py-12 sm:px-7 md:flex-row md:items-center md:justify-between'
-          }
-        >
-          <DisplayTitle size={'section'}>{t('home.ctaTitle')}</DisplayTitle>
-
-          <div className={'flex flex-wrap gap-2'}>
-            <PillLink href={'/contact'} variant={'secondary'} size={'lg'}>
-              {tCommon('contactUs')}
-            </PillLink>
-            <PillLink href={pathsConfig.auth.signUp} size={'lg'}>
-              {tCommon('getStarted')}
-            </PillLink>
-          </div>
-        </div>
-      </Band>
+      <CtaBand
+        title={t('home.ctaTitle')}
+        primary={{
+          href: pathsConfig.auth.signUp,
+          label: tCommon('getStarted'),
+        }}
+        secondary={{ href: '/contact', label: tCommon('contactUs') }}
+      />
     </div>
   );
 }

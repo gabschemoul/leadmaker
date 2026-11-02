@@ -30,6 +30,8 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 - Aussi corrigé : pour les artisans sans adresse (plombiers, électriciens…), le robot ouvrait la fiche juste pour lire l'activité. Elle est maintenant lue sur la carte.
 - Contrôle : plombiers à Lyon, 36 prospects gardés avant comme après, 0 fiche ouverte au lieu de 7 à 11, 9 secondes au lieu de 32.
 - Le gain réel en proxy sera mesuré sur le vrai trafic après la mise à jour des robots.
+- **Mis en ligne le 2/11 à 12h48**, vérifié 10 min : 0 plantage, ~3 100 prospects/h, 1,7 Mo par prospect (2 avant).
+- **Estimation des listes compactes (2/11, après-midi)** : l'estimation (qui n'ouvre jamais les fiches) comptait « sans site » toutes les cartes d'une liste compacte, d'où des restaurants, hôtels, coiffeurs… très sous-estimés. Elle compte maintenant ces cartes à 86 % (149 sur 173 dans l'échantillon), de façon fixe par fiche pour que le dédoublonnage reste juste. Contrôle à Lyon sans ouvrir de fiche : Restaurant 0 → 111 « avec site » sur 120 cartes, Hôtel 0 → 99, Plombiers inchangés (89). Robots à mettre à jour.
 
 ### 12. Choisir les activités qui rapportent, abandonner vite les autres 🟡 — FAIT en pré-production le 2/11, à mettre en ligne après validation du n°11
 - **Avant** : le robot essayait chaque activité une fois avant de creuser les bonnes. Sur « Namma test rapiditié » (3 896 activités), 1 090 activités essayées, 392 ont rapporté, 0 abandonnée ; 1 300 recherches en file dont ~1 230 sur des activités jamais essayées.
@@ -141,6 +143,7 @@ Pistes à discuter :
 ---
 
 ## Livré
+- ~~Mettre une campagne en pause arrête le robot entre deux fiches (plus de prospects qui arrivent pendant 5 min « en pause »)~~ (2/11, robots mis à jour 14h25)
 - ~~Modifier une campagne, même lancée~~ (31/10)
 - ~~Dupliquer une campagne~~ (31/10)
 - ~~Le lien d'invitation n'est plus perdu à l'inscription~~ (1/11)

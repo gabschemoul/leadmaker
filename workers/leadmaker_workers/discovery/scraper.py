@@ -135,6 +135,9 @@ class Place:
     latitude: float | None = None
     longitude: float | None = None
     card_category: str = ""  # activité affichée sur la carte de résultat (anglais)
+    # Liste compacte (aucun bouton sur la carte) et pas de lien « Website » : le site éventuel n'est visible
+    # que sur la fiche. Sert à l'estimation, qui n'ouvre jamais les fiches (voir runner.estimate).
+    site_unknown: bool = False
 
 
 def _parse_float(txt: str | None) -> float | None:
@@ -492,7 +495,8 @@ class GMapsScraper:
             for c in self._collect_cards(page, max_results):
                 place = Place(name=c["name"], rating=_parse_float(c["star"]), review_count=_parse_count(c["star_text"]),
                               website=c["site"], maps_url=c["href"].split("?")[0],
-                              card_category=card_category(c.get("text", "")))
+                              card_category=card_category(c.get("text", "")),
+                              site_unknown=not c["site"] and card_hides_buttons(c.get("actions") or []))
                 place.latitude, place.longitude = coords(c["href"])
                 m = PLACE_ID.search(c["href"])
                 place.place_id = m.group(1) if m else place.maps_url

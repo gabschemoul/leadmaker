@@ -1,6 +1,7 @@
 """Exécute une tâche de découverte : une recherche « catégorie in ville, pays » pour une campagne."""
 from __future__ import annotations
 
+import hashlib
 import logging
 import math
 import os
@@ -21,6 +22,10 @@ log = logging.getLogger("leadmaker.discovery")
 
 RESTART_EVERY = 20  # nouveau navigateur toutes les 20 recherches : au-delà, la mémoire monte jusqu'au plantage (2/11/2026)
 PAUSE_CHECK_SECONDS = 2.0  # le robot relit le statut de la campagne au plus toutes les 2 s pendant une recherche
+# Estimation, listes compactes : une carte sans lien « Website » et sans aucun bouton a un site 149 fois sur 173
+# (échantillon du 2/11/2026, 14 recherches FR/US). L'estimation n'ouvre pas les fiches : elle compte ces cartes
+# à cette proportion, de façon déterministe par fiche (même décision à chaque passage, dédoublonnage intact).
+COMPACT_SITE_RATE = 149 / 173
 
 
 class CampaignPaused(RuntimeError):
@@ -86,6 +91,12 @@ def _category_matches(category: str, wanted: str) -> bool:
     # tous les mots cherchés présents, et l'activité de la fiche se termine par le dernier mot cherché
     # (« French restaurant » ✓, « Restaurant supply store » ✗)
     return all(w in have for w in need) and have[-1:] == need[-1:]
+
+
+def likely_has_site(place_id: str, rate: float = COMPACT_SITE_RATE) -> bool:
+    """Tirage déterministe : vrai pour `rate` des fiches, toujours le même pour une fiche donnée."""
+    digest = hashlib.sha1(place_id.encode("utf-8")).hexdigest()[:8]
+    return int(digest, 16) / 0xFFFFFFFF < rate
 
 
 def _category_fn(filters: dict[str, Any], label: str | None):
@@ -278,6 +289,7 @@ class DiscoveryRunner:
         cards = self._scraper().list_cards(p["query"], p["country_code"], center=center)
         proxy_bytes = self._scraper().bytes - bytes_before
         matching = []
+        compact = 0  # cartes de liste compacte sans lien « Website » (site inconnu sans ouvrir la fiche)
         for c in cards:
             if in_area and not in_area(c):
                 continue
@@ -288,7 +300,13 @@ class DiscoveryRunner:
                     continue
             elif not rating_min <= c.rating <= rating_max:
                 continue
-            if website == "with" and not c.website or website == "without" and c.website:
+            has_site = bool(c.website)
+            if not has_site and c.site_unknown and website != "all":
+                # Liste compacte : le site n'est pas visible sur la carte. Avant, ces cartes comptaient toutes
+                # pour « sans site » et l'estimation des restaurants, hôtels, coiffeurs… était très en dessous.
+                compact += 1
+                has_site = likely_has_site(c.place_id)
+            if website == "with" and not has_site or website == "without" and has_site:
                 continue
             if min_reviews and c.review_count is not None and c.review_count < min_reviews:
                 continue
@@ -297,8 +315,9 @@ class DiscoveryRunner:
             matching.append(c.place_id)
         conn.execute("select public.lm_record_estimate_search(%s, %s, %s, %s)",
                      (p["estimate_id"], len(cards), matching, bool(p.get("is_grid"))))
-        log.info("estimation | %s | %d fiches, %d correspondent", p["query"], len(cards), len(matching))
-        return {"cards": len(cards), "matching": len(matching), "proxy_bytes": proxy_bytes}
+        log.info("estimation | %s | %d fiches, %d correspondent (%d en liste compacte sans lien site)", p["query"],
+                 len(cards), len(matching), compact)
+        return {"cards": len(cards), "matching": len(matching), "compact": compact, "proxy_bytes": proxy_bytes}
 
 
 __all__ = ["CampaignPaused", "DiscoveryRunner", "BlockedError"]

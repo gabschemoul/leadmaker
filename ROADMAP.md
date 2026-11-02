@@ -174,6 +174,7 @@ Pistes à discuter :
 - **Pilote automatique (mode par défaut)** : une seule question, « Combien d'entreprises voulez-vous contacter ? » (plafonné aux crédits et aux prospects pas encore contactés), un rythme (le plus vite possible / par jour), puis le robot prépare et envoie dans la foulée, prospect après prospect, jusqu'au nombre choisi. Suivi en direct (envoyés / en cours / mis de côté) et bouton Pause.
 - **Cas douteux** (captcha, champ inconnu, pas de formulaire) : mis de côté, sans crédit dépensé ; on les retrouve dans « Vérifier » du mode Avancé.
 - **Décidé (2/11)** : ouvert à TOUS les forfaits (la validation automatique n'est plus réservée à Business/Scale) ; prospects pris dans l'ordre où ils ont été trouvés ; aperçu des 3 premiers formulaires avant d'envoyer pour la première campagne ; pilote automatique par défaut, Avancé à un clic.
+- **Choix du message (2/11)** : on coche un ou plusieurs des 4 messages de l'étape Rédiger ; plusieurs cochés = test A/B, envoyés à parts égales. Pour savoir lequel « gagne », il faut le suivi des réponses (lot 3) : sans lui, on ne compte que les envois par message.
 - **Mode Avancé** : l'écran actuel (a/b/c).
 - **Maquette cliquable** : https://claude.ai/artifact/9NemsP4RpCnLuPMCL8PZ6W
 - À revoir aussi plus tard : l'étape 3 « Rédiger ».

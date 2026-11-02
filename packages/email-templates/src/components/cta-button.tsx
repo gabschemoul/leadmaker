@@ -15,7 +15,7 @@ export function CtaButton(
         width: '100%',
         boxSizing: 'border-box',
         padding: '13px 20px',
-        borderRadius: '8px',
+        borderRadius: '999px',
         backgroundColor: emailTheme.primary,
         color: emailTheme.primaryText,
         fontSize: '16px',

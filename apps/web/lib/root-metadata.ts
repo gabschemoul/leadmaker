@@ -23,9 +23,15 @@ export const generateRootMetadata = (): Metadata => {
       title: appConfig.title,
       description: appConfig.description,
     },
+    // Logo « Le repère » (2/11/2026) : icônes générées depuis le symbole de
+    // components/app-logo.tsx.
     icons: {
-      icon: '/images/favicon/favicon.ico',
+      icon: [
+        { url: '/images/favicon/favicon.ico', sizes: '48x48' },
+        { url: '/images/favicon/favicon.svg', type: 'image/svg+xml' },
+      ],
       apple: '/images/favicon/apple-touch-icon.png',
     },
+    manifest: '/images/favicon/site.webmanifest',
   };
 };

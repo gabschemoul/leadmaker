@@ -1,10 +1,9 @@
 {
-  "name": "Makerkit",
-  "short_name": "makerkit",
-  "theme_color": "#fff",
-  "background_color": "#fff",
-  "display": "fullscreen",
-  "orientation": "portrait",
+  "name": "Prospectigo",
+  "short_name": "Prospectigo",
+  "theme_color": "#0c0a09",
+  "background_color": "#0c0a09",
+  "display": "standalone",
   "scope": "/",
   "start_url": "/",
   "icons": [
@@ -28,6 +27,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "display": "standalone"
+  ]
 }

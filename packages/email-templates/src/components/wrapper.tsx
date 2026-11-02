@@ -12,7 +12,7 @@ export function EmailWrapper(
       style={{
         backgroundColor: emailTheme.background,
         margin: 'auto',
-        fontFamily: "'Figtree', 'Segoe UI', Helvetica, Arial, sans-serif",
+        fontFamily: "'Segoe UI', Helvetica, Arial, sans-serif",
         color: emailTheme.text,
         width: '100%',
       }}

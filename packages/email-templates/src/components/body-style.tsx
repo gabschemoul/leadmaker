@@ -7,7 +7,7 @@ export function BodyStyle() {
         body {
           background-color: ${emailTheme.background};
           margin: auto;
-          font-family: 'Figtree', 'Segoe UI', Helvetica, Arial, sans-serif;
+          font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
           color: ${emailTheme.text};
         }
     `}

@@ -1,17 +1,18 @@
 /**
- * Couleurs des e-mails Prospectigo (thème « Atlas », voir apps/web/styles/theme.css).
+ * Couleurs des e-mails Prospectigo, reprises du site (relooking du 2/11/2026,
+ * gris « pierre » et boutons noirs, voir apps/web/styles/theme.css).
  * Les clients mail ignorent les variables CSS : les valeurs sont reprises en dur ici.
  */
 export const emailTheme = {
-  background: '#f3f6f5',
+  background: '#f5f3f1',
   card: '#ffffff',
-  border: '#dfe7e4',
-  text: '#1a2321',
-  muted: '#5f6f6c',
-  faint: '#8a9794',
-  primary: '#0f5a52',
+  border: '#e7e4e0',
+  text: '#1c1917',
+  muted: '#777169',
+  faint: '#a59f97',
+  primary: '#000000',
   primaryText: '#ffffff',
-  brand: '#f2b531',
-  ink: '#0e2a27',
-  codeBackground: '#eef3f1',
+  brand: '#ff4704',
+  ink: '#000000',
+  codeBackground: '#f5f3f1',
 } as const;

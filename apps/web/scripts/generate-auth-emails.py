@@ -5,8 +5,8 @@ mot de passe oublié, changement d'adresse, lien magique, invitation Supabase.
     python3 apps/web/scripts/generate-auth-emails.py
 
 Chaque modèle contient le français ET l'anglais : Supabase choisit selon les données de l'utilisateur
-(user_metadata.lang, posée à l'inscription par l'application) ; sans indication, français. Les couleurs sont
-celles de l'application (thème Atlas, apps/web/styles/theme.css). Les sujets, bilingues eux aussi, sont dans
+(user_metadata.lang, posée à l'inscription par l'application) ; sans indication, français. Les couleurs et le logo
+sont ceux de l'application (relooking du 2/11/2026, apps/web/styles/theme.css et components/app-logo.tsx). Les sujets, bilingues eux aussi, sont dans
 apps/web/supabase/config.toml. Après modification : `supabase stop && supabase start` en local, et en ligne
 apps/web/scripts/push-auth-emails.sh (base partagée prod + pré-prod).
 """
@@ -27,16 +27,16 @@ def page(title_fr, title_en, heading_fr, heading_en, body_fr, body_en, button_fr
     code = ''
     if code_fr:
         code = f'''
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 4px 0;background-color:#eef3f1;border-radius:8px">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 4px 0;background-color:#f5f3f1;border-radius:8px">
                 <tr><td style="padding:16px 8px;text-align:center">
-                  <p style="margin:0 0 6px 0;font-size:13px;line-height:18px;color:#5f6f6c">{block(code_fr, code_en)}</p>
-                  <p style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:4px;color:#0e2a27">{{{{ .Token }}}}</p>
+                  <p style="margin:0 0 6px 0;font-size:13px;line-height:18px;color:#777169">{block(code_fr, code_en)}</p>
+                  <p style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:4px;color:#000000">{{{{ .Token }}}}</p>
                 </td></tr>
               </table>'''
     after = ''
     if after_fr:
         after = f'''
-              <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#5f6f6c">{block(after_fr, after_en)}</p>'''
+              <p style="margin:16px 0 0 0;font-size:13px;line-height:20px;color:#777169">{block(after_fr, after_en)}</p>'''
     return f'''{LANG_PICK}<!DOCTYPE html>
 <html lang="{block('fr', 'en')}">
 <head>
@@ -47,24 +47,24 @@ def page(title_fr, title_en, heading_fr, heading_en, body_fr, body_en, button_fr
   <meta name="supported-color-schemes" content="light">
   <title>{block(title_fr, title_en)}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f3f6f5;font-family:'Figtree','Segoe UI',Helvetica,Arial,sans-serif;color:#1a2321">
+<body style="margin:0;padding:0;background-color:#f5f3f1;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#1c1917">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0">{block(title_fr, title_en)}</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f6f5">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f3f1">
     <tr><td align="center" style="padding:32px 20px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
-        <tr><td style="padding:0 0 20px 0;font-size:22px;line-height:28px;font-weight:800;letter-spacing:-0.5px;color:#0e2a27">
-          Prospectigo<span style="display:inline-block;width:7px;height:7px;margin-left:3px;border-radius:7px;background-color:#f2b531"></span>
+        <tr><td style="padding:0 0 20px 0;font-size:22px;line-height:28px;font-weight:700;letter-spacing:-0.5px;color:#000000">
+          <span style="display:inline-block;width:6px;margin-right:4px;vertical-align:baseline"><span style="display:block;width:6px;height:6px;border-radius:6px;background-color:#ff4704"></span><span style="display:block;width:3px;height:8px;margin:2px auto 0 auto;background-color:#000000"></span></span>Prospectigo
         </td></tr>
-        <tr><td style="padding:0 0 16px 0;font-size:22px;line-height:28px;font-weight:700;color:#0e2a27">{block(heading_fr, heading_en)}</td></tr>
-        <tr><td style="background-color:#ffffff;border:1px solid #dfe7e4;border-radius:12px;padding:28px 32px">
-              <p style="margin:0 0 14px 0;font-size:16px;line-height:24px;color:#1a2321">{block(body_fr, body_en)}</p>
+        <tr><td style="padding:0 0 16px 0;font-size:22px;line-height:28px;font-weight:700;color:#000000">{block(heading_fr, heading_en)}</td></tr>
+        <tr><td style="background-color:#ffffff;border:1px solid #e7e4e0;border-radius:12px;padding:28px 32px">
+              <p style="margin:0 0 14px 0;font-size:16px;line-height:24px;color:#1c1917">{block(body_fr, body_en)}</p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0">
                 <tr><td>
-                  <a href="{href}" target="_blank" style="display:block;box-sizing:border-box;width:100%;padding:13px 20px;border-radius:8px;background-color:#0f5a52;color:#ffffff;font-size:16px;font-weight:600;text-align:center;text-decoration:none">{block(button_fr, button_en)}</a>
+                  <a href="{href}" target="_blank" style="display:block;box-sizing:border-box;width:100%;padding:13px 20px;border-radius:999px;background-color:#000000;color:#ffffff;font-size:16px;font-weight:600;text-align:center;text-decoration:none">{block(button_fr, button_en)}</a>
                 </td></tr>
               </table>{code}{after}
         </td></tr>
-        <tr><td style="padding:16px 8px 0 8px;font-size:12px;line-height:20px;color:#8a9794">Prospectigo · <a href="https://prospectigo.com" style="color:#8a9794">prospectigo.com</a></td></tr>
+        <tr><td style="padding:16px 8px 0 8px;font-size:12px;line-height:20px;color:#a59f97">Prospectigo · <a href="https://prospectigo.com" style="color:#a59f97">prospectigo.com</a></td></tr>
       </table>
     </td></tr>
   </table>

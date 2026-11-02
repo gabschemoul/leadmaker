@@ -90,6 +90,12 @@ def main() -> None:
                     proxy_budget.add_task_bytes(conn, task.id, used)
                 except Exception:
                     log.exception("consommation du proxy non enregistrée")
+            if type(exc).__name__ == "CampaignPaused":
+                # La campagne a été mise en pause pendant la recherche : le robot s'est arrêté entre deux fiches.
+                # La tâche est annulée (pas échouée) et repartira quand la campagne reprendra.
+                queue.cancel(conn, task.id, str(exc))
+                log.info("%s", exc)
+                continue
             if "crashed" in str(exc).lower():
                 handlers.shutdown()  # onglet ou navigateur planté (mémoire) : on repart d'un navigateur neuf
             if type(exc).__name__ == "BudgetExceeded":

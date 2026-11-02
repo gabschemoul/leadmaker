@@ -92,3 +92,15 @@ def requeue(conn: psycopg.Connection, task_id: int, delay_seconds: float, error:
             where id = %s and status = 'running'""",
         (delay_seconds, error[:2000], task_id),
     )
+
+
+def cancel(conn: psycopg.Connection, task_id: int, reason: str) -> None:
+    """Tâche interrompue parce que sa campagne a été mise en pause : annulée, pas échouée.
+
+    Elle repart telle quelle à la reprise (lm_start_campaign remet en file les tâches annulées, essais à zéro)."""
+    conn.execute(
+        """update public.lm_tasks
+              set status = 'cancelled', finished_at = now(), worker_id = null, locked_at = null, error = %s
+            where id = %s and status = 'running'""",
+        (reason[:2000], task_id),
+    )

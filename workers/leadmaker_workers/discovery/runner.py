@@ -20,6 +20,15 @@ from .text import normalize, site_key
 log = logging.getLogger("leadmaker.discovery")
 
 RESTART_EVERY = 20  # nouveau navigateur toutes les 20 recherches : au-delà, la mémoire monte jusqu'au plantage (2/11/2026)
+PAUSE_CHECK_SECONDS = 2.0  # le robot relit le statut de la campagne au plus toutes les 2 s pendant une recherche
+
+
+class CampaignPaused(RuntimeError):
+    """La campagne a été mise en pause : le robot s'est arrêté entre deux fiches.
+
+    Avant (2/11/2026), il finissait sa recherche et des prospects arrivaient encore pendant plusieurs minutes
+    alors que l'écran disait « En pause ». La recherche interrompue est remise de côté (tâche annulée) et
+    repart de zéro à la reprise ; les fiches déjà gardées sont reconnues (lm_mark_place_seen) et sautées."""
 
 
 def _exclude_fn(filters: dict[str, Any]):
@@ -112,6 +121,10 @@ class DiscoveryRunner:
             "select id, status, space_id, country_code, filters from public.lm_campaigns where id = %s",
             (p["campaign_id"],),
         ).fetchone()
+        if campaign and campaign["status"] == "paused":
+            # Mise en pause entre la planification et le début de la recherche : elle repartira à la reprise
+            conn.execute("select public.lm_release_search(%s, %s)", (p["campaign_id"], p["gcid"]))
+            raise CampaignPaused(f"campagne en pause : recherche « {p['query']} » reportée à la reprise")
         if not campaign or campaign["status"] != "running":
             conn.execute("select public.lm_release_search(%s, %s)", (p["campaign_id"], p["gcid"]))
             return {"skipped": "campagne inactive"}
@@ -152,54 +165,87 @@ class DiscoveryRunner:
             category_ok=category_ok,
         )
 
+        # Pendant la recherche, le robot relit le statut de la campagne (au plus toutes les 2 s) : mise en
+        # pause, il s'arrête entre deux fiches au lieu de finir le quartier (voir CampaignPaused).
+        pause_state = {"checked": time.monotonic(), "paused": False}
+
+        def paused() -> bool:
+            if pause_state["paused"]:
+                return True
+            now = time.monotonic()
+            if now - pause_state["checked"] < PAUSE_CHECK_SECONDS:
+                return False
+            pause_state["checked"] = now
+            try:
+                row = conn.execute("select status from public.lm_campaigns where id = %s", (p["campaign_id"],)).fetchone()
+            except Exception:
+                log.warning("statut de la campagne illisible, la recherche continue", exc_info=True)
+                return False
+            pause_state["paused"] = bool(row) and row["status"] == "paused"
+            return pause_state["paused"]
+
         started = time.monotonic()
         cards = new = kept = 0
         stopped = None
-        bytes_before = self._scraper().bytes
-        opened_before = self._scraper().opened
+        # Une seule référence au navigateur pour toute la recherche : self._scraper() peut le remplacer par un
+        # neuf (RESTART_EVERY) et ses compteurs repartiraient de zéro en cours de route.
+        scraper = self._scraper()
+        bytes_before = scraper.bytes
+        opened_before = scraper.opened
         center = None
         if p.get("latitude") is not None and p.get("longitude") is not None:
             center = (float(p["latitude"]), float(p["longitude"]), int(p.get("zoom") or 15))
-        for kind, obj in self._scraper().search(p["query"], p["country_code"], filters,
-                                               max_results=int(settings["max_results"]), known=known,
-                                               center=center):
-            if kind == "info":
-                continue
-            cards += 1
-            if kind == "known":
-                continue
-            new += 1
-            if kind != "place":
-                continue
-            # La fiche ouverte confirme l'activité principale
-            if category_ok and obj.category and not category_ok(obj.category):
-                continue
-            # Sans site web : prospect gardé quand même (à appeler ou à exporter), identifié par sa fiche Google
-            key = site_key(obj.website) or f"maps:{obj.place_id}"
-            outcome = conn.execute(
-                "select public.lm_record_prospect(%s, %s) as r",
-                (p["campaign_id"], Jsonb({
-                    "place_id": obj.place_id, "name": obj.name, "category": obj.category, "rating": obj.rating,
-                    "review_count": obj.review_count, "address": obj.address, "phone": obj.phone,
-                    "website": obj.website, "site_key": key, "maps_url": obj.maps_url,
-                    "city": p.get("city"),
-                })),
-            ).fetchone()["r"]
-            if outcome == "kept":
-                kept += 1
-            elif outcome == "no_credits":
-                stopped = "no_credits"
-                break
+        scraper.stop_flag = paused
+        try:
+            for kind, obj in scraper.search(p["query"], p["country_code"], filters,
+                                            max_results=int(settings["max_results"]), known=known, center=center):
+                if kind == "info":
+                    continue
+                cards += 1
+                if kind == "known":
+                    continue
+                new += 1
+                if kind != "place":
+                    continue
+                # La fiche ouverte confirme l'activité principale
+                if category_ok and obj.category and not category_ok(obj.category):
+                    continue
+                # Sans site web : prospect gardé quand même (à appeler ou à exporter), identifié par sa fiche Google
+                key = site_key(obj.website) or f"maps:{obj.place_id}"
+                outcome = conn.execute(
+                    "select public.lm_record_prospect(%s, %s) as r",
+                    (p["campaign_id"], Jsonb({
+                        "place_id": obj.place_id, "name": obj.name, "category": obj.category, "rating": obj.rating,
+                        "review_count": obj.review_count, "address": obj.address, "phone": obj.phone,
+                        "website": obj.website, "site_key": key, "maps_url": obj.maps_url,
+                        "city": p.get("city"),
+                    })),
+                ).fetchone()["r"]
+                if outcome == "kept":
+                    kept += 1
+                elif outcome == "no_credits":
+                    stopped = "no_credits"
+                    break
+        finally:
+            scraper.stop_flag = lambda: False
 
         duration_ms = int((time.monotonic() - started) * 1000)
+        proxy_bytes = scraper.bytes - bytes_before
+        opened = scraper.opened - opened_before
+        if pause_state["paused"]:
+            # Arrêt entre deux fiches : la place est libérée, la tâche sera annulée (main.py) et repartira
+            # à la reprise de la campagne. Les prospects déjà gardés le restent.
+            conn.execute("select public.lm_release_search(%s, %s)", (p["campaign_id"], p["gcid"]))
+            raise CampaignPaused(
+                f"campagne mise en pause : recherche « {p['query']} » arrêtée après {cards} fiches "
+                f"({kept} retenues, {duration_ms / 1000:.0f} s, {proxy_bytes / 1e6:.1f} Mo), reprise plus tard"
+            )
         conn.execute(
             "select public.lm_finish_search(%s, %s, %s, %s, %s, %s, %s, %s)",
             (p["campaign_id"], p["gcid"], p["zone_idx"], cards, new, kept, duration_ms, stopped),
         )
-        proxy_bytes = self._scraper().bytes - bytes_before
         log.info("%s | %d fiches, %d nouvelles, %d retenues (%.1fs, %.1f Mo)", p["query"], cards, new, kept,
                  duration_ms / 1000, proxy_bytes / 1e6)
-        opened = self._scraper().opened - opened_before
         return {"cards": cards, "new": new, "kept": kept, "opened": opened, "stopped": stopped,
                 "proxy_bytes": proxy_bytes}
 
@@ -255,4 +301,4 @@ class DiscoveryRunner:
         return {"cards": len(cards), "matching": len(matching), "proxy_bytes": proxy_bytes}
 
 
-__all__ = ["DiscoveryRunner", "BlockedError"]
+__all__ = ["CampaignPaused", "DiscoveryRunner", "BlockedError"]

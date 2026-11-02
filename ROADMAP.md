@@ -155,13 +155,13 @@ Pistes à discuter :
   - Prises de contact : « Formulaires en préparation : 25 sites », « Formulaire trouvé sur dupont-plomberie.fr/contact », « Message envoyé à Dupont Plomberie », « Site inaccessible, passé ».
 - **À trancher** : le niveau de détail (une ligne par recherche ou un résumé par minute), et ce qu'on ne montre jamais (plafond de proxy, budget par client, pannes internes).
 
-### 16. E-mails de l’app en français, aux couleurs de Prospectigo 🟢 — FAIT en pré-production le 2/11
+### 16. E-mails de l’app en français, aux couleurs de Prospectigo 🟢 — EN LIGNE le 2/11 vers 18h30 (invitation, code, suppression) ; e-mails de connexion Supabase : à pousser par Gabriel avec `push-auth-emails.sh` (jeton)
 - **Deux familles d’e-mails** : ceux envoyés par l’application (invitation à rejoindre une équipe, code de vérification, confirmation de suppression de compte) et ceux envoyés par Supabase, le service de connexion (confirmation d’adresse à l’inscription, mot de passe oublié, changement d’adresse, lien de connexion).
 - **Langue** : chaque e-mail part dans la langue de la personne. Pour l’invitation et le code : la langue de l’interface de celui qui déclenche l’envoi. Pour les e-mails de connexion : la langue de l’interface au moment de l’inscription (mémorisée sur le compte) ; sans indication, français. Un utilisateur inscrit avant cette version reçoit les e-mails en français.
 - **Apparence** : logo texte Prospectigo avec le point jaune, bouton vert, carte blanche sur fond gris-vert (thème Atlas), même gabarit pour tous.
 - **Mise en ligne** : l’invitation et le code suivent la publication normale (staging → main). Les e-mails de connexion sont réglés dans Supabase, partagé par prospectigo.com et la pré-production : `./apps/web/scripts/push-auth-emails.sh` (jeton personnel Supabase à créer une fois), à lancer au « publie ». Les modèles sont générés par `apps/web/scripts/generate-auth-emails.py`.
 
-### 17. Alerte quand les robots n’avancent plus 🟢 — FAIT en pré-production le 2/11
+### 17. Alerte quand les robots n’avancent plus 🟢 — EN LIGNE le 2/11 vers 18h30 (surveillants `watch` et `watch-send` démarrés sur les deux serveurs, clé Resend et adresse d’alerte en place)
 - **Le principe** : un petit surveillant tourne sur chaque serveur. Toutes les 2 minutes il regarde la base : y a-t-il du travail à faire (recherches dont l’heure est venue, formulaires à préparer, messages validés à envoyer) et quelque chose s’est-il terminé depuis 20 minutes ? Si du travail attend et que rien ne se termine, Gabriel reçoit un e-mail (Resend, depuis noreply@prospectigo.com).
 - **Deux surveillants, croisés** : le serveur principal surveille les prises de contact (robots d’envoi, sur l’autre serveur), le serveur d’envoi surveille la recherche. Si un serveur meurt entièrement, l’autre le signale. Base de données injoignable 10 minutes → alerte aussi.
 - **Pas de fausse alerte** pour les pauses normales : campagne en pause, plafond quotidien de proxy atteint (recherches reportées à demain), crédits épuisés, limite d’envois du jour d’une campagne atteinte.

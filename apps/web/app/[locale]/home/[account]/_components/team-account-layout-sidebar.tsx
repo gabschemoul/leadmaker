@@ -24,7 +24,7 @@ export function TeamAccountLayoutSidebar({ account }: { account: string }) {
   const config = getTeamAccountSidebarConfig(account);
 
   return (
-    <Sidebar variant="floating" collapsible={config.sidebarCollapsedStyle}>
+    <Sidebar variant="sidebar" collapsible={config.sidebarCollapsedStyle}>
       <SidebarHeader className={'h-16 justify-center'}>
         <Suspense fallback={<SidebarHeaderSkeleton />}>
           <TeamAccountSidebarHeader account={account} />

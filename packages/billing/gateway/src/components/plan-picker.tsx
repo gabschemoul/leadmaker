@@ -274,7 +274,7 @@ export function PlanPicker(
                                   value={plan.id}
                                 />
 
-                                <span className="font-semibold">
+                                <span className="font-medium">
                                   <Trans
                                     i18nKey={`billing.plans.${product.id}.name`}
                                     defaults={product.name}
@@ -425,7 +425,7 @@ function PlanDetails({
       }
     >
       <div className={'flex flex-col space-y-1'}>
-        <span className={'text-sm font-semibold'}>
+        <span className={'text-sm font-medium'}>
           <Trans
             i18nKey={selectedProduct.name}
             defaults={selectedProduct.name}

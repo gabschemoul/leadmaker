@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import Link from 'next/link';
 
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as z from 'zod';
 
@@ -14,7 +14,6 @@ import {
   getPlanIntervals,
   getPrimaryLineItem,
 } from '@kit/billing';
-import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { If } from '@kit/ui/if';
 import { Trans } from '@kit/ui/trans';
@@ -70,8 +69,8 @@ export function PricingTable({
 
       <div
         className={
-          'flex flex-col items-start space-y-6 lg:space-y-0' +
-          ' justify-center lg:flex-row lg:gap-x-2.5'
+          'flex flex-col items-start gap-y-10 lg:flex-row lg:gap-x-2.5' +
+          ' justify-center'
         }
       >
         {visibleProducts.map((product) => {
@@ -185,129 +184,148 @@ function PricingItem(
       data-cy={'subscription-plan'}
       className={cn(
         props.className,
-        `s-full bg-muted/50 relative flex flex-1 grow flex-col items-stretch justify-between self-stretch rounded px-6 py-5 lg:w-4/12 xl:max-w-[20rem]`,
+        `relative flex w-full flex-1 grow flex-col items-stretch self-stretch lg:w-4/12 xl:max-w-[20rem]`,
       )}
     >
-      <If condition={props.product.badge}>
-        <div className={'absolute -top-2.5 left-0 flex w-full justify-center'}>
-          <Badge
-            className={highlighted ? '' : 'bg-muted'}
-            variant={highlighted ? 'default' : 'outline'}
-          >
-            <span>
-              <Trans
-                i18nKey={props.product.badge}
-                defaults={props.product.badge}
-              />
-            </span>
-          </Badge>
-        </div>
-      </If>
-
       <div className={'flex flex-col gap-y-4'}>
-        <div className={'flex flex-col'}>
-          <div className={'flex items-center space-x-6'}>
-            <b
-              className={
-                'text-secondary-foreground font-heading text-xl font-medium tracking-tight text-orange-800'
-              }
-            >
-              <Trans
-                i18nKey={props.product.name}
-                defaults={props.product.name}
-              />
-            </b>
-          </div>
+        {/* Carte du haut façon ElevenLabs : nom en haut, prix en bas. L'offre
+            mise en avant reçoit le dégradé de la marque. */}
+        <div
+          className={cn(
+            'relative flex min-h-[11.5rem] flex-col justify-between overflow-hidden rounded-2xl p-4',
+            highlighted ? 'text-white' : 'bg-muted',
+          )}
+          style={
+            highlighted
+              ? {
+                  background:
+                    'radial-gradient(120% 90% at 0% 0%, #2b7fff 0%, transparent 60%), radial-gradient(110% 110% at 100% 100%, #ff8a4c 0%, transparent 55%), #e0441a',
+                }
+              : undefined
+          }
+        >
+          <div className={'flex flex-col gap-y-1.5'}>
+            <div className={'flex items-center justify-between gap-x-2'}>
+              <b
+                className={'text-2xl leading-8 font-normal tracking-[-0.01em]'}
+              >
+                <Trans
+                  i18nKey={props.product.name}
+                  defaults={props.product.name}
+                />
+              </b>
 
-          {/* hauteur réservée pour deux lignes : les prix et les boutons
-              restent alignés d'une carte à l'autre (Prospectigo) */}
-          <span
-            className={cn(
-              `text-muted-foreground min-h-[3.25rem] text-base leading-relaxed tracking-tight`,
-            )}
-          >
-            <Trans
-              i18nKey={props.product.description}
-              defaults={props.product.description}
-            />
-          </span>
-        </div>
-
-        <div className={'h-px w-full border border-dashed'} />
-
-        <div className={'flex flex-col gap-y-1'}>
-          <Price
-            isMonthlyPrice={props.alwaysDisplayMonthlyPrice}
-            displayBillingPeriod={!props.plan.label}
-          >
-            <If
-              condition={!isCustom}
-              fallback={
-                <Trans i18nKey={props.plan.label} defaults={props.plan.label} />
-              }
-            >
-              <PlanCostDisplay
-                primaryLineItem={lineItem}
-                currencyCode={props.product.currency}
-                interval={interval}
-                alwaysDisplayMonthlyPrice={props.alwaysDisplayMonthlyPrice}
-              />
-            </If>
-          </Price>
-
-          <If condition={props.plan.name}>
-            <span
-              className={cn(
-                `animate-in slide-in-from-left-4 fade-in text-muted-foreground flex items-center gap-x-1 text-xs capitalize`,
-              )}
-            >
-              <span>
-                <If
-                  condition={props.plan.interval}
-                  fallback={<Trans i18nKey={'billing.lifetime'} />}
-                >
-                  {(interval) => (
-                    <Trans i18nKey={`billing.billingInterval.${interval}`} />
-                  )}
-                </If>
-              </span>
-
-              <If condition={lineItem && lineItem?.type !== 'flat'}>
-                <span>/</span>
-
+              <If condition={props.product.badge}>
                 <span
                   className={cn(
-                    `animate-in slide-in-from-left-4 fade-in text-xs capitalize`,
+                    'inline-flex h-6 items-center rounded-full px-2.5 text-xs',
+                    highlighted
+                      ? 'ring-1 ring-white/70'
+                      : 'bg-card ring-pill-ring shadow-soft ring-[0.5px]',
                   )}
                 >
-                  <If condition={lineItem?.type === 'per_seat'}>
+                  <Trans
+                    i18nKey={props.product.badge}
+                    defaults={props.product.badge}
+                  />
+                </span>
+              </If>
+            </div>
+
+            {/* hauteur réservée pour deux lignes : les prix et les boutons
+                restent alignés d'une carte à l'autre (Prospectigo) */}
+            <span
+              className={cn(
+                `min-h-[2.6rem] text-[0.875rem] leading-[1.45] tracking-[0.01em]`,
+                highlighted ? 'text-white/80' : 'text-muted-foreground',
+              )}
+            >
+              <Trans
+                i18nKey={props.product.description}
+                defaults={props.product.description}
+              />
+            </span>
+          </div>
+
+          <div className={'flex flex-col gap-y-0.5 pt-4'}>
+            <Price
+              highlighted={highlighted}
+              isMonthlyPrice={props.alwaysDisplayMonthlyPrice}
+              displayBillingPeriod={!props.plan.label}
+            >
+              <If
+                condition={!isCustom}
+                fallback={
+                  <Trans
+                    i18nKey={props.plan.label}
+                    defaults={props.plan.label}
+                  />
+                }
+              >
+                <PlanCostDisplay
+                  primaryLineItem={lineItem}
+                  currencyCode={props.product.currency}
+                  interval={interval}
+                  alwaysDisplayMonthlyPrice={props.alwaysDisplayMonthlyPrice}
+                />
+              </If>
+            </Price>
+
+            <If condition={props.plan.name}>
+              <span
+                className={cn(
+                  `flex items-center gap-x-1 text-xs first-letter:uppercase`,
+                  highlighted ? 'text-white/80' : 'text-muted-foreground',
+                )}
+              >
+                <span>
+                  <If
+                    condition={props.plan.interval}
+                    fallback={<Trans i18nKey={'billing.lifetime'} />}
+                  >
+                    {(interval) => (
+                      <Trans i18nKey={`billing.billingInterval.${interval}`} />
+                    )}
+                  </If>
+                </span>
+
+                <If condition={lineItem && lineItem?.type !== 'flat'}>
+                  <span>/</span>
+
+                  <span className={cn(`text-xs`)}>
+                    <If condition={lineItem?.type === 'per_seat'}>
+                      <If
+                        condition={
+                          Boolean(lineItem?.unit) && !isDefaultSeatUnit
+                        }
+                        fallback={<Trans i18nKey={'billing.perTeamMember'} />}
+                      >
+                        <Trans
+                          i18nKey={'billing.perUnitShort'}
+                          values={{
+                            unit: unitLabel,
+                          }}
+                        />
+                      </If>
+                    </If>
+
                     <If
-                      condition={Boolean(lineItem?.unit) && !isDefaultSeatUnit}
-                      fallback={<Trans i18nKey={'billing.perTeamMember'} />}
+                      condition={
+                        lineItem?.type !== 'per_seat' && lineItem?.unit
+                      }
                     >
                       <Trans
-                        i18nKey={'billing.perUnitShort'}
+                        i18nKey={'billing.perUnit'}
                         values={{
-                          unit: unitLabel,
+                          unit: lineItem?.unit,
                         }}
                       />
                     </If>
-                  </If>
-
-                  <If
-                    condition={lineItem?.type !== 'per_seat' && lineItem?.unit}
-                  >
-                    <Trans
-                      i18nKey={'billing.perUnit'}
-                      values={{
-                        unit: lineItem?.unit,
-                      }}
-                    />
-                  </If>
-                </span>
-              </If>
-            </span>
-          </If>
+                  </span>
+                </If>
+              </span>
+            </If>
+          </div>
         </div>
 
         <If condition={props.selectable}>
@@ -333,9 +351,7 @@ function PricingItem(
           </If>
         </If>
 
-        <div className={'h-px w-full border border-dashed'} />
-
-        <div className={'flex flex-col'}>
+        <div className={'flex flex-col pt-2'}>
           <FeaturesList
             highlighted={highlighted}
             features={props.product.features}
@@ -343,10 +359,8 @@ function PricingItem(
         </div>
 
         <If condition={props.displayPlanDetails && lineItemsToDisplay.length}>
-          <div className={'h-px w-full border border-dashed'} />
-
           <div className={'flex flex-col space-y-2'}>
-            <h6 className={'text-sm font-semibold'}>
+            <h6 className={'text-muted-foreground text-sm font-normal'}>
               <Trans i18nKey={'billing.detailsLabel'} />
             </h6>
 
@@ -370,7 +384,7 @@ function FeaturesList(
   }>,
 ) {
   return (
-    <ul className={'flex flex-col gap-1'}>
+    <ul className={'flex flex-col'}>
       {props.features.map((feature) => {
         return (
           <ListItem highlighted={props.highlighted} key={feature}>
@@ -384,26 +398,31 @@ function FeaturesList(
 
 function Price({
   children,
+  highlighted = false,
   isMonthlyPrice = true,
   displayBillingPeriod = true,
 }: React.PropsWithChildren<{
+  highlighted?: boolean;
   isMonthlyPrice?: boolean;
   displayBillingPeriod?: boolean;
 }>) {
   return (
-    <div
-      className={`animate-in slide-in-from-left-4 fade-in flex items-end gap-1 duration-500`}
-    >
+    <div className={`flex items-baseline gap-1`}>
       <span
         className={
-          'font-heading flex items-center text-4xl font-medium tracking-tighter'
+          'font-heading flex items-center text-[2rem] leading-none font-light tracking-[-0.02em]'
         }
       >
         {children}
       </span>
 
       <If condition={isMonthlyPrice && displayBillingPeriod}>
-        <span className={'text-muted-foreground text-sm leading-loose'}>
+        <span
+          className={cn(
+            'text-sm',
+            highlighted ? 'text-white/80' : 'text-muted-foreground',
+          )}
+        >
           <span>/</span>
 
           <Trans i18nKey={'billing.perMonth'} />
@@ -420,19 +439,22 @@ function ListItem({
   highlighted: boolean;
 }>) {
   return (
-    <li className={'flex items-center gap-x-2'}>
-      <CheckCircle
-        className={cn('h-3.5 min-h-3.5 w-3.5 min-w-3.5', {
-          'text-secondary-foreground': highlighted,
+    <li
+      className={
+        'flex items-start gap-x-2.5 bg-[linear-gradient(to_right,var(--stone-300)_50%,transparent_0)] bg-[length:5px_1px] bg-bottom bg-repeat-x py-2.5 last:bg-none dark:bg-[linear-gradient(to_right,var(--stone-700)_50%,transparent_0)]'
+      }
+    >
+      <Check
+        className={cn('mt-[3px] size-3.5 shrink-0', {
+          'text-foreground': highlighted,
           'text-muted-foreground': !highlighted,
         })}
       />
 
       <span
-        className={cn('text-sm', {
-          'text-muted-foreground': !highlighted,
-          'text-secondary-foreground': highlighted,
-        })}
+        className={
+          'text-foreground text-[0.875rem] leading-[1.45] tracking-[0.01em]'
+        }
       >
         {children}
       </span>
@@ -448,20 +470,16 @@ function PlanIntervalSwitcher(
   }>,
 ) {
   return (
-    <div
-      className={
-        'hover:border-border border-border/50 flex gap-x-0 rounded-full border'
-      }
-    >
-      {props.intervals.map((plan, index) => {
+    <div className={'bg-muted flex gap-x-0.5 rounded-full p-[3px]'}>
+      {props.intervals.map((plan) => {
         const selected = plan === props.interval;
 
         const className = cn(
-          'animate-in fade-in rounded-full transition-all focus:!ring-0',
+          'h-8 rounded-full px-4 transition-all focus:!ring-0',
           {
-            'border-r-transparent': index === 0,
-            ['hover:text-primary text-muted-foreground']: !selected,
-            ['cursor-default']: selected,
+            ['hover:text-foreground text-muted-foreground']: !selected,
+            ['bg-card text-foreground ring-pill-ring shadow-soft hover:bg-card cursor-default ring-[0.5px]']:
+              selected,
           },
         );
 
@@ -469,21 +487,14 @@ function PlanIntervalSwitcher(
           <Button
             size={'sm'}
             key={plan}
-            variant={selected ? 'secondary' : null}
+            variant={null}
             className={className}
             onClick={() => props.setInterval(plan)}
           >
             <span className={'flex items-center'}>
-              <CheckCircle
-                className={cn(
-                  'animate-in fade-in zoom-in-50 mr-1 size-3 duration-200',
-                  {
-                    hidden: !selected,
-                  },
-                )}
-              />
-
-              <span className={'text-xs capitalize'}>
+              <span
+                className={'text-[0.875rem] font-normal first-letter:uppercase'}
+              >
                 <Trans i18nKey={`billing.billingInterval.${plan}`} />
               </span>
             </span>
@@ -532,10 +543,10 @@ function DefaultCheckoutButton(
     <Link className={'w-full'} href={linkHref}>
       <Button
         size={'lg'}
-        className={'h-12 w-full rounded-lg'}
-        variant={props.highlighted ? 'default' : 'secondary'}
+        className={'h-11 w-full rounded-full'}
+        variant={'default'}
       >
-        <span className={'text-base font-medium tracking-tight'}>
+        <span className={'text-[0.9375rem] font-normal'}>
           <Trans
             i18nKey={label}
             defaults={label}
@@ -546,8 +557,6 @@ function DefaultCheckoutButton(
             }}
           />
         </span>
-
-        <ArrowRight className={'ml-2 h-4'} />
       </Button>
     </Link>
   );

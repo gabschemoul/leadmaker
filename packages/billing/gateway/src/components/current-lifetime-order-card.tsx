@@ -54,7 +54,7 @@ export function CurrentLifetimeOrderCard({
 
       <CardContent className={'gap-y-4 text-sm'}>
         <div className={'flex flex-col space-y-1'}>
-          <div className={'flex items-center gap-x-3 text-lg font-semibold'}>
+          <div className={'flex items-center gap-x-3 text-lg font-medium'}>
             <BadgeCheck
               className={
                 's-6 fill-green-500 text-white dark:fill-white dark:text-black'
@@ -69,7 +69,7 @@ export function CurrentLifetimeOrderCard({
 
         <div>
           <div className="flex flex-col gap-y-1">
-            <span className="font-semibold">
+            <span className="font-medium">
               <Trans i18nKey="billing.detailsLabel" />
             </span>
 

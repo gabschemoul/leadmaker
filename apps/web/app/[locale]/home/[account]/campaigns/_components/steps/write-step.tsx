@@ -55,7 +55,7 @@ export async function WriteStep(props: {
             <div className={'flex items-center gap-3'}>
               <span
                 className={
-                  'bg-accent text-accent-foreground inline-flex size-10 items-center justify-center rounded-full font-semibold'
+                  'bg-accent text-accent-foreground inline-flex size-10 items-center justify-center rounded-full font-medium'
                 }
               >
                 {initials(sender.first_name, sender.last_name)}

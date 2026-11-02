@@ -59,7 +59,7 @@ export function CurrentSubscriptionCard({
 
       <CardContent className={'space-y-4 border-t pt-4 text-sm'}>
         <div className={'flex flex-col space-y-1'}>
-          <div className={'flex items-center gap-x-4 text-lg font-semibold'}>
+          <div className={'flex items-center gap-x-4 text-lg font-medium'}>
             <span className={'flex items-center gap-x-1.5'}>
               <BadgeCheck
                 className={'s-6 fill-green-500 text-white dark:text-stone-900'}
@@ -94,7 +94,7 @@ export function CurrentSubscriptionCard({
         </If>
 
         <div className="flex flex-col gap-y-1 border-y border-dashed py-4">
-          <span className="font-semibold">
+          <span className="font-medium">
             <Trans i18nKey="billing.detailsLabel" />
           </span>
 

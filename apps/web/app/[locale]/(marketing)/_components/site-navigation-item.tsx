@@ -7,10 +7,13 @@ import { NavigationMenuItem } from '@kit/ui/navigation-menu';
 import { cn, isRouteActive } from '@kit/ui/utils';
 
 const getClassName = (isActive: boolean) =>
-  cn(`inline-flex w-max text-sm font-medium transition-colors duration-300`, {
-    'dark:text-gray-300 dark:hover:text-white': !isActive,
-    'text-current dark:text-white': isActive,
-  });
+  cn(
+    `hover:bg-muted inline-flex h-8 w-max items-center rounded-full px-3 text-[0.9375rem] tracking-[0.01em] transition-colors duration-150`,
+    {
+      'text-foreground': !isActive,
+      'bg-muted text-foreground': isActive,
+    },
+  );
 
 export function SiteNavigationItem({
   path,

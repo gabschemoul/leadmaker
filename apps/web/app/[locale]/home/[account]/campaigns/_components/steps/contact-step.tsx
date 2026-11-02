@@ -82,7 +82,7 @@ export async function ContactStep(props: {
               aria-current={props.mode === mode ? 'page' : undefined}
               data-test={`contact-mode-${mode}`}
               className={cn(
-                'rounded-lg px-4 py-2 text-sm font-bold transition-colors',
+                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 props.mode === mode
                   ? 'bg-card text-primary shadow-sm'
                   : 'text-muted-foreground hover:text-foreground',
@@ -310,7 +310,7 @@ function StepCard(
       <CardHeader className={'pb-2'}>
         <CardTitle
           className={
-            'text-muted-foreground text-xs font-semibold tracking-wider uppercase'
+            'text-muted-foreground text-xs font-medium tracking-wider uppercase'
           }
         >
           {props.title}
@@ -327,7 +327,11 @@ function StepCard(
 function Big(props: { value: string; unit: string }) {
   return (
     <div className={'flex items-baseline gap-2'}>
-      <span className={'font-heading text-3xl font-extrabold tabular-nums'}>
+      <span
+        className={
+          'font-heading text-3xl font-normal tracking-[-0.02em] tabular-nums'
+        }
+      >
         {props.value}
       </span>
       <span className={'text-muted-foreground text-sm'}>{props.unit}</span>

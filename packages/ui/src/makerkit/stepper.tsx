@@ -103,7 +103,7 @@ function getClassNameBuilder() {
       variant: {
         default: `flex h-[2.5px] w-full flex-col transition-all duration-500`,
         numbers:
-          'flex h-9 w-9 items-center justify-center rounded-full border text-sm font-bold',
+          'flex h-9 w-9 items-center justify-center rounded-full border text-sm font-medium',
         dots: 'bg-muted h-2.5 w-2.5 rounded-full transition-colors',
       },
       selected: {

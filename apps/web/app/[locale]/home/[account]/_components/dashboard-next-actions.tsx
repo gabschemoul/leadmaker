@@ -187,7 +187,7 @@ function Kpi(props: {
       <span className={'text-muted-foreground text-xs'}>{props.label}</span>
       <span
         className={cn(
-          'font-heading text-2xl font-extrabold tabular-nums',
+          'font-heading text-[1.75rem] leading-tight font-normal tracking-[-0.02em] tabular-nums',
           props.highlight && 'text-primary',
         )}
       >

@@ -1,186 +1,251 @@
 import Image from 'next/image';
-import Link from 'next/link';
 
-import { ArrowRightIcon, Sparkles } from 'lucide-react';
+import {
+  Copy,
+  FolderKanban,
+  Mail,
+  MapPin,
+  Search,
+  Send,
+  ShieldCheck,
+} from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 import { PricingTable } from '@kit/billing-gateway/marketing';
-import {
-  CtaButton,
-  EcosystemShowcase,
-  FeatureCard,
-  FeatureGrid,
-  FeatureShowcase,
-  FeatureShowcaseIconContainer,
-  Hero,
-  Pill,
-  PillActionButton,
-  SecondaryHero,
-} from '@kit/ui/marketing';
-import { Trans } from '@kit/ui/trans';
 
 import billingConfig from '~/config/billing.config';
 import pathsConfig from '~/config/paths.config';
 
-/** Page d'accueil Prospectigo (V1). Les textes vivent dans marketing.json. */
+import {
+  Band,
+  BandBody,
+  DisplayTitle,
+  GrayCard,
+  PillLink,
+  SectionIntro,
+} from './_components/el';
+import { HomeDemo } from './_components/home-demo';
+import { Aura, FormVisual, MapVisual } from './_components/home-visuals';
+
+/**
+ * Page d'accueil Prospectigo, DA « façon ElevenLabs » (relooking du 2/11/2026).
+ * Les textes vivent dans marketing.json.
+ */
 async function Home() {
   const t = await getTranslations('marketing.home');
+  const tCommon = await getTranslations('common');
 
-  const steps = ['step1', 'step2', 'step3'] as const;
-  const features = [
-    'feature1',
-    'feature2',
-    'feature3',
-    'feature4',
-    'feature5',
-    'feature6',
+  const steps = [
+    { key: 'step1', icon: <MapPin /> },
+    { key: 'step2', icon: <Search /> },
+    { key: 'step3', icon: <Send /> },
   ] as const;
 
+  const smallFeatures = [
+    { key: 'feature3', icon: <Copy /> },
+    { key: 'feature4', icon: <ShieldCheck /> },
+    { key: 'feature5', icon: <FolderKanban /> },
+    { key: 'feature6', icon: <Mail /> },
+  ] as const;
+
+  const activities = t.raw('activities') as string[];
+
   return (
-    <div className={'mt-4 flex flex-col space-y-24 py-14'}>
-      <div className={'relative isolate container mx-auto'}>
-        <HeroBackdrop />
+    <div className={'flex flex-col'}>
+      {/* Héros : titre fin à gauche, phrase à droite, deux pilules, puis la démo */}
+      <Band topRule={false} innerClassName={'sm:border-x-0'}>
+        <div className={'flex flex-col gap-y-12 pt-16 pb-20 md:pt-28'}>
+          <div className={'grid gap-x-12 gap-y-6 md:grid-cols-2'}>
+            <div className={'flex flex-col gap-y-6'}>
+              <DisplayTitle as={'h1'} size={'page'}>
+                {t.rich('title', { hl: (chunks) => <>{chunks}</> })}
+              </DisplayTitle>
 
-        <Hero
-          pill={
-            <Pill label={t('pill')}>
-              <span>{t('pillText')}</span>
-              <PillActionButton
-                render={
-                  <Link href={'/auth/sign-up'}>
-                    <ArrowRightIcon className={'h-4 w-4'} />
-                  </Link>
-                }
-              />
-            </Pill>
-          }
-          title={
-            <span className="text-foreground">
-              {t.rich('title', {
-                hl: (chunks) => <span className="text-primary">{chunks}</span>,
-              })}
-            </span>
-          }
-          subtitle={<span>{t('subtitle')}</span>}
-          cta={<MainCallToActionButton />}
-          image={
-            <>
-              <Image
-                priority
-                className={'w-full rounded-lg border shadow-xl dark:hidden'}
-                width={2880}
-                height={1800}
-                src={`/images/prospectigo-campaign-v2.png`}
-                alt={t('heroImageAlt')}
-              />
-              <Image
-                className={
-                  'hidden w-full rounded-lg border shadow-xl dark:block'
-                }
-                width={2880}
-                height={1800}
-                src={`/images/prospectigo-campaign-dark-v2.png`}
-                alt={t('heroImageAlt')}
-              />
-            </>
-          }
-        />
-      </div>
+              <div className={'flex flex-wrap gap-2'}>
+                <PillLink href={pathsConfig.auth.signUp} size={'lg'}>
+                  {tCommon('getStarted')}
+                </PillLink>
+                <PillLink href={'/pricing'} size={'lg'} variant={'secondary'}>
+                  {t('seePricing')}
+                </PillLink>
+              </div>
+            </div>
 
-      <div className={'container mx-auto'}>
+            <p
+              className={
+                'text-base leading-[1.5] tracking-[0.01em] md:pt-2.5 md:text-[1.0625rem]'
+              }
+            >
+              {t('subtitle')}
+            </p>
+          </div>
+
+          <HomeDemo />
+        </div>
+      </Band>
+
+      {/* Bande « logos » : chez nous, les activités qu'on trouve sur Google Maps */}
+      <Band>
         <div
           className={
-            'flex flex-col items-center justify-center space-y-12 py-4 xl:py-8'
+            'flex flex-wrap items-center justify-between gap-4 py-8 sm:px-7'
           }
         >
-          <SecondaryHero
-            heading={t('howTitle')}
-            subheading={t('howSubtitle')}
-          />
+          <p className={'text-base tracking-[0.01em]'}>
+            {t('activitiesTitle')}
+          </p>
+          <PillLink href={'/pricing'} variant={'secondary'} size={'md'}>
+            {t('seePricing')}
+          </PillLink>
+        </div>
+      </Band>
+      <section
+        className={
+          'border-hairline border-y bg-stone-50 px-4 sm:px-6 dark:bg-stone-950'
+        }
+      >
+        <ul
+          className={
+            'border-hairline mx-auto grid max-w-[62rem] grid-cols-2 gap-y-2 py-8 sm:grid-cols-3 sm:border-x md:grid-cols-6'
+          }
+        >
+          {activities.map((activity) => (
+            <li
+              key={activity}
+              className={
+                'px-2 py-2.5 text-center text-[0.9375rem] font-medium tracking-[-0.01em] text-stone-400 dark:text-stone-500'
+              }
+            >
+              {activity}
+            </li>
+          ))}
+        </ul>
+      </section>
 
-          <FeatureGrid>
+      {/* Comment ça marche */}
+      <Band topRule={false}>
+        <BandBody>
+          <SectionIntro eyebrow={t('howTitle')} title={t('howSubtitle')} />
+
+          <div className={'mt-10 grid gap-2.5 sm:-mx-4 md:grid-cols-3'}>
             {steps.map((step) => (
-              <FeatureCard
-                key={step}
-                className={'relative col-span-1 overflow-hidden'}
-                label={t(`${step}Label`)}
-                description={t(step)}
+              <GrayCard
+                key={step.key}
+                icon={step.icon}
+                label={t(`${step.key}Label`)}
+                description={t(step.key)}
               />
             ))}
-          </FeatureGrid>
-        </div>
-      </div>
+          </div>
+        </BandBody>
+      </Band>
 
-      <div className={'container mx-auto'}>
-        <div className={'py-4 xl:py-8'}>
-          <FeatureShowcase
-            heading={
+      {/* Fonctionnalités : deux grandes cartes, puis quatre petites */}
+      <Band>
+        <BandBody>
+          <SectionIntro
+            eyebrow={t('featuresIcon')}
+            title={t('featuresTitle')}
+            intro={t('featuresSubtitle')}
+            actions={
+              <PillLink href={pathsConfig.auth.signUp} size={'lg'}>
+                {tCommon('getStarted')}
+              </PillLink>
+            }
+          />
+
+          <div className={'mt-10 flex flex-col gap-2.5 sm:-mx-4'}>
+            <div className={'grid gap-2.5 md:grid-cols-2'}>
+              <GrayCard
+                className={'min-h-[28rem]'}
+                label={t('feature1Label')}
+                description={t('feature1')}
+                visual={
+                  <div className={'absolute inset-0 -mx-4 -mt-4'}>
+                    <Aura className={'top-10 left-1/4'} />
+                    <MapVisual />
+                  </div>
+                }
+              />
+              <GrayCard
+                className={'min-h-[28rem]'}
+                label={t('feature2Label')}
+                description={t('feature2')}
+                visual={
+                  <>
+                    <Aura className={'top-0 right-1/4'} />
+                    <div className={'relative flex w-full justify-center'}>
+                      <FormVisual />
+                    </div>
+                  </>
+                }
+              />
+            </div>
+
+            <div className={'grid gap-2.5 sm:grid-cols-2 md:grid-cols-4'}>
+              {smallFeatures.map((feature) => (
+                <GrayCard
+                  key={feature.key}
+                  icon={feature.icon}
+                  label={t(`${feature.key}Label`)}
+                  description={t(feature.key)}
+                />
+              ))}
+            </div>
+          </div>
+        </BandBody>
+      </Band>
+
+      {/* Contrôle : capture de l'application dans un cadre gris */}
+      <Band>
+        <BandBody>
+          <SectionIntro
+            eyebrow={t('controlEyebrow')}
+            title={t('controlTitle')}
+            intro={t('controlText')}
+          />
+
+          <div className={'bg-muted mt-10 rounded-2xl p-2.5 sm:-mx-4 sm:p-3'}>
+            <Image
+              className={'w-full rounded-xl dark:hidden'}
+              src={'/images/prospectigo-forms-v3.png'}
+              alt={t('controlImageAlt')}
+              width={1568}
+              height={610}
+            />
+            <Image
+              className={'hidden w-full rounded-xl dark:block'}
+              src={'/images/prospectigo-forms-dark-v3.png'}
+              alt={t('controlImageAlt')}
+              width={1568}
+              height={610}
+            />
+          </div>
+        </BandBody>
+      </Band>
+
+      {/* Tarifs */}
+      <Band>
+        <BandBody>
+          <SectionIntro
+            eyebrow={t('pricingPill')}
+            title={t('pricingTitle')}
+            intro={
               <>
-                <b className="font-medium tracking-tight dark:text-white">
-                  {t('featuresTitle')}
-                </b>
-                .{' '}
-                <span className="text-secondary-foreground/70 block font-normal tracking-tight">
-                  {t('featuresSubtitle')}
+                {t('pricingSubtitle')}{' '}
+                <span className={'text-muted-foreground'}>
+                  {t('pricingPillText')}.
                 </span>
               </>
             }
-            icon={
-              <FeatureShowcaseIconContainer>
-                <Sparkles className="h-4 w-4" />
-                <span>{t('featuresIcon')}</span>
-              </FeatureShowcaseIconContainer>
+            actions={
+              <PillLink href={'/pricing'} variant={'secondary'} size={'md'}>
+                {t('pricingMore')}
+              </PillLink>
             }
-          >
-            <FeatureGrid>
-              {features.map((feature) => (
-                <FeatureCard
-                  key={feature}
-                  className={'relative col-span-1 overflow-hidden'}
-                  label={t(`${feature}Label`)}
-                  description={t(feature)}
-                />
-              ))}
-            </FeatureGrid>
-          </FeatureShowcase>
-        </div>
-      </div>
-
-      <div className={'container mx-auto'}>
-        <EcosystemShowcase
-          heading={t('controlTitle')}
-          description={t('controlText')}
-        >
-          <Image
-            className="rounded-md border dark:hidden"
-            src={'/images/prospectigo-forms-v2.png'}
-            alt={t('controlImageAlt')}
-            width={2880}
-            height={1150}
-          />
-          <Image
-            className="hidden rounded-md border dark:block"
-            src={'/images/prospectigo-forms-dark-v2.png'}
-            alt={t('controlImageAlt')}
-            width={2880}
-            height={1150}
-          />
-        </EcosystemShowcase>
-      </div>
-
-      <div className={'container mx-auto'}>
-        <div
-          className={
-            'flex flex-col items-center justify-center space-y-12 py-4 xl:py-8'
-          }
-        >
-          <SecondaryHero
-            pill={<Pill label={t('pricingPill')}>{t('pricingPillText')}</Pill>}
-            heading={t('pricingTitle')}
-            subheading={t('pricingSubtitle')}
           />
 
-          <div className={'w-full'}>
+          <div className={'mt-10 sm:-mx-4'}>
             <PricingTable
               config={billingConfig}
               paths={{
@@ -189,89 +254,30 @@ async function Home() {
               }}
             />
           </div>
+        </BandBody>
+      </Band>
+
+      {/* Bandeau final : une ligne, deux pilules */}
+      <Band>
+        <div
+          className={
+            'flex flex-col gap-6 py-12 sm:px-7 md:flex-row md:items-center md:justify-between'
+          }
+        >
+          <DisplayTitle size={'section'}>{t('ctaTitle')}</DisplayTitle>
+
+          <div className={'flex flex-wrap gap-2'}>
+            <PillLink href={'/contact'} variant={'secondary'} size={'lg'}>
+              {tCommon('contactUs')}
+            </PillLink>
+            <PillLink href={pathsConfig.auth.signUp} size={'lg'}>
+              {tCommon('getStarted')}
+            </PillLink>
+          </div>
         </div>
-      </div>
+      </Band>
     </div>
   );
 }
 
 export default Home;
-
-/**
- * Fond du haut de page : courbes de niveau d'une carte et une épingle (thème
- * clair « Atlas »), halo ambre en thème sombre (« Nocturne »). Décoratif.
- */
-function HeroBackdrop() {
-  return (
-    <div
-      aria-hidden
-      className={
-        'pointer-events-none absolute inset-x-0 -top-24 -z-10 h-[620px] overflow-hidden'
-      }
-    >
-      <svg
-        className={'text-primary absolute inset-0 h-full w-full dark:hidden'}
-        viewBox={'0 0 1200 620'}
-        preserveAspectRatio={'xMidYMid slice'}
-      >
-        <g fill={'none'} stroke={'currentColor'} strokeOpacity={0.09}>
-          <g transform={'translate(115 -70)'}>
-            <path d="M930 70c150 0 270 95 270 225s-120 240-270 240-235-95-235-225 85-240 235-240z" />
-            <path d="M935 130c110 0 195 68 195 162s-85 172-195 172-170-68-170-160 60-174 170-174z" />
-            <path d="M940 190c70 0 122 44 122 102s-52 110-122 110-108-44-108-100 38-112 108-112z" />
-            <path d="M945 245c35 0 60 22 60 50s-25 54-60 54-52-22-52-50 18-54 52-54z" />
-          </g>
-          <path d="M260 40c120 0 210 70 210 160s-90 170-210 170S70 300 70 210 140 40 260 40z" />
-          <path d="M262 100c80 0 140 46 140 108s-60 112-140 112-128-46-128-106 48-114 128-114z" />
-          <path d="M-40 560c200-70 360-20 560 25s420 40 720-40" />
-          <path d="M-40 610c200-70 360-20 560 25s420 40 720-40" />
-        </g>
-        <g transform={'translate(1060 222)'} className={'text-brand'}>
-          <path
-            d="M0-30c-13 0-23 10-23 23 0 17 23 40 23 40s23-23 23-40c0-13-10-23-23-23z"
-            fill={'currentColor'}
-            opacity={0.9}
-          />
-          <circle cy={-7} r={8} className={'fill-primary'} />
-        </g>
-      </svg>
-
-      <div
-        className={'absolute inset-0 hidden dark:block'}
-        style={{
-          background:
-            'radial-gradient(45% 55% at 78% 30%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 70%)',
-        }}
-      />
-    </div>
-  );
-}
-
-function MainCallToActionButton() {
-  return (
-    <div className={'flex space-x-2.5'}>
-      <CtaButton className="h-10 text-sm">
-        <Link href={'/auth/sign-up'}>
-          <span className={'flex items-center space-x-0.5'}>
-            <span>
-              <Trans i18nKey={'common.getStarted'} />
-            </span>
-
-            <ArrowRightIcon
-              className={
-                'animate-in fade-in slide-in-from-left-8 h-4' +
-                ' zoom-in fill-mode-both delay-1000 duration-1000'
-              }
-            />
-          </span>
-        </Link>
-      </CtaButton>
-
-      <CtaButton variant={'link'} className="h-10 text-sm">
-        <Link href={'/pricing'}>
-          <Trans i18nKey={'common.pricing'} />
-        </Link>
-      </CtaButton>
-    </div>
-  );
-}

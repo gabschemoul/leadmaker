@@ -20,7 +20,7 @@ import { loadUserWorkspace } from '../_lib/server/load-user-workspace';
 export function HomeSidebar() {
   return (
     <Sidebar
-      variant="floating"
+      variant="sidebar"
       collapsible={personalAccountNavigationConfig.sidebarCollapsedStyle}
     >
       <SidebarHeader className={'h-16 justify-center'}>

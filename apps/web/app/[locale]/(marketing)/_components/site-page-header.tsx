@@ -1,9 +1,14 @@
 import { cn } from '@kit/ui/utils';
 
+import { Band, DisplayTitle } from './el';
+
+/**
+ * En-tête des pages secondaires, façon ElevenLabs : grand titre fin à gauche,
+ * phrase d'intro à droite. `container` est gardé pour les appels existants.
+ */
 export function SitePageHeader({
   title,
   subtitle,
-  container = true,
   className = '',
 }: {
   title: string;
@@ -11,37 +16,25 @@ export function SitePageHeader({
   container?: boolean;
   className?: string;
 }) {
-  const containerClass = container ? 'container' : '';
-
   return (
-    <div
-      className={cn(
-        'border-border/40 border-b py-6 xl:py-8 2xl:py-10',
-        className,
-      )}
-    >
+    <Band topRule={false} className={className}>
       <div
         className={cn(
-          'flex flex-col items-center gap-y-2 lg:gap-y-3',
-          containerClass,
+          'grid gap-x-12 gap-y-4 pt-16 pb-12 sm:px-7 md:grid-cols-2 md:items-end md:pt-24 md:pb-16',
         )}
       >
-        <h1
-          className={
-            'font-heading text-3xl tracking-tighter xl:text-5xl dark:text-white'
-          }
-        >
+        <DisplayTitle as={'h1'} size={'page'}>
           {title}
-        </h1>
+        </DisplayTitle>
 
-        <h2
+        <p
           className={
-            'text-muted-foreground text-lg tracking-tight 2xl:text-2xl'
+            'text-muted-foreground text-base leading-[1.5] tracking-[0.01em] md:pb-1.5 md:text-[1.0625rem]'
           }
         >
           {subtitle}
-        </h2>
+        </p>
       </div>
-    </div>
+    </Band>
   );
 }

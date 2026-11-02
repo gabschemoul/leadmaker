@@ -104,10 +104,10 @@ export function CampaignStepsRail(props: {
                 : 'hover:bg-muted text-foreground',
             )}
           >
-            <span className={'flex items-center gap-2 text-sm font-semibold'}>
+            <span className={'flex items-center gap-2 text-sm font-medium'}>
               <span
                 className={cn(
-                  'inline-flex size-5.5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
+                  'inline-flex size-5.5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium',
                   state === 'done'
                     ? 'bg-primary text-primary-foreground'
                     : state === 'active' || isActive

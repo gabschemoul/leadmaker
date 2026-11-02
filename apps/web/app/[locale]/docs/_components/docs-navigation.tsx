@@ -134,7 +134,7 @@ export function DocsNavigation({
 }) {
   return (
     <>
-      <Sidebar variant={'floating'}>
+      <Sidebar variant={'sidebar'}>
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>

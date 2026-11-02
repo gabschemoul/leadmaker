@@ -87,7 +87,41 @@
     "pricingNote3Label": "No daily cap",
     "pricingNote3": "Your credits are used at the pace you choose, campaign by campaign. They renew every month. On the yearly plan you pay 10 months for 12.",
     "pricingNote4Label": "Prices in US dollars",
-    "pricingNote4": "Plans are billed in USD, by card, with no commitment. Change plans or cancel anytime from your billing settings."
+    "pricingNote4": "Plans are billed in USD, by card, with no commitment. Change plans or cancel anytime from your billing settings.",
+    "seePricing": "See pricing",
+    "demoTab1": "Target",
+    "demoTab2": "Find",
+    "demoTab3": "Contact",
+    "demoSearch": "Plumbers · Austin and 20 km around",
+    "demoFound": "248 businesses found on Google Maps",
+    "demoReviews": "{count} reviews",
+    "demoFormFound": "Form found",
+    "demoEmailFound": "Email found",
+    "demoNoSite": "No website, skipped",
+    "demoFieldName": "Name",
+    "demoFieldEmail": "Email",
+    "demoFieldMessage": "Message",
+    "demoMessage": "Hi, your business is one of the best-rated in town. We help local trades fill their calendar…",
+    "demoSent": "Sent",
+    "demoScreenshot": "View screenshot",
+    "activitiesTitle": "Every kind of business listed on Google Maps",
+    "activities": [
+      "Restaurants",
+      "Plumbers",
+      "Real estate agencies",
+      "Dentists",
+      "Car repair shops",
+      "Lawyers",
+      "Hair salons",
+      "Electricians",
+      "Hotels",
+      "Architects",
+      "Gyms",
+      "Florists"
+    ],
+    "controlEyebrow": "Control",
+    "pricingMore": "How credits work",
+    "ctaTitle": "Ready to find your next customers?"
   },
   "faqItems": {
     "q1": "Which countries does Prospectigo work in?",
@@ -105,5 +139,6 @@
     "q7": "Is there a commitment?",
     "a7": "No. Plans are monthly or yearly and can be cancelled anytime from your billing settings."
   },
-  "theme": "Light / dark theme"
+  "theme": "Light / dark theme",
+  "faqTitleShort": "Frequently asked questions"
 }

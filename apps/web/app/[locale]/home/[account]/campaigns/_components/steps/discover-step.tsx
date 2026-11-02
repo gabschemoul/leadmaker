@@ -486,7 +486,7 @@ function Stat(props: {
       <dd
         className={
           props.highlight
-            ? 'font-heading text-2xl font-semibold tabular-nums'
+            ? 'font-heading text-2xl font-normal tracking-[-0.02em] tabular-nums'
             : 'text-lg font-medium tabular-nums'
         }
       >

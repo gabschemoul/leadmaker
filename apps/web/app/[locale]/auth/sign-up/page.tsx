@@ -52,7 +52,7 @@ async function SignUpPage({ searchParams }: SignUpPageProps) {
   return (
     <>
       <div className={'flex flex-col items-center'}>
-        <Heading level={2} className={'tracking-tighter'}>
+        <Heading level={2} className={'text-center font-light'}>
           <Trans i18nKey={'auth.signUpHeading'} />
         </Heading>
       </div>

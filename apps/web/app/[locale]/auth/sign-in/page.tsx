@@ -32,7 +32,7 @@ function SignInPage({ searchParams }: SignInPageProps) {
   return (
     <>
       <div className={'flex flex-col items-center'}>
-        <Heading level={2} className={'tracking-tighter'}>
+        <Heading level={2} className={'text-center font-light'}>
           <Trans
             i18nKey={'auth.signInHeading'}
             values={{ productName: process.env.NEXT_PUBLIC_PRODUCT_NAME }}

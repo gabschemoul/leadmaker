@@ -20,79 +20,107 @@
 }
 
 /*
- * Theme variables — Prospectigo
- * Clair = « Atlas » : vert pin (carte) + jaune épingle, barre latérale sombre.
- * Sombre = « Nocturne » : bleu encre + ambre.
+ * Theme variables — Prospectigo, DA « façon ElevenLabs » (relooking du 2/11/2026)
+ * Clair : blanc cassé, gris « pierre » légèrement chauds, noir pur pour l'action.
+ * Sombre : les mêmes gris pierre, inversés.
+ * Pour changer les couleurs plus tard : tout se règle ici.
+ *
+ * Gamme de gris (référence) : 25 #FDFCFC · 50 #FAF8F8 · 100 #F5F3F1 · 200 #EBE8E4
+ * 300 #D7D2CC · 400 #A59F97 · 500 #777169 · 600 #59544F · 700 #44403B
+ * 800 #292524 · 900 #1C1917 · 950 #0C0A09
  */
 :root {
-  --brand: #f2b531;
-  --brand-foreground: #2a1f00;
-  --background: #f5f7f6;
-  --foreground: #13201d;
+  --stone-25: #fdfcfc;
+  --stone-50: #faf8f8;
+  --stone-100: #f5f3f1;
+  --stone-200: #ebe8e4;
+  --stone-300: #d7d2cc;
+  --stone-400: #a59f97;
+  --stone-500: #777169;
+  --stone-600: #59544f;
+  --stone-700: #44403b;
+  --stone-800: #292524;
+  --stone-900: #1c1917;
+  --stone-950: #0c0a09;
+  --focus: #2b7fff;
+  /* filets fins de la grille marketing */
+  --hairline: rgba(0, 0, 0, 0.05);
+  /* contour 0,5 px des boutons blancs */
+  --pill-ring: rgba(0, 0, 0, 0.125);
+
+  --brand: #ff4704;
+  --brand-foreground: #ffffff;
+  --background: #fdfcfc;
+  --foreground: #000000;
   --card: #ffffff;
-  --card-foreground: #13201d;
+  --card-foreground: #000000;
   --popover: #ffffff;
-  --popover-foreground: #13201d;
-  --primary: #0f5a52;
+  --popover-foreground: #000000;
+  --primary: #000000;
   --primary-foreground: #ffffff;
-  --secondary: #e7eeeb;
-  --secondary-foreground: #13201d;
-  --muted: #edf2f0;
-  --muted-foreground: #5b6b67;
-  --accent: #e2ece8;
-  --accent-foreground: #0f3d37;
+  --primary-hover: #44403b;
+  --secondary: #f5f3f1;
+  --secondary-foreground: #000000;
+  --muted: #f5f3f1;
+  --muted-foreground: #777169;
+  --accent: #f5f3f1;
+  --accent-foreground: #000000;
   --destructive: oklch(0.58 0.22 27);
-  --border: #dbe3e0;
-  --input: #d3ddd9;
-  --ring: #0f5a52;
-  --chart-1: #0f5a52;
-  --chart-2: #2f8f7f;
-  --chart-3: #6cc0ae;
-  --chart-4: #f2b531;
-  --chart-5: #c98a12;
-  --radius: 0.625rem;
-  --sidebar: #0e2a27;
-  --sidebar-foreground: #b7cec8;
-  --sidebar-primary: #f2b531;
-  --sidebar-primary-foreground: #2a1f00;
-  --sidebar-accent: #18413c;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1d3c38;
-  --sidebar-ring: #f2b531;
+  --border: #e7e4e0;
+  --input: #e1ddd8;
+  --ring: #2b7fff;
+  --chart-1: #2b7fff;
+  --chart-2: #ff4704;
+  --chart-3: #a59f97;
+  --chart-4: #44403b;
+  --chart-5: #d7d2cc;
+  --radius: 0.5rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f3f1;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #ebe8e4;
+  --sidebar-ring: #2b7fff;
 }
 
 .dark {
-  --brand: #f5a524;
-  --brand-foreground: #1b1300;
-  --background: #0d1424;
-  --foreground: #e9edf6;
-  --card: #141e33;
-  --card-foreground: #e9edf6;
-  --popover: #141e33;
-  --popover-foreground: #e9edf6;
-  --primary: #f5a524;
-  --primary-foreground: #1b1300;
-  --secondary: #1b2742;
-  --secondary-foreground: #e9edf6;
-  --muted: #18233b;
-  --muted-foreground: #97a3bd;
-  --accent: #1f2c49;
+  --hairline: rgba(255, 255, 255, 0.07);
+  --pill-ring: rgba(255, 255, 255, 0.14);
+
+  --brand: #ff6a33;
+  --brand-foreground: #ffffff;
+  --background: #0c0a09;
+  --foreground: #faf8f8;
+  --card: #1c1917;
+  --card-foreground: #faf8f8;
+  --popover: #1c1917;
+  --popover-foreground: #faf8f8;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --primary-hover: #d7d2cc;
+  --secondary: #292524;
+  --secondary-foreground: #faf8f8;
+  --muted: #1c1917;
+  --muted-foreground: #a59f97;
+  --accent: #292524;
   --accent-foreground: #ffffff;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: #22304b;
-  --input: #2a3958;
-  --ring: #f5a524;
-  --chart-1: #f5a524;
-  --chart-2: #ffc766;
-  --chart-3: #8fb4ff;
-  --chart-4: #5b7fd6;
-  --chart-5: #3a548f;
-  --sidebar: #0a1120;
-  --sidebar-foreground: #8e9ab3;
-  --sidebar-primary: #f5a524;
-  --sidebar-primary-foreground: #1b1300;
-  --sidebar-accent: #1b2742;
+  --border: #2e2a27;
+  --input: #3a3532;
+  --ring: #2b7fff;
+  --chart-1: #5b9bff;
+  --chart-2: #ff6a33;
+  --chart-3: #a59f97;
+  --chart-4: #d7d2cc;
+  --chart-5: #59544f;
+  --sidebar: #0c0a09;
+  --sidebar-foreground: #faf8f8;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1c1917;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1a2540;
-  --sidebar-ring: #f5a524;
+  --sidebar-border: #292524;
+  --sidebar-ring: #2b7fff;
 }

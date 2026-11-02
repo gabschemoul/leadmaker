@@ -189,7 +189,7 @@ function EstimateItem(props: {
       <dd
         className={
           props.highlight
-            ? 'text-lg font-semibold tabular-nums'
+            ? 'text-lg font-medium tabular-nums'
             : 'font-medium tabular-nums'
         }
       >
@@ -219,7 +219,7 @@ function RealEstimate(props: {
           className={'flex flex-col gap-1'}
           data-test={'real-estimate-result'}
         >
-          <p className={'text-lg font-semibold'}>
+          <p className={'text-lg font-medium'}>
             {result.mode === 'exact' ? (
               <Trans
                 i18nKey={'campaigns.estimate.real.exact'}

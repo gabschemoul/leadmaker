@@ -126,7 +126,7 @@ export function NotificationsPopover(params: {
         align={'start'}
         sideOffset={10}
       >
-        <div className={'flex items-center text-sm font-semibold'}>
+        <div className={'flex items-center text-sm font-medium'}>
           {t('common.notifications')}
         </div>
 

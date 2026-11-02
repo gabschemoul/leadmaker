@@ -131,7 +131,7 @@ export function LineItemDetails(
 
               <span>-</span>
 
-              <span className={'text-xs font-semibold'}>
+              <span className={'text-xs font-medium'}>
                 {formatCurrency({
                   currencyCode,
                   value: getDisplayCost(item.cost, hasTiers),
@@ -186,7 +186,7 @@ export function LineItemDetails(
                 <If condition={!item.tiers?.length}>
                   <span>-</span>
 
-                  <span className={'font-semibold'}>
+                  <span className={'font-medium'}>
                     {formatCurrency({
                       currencyCode,
                       value: getDisplayCost(item.cost, hasTiers),
@@ -227,7 +227,7 @@ export function LineItemDetails(
 
               {/* If there are no tiers, there is a flat cost for usage */}
               <If condition={!item.tiers?.length}>
-                <span className={'font-semibold'}>
+                <span className={'font-medium'}>
                   {formatCurrency({
                     currencyCode,
                     value: getDisplayCost(item.cost, hasTiers),
@@ -320,7 +320,7 @@ function Tiers({
       <span className={'text-secondary-foreground text-xs'} key={index}>
         <span>-</span>{' '}
         <If condition={isLastTier}>
-          <span className={'font-bold'}>
+          <span className={'font-medium'}>
             {formatCurrency({
               currencyCode: currency.toLowerCase(),
               value: tier.cost,
@@ -362,7 +362,7 @@ function Tiers({
             </span>
           </If>{' '}
           <If condition={!isIncluded}>
-            <span className={'font-bold'}>
+            <span className={'font-medium'}>
               {formatCurrency({
                 currencyCode: currency.toLowerCase(),
                 value: tier.cost,

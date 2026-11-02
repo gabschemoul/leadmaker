@@ -24,7 +24,7 @@ export function AdminSidebar() {
   const path = usePathname();
 
   return (
-    <Sidebar variant="floating" collapsible="icon">
+    <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader className={'m-2'}>
         <AppLogo href={'/admin'} className="max-w-full" />
       </SidebarHeader>

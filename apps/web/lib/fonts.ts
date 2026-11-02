@@ -1,37 +1,45 @@
 import {
-  Figtree as SansFont,
-  Schibsted_Grotesk as HeadingFont,
+  Geist_Mono as MonoFont,
+  Host_Grotesk as HeadingFont,
+  Inter as SansFont,
 } from 'next/font/google';
 
 import { cn } from '@kit/ui/utils';
 
 /**
  * @sans
- * @description Define here the sans font.
- * Prospectigo : Figtree pour le texte.
+ * @description Texte : Inter (comme ElevenLabs).
  */
 const sans = SansFont({
   subsets: ['latin'],
   variable: '--font-sans-fallback',
   fallback: ['system-ui', 'Helvetica Neue', 'Helvetica', 'Arial'],
   preload: true,
-  weight: ['300', '400', '500', '600', '700'],
 });
 
 /**
  * @heading
- * @description Prospectigo : Schibsted Grotesk pour les titres.
+ * @description Titres : Host Grotesk, remplaçant gratuit de Waldenburg
+ * (ElevenLabs). Les grands titres marketing sont en 300 (fin).
  */
 const heading = HeadingFont({
   subsets: ['latin'],
   variable: '--font-heading-face',
   fallback: ['system-ui', 'Helvetica Neue', 'Helvetica', 'Arial'],
   preload: true,
-  weight: ['500', '600', '700', '800'],
+  weight: ['300', '400', '500', '600', '700'],
+});
+
+/** Code et chiffres techniques. */
+const mono = MonoFont({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+  fallback: ['ui-monospace', 'Menlo', 'monospace'],
+  preload: false,
 });
 
 // we export these fonts into the root layout
-export { sans, heading };
+export { sans, heading, mono };
 
 /**
  * @name getFontsClassName
@@ -42,14 +50,13 @@ export { sans, heading };
  * in the root layout, which prevents every route from having a static shell.
  */
 export function getFontsClassName() {
-  const font = [sans.variable, heading.variable].reduce<string[]>(
-    (acc, curr) => {
-      if (acc.includes(curr)) return acc;
+  const font = [sans.variable, heading.variable, mono.variable].reduce<
+    string[]
+  >((acc, curr) => {
+    if (acc.includes(curr)) return acc;
 
-      return [...acc, curr];
-    },
-    [],
-  );
+    return [...acc, curr];
+  }, []);
 
   return cn(...font);
 }

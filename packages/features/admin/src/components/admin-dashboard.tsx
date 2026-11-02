@@ -91,5 +91,9 @@ export async function AdminDashboard() {
 }
 
 function Figure(props: React.PropsWithChildren) {
-  return <div className={'text-3xl font-bold'}>{props.children}</div>;
+  return (
+    <div className={'font-heading text-3xl font-normal tracking-[-0.02em]'}>
+      {props.children}
+    </div>
+  );
 }

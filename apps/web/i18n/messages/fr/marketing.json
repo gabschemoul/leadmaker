@@ -87,7 +87,41 @@
     "pricingNote3Label": "Aucun plafond par jour",
     "pricingNote3": "Vos crédits se consomment au rythme que vous choisissez, campagne par campagne. Ils se renouvellent chaque mois. En annuel, vous payez 10 mois pour 12.",
     "pricingNote4Label": "Prix en dollars américains",
-    "pricingNote4": "Les forfaits sont facturés en USD, par carte, sans engagement. Vous changez de forfait ou résiliez quand vous voulez depuis vos réglages de facturation."
+    "pricingNote4": "Les forfaits sont facturés en USD, par carte, sans engagement. Vous changez de forfait ou résiliez quand vous voulez depuis vos réglages de facturation.",
+    "seePricing": "Voir les tarifs",
+    "demoTab1": "Cibler",
+    "demoTab2": "Trouver",
+    "demoTab3": "Contacter",
+    "demoSearch": "Plombiers · Lyon et 20 km autour",
+    "demoFound": "248 entreprises trouvées sur Google Maps",
+    "demoReviews": "{count} avis",
+    "demoFormFound": "Formulaire trouvé",
+    "demoEmailFound": "E-mail trouvé",
+    "demoNoSite": "Pas de site, écartée",
+    "demoFieldName": "Nom",
+    "demoFieldEmail": "E-mail",
+    "demoFieldMessage": "Message",
+    "demoMessage": "Bonjour, votre entreprise fait partie des mieux notées de votre ville. Nous aidons les artisans à remplir leur agenda…",
+    "demoSent": "Envoyé",
+    "demoScreenshot": "Voir la capture",
+    "activitiesTitle": "Toutes les activités référencées sur Google Maps",
+    "activities": [
+      "Restaurants",
+      "Plombiers",
+      "Agences immobilières",
+      "Dentistes",
+      "Garages",
+      "Avocats",
+      "Coiffeurs",
+      "Électriciens",
+      "Hôtels",
+      "Architectes",
+      "Salles de sport",
+      "Fleuristes"
+    ],
+    "controlEyebrow": "Contrôle",
+    "pricingMore": "Comment fonctionnent les crédits",
+    "ctaTitle": "Prêt à trouver vos prochains clients ?"
   },
   "faqItems": {
     "q1": "Dans quels pays Prospectigo fonctionne-t-il ?",
@@ -105,5 +139,6 @@
     "q7": "Y a-t-il un engagement ?",
     "a7": "Non. Les forfaits sont mensuels ou annuels et résiliables à tout moment depuis vos réglages de facturation."
   },
-  "theme": "Thème clair / sombre"
+  "theme": "Thème clair / sombre",
+  "faqTitleShort": "Questions fréquentes"
 }

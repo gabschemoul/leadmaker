@@ -123,7 +123,14 @@ export function ContactForm() {
           }}
         />
 
-        <Button disabled={isPending} type={'submit'} size="lg">
+        <Button
+          disabled={isPending}
+          type={'submit'}
+          size="lg"
+          className={
+            'h-11 self-start rounded-full px-5 text-[0.9375rem] font-normal'
+          }
+        >
           <Trans i18nKey={'marketing.sendMessage'} />
         </Button>
       </form>

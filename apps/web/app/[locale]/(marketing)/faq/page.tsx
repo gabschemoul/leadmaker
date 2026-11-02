@@ -1,12 +1,16 @@
-import Link from 'next/link';
 import Script from 'next/script';
 
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
-import { Button } from '@kit/ui/button';
 import { Trans } from '@kit/ui/trans';
 
+import {
+  Band,
+  BandBody,
+  DisplayTitle,
+  PillLink,
+} from '~/(marketing)/_components/el';
 import { SitePageHeader } from '~/(marketing)/_components/site-page-header';
 
 export const generateMetadata = async () => {
@@ -49,34 +53,29 @@ async function FAQPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      <div className={'flex flex-col space-y-4 xl:space-y-8'}>
+      <div className={'flex flex-col'}>
         <SitePageHeader title={t('faq')} subtitle={t('faqSubtitle')} />
 
-        <div
-          className={
-            'divide container flex flex-col items-center space-y-4 divide-y pb-16'
-          }
-        >
-          <div className="flex w-full max-w-xl flex-col">
-            {faqItems.map((item, index) => {
-              return <FaqItem key={index} item={item} />;
-            })}
-          </div>
+        <Band>
+          <BandBody>
+            <div className={'grid gap-x-12 gap-y-8 md:grid-cols-[1fr_1.6fr]'}>
+              <DisplayTitle size={'section'}>{t('faqTitleShort')}</DisplayTitle>
 
-          <div className="flex w-full max-w-xl justify-start p-2">
-            <Button
-              nativeButton={false}
-              render={<Link href={'/contact'} />}
-              variant={'link'}
-            >
-              <span>
-                <Trans i18nKey={'marketing.contactFaq'} />
-              </span>
+              <div className={'flex flex-col'}>
+                {faqItems.map((item, index) => {
+                  return <FaqItem key={index} item={item} />;
+                })}
 
-              <ArrowRight className={'w-4'} />
-            </Button>
-          </div>
-        </div>
+                <div className={'pt-8'}>
+                  <PillLink href={'/contact'} variant={'secondary'} size={'md'}>
+                    <Trans i18nKey={'marketing.contactFaq'} />
+                    <ArrowRight />
+                  </PillLink>
+                </div>
+              </div>
+            </div>
+          </BandBody>
+        </Band>
       </div>
     </>
   );
@@ -95,28 +94,32 @@ function FaqItem({
   return (
     <details
       className={
-        '[&:open]:bg-muted/50 border-dashed transition-all [&:open]:scale-[1.05]'
+        'group/faq-item bg-[linear-gradient(to_right,var(--stone-300)_50%,transparent_0)] bg-[length:5px_1px] bg-bottom bg-repeat-x dark:bg-[linear-gradient(to_right,var(--stone-700)_50%,transparent_0)]'
       }
     >
       <summary
-        className={'group/faq-item flex items-center justify-between p-4'}
+        className={
+          'flex cursor-pointer list-none items-center justify-between gap-x-4 py-5 [&::-webkit-details-marker]:hidden'
+        }
       >
         <h2
-          className={
-            'cursor-pointer font-sans text-base group-hover/faq-item:underline'
-          }
+          className={'font-sans text-[1.0625rem] font-normal tracking-[0.01em]'}
         >
           {item.question}
         </h2>
 
-        <div>
-          <ChevronDown
-            className={'h-5 transition duration-300 group-open:-rotate-180'}
-          />
-        </div>
+        <ChevronDown
+          className={
+            'text-muted-foreground size-4 shrink-0 transition duration-300 group-open/faq-item:-rotate-180'
+          }
+        />
       </summary>
 
-      <div className={'text-muted-foreground flex flex-col gap-y-2 px-4 pb-2'}>
+      <div
+        className={
+          'text-muted-foreground pb-5 text-[0.9375rem] leading-[1.55] tracking-[0.01em]'
+        }
+      >
         {item.answer}
       </div>
     </details>

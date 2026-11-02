@@ -40,7 +40,7 @@ export function BillingSessionStatus({
         />
 
         <Heading level={3}>
-          <span className={'mr-4 font-semibold'}>
+          <span className={'mr-4 font-medium'}>
             <Trans i18nKey={'billing.checkoutSuccessTitle'} />
           </span>
           🎉

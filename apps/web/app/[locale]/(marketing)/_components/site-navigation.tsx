@@ -40,9 +40,9 @@ const desktopLinks = Object.values(links).filter(
 export function SiteNavigation() {
   return (
     <>
-      <div className={'hidden items-center justify-center md:flex'}>
+      <div className={'hidden items-center md:flex'}>
         <NavigationMenu>
-          <NavigationMenuList className={'gap-x-4'}>
+          <NavigationMenuList className={'gap-x-0.5'}>
             {/* The fallback renders the same links without the active
                 highlight, so the header never shifts. */}
             <Suspense

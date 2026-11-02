@@ -15,12 +15,14 @@ export function LogoImage({
   return (
     <span
       className={cn(
-        'text-foreground in-data-[sidebar=sidebar]:text-sidebar-accent-foreground font-heading inline-flex items-baseline text-xl font-extrabold tracking-tight select-none',
+        'text-foreground in-data-[sidebar=sidebar]:text-sidebar-accent-foreground font-heading inline-flex items-baseline text-[1.375rem] leading-none font-medium tracking-[-0.03em] select-none',
         className,
       )}
     >
       Prospectigo
-      <span className={'bg-brand ml-0.5 inline-block size-1.5 rounded-full'} />
+      <span
+        className={'bg-brand ml-[3px] inline-block size-[5px] rounded-full'}
+      />
     </span>
   );
 }

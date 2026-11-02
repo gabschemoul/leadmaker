@@ -299,7 +299,11 @@ function AutopilotSetup(props: {
         }
       >
         <div className={'flex flex-col gap-1.5'}>
-          <h2 className={'font-heading text-2xl font-bold'}>{t('question')}</h2>
+          <h2
+            className={'font-heading text-2xl font-normal tracking-[-0.02em]'}
+          >
+            {t('question')}
+          </h2>
 
           <p className={'text-muted-foreground'}>{t('questionHint')}</p>
         </div>
@@ -326,7 +330,7 @@ function AutopilotSetup(props: {
             aria-label={t('countLabel')}
             data-test={'autopilot-count'}
             className={
-              'font-heading text-primary border-input bg-background h-16 w-44 rounded-xl border px-2 text-center text-4xl font-bold tabular-nums sm:w-56 sm:text-5xl'
+              'font-heading text-primary border-input bg-background h-16 w-44 rounded-xl border px-2 text-center text-4xl font-normal tabular-nums sm:w-56 sm:text-5xl'
             }
             value={values.draft ?? String(target)}
             onChange={(event) => {
@@ -386,7 +390,7 @@ function AutopilotSetup(props: {
         </p>
 
         <section className={'flex flex-col gap-3 border-t pt-5'}>
-          <h3 className={'font-semibold'}>{t('pace.title')}</h3>
+          <h3 className={'font-medium'}>{t('pace.title')}</h3>
 
           <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-3'}>
             {(['office', 'spread', 'continuous'] as const).map((schedule) => (
@@ -403,7 +407,7 @@ function AutopilotSetup(props: {
                     : 'hover:bg-muted/50',
                 )}
               >
-                <span className={'block font-bold'}>
+                <span className={'block font-medium'}>
                   {t(`pace.${schedule}`)}
                 </span>
 
@@ -446,7 +450,7 @@ function AutopilotSetup(props: {
 
         <section className={'flex flex-col gap-3 border-t pt-5'}>
           <div className={'flex flex-wrap justify-between gap-2'}>
-            <h3 className={'font-semibold'}>{t('messages.title')}</h3>
+            <h3 className={'font-medium'}>{t('messages.title')}</h3>
 
             <Link href={props.writeHref} className={'text-primary text-sm'}>
               {t('messages.edit')}
@@ -490,9 +494,7 @@ function AutopilotSetup(props: {
                   />
 
                   <span className={'min-w-0'}>
-                    <span className={'block font-semibold'}>
-                      {message.name}
-                    </span>
+                    <span className={'block font-medium'}>{message.name}</span>
 
                     <span
                       className={
@@ -537,9 +539,7 @@ function AutopilotSetup(props: {
             />
 
             <span>
-              <span className={'block font-semibold'}>
-                {t('preview.toggle')}
-              </span>
+              <span className={'block font-medium'}>{t('preview.toggle')}</span>
 
               <span className={'text-muted-foreground text-sm'}>
                 {t('preview.toggleHint')}
@@ -552,7 +552,7 @@ function AutopilotSetup(props: {
           <Button
             type={'submit'}
             size={'lg'}
-            className={'h-12 rounded-xl px-6 text-base font-bold'}
+            className={'h-12 rounded-xl px-6 text-base font-medium'}
             disabled={pending || !props.ready}
             data-test={'autopilot-launch'}
           >
@@ -584,11 +584,13 @@ function AutopilotSetup(props: {
           'bg-card flex w-full flex-col gap-3.5 rounded-2xl border p-6 lg:flex-1'
         }
       >
-        <h3 className={'font-heading text-lg font-bold'}>{t('how.title')}</h3>
+        <h3 className={'font-heading text-lg font-medium tracking-[-0.01em]'}>
+          {t('how.title')}
+        </h3>
 
         {(['1', '2', '3', '4'] as const).map((step) => (
           <div key={step} className={'flex gap-2.5'}>
-            <span className={'text-primary font-bold'}>{step}</span>
+            <span className={'text-primary font-medium'}>{step}</span>
 
             <span className={'leading-snug'}>
               {t(`how.step${step}`, { count: target })}
@@ -618,7 +620,7 @@ function SetupBlocked(props: {
       data-test={'autopilot-blocked'}
     >
       {props.finished ? (
-        <h2 className={'font-heading text-xl font-bold'}>
+        <h2 className={'font-heading text-xl font-medium tracking-[-0.01em]'}>
           {t('run.doneTitle', { count: props.sent })}
         </h2>
       ) : null}
@@ -654,7 +656,7 @@ function Chip(
       data-test={props.testId}
       onClick={props.onClick}
       className={cn(
-        'rounded-full border px-4 py-2 text-sm font-semibold tabular-nums transition-colors',
+        'rounded-full border px-4 py-2 text-sm font-medium tabular-nums transition-colors',
         props.selected
           ? 'border-primary bg-primary/10 text-primary'
           : 'bg-card hover:bg-muted/50',
@@ -714,7 +716,7 @@ function AutopilotPreview(props: {
       data-test={'autopilot-preview'}
     >
       <div className={'flex flex-col gap-1.5'}>
-        <h2 className={'font-heading text-2xl font-bold'}>
+        <h2 className={'font-heading text-2xl font-normal tracking-[-0.02em]'}>
           {waiting
             ? t('waitingTitle')
             : rows.length > 0
@@ -772,7 +774,7 @@ function AutopilotPreview(props: {
 
               <div className={'flex items-center justify-between gap-2 p-3.5'}>
                 <div className={'min-w-0'}>
-                  <div className={'truncate font-semibold'}>
+                  <div className={'truncate font-medium'}>
                     {row.prospect.name}
                   </div>
 
@@ -783,7 +785,7 @@ function AutopilotPreview(props: {
 
                 <span
                   className={
-                    'bg-primary/10 text-primary shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold'
+                    'bg-primary/10 text-primary shrink-0 rounded-full px-2.5 py-1 text-xs font-medium'
                   }
                 >
                   {t('ready')}
@@ -798,7 +800,7 @@ function AutopilotPreview(props: {
         {rows.length > 0 ? (
           <Button
             size={'lg'}
-            className={'h-12 rounded-xl px-6 font-bold'}
+            className={'h-12 rounded-xl px-6 font-medium'}
             disabled={confirm.isPending || cancel.isPending}
             data-test={'autopilot-confirm'}
             onClick={() => confirm.execute({ autopilotId })}
@@ -917,7 +919,10 @@ function AutopilotRunning(props: {
               )}
             />
 
-            <span className={'text-lg font-bold'} data-test={'autopilot-title'}>
+            <span
+              className={'text-lg font-medium'}
+              data-test={'autopilot-title'}
+            >
               {title}
             </span>
           </div>
@@ -958,7 +963,7 @@ function AutopilotRunning(props: {
         <div className={'flex items-baseline gap-2.5'}>
           <span
             className={
-              'font-heading text-primary text-5xl font-bold tabular-nums'
+              'font-heading text-primary text-5xl font-light tracking-[-0.02em] tabular-nums'
             }
             data-test={'autopilot-sent'}
           >
@@ -1061,7 +1066,7 @@ function Tile(props: {
     >
       <div className={'text-muted-foreground text-sm'}>{props.label}</div>
       <div
-        className={'text-2xl font-bold tabular-nums'}
+        className={'text-2xl font-medium tabular-nums'}
         data-test={props.testId}
       >
         {props.value}
@@ -1090,7 +1095,7 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
       }
       data-test={'autopilot-feed'}
     >
-      <h3 className={'font-bold'}>{t('title')}</h3>
+      <h3 className={'font-medium'}>{t('title')}</h3>
 
       <ol className={'flex flex-col gap-2 font-mono text-[13px] leading-snug'}>
         {rows.length === 0 ? (

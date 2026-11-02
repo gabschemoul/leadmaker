@@ -130,7 +130,7 @@ async function PersonalAccountPage(props: { account: Account }) {
               displayName={props.account.name}
             />
 
-            <span className={'text-sm font-semibold capitalize'}>
+            <span className={'text-sm font-medium capitalize'}>
               {props.account.name}
             </span>
           </div>
@@ -195,7 +195,7 @@ async function TeamAccountPage(props: {
               displayName={props.account.name}
             />
 
-            <span className={'text-sm font-semibold capitalize'}>
+            <span className={'text-sm font-medium capitalize'}>
               {props.account.name}
             </span>
           </div>

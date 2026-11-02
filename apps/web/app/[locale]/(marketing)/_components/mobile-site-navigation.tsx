@@ -12,6 +12,8 @@ import { Button } from '@kit/ui/button';
 import { MobileModeToggle } from '@kit/ui/mobile-mode-toggle';
 import { cn } from '@kit/ui/utils';
 
+import { pillButtonClasses } from './el';
+
 /**
  * Menu mobile du site : bouton à deux traits qui se change en croix, et
  * panneau plein écran sous l'en-tête. Le panneau passe par un portail :
@@ -63,7 +65,7 @@ export function MobileSiteNavigation({
             <div
               data-test={'mobile-menu'}
               className={
-                'bg-background animate-in fade-in slide-in-from-top-2 fixed inset-x-0 top-14 bottom-0 z-50 flex flex-col overflow-y-auto px-6 pt-6 pb-10 duration-200 md:hidden'
+                'bg-background animate-in fade-in slide-in-from-top-2 fixed inset-x-0 top-16 bottom-0 z-50 flex flex-col overflow-y-auto px-6 pt-6 pb-10 duration-200 md:hidden'
               }
               onKeyDown={(event) => {
                 if (event.key === 'Escape') {
@@ -78,7 +80,7 @@ export function MobileSiteNavigation({
                     href={item.path}
                     onClick={() => setOpen(false)}
                     className={
-                      'border-border/60 flex items-center justify-between border-b py-4 text-2xl font-medium tracking-tight'
+                      'border-border/60 font-heading flex items-center justify-between border-b py-4 text-[1.75rem] font-light tracking-[-0.02em]'
                     }
                   >
                     {t(item.label)}
@@ -98,15 +100,19 @@ export function MobileSiteNavigation({
 
               <div className={'mt-auto flex flex-col gap-3 pt-8'}>
                 {actions.map((item) => (
-                  <Button
+                  <Link
                     key={item.path}
-                    size={'lg'}
-                    variant={item.variant}
-                    className={'h-12 w-full text-base'}
-                    nativeButton={false}
+                    href={item.path}
                     onClick={() => setOpen(false)}
-                    render={<Link href={item.path}>{t(item.label)}</Link>}
-                  />
+                    className={pillButtonClasses({
+                      variant:
+                        item.variant === 'default' ? 'primary' : 'secondary',
+                      size: 'lg',
+                      className: 'w-full',
+                    })}
+                  >
+                    {t(item.label)}
+                  </Link>
                 ))}
               </div>
             </div>,

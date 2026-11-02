@@ -48,10 +48,12 @@ export function AppLogo({
   href,
   label,
   className,
+  linkClassName = 'mx-auto md:mx-0',
 }: {
   href?: string | null;
   className?: string;
   label?: string;
+  linkClassName?: string;
 }) {
   if (href === null) {
     return <LogoImage className={className} />;
@@ -61,7 +63,7 @@ export function AppLogo({
     <Link
       aria-label={label ?? 'Home Page'}
       href={href ?? '/'}
-      className="mx-auto md:mx-0"
+      className={linkClassName}
     >
       <LogoImage className={className} />
     </Link>

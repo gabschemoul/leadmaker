@@ -22,7 +22,7 @@ export function SiteHeader() {
           'mx-auto flex h-16 w-full max-w-[62rem] items-center gap-x-3 md:gap-x-8'
         }
       >
-        <AppLogo href="/" />
+        <AppLogo href="/" linkClassName={'shrink-0'} />
 
         <div className={'order-last md:order-none md:flex-1'}>
           <SiteNavigation />

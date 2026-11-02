@@ -156,6 +156,7 @@ class DiscoveryRunner:
         cards = new = kept = 0
         stopped = None
         bytes_before = self._scraper().bytes
+        opened_before = self._scraper().opened
         center = None
         if p.get("latitude") is not None and p.get("longitude") is not None:
             center = (float(p["latitude"]), float(p["longitude"]), int(p.get("zoom") or 15))
@@ -198,7 +199,9 @@ class DiscoveryRunner:
         proxy_bytes = self._scraper().bytes - bytes_before
         log.info("%s | %d fiches, %d nouvelles, %d retenues (%.1fs, %.1f Mo)", p["query"], cards, new, kept,
                  duration_ms / 1000, proxy_bytes / 1e6)
-        return {"cards": cards, "new": new, "kept": kept, "stopped": stopped, "proxy_bytes": proxy_bytes}
+        opened = self._scraper().opened - opened_before
+        return {"cards": cards, "new": new, "kept": kept, "opened": opened, "stopped": stopped,
+                "proxy_bytes": proxy_bytes}
 
     def on_final_failure(self, task: Task, conn: psycopg.Connection) -> None:
         """Recherche abandonnée après plusieurs échecs : on libère sa place (campagne) ou on la compte vide (estimation)."""

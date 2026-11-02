@@ -26,18 +26,45 @@ BLOCKED_URL_PARTS = (
 )
 DETAIL_TAB_REUSE = 15  # fiches ouvertes dans un même onglet avant de le remplacer
 PLACE_ID = re.compile(r"!1s(0x[0-9a-f]+:0x[0-9a-f]+)")
+
+
+# Carte sans bouton « Website » : faut-il ouvrir la fiche pour savoir s'il y a un site ? (roadmap n°11)
+# Échantillon du 2/11/2026 (14 recherches FR/US, 282 fiches ouvertes) : quand la carte affiche ses boutons
+# d'action (« Directions »…), l'absence de « Website » veut dire « pas de site » (0 sur 107, hors pubs).
+# Quand Google affiche la liste en version compacte, AUCUN bouton n'apparaît (restaurants, hôtels,
+# coiffeurs, fleuristes, dentistes US…) : 149 fiches sur 173 avaient un site. Ça dépend de la liste,
+# pas de l'activité (dentistes : boutons en France, liste compacte à Chicago).
+def card_hides_buttons(actions: list[str]) -> bool:
+    """Vrai si la carte n'affiche aucun bouton d'action : le site éventuel n'est visible que sur la fiche."""
+    return not any(a and a.strip() for a in actions)
+
+
 COORDS = re.compile(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)")
 STATUS = re.compile(r"^(open|closed|opens|closes|temporarily|permanently|\d)", re.I)
 
 
+RATING_LINE = re.compile(r"^\d[.,]\d\s*\(")
+
+
 def card_category(text: str) -> str:
-    """Activité d'une carte de résultat : première partie d'une ligne « Activité · adresse »."""
-    for line in (text or "").split("\n"):
+    """Activité d'une carte de résultat : première partie d'une ligne « Activité · adresse ».
+
+    Les entreprises sans local (artisans qui se déplacent) n'ont pas d'adresse : l'activité est alors seule
+    sur la ligne qui suit la note (« 5.0(171) » puis « Plumber »). Sans ce cas, la fiche était ouverte
+    juste pour lire l'activité (roadmap n°11)."""
+    lines = (text or "").split("\n")
+    for line in lines:
         if "·" not in line:
             continue
         first = line.split("·")[0].strip()
         if first and not STATUS.match(first) and not first.startswith(("$", "€", "£")):
             return first
+    for prev, line in zip(lines, lines[1:]):
+        if not RATING_LINE.match(prev.strip()):
+            continue
+        cand = re.sub(r"[\ue000-\uf8ff]", "", line).strip()
+        if cand and "·" not in cand and not STATUS.match(cand) and not cand.startswith(("$", "€", "£")):
+            return cand
     return ""
 
 
@@ -170,6 +197,7 @@ class GMapsScraper:
         self.stop_flag = stop_flag or (lambda: False)
         self._pw = self._browser = self._ctx = None
         self.searches = 0
+        self.opened = 0  # fiches ouvertes depuis le lancement (mesure du n°11)
         # octets reçus à travers le proxy depuis l'ouverture (voir _meter)
         self.bytes = 0
 
@@ -276,7 +304,10 @@ class GMapsScraper:
                 const card = a.parentElement;
                 const star = card.querySelector('span[role="img"][aria-label*="star"], span[role="img"][aria-label*="toile"]');
                 const site = card.querySelector('a[data-value="Website"], a[data-value="Site Web"]');
+                const actions = [...card.querySelectorAll('a[data-value], button[data-value]')]
+                    .filter(x => x !== a).map(x => x.getAttribute('data-value') || '');
                 return {
+                    actions,
                     name: a.getAttribute('aria-label') || '',
                     href: a.href,
                     star: star ? star.getAttribute('aria-label') : null,
@@ -387,9 +418,12 @@ class GMapsScraper:
                 if rating is not None and not _rating_ok(rating, filters):
                     yield "skip", place
                     continue
-                # Sans bouton « Website » sur la carte, on ne sait pas encore : les restaurants, hôtels…
-                # affichent « Réserver » ou « Commander » à la place. Il faut alors ouvrir la fiche.
-                site_unknown = not c["site"] and filters.website != "all"
+                # Sans bouton « Website » : si la carte affiche ses autres boutons, l'entreprise n'a pas de site ;
+                # si la liste est compacte (aucun bouton), seule la fiche le dit. On n'ouvre que dans ce cas :
+                # chaque fiche ouverte coûte ~1 à 2 Mo de proxy.
+                site_unknown = (
+                    not c["site"] and filters.website != "all" and card_hides_buttons(c.get("actions") or [])
+                )
                 if not c.get("single"):
                     if (rating is None and not filters.include_unrated) or (
                         not site_unknown and not _website_ok(c["site"], filters)
@@ -407,6 +441,7 @@ class GMapsScraper:
                     place.address, place.phone = card_details(c.get("text", ""))
                 else:
                     opened += 1
+                    self.opened += 1
                     if opened % DETAIL_TAB_REUSE == 0:
                         # Un onglet qui enchaîne des dizaines de fiches gonfle jusqu'à planter : on le renouvelle
                         detail.close()

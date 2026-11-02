@@ -14,22 +14,17 @@ export function SiteHeader() {
         'site-header bg-background/90 border-hairline sticky top-0 z-20 w-full border-b px-4 backdrop-blur-lg sm:px-6'
       }
     >
+      {/* Comme ElevenLabs sur téléphone : logo à gauche, puis le bouton
+          « S'inscrire » et le menu à droite. Sur ordinateur : logo, liens,
+          boutons. */}
       <div
         className={
-          'relative mx-auto flex h-16 w-full max-w-[62rem] items-center gap-x-8'
+          'mx-auto flex h-16 w-full max-w-[62rem] items-center gap-x-3 md:gap-x-8'
         }
       >
-        {/* Sur téléphone, le logo est centré sur la largeur de l'écran,
-            quelle que soit la largeur du menu et des boutons de chaque côté. */}
-        <div
-          className={
-            'absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0'
-          }
-        >
-          <AppLogo href="/" />
-        </div>
+        <AppLogo href="/" />
 
-        <div className={'order-first md:order-none md:flex-1'}>
+        <div className={'order-last md:order-none md:flex-1'}>
           <SiteNavigation />
         </div>
 

@@ -43,19 +43,19 @@ export function MobileSiteNavigation({
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
         className={
-          'hover:bg-muted relative -ml-2 flex size-9 items-center justify-center rounded-full transition-colors'
+          'hover:bg-muted relative -mr-2 flex size-9 items-center justify-center rounded-full transition-colors'
         }
       >
         <span
           className={cn(
             'bg-foreground absolute h-[1.5px] w-4 rounded-full transition-transform duration-300 ease-out',
-            open ? 'rotate-45' : '-translate-y-[3px]',
+            open ? 'rotate-45' : '-translate-y-[4px]',
           )}
         />
         <span
           className={cn(
             'bg-foreground absolute h-[1.5px] w-4 rounded-full transition-transform duration-300 ease-out',
-            open ? '-rotate-45' : 'translate-y-[3px]',
+            open ? '-rotate-45' : 'translate-y-[4px]',
           )}
         />
       </button>

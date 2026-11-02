@@ -16,7 +16,7 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 
 **Le constat (mesures du 2/11)** : le seul vrai coût variable est le proxy DataImpulse de la recherche Google Maps (~1 $ le Go, facturé au poids). Prises de contact et serveurs : quelques euros par client et par mois. Une recherche (une activité dans un quartier) pèse ~2 Mo pour la liste + ~2 Mo par fiche ouverte. Le coût d'un prospect dépend des filtres : 18,6 prospects par recherche sans filtre de note, 4,5 avec note > 0,8, 1,4 en « mauvaises notes » (0,7-3,8). Sans proxy, depuis nos serveurs Hetzner, seule 1 recherche sur 3 aboutit (test du 2/11) : le proxy reste nécessaire.
 
-**Forfaits envisagés par Gabriel (à confirmer, PAS encore dans l'app)** : Growth 499 $ = 30 000 prospects / 15 000 prises de contact ; Business 990 $ = 80 000 / 40 000 ; Scale 1 999 $ = 200 000 / 100 000. L'app affiche aujourd'hui 15 000 / 5 000, 45 000 / 15 000, 105 000 / 35 000.
+**Forfaits DÉCIDÉS par Gabriel le 2 novembre 2026 (pas encore dans l'app)** : facturation en dollars. Growth 499 $ / mois = 30 000 prospects + 15 000 prises de contact ; Business 990 $ = 80 000 + 40 000 ; Scale 1 999 $ = 200 000 + 100 000. Annuel = 10 mois (4 990 $ / 9 900 $ / 19 990 $). **Aucun plafond de prises de contact par jour** : seul le crédit mensuel limite (le réglage par campagne reste). Sièges 1 / 3 / 6, campagnes actives 1 / 3 / 10, crédits selon la difficulté (n°13) et budget proxy 50 / 100 / 200 Go (n°14) inchangés. Coût proxy mesuré : 3 à 13 % du prix au pire, marge > 85 %. L'app affiche encore 15 000 / 5 000, 45 000 / 15 000, 105 000 / 35 000 en euros.
 
 ### 10. Ne garder que « Je choisis moi-même » pour les activités 🟢 — EN LIGNE (publié le 2/11)
 - Supprimer « Activités courantes » et « Toutes les activités » dans « Quelles entreprises ? ».
@@ -152,7 +152,7 @@ Pistes à discuter :
 8. **IA dans le robot** pour les cas douteux : choisir la bonne adresse e-mail, reconnaître un formulaire atypique, juger si le message est bien parti.
 9. **Réserve partagée des fiches Google Maps** : une zone déjà scannée il y a moins de 30 jours est servie sans retourner sur Google.
 10. **Captchas** : module fait par l'équipe.
-11. **Remettre les plafonds d'envoi** avant le premier client : le 1/11 Gabriel a demandé l'envoi illimité (plafond des forfaits et des campagnes de Namma Booster / Review Cleaner passés à 100 000 par jour, saisie jusqu'à 100 000). À remettre : Growth 500, Business 1 000, Scale 1 500 par jour, saisie max 1 000.
+11. ~~Remettre les plafonds d'envoi avant le premier client~~ → ANNULÉ le 2/11 : Gabriel a décidé qu'il n'y a pas de plafond par jour, seul le crédit mensuel limite.
 12. **Base de données séparée pour la pré-production** (décidé le 1/11, à faire plus tard, quand de vrais clients seront en ligne). Aujourd'hui staging.prospectigo.com partage les données de prospectigo.com.
 
 ---

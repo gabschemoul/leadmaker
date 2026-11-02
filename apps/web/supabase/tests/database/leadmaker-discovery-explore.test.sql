@@ -149,6 +149,22 @@ select is((select (searches, in_flight)::text from public.lm_campaign_categories
             where campaign_id = (select campaign_id from t_ctx) and gcid = 'gcid:x_a'),
   '(11,2)', 'Échec : place libérée, recherche non comptée');
 
+-- Robot bloqué sur sa dernière tentative : la recherche passe en échec et libère sa place
+update public.lm_tasks set status = 'running', worker_id = 'w-test', locked_at = now() - interval '1 hour',
+                           attempts = max_attempts
+ where id = (select id from public.lm_tasks where kind = 'discovery' and status = 'queued'
+              and payload ->> 'campaign_id' = (select campaign_id from t_ctx)::text and payload ->> 'gcid' = 'gcid:x_a'
+              limit 1);
+set local role service_role;
+select ok(public.lm_requeue_stale_tasks() >= 1, 'Une tâche bloquée balayée');
+set local role postgres;
+select is((select status::text from public.lm_tasks where kind = 'discovery' and error = 'worker timeout'
+            and payload ->> 'campaign_id' = (select campaign_id from t_ctx)::text and payload ->> 'gcid' = 'gcid:x_a'),
+  'failed', 'Dernière tentative : la tâche passe en échec');
+select is((select (searches, in_flight)::text from public.lm_campaign_categories
+            where campaign_id = (select campaign_id from t_ctx) and gcid = 'gcid:x_a'),
+  '(11,1)', 'Balayage : la recherche en échec définitif libère sa place');
+
 -- Avancement : activités qui rapportent et abandonnées
 select is((select (productive, abandoned)::text from public.lm_campaign_progress((select campaign_id from t_ctx))),
   '(4,2)', 'Avancement : 4 activités rapportent (A, B, G, H), 2 abandonnées (C, H)');

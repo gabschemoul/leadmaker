@@ -133,6 +133,14 @@ begin
            worker_id = null,
            locked_at = null
      where status = 'running' and locked_at < now() - p_stale
+    returning kind, status, payload
+  ), released as (
+    -- Une recherche Google Maps passée en échec définitif libère sa place dans la campagne
+    update public.lm_campaign_categories cc
+       set in_flight = greatest(cc.in_flight - f.cnt, 0)
+      from (select (payload ->> 'campaign_id')::uuid as campaign_id, payload ->> 'gcid' as gcid, count(*)::integer as cnt
+              from stale where kind = 'discovery' and status = 'failed' group by 1, 2) f
+     where cc.campaign_id = f.campaign_id and cc.gcid = f.gcid
     returning 1
   )
   select count(*) into v_count from stale;

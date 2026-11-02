@@ -377,6 +377,41 @@ $$;
 grant execute on function public.lm_estimate_campaign(text, jsonb, jsonb) to authenticated, service_role;
 
 -- Lancement : vérifie les droits et quotas, fige les zones et les catégories, passe la campagne en cours
+-- Remet in_flight de chaque activité au nombre réel de recherches en file ou en cours.
+-- Utilisé à la reprise d'une campagne et par les scripts d'entretien (compteurs désynchronisés).
+create or replace function public.lm_recount_in_flight(p_campaign_id uuid) returns integer
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_fixed integer;
+begin
+  with real_tasks as (
+    select t.payload ->> 'gcid' as gcid, count(*)::integer as cnt
+      from public.lm_tasks t
+     where t.kind = 'discovery' and t.status in ('queued', 'running')
+       and t.payload ->> 'campaign_id' = p_campaign_id::text
+     group by 1
+  ), fixed as (
+    update public.lm_campaign_categories cc
+       set in_flight = coalesce(r.cnt, 0)
+      from public.lm_campaign_categories c2
+      left join real_tasks r on r.gcid = c2.gcid
+     where c2.campaign_id = p_campaign_id and cc.campaign_id = c2.campaign_id and cc.gcid = c2.gcid
+       and cc.in_flight <> coalesce(r.cnt, 0)
+    returning 1
+  )
+  select count(*) into v_fixed from fixed;
+
+  return v_fixed;
+end;
+$$;
+
+revoke all on function public.lm_recount_in_flight(uuid) from public;
+
+grant execute on function public.lm_recount_in_flight(uuid) to service_role;
+
 create or replace function public.lm_start_campaign(p_campaign_id uuid) returns void
 set search_path = ''
 language plpgsql
@@ -434,6 +469,9 @@ begin
   update public.lm_tasks set status = 'queued', run_after = now(), finished_at = null, attempts = 0, error = null
    where kind = 'discovery' and status = 'cancelled' and payload ->> 'campaign_id' = p_campaign_id::text;
 
+  -- Les places occupées repartent des vraies tâches en file ou en cours
+  perform public.lm_recount_in_flight(p_campaign_id);
+
   update public.lm_campaigns
      set status = 'running', filters = filters - 'paused_reason'
    where id = p_campaign_id;
@@ -465,8 +503,16 @@ begin
          filters = case when p_reason is null then filters else filters || jsonb_build_object('paused_reason', p_reason) end
    where id = p_campaign_id and status = 'running';
 
-  update public.lm_tasks set status = 'cancelled', finished_at = now()
-   where kind = 'discovery' and status = 'queued' and payload ->> 'campaign_id' = p_campaign_id::text;
+  -- Les recherches annulées libèrent leur place : in_flight ne compte que les tâches en file ou en cours
+  with cancelled as (
+    update public.lm_tasks set status = 'cancelled', finished_at = now()
+     where kind = 'discovery' and status = 'queued' and payload ->> 'campaign_id' = p_campaign_id::text
+    returning payload ->> 'gcid' as gcid
+  )
+  update public.lm_campaign_categories cc
+     set in_flight = greatest(cc.in_flight - n.cnt, 0)
+    from (select gcid, count(*)::integer as cnt from cancelled group by gcid) n
+   where cc.campaign_id = p_campaign_id and cc.gcid = n.gcid;
 end;
 $$;
 

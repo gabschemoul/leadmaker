@@ -116,18 +116,33 @@ select lives_ok($$ select public.lm_finish_search((select id from public.lm_camp
   'gcid:test_bakery', 0, 12, 10, 1, 5000) $$, 'Fin de recherche enregistrée');
 select is((select (searches, kept, in_flight)::text from public.lm_campaign_categories where gcid = 'gcid:test_bakery'),
   '(1,1,0)', 'Rendement et place libérée');
+update public.lm_tasks set status = 'done', finished_at = now()
+ where kind = 'discovery' and status = 'queued' and payload ->> 'gcid' = 'gcid:test_bakery'
+   and payload ->> 'campaign_id' = (select id from public.lm_campaigns where name = 'Campagne A')::text;
 
 -- Pause puis reprise : les recherches en attente sont annulées puis remises en file
+select is((select in_flight from public.lm_campaign_categories where gcid = 'gcid:test_salon'), 1, 'Avant la pause : une recherche en cours pour le salon');
 select public.lm_pause_campaign((select id from public.lm_campaigns where name = 'Campagne A'));
 select is((select count(*)::int from public.lm_tasks where kind = 'discovery' and status = 'queued'
   and payload ->> 'campaign_id' = (select id from public.lm_campaigns where name = 'Campagne A')::text), 0, 'Pause : plus rien en file');
+select is((select sum(in_flight)::int from public.lm_campaign_categories
+  where campaign_id = (select id from public.lm_campaigns where name = 'Campagne A')), 0, 'Pause : les recherches annulées libèrent leur place');
 
+-- Compteur fantôme laissé par une ancienne pause : la reprise le recalcule
 set local role postgres;
+update public.lm_campaign_categories set in_flight = 7 where gcid = 'gcid:test_bakery';
 select makerkit.authenticate_as('disc_a');
 select public.lm_start_campaign((select id from public.lm_campaigns where name = 'Campagne A'));
 set local role service_role;
 select ok((select count(*) from public.lm_tasks where kind = 'discovery' and status = 'queued'
   and payload ->> 'campaign_id' = (select id from public.lm_campaigns where name = 'Campagne A')::text) >= 1, 'Reprise : recherches remises en file');
+select is((select (searches, kept, in_flight)::text from public.lm_campaign_categories where gcid = 'gcid:test_bakery'),
+  '(1,1,0)', 'Reprise : le compteur fantôme de la boulangerie est remis à zéro');
+select is((select in_flight from public.lm_campaign_categories where gcid = 'gcid:test_salon'),
+  (select count(*)::int from public.lm_tasks where kind = 'discovery' and status in ('queued', 'running')
+     and payload ->> 'gcid' = 'gcid:test_salon'
+     and payload ->> 'campaign_id' = (select id from public.lm_campaigns where name = 'Campagne A')::text),
+  'Reprise : le salon compte exactement ses tâches réelles');
 
 -- Crédits épuisés : la campagne se met en pause
 update public.lm_account_credits set discovery_balance = 0 where account_id = (select id from public.accounts where slug = 'disc-a');

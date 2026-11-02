@@ -1285,6 +1285,9 @@ isOneToOne: false
 "lm_record_prospect":
 { Args: { "p_campaign_id": string,"p_place": Json }; Returns: string
                            },
+"lm_recount_in_flight":
+{ Args: { "p_campaign_id": string }; Returns: number
+                           },
 "lm_release_search":
 { Args: { "p_campaign_id": string,"p_gcid": string }; Returns: undefined
                            },

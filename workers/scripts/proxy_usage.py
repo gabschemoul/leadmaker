@@ -46,12 +46,12 @@ def main() -> None:
         return
     print("Jour         Recherches   Consommation   Par recherche")
     for day, n, b in days:
-        b = (b or 0) * OVERHEAD
+        b = float(b or 0) * OVERHEAD
         print(f"{day}   {n:>10}   {b / 1e9:>9.2f} Go   {b / max(n, 1) / 1e6:>9.1f} Mo")
     if campaigns:
         print("\nAujourd'hui, par campagne :")
         for name, n, b in campaigns:
-            print(f"  {name[:40]:<40} {n:>5} recherches   {(b or 0) * OVERHEAD / 1e6:>8.0f} Mo")
+            print(f"  {name[:40]:<40} {n:>5} recherches   {float(b or 0) * OVERHEAD / 1e6:>8.0f} Mo")
 
 
 if __name__ == "__main__":

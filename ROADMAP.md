@@ -185,6 +185,13 @@ Pistes à discuter :
 - Vocabulaire (2/11) : ne plus écrire « robot » dans l'app et le site, mais « Prospectigo » (≈ 23 textes à reprendre, dans la même livraison).
 - À revoir aussi plus tard : l'étape 3 « Rédiger ».
 
+### 19. Petites villes : chercher plus large quand une ville ne rapporte plus 🟡 — idée validée par Gabriel (2/11, soir)
+- **Constat (test réel du 2/11, campagne « Agences digital », Namma Booster)** : « tout le pays » en France = 16 242 villes, jusqu'aux villages. Le rythme des recherches reste le même (~115 par 10 min), mais chaque recherche rapporte de moins en moins : ~30 agences gardées par recherche dans Paris (découpé en ~100 morceaux), ~13 à Lyon, 2 à 5 dans les villes moyennes (Lille, Brest, Metz). Google renvoie toujours 120 fiches, mais surtout des agences déjà trouvées ou situées dans une ville voisine. Après 50 min : 5 520 prospects, à peine 500 villes sur 16 242.
+- **Conséquence** : en continuant ville par ville, la fin de la campagne prendrait ~4 jours (plafond proxy 10 Go/jour) et ~35-40 $ de proxy pour quelques milliers d'agences en plus. Le coût par prospect grimpe (de ~0,1 Mo à 1-2 Mo).
+- **L'idée** : quand les villes d'un même secteur ne rapportent presque plus (ex. moins de 3 nouvelles entreprises par recherche), Prospectigo arrête le village par village et fait une recherche plus large (département ou zone autour de la ville moyenne la plus proche), qui couvre d'un coup les petites communes. Plus rapide, moins cher, quasiment le même résultat.
+- **En attendant** : l'option « Tout le pays, villes de plus de X habitants » du ciblage limite déjà le problème (ex. 20 000 habitants).
+- **Vu au même test** : quand le plafond quotidien de proxy est atteint, la recherche s'arrête jusqu'à minuit sans rien dire au client (« Recherche en cours » figée). Il faut au minimum afficher « Recherche en pause jusqu'à minuit ». Plafond passé de 8 à 10 Go/jour le 2/11 à 22h20 (décision Gabriel).
+
 ## Déjà prévu (liste du 31 octobre)
 
 1. **Premier envoi réel surveillé** sur 2-3 entreprises choisies par Gabriel. Le robot d'envoi reste coupé tant que Gabriel ne dit pas « Envoie ».

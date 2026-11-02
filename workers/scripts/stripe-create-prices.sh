@@ -31,9 +31,11 @@ PLANS=(
   "scale|Prospectigo Scale|200 000 crédits de prospection et 100 000 prises de contact par mois|199900|1999000|NEXT_PUBLIC_STRIPE_PRICE_SCALE_MONTHLY|NEXT_PUBLIC_STRIPE_PRICE_SCALE_YEARLY"
 )
 
-api() { # api <chemin> <données form-urlencoded...>
+api() { # api <chemin> <champ=valeur...> (chaque valeur est encodée : espaces, accents)
   local path=$1; shift
-  curl -sS -u "$KEY:" "https://api.stripe.com/v1/$path" "${@/#/-d }"
+  local args=() field
+  for field in "$@"; do args+=(--data-urlencode "$field"); done
+  curl -sS -u "$KEY:" "https://api.stripe.com/v1/$path" "${args[@]}"
 }
 
 json_field() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get(sys.argv[1]) or d.get("error",{}).get("message") or "")' "$1"; }

@@ -75,7 +75,8 @@ def page(title_fr, title_en, heading_fr, heading_en, body_fr, body_en, button_fr
 
 IGNORE_FR = 'Si vous n’êtes pas à l’origine de cette demande, ignorez simplement cet e-mail.'
 IGNORE_EN = 'If you did not request this, you can safely ignore this email.'
-CODE_FR, CODE_EN = 'Ou saisissez ce code dans l’application :', 'Or enter this code in the app:'
+# Pas de code à recopier dans ces e-mails : l'application n'a aucun champ pour le saisir (la connexion par code
+# est désactivée, NEXT_PUBLIC_AUTH_OTP absent). Seul le bouton (lien) compte. Retiré le 2/11 après le test de Gabriel.
 
 FILES = {
     'confirm-email.html': page(
@@ -85,7 +86,7 @@ FILES = {
         'One last step: click the button below to confirm your email address and activate your account.',
         'Confirmer mon adresse e-mail', 'Confirm my email address',
         '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;callback={{ .RedirectTo }}',
-        CODE_FR, CODE_EN, IGNORE_FR, IGNORE_EN),
+        None, None, IGNORE_FR, IGNORE_EN),
     'reset-password.html': page(
         'Réinitialisez votre mot de passe', 'Reset your password',
         'Réinitialiser votre mot de passe', 'Reset your password',
@@ -93,7 +94,7 @@ FILES = {
         'You asked for a new password for your Prospectigo account. Click the button below to choose it.',
         'Choisir un nouveau mot de passe', 'Choose a new password',
         '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery&amp;next={{ .SiteURL }}/update-password',
-        CODE_FR, CODE_EN,
+        None, None,
         IGNORE_FR + ' Votre mot de passe actuel reste valable.', IGNORE_EN + ' Your current password stays valid.'),
     'magic-link.html': page(
         'Votre lien de connexion', 'Your sign-in link',
@@ -102,7 +103,7 @@ FILES = {
         'Click the button below to sign in. This link can only be used once.',
         'Me connecter', 'Sign in',
         '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=magiclink&amp;callback={{ .RedirectTo }}',
-        'Ou saisissez ce code pour vous connecter :', 'Or enter this code to sign in:', IGNORE_FR, IGNORE_EN),
+        None, None, IGNORE_FR, IGNORE_EN),
     'change-email-address.html': page(
         'Confirmez votre nouvelle adresse e-mail', 'Confirm your new email address',
         'Changement d’adresse e-mail', 'Email address change',

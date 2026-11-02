@@ -50,8 +50,11 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 - Vérifié en local le 2/11 : brouillon « Boulangeries Lyon 20 km » → Lancer → mesure 30 recherches en 3 min 38 → 6,8 % → 2 crédits → lancement, tarif figé, pause. Test de base `leadmaker-credit-difficulty.test.sql` (31 vérifications).
 - **Mise en ligne** (la base est partagée avec prospectigo.com, donc en même temps que la publication) : 1) `cd ~/LeadMaker/app/apps/web && pnpm exec supabase db push` ; 2) publier staging → main ; 3) `./workers/scripts/deploy-robots.sh` (le robot qui attribue le trafic aux activités). Tant que la migration n'est pas poussée, l'onglet Trouver de la pré-production affiche « Mesuré au lancement » et le lancement marche comme avant.
 
-### 14. Budget de proxy invisible par client 🟡 — VALIDÉ (2/11)
-- Filet de sécurité : ≈ 10 % du prix en Go par mois (Growth 50 Go, Business 100, Scale 200). Au-delà, la recherche du client ralentit au lieu de coûter plus.
+### 14. Budget de proxy invisible par client 🟡 — FAIT en pré-production le 2/11, à mettre en ligne avec la publication
+- Filet de sécurité : ≈ 10 % du prix en Go par mois (Growth 50 Go, Business 100, Scale 200 ; réglable dans `lm_plans.proxy_gb_month`, vide = pas de plafond). Au-delà, la recherche du client ralentit au lieu de coûter plus.
+- **Comment ça marche** : chaque recherche et chaque estimation ajoute son vrai trafic au compteur du compte (`lm_account_credits.proxy_bytes_period`), remis à zéro à chaque recharge de crédits. Quand le compteur atteint le budget du forfait, le compte entier n'a plus qu'**une recherche à la fois** toutes campagnes confondues (réglage `over_budget_tasks_per_account`), au lieu de 6 par campagne : environ 6 à 18 fois plus lent. Rien n'est affiché au client, rien n'est facturé en plus. Le plafond quotidien global (8 Go/jour) reste en place.
+- Tests de base `leadmaker-proxy-budget.test.sql` (9 vérifications). Les comptes actuels (Namma Booster = Scale 200 Go, Review Cleaner = Business 100 Go, jerem = Scale) partent d'un compteur à zéro à la mise en ligne.
+- **Mise en ligne** : avec le n°13 (même `db push`, puis `deploy-robots.sh` : le robot compte aussi le trafic des estimations).
 
 ---
 

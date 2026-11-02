@@ -70,6 +70,12 @@ select throws_ok($$ select public.lm_start_campaign((select id from public.lm_ca
 set local role service_role;
 select public.lm_reset_credits((select id from public.accounts where slug = 'disc-a'), 'growth', now() + interval '1 month', 'disc:renewal:a');
 set local role postgres;
+-- Roadmap n°13 : le premier lancement exige une estimation terminée avec le même ciblage et les mêmes filtres
+insert into public.lm_estimates (account_id, country_code, targeting, filters, mode, status, total_searches, sample_searches,
+                                 done_searches, cards, matching, rate, credits_per_prospect, finished_at)
+select account_id, country_code, targeting, filters - 'paused_reason', 'exact', 'done', 1, 1, 1, 100, 50, 0.5, 1, now()
+  from public.lm_campaigns where name = 'Campagne A';
+
 select makerkit.authenticate_as('disc_a');
 
 select lives_ok($$ select public.lm_start_campaign((select id from public.lm_campaigns where name = 'Campagne A')) $$,

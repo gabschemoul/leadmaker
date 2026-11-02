@@ -56,8 +56,9 @@ def add_task_bytes(conn: psycopg.Connection, task_id: int, nbytes: int) -> None:
 
 
 def add_search_bytes(conn: psycopg.Connection, task_id: int, nbytes: int) -> None:
-    """Ajoute le trafic d'une recherche à son activité dans la campagne (lm_campaign_categories.proxy_bytes)
-    et à son journal : le planificateur classe les activités par prospects par Mo (roadmap n°13).
+    """Ajoute le trafic d'une recherche ou d'une estimation au compteur mensuel du compte (budget proxy par
+    client, roadmap n°14) et, pour une recherche de campagne, à son activité et à son journal : le
+    planificateur classe les activités par prospects par Mo (roadmap n°13).
     Ne doit jamais faire échouer une tâche (base plus ancienne sans la fonction, par exemple)."""
     if nbytes <= 0:
         return

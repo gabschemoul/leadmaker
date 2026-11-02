@@ -51,6 +51,13 @@ select is((select count(*)::int from public.lm_campaign_zones where campaign_id 
   0, 'Pas de zone avant le lancement');
 
 -- Lancement : 1 ville, 1 activité
+set local role postgres;
+-- Roadmap n°13 : le premier lancement exige une estimation terminée avec le même ciblage et les mêmes filtres
+insert into public.lm_estimates (account_id, country_code, targeting, filters, mode, status, total_searches, sample_searches,
+                                 done_searches, cards, matching, rate, credits_per_prospect, finished_at)
+select account_id, country_code, targeting, filters - 'paused_reason', 'exact', 'done', 1, 1, 1, 100, 50, 0.5, 1, now()
+  from public.lm_campaigns where id = 'a0000000-0000-4000-8000-00000000e001';
+select makerkit.authenticate_as('edit_a');
 select public.lm_start_campaign('a0000000-0000-4000-8000-00000000e001');
 select is((select count(*)::int from public.lm_campaign_zones where campaign_id = 'a0000000-0000-4000-8000-00000000e001'), 1, 'Une zone au lancement');
 

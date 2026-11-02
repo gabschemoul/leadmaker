@@ -62,11 +62,15 @@ create table if not exists public.lm_discovery_settings (
   -- Trafic proxy attendu d'une recherche dont on n'a pas encore de mesure (Mo), pour classer les activités
   -- par prospects par Mo
   default_search_mb numeric(6,2) not null default 4,
+  -- Roadmap n°14 : compte au-delà de son budget de proxy du mois → ce nombre de recherches à la fois pour
+  -- TOUTES ses campagnes (au lieu de tasks_per_campaign par campagne)
+  over_budget_tasks_per_account integer not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (id),
   constraint lm_discovery_settings_single_row check (id),
   constraint lm_discovery_settings_search_mb check (default_search_mb > 0),
+  constraint lm_discovery_settings_over_budget check (over_budget_tasks_per_account > 0),
   constraint lm_discovery_settings_positive check (
     prior >= 0 and min_searches > 0 and min_rate >= 0 and chain_min > 1 and max_results > 0 and tasks_per_campaign > 0
   ),
@@ -597,10 +601,19 @@ begin
       from public.lm_campaigns c
      where c.status = 'running'
   loop
-    select v_settings.tasks_per_campaign - count(*) into v_slots
-      from public.lm_tasks t
-     where t.kind = 'discovery' and t.status in ('queued', 'running')
-       and t.payload ->> 'campaign_id' = v_campaign.id::text;
+    if public.lm_proxy_over_budget(v_campaign.account_id) then
+      -- Budget de proxy du mois dépassé (roadmap n°14) : le compte entier n'a plus qu'une poignée de
+      -- recherches à la fois, toutes campagnes confondues. Invisible pour le client, la recherche ralentit.
+      select v_settings.over_budget_tasks_per_account - count(*) into v_slots
+        from public.lm_tasks t
+       where t.kind = 'discovery' and t.status in ('queued', 'running')
+         and t.account_id = v_campaign.account_id;
+    else
+      select v_settings.tasks_per_campaign - count(*) into v_slots
+        from public.lm_tasks t
+       where t.kind = 'discovery' and t.status in ('queued', 'running')
+         and t.payload ->> 'campaign_id' = v_campaign.id::text;
+    end if;
 
     select count(*) into v_zone_count from public.lm_campaign_zones where campaign_id = v_campaign.id;
 
@@ -854,8 +867,9 @@ revoke all on function public.lm_release_search(uuid, text) from public;
 
 grant execute on function public.lm_release_search(uuid, text) to service_role;
 
--- Trafic réseau réel d'une recherche (mesuré par le robot sur la carte réseau, essais ratés compris) :
--- ajouté à l'activité de la campagne et au journal de la recherche. Sert au classement par prospects par Mo.
+-- Trafic réseau réel d'une recherche ou d'une estimation (mesuré par le robot sur la carte réseau, essais
+-- ratés compris) : ajouté au compteur de période du compte (budget proxy, roadmap n°14) et, pour une
+-- recherche de campagne, à son activité et à son journal (classement par prospects par Mo, roadmap n°13).
 create or replace function public.lm_add_search_bytes(p_task_id bigint, p_bytes bigint) returns void
 set search_path = ''
 language plpgsql
@@ -868,9 +882,17 @@ begin
     return;
   end if;
 
-  select * into v_task from public.lm_tasks where id = p_task_id and kind = 'discovery';
+  select * into v_task from public.lm_tasks where id = p_task_id and kind in ('discovery', 'estimate');
 
   if v_task.id is null then
+    return;
+  end if;
+
+  update public.lm_account_credits
+     set proxy_bytes_period = proxy_bytes_period + p_bytes
+   where account_id = v_task.account_id;
+
+  if v_task.kind <> 'discovery' then
     return;
   end if;
 

@@ -17,10 +17,14 @@ create table if not exists public.lm_plans (
   daily_send_limit integer not null,
   active_campaigns integer,           -- null = illimité
   auto_validation boolean not null default false,
+  -- Roadmap n°14 : budget de proxy par mois (Go), invisible pour le client. Au-delà, sa recherche ralentit
+  -- (une seule recherche à la fois pour tout le compte) au lieu de coûter plus. null = pas de plafond.
+  proxy_gb_month integer,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (id),
-  constraint lm_plans_name_not_blank check (length(trim(name)) > 0)
+  constraint lm_plans_name_not_blank check (length(trim(name)) > 0),
+  constraint lm_plans_proxy_gb_month check (proxy_gb_month is null or proxy_gb_month > 0)
 );
 
 comment on table public.lm_plans is 'Forfaits LeadMaker et quotas associés';
@@ -69,6 +73,9 @@ create table if not exists public.lm_account_credits (
   discovery_balance integer not null default 0,
   outreach_balance integer not null default 0,
   period_ends_at timestamptz,
+  -- Trafic proxy (octets) consommé par les recherches et estimations du compte depuis la dernière recharge
+  -- (roadmap n°14) ; alimenté par lm_add_search_bytes, remis à zéro par lm_reset_credits
+  proxy_bytes_period bigint not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (account_id),
@@ -208,13 +215,15 @@ begin
     return;
   end if;
 
-  insert into public.lm_account_credits (account_id, plan_id, discovery_balance, outreach_balance, period_ends_at)
-    values (p_account_id, p_plan_id, v_plan.discovery_credits, v_plan.outreach_credits, p_period_ends_at)
+  insert into public.lm_account_credits (account_id, plan_id, discovery_balance, outreach_balance, period_ends_at,
+                                         proxy_bytes_period)
+    values (p_account_id, p_plan_id, v_plan.discovery_credits, v_plan.outreach_credits, p_period_ends_at, 0)
   on conflict (account_id) do update set
     plan_id = excluded.plan_id,
     discovery_balance = excluded.discovery_balance,
     outreach_balance = excluded.outreach_balance,
-    period_ends_at = excluded.period_ends_at;
+    period_ends_at = excluded.period_ends_at,
+    proxy_bytes_period = 0;
 
   insert into public.lm_credit_ledger (account_id, kind, delta, reason, event_ref)
     values (p_account_id, 'discovery', v_plan.discovery_credits, 'renewal', p_event_ref || ':discovery'),
@@ -225,6 +234,25 @@ $$;
 revoke all on function public.lm_reset_credits(uuid, text, timestamptz, text) from public;
 
 grant execute on function public.lm_reset_credits(uuid, text, timestamptz, text) to service_role;
+
+-- Budget de proxy du compte dépassé pour la période en cours (roadmap n°14) ? Faux sans forfait ou sans plafond.
+create or replace function public.lm_proxy_over_budget(p_account_id uuid) returns boolean
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select coalesce(
+    (select c.proxy_bytes_period >= p.proxy_gb_month::bigint * 1000000000
+       from public.lm_account_credits c
+       join public.lm_plans p on p.id = c.plan_id
+      where c.account_id = p_account_id and p.proxy_gb_month is not null),
+    false);
+$$;
+
+revoke all on function public.lm_proxy_over_budget(uuid) from public;
+
+grant execute on function public.lm_proxy_over_budget(uuid) to service_role;
 
 -- Quota de sièges : limite du forfait courant (illimité sans forfait).
 create or replace function public.lm_seat_limit(p_account_id uuid) returns integer

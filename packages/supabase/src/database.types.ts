@@ -161,14 +161,14 @@ isOneToOne: false
                   ]
                 },"lm_account_credits": {
                   Row: {
-                    "account_id": string,"created_at": string,"discovery_balance": number,"outreach_balance": number,"period_ends_at": string | null,"plan_id": string | null,"updated_at": string
+                    "account_id": string,"created_at": string,"discovery_balance": number,"outreach_balance": number,"period_ends_at": string | null,"plan_id": string | null,"proxy_bytes_period": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"created_at"?: string,"discovery_balance"?: number,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"updated_at"?: string
+                    "account_id": string,"created_at"?: string,"discovery_balance"?: number,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"proxy_bytes_period"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "account_id"?: string,"created_at"?: string,"discovery_balance"?: number,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"updated_at"?: string
+                    "account_id"?: string,"created_at"?: string,"discovery_balance"?: number,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"proxy_bytes_period"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -429,14 +429,14 @@ isOneToOne: false
                   ]
                 },"lm_discovery_settings": {
                   Row: {
-                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"prior": number,"tasks_per_campaign": number,"updated_at": string
+                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"prior": number,"tasks_per_campaign": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -549,14 +549,14 @@ isOneToOne: false
                   ]
                 },"lm_plans": {
                   Row: {
-                    "active_campaigns": number | null,"auto_validation": boolean,"created_at": string,"daily_send_limit": number,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"seats": number | null,"spaces": number,"updated_at": string
+                    "active_campaigns": number | null,"auto_validation": boolean,"created_at": string,"daily_send_limit": number,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"proxy_gb_month": number | null,"seats": number | null,"spaces": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"daily_send_limit": number,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"seats"?: number | null,"spaces": number,"updated_at"?: string
+                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"daily_send_limit": number,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"proxy_gb_month"?: number | null,"seats"?: number | null,"spaces": number,"updated_at"?: string
                   }
                   Update: {
-                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"daily_send_limit"?: number,"discovery_credits"?: number,"id"?: string,"name"?: string,"outreach_credits"?: number,"seats"?: number | null,"spaces"?: number,"updated_at"?: string
+                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"daily_send_limit"?: number,"discovery_credits"?: number,"id"?: string,"name"?: string,"outreach_credits"?: number,"proxy_gb_month"?: number | null,"seats"?: number | null,"spaces"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -1283,6 +1283,9 @@ isOneToOne: false
 { Args: { "p_space_id": string }; Returns: {
               "kind": string,"total": number,"value": string
             }[]
+                           },
+"lm_proxy_over_budget":
+{ Args: { "p_account_id": string }; Returns: boolean
                            },
 "lm_queue_sends":
 { Args: Record<PropertyKey, never>; Returns: number

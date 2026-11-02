@@ -20,6 +20,18 @@ from .discovery.scraper import USER_AGENT, GMapsScraper, Place, proxy_from_env
 # Paris centre, activité très fournie : une version saine trouve toujours des dizaines de fiches.
 MAPS_QUERY = ("Restaurant", "fr", (48.85341, 2.34880, 15))
 MIN_CARDS = 5
+# Trafic réseau réel maximal pour la liste + 3 fiches. Au-delà, une version gaspille le proxy (facturé au Mo).
+MAX_MAPS_MB = 12  # mesuré le 2/11/2026 : ~7 Mo réels
+
+
+def _network_rx() -> int | None:
+    """Octets reçus par la carte réseau du conteneur : la VRAIE consommation, processus de fond compris
+    (le compteur interne du navigateur n'en voit qu'une partie)."""
+    try:
+        with open("/sys/class/net/eth0/statistics/rx_bytes") as fh:
+            return int(fh.read())
+    except OSError:
+        return None
 
 
 def check_database() -> str:
@@ -32,7 +44,7 @@ def check_maps() -> str:
     if not os.environ.get("PROXY_URL", "").strip():
         raise RuntimeError("PROXY_URL vide : la recherche Google Maps n'a pas de proxy")
     query, country, center = MAPS_QUERY
-    started = time.monotonic()
+    started, rx_before = time.monotonic(), _network_rx()
     with GMapsScraper(headless=True, delay=0.5) as scraper:
         cards = scraper.list_cards(query, country, max_results=20, center=center)
         if len(cards) < MIN_CARDS:
@@ -50,10 +62,14 @@ def check_maps() -> str:
             page.close()
         if opened == 0:
             raise RuntimeError("aucune fiche Google Maps n'a pu être ouverte")
-        mode = "avec identifiant" if scraper._intercept else "sans identifiant (cache actif)"
-        used = scraper.bytes / 1e6
-    return (f"Google Maps par le proxy {mode} : {len(cards)} fiches listées, {opened} ouvertes "
-            f"en {time.monotonic() - started:.0f} s, {used:.1f} Mo")
+    rx_after = _network_rx()
+    real = (rx_after - rx_before) / 1e6 if rx_before is not None and rx_after is not None else None
+    if real is not None and real > MAX_MAPS_MB:
+        raise RuntimeError(f"trafic réseau réel {real:.1f} Mo pour la recherche de test (maximum {MAX_MAPS_MB} Mo) : "
+                           "cette version consommerait trop de proxy")
+    shown = f"{real:.1f} Mo réels" if real is not None else "trafic réel non mesurable ici"
+    return (f"Google Maps par le proxy : {len(cards)} fiches listées, {opened} ouvertes "
+            f"en {time.monotonic() - started:.0f} s, {shown}")
 
 
 # Sites de test très stables : un seul doit s'afficher (un site isolé peut couper une connexion).
@@ -87,11 +103,15 @@ def main() -> None:
     checks = [check_database, check_sites] if "--sites" in sys.argv else [check_database, check_maps, check_sites]
     failed = False
     for check in checks:
-        try:
-            print(f"  ✓ {check()}", flush=True)
-        except Exception as exc:  # noqa: BLE001 - on veut tout attraper et l'afficher
-            failed = True
-            print(f"  ✗ {check.__name__} : {type(exc).__name__}: {str(exc).splitlines()[0][:300]}", flush=True)
+        # Un deuxième essai : une page qui ne répond pas une fois (proxy tournant) ne doit pas bloquer une mise à jour
+        for attempt in (1, 2):
+            try:
+                print(f"  ✓ {check()}", flush=True)
+                break
+            except Exception as exc:  # noqa: BLE001 - on veut tout attraper et l'afficher
+                print(f"  {'✗' if attempt == 2 else '…'} {check.__name__} : {type(exc).__name__}: "
+                      f"{str(exc).splitlines()[0][:300]}{'' if attempt == 2 else ' (nouvel essai)'}", flush=True)
+                failed = failed or attempt == 2
     sys.exit(1 if failed else 0)
 
 

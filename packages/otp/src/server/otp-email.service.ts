@@ -32,14 +32,19 @@ export function createOtpEmailService() {
  * @description Service for sending OTP emails
  */
 class OtpEmailService {
-  async sendOtpEmail(params: { email: string; otp: string }) {
+  async sendOtpEmail(params: {
+    email: string;
+    otp: string;
+    language?: string;
+  }) {
     const logger = await getLogger();
-    const { email, otp } = params;
+    const { email, otp, language } = params;
     const mailer = await getMailer();
 
     const { html, subject } = await renderOtpEmail({
       otp,
       productName: PRODUCT_NAME,
+      language,
     });
 
     try {

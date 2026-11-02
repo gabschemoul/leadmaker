@@ -7,6 +7,10 @@ interface Credentials {
   password: string;
   emailRedirectTo: string;
   captchaToken?: string;
+  // Langue de l'interface au moment de l'inscription : gardée dans les données
+  // de l'utilisateur (user_metadata.lang) pour que les e-mails de confirmation
+  // et de mot de passe partent dans cette langue.
+  language?: string;
 }
 
 const _WeakPasswordReasons = ['length', 'characters', 'pwned'] as const;
@@ -29,13 +33,14 @@ export function useSignUpWithEmailAndPassword() {
   const mutationKey = ['auth', 'sign-up-with-email-password'];
 
   const mutationFn = async (params: Credentials) => {
-    const { emailRedirectTo, captchaToken, ...credentials } = params;
+    const { emailRedirectTo, captchaToken, language, ...credentials } = params;
 
     const response = await client.auth.signUp({
       ...credentials,
       options: {
         emailRedirectTo,
         captchaToken,
+        data: language ? { lang: language } : undefined,
       },
     });
 

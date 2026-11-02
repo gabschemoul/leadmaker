@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Mail, Plus, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 import { useFieldArray, useForm } from 'react-hook-form';
 
@@ -63,6 +63,7 @@ export function InviteMembersDialogContainer({
 }>) {
   const { dialogProps, isPending, setIsPending, setOpen } = useAsyncDialog();
   const t = useTranslations('teams');
+  const locale = useLocale();
 
   const { execute } = useAction(createInvitationsAction, {
     onExecute: () => setIsPending(true),
@@ -146,6 +147,7 @@ export function InviteMembersDialogContainer({
                   execute({
                     accountId,
                     invitations: data.invitations,
+                    language: locale,
                   });
                 }}
               />

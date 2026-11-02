@@ -66,9 +66,11 @@ class AccountInvitationsDispatchService {
   async sendInvitationEmail({
     invitation,
     link,
+    language,
   }: {
     invitation: Invitation;
     link: string;
+    language?: string;
   }) {
     const logger = await getLogger();
 
@@ -124,6 +126,7 @@ class AccountInvitationsDispatchService {
         link,
         inviter: inviter.data,
         team: team.data,
+        language,
       });
 
       return {
@@ -187,11 +190,13 @@ class AccountInvitationsDispatchService {
     link,
     inviter,
     team,
+    language,
   }: {
     invitation: Invitation;
     link: string;
     inviter: { name: string; email: string | null };
     team: { name: string };
+    language?: string;
   }) {
     const logger = await getLogger();
 
@@ -211,6 +216,7 @@ class AccountInvitationsDispatchService {
       inviter: inviter.name ?? inviter.email ?? '',
       productName: env.productName,
       teamName: team.name,
+      language,
     });
 
     return mailer

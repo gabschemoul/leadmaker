@@ -1,0 +1,7 @@
+{
+  "subject": "Votre code de vérification {productName}",
+  "heading": "Votre code de vérification",
+  "otpText": "Votre code à usage unique : {otp}",
+  "footerText": "Saisissez ce code dans l’application pour continuer.",
+  "mainText": "Vous recevez cet e-mail parce qu’une action sur votre compte {productName} demande de confirmer votre identité."
+}

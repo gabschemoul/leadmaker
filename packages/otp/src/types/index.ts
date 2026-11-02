@@ -112,4 +112,6 @@ export type GetNonceStatusResult =
 export interface SendOtpEmailParams {
   email: string;
   otp: string;
+  // Langue de l'e-mail (celle de l'interface de l'utilisateur) ; par défaut, celle de l'application
+  language?: string;
 }

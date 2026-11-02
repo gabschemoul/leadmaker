@@ -1,0 +1,9 @@
+{
+  "subject": "Votre compte {productName} a été supprimé",
+  "previewText": "Votre compte {productName} a été supprimé",
+  "hello": "Bonjour,",
+  "paragraph1": "Nous confirmons avoir traité votre demande de suppression de votre compte {productName}.",
+  "paragraph2": "Nous sommes désolés de vous voir partir. Cette action est définitive : toutes vos données seront effacées de nos systèmes.",
+  "paragraph3": "Merci d’avoir utilisé {productName}.",
+  "paragraph4": "L’équipe {productName}"
+}

@@ -38,5 +38,8 @@
     "react-hook-form": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
+  },
+  "dependencies": {
+    "next-intl": "catalog:"
   }
 }

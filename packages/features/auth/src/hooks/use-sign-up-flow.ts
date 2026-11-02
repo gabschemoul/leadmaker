@@ -4,6 +4,8 @@ import { useCallback } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useLocale } from 'next-intl';
+
 import { useAppEvents } from '@kit/shared/events';
 import { useSignUpWithEmailAndPassword } from '@kit/supabase/hooks/use-sign-up-with-email-password';
 
@@ -33,6 +35,7 @@ export function usePasswordSignUpFlow({
   resetCaptchaToken,
 }: UseSignUpFlowProps) {
   const router = useRouter();
+  const locale = useLocale();
   const signUpMutation = useSignUpWithEmailAndPassword();
   const appEvents = useAppEvents();
   const { recordAuthMethod } = useLastAuthMethod();
@@ -48,6 +51,7 @@ export function usePasswordSignUpFlow({
           ...credentials,
           emailRedirectTo,
           captchaToken,
+          language: locale,
         });
 
         // Record last auth method
@@ -83,6 +87,7 @@ export function usePasswordSignUpFlow({
       signUpMutation,
       emailRedirectTo,
       captchaToken,
+      locale,
       appEvents,
       router,
       onSignUp,

@@ -1,5 +1,7 @@
 import { Container } from 'react-email';
 
+import { emailTheme } from './theme';
+
 export function EmailWrapper(
   props: React.PropsWithChildren<{
     className?: string;
@@ -8,20 +10,20 @@ export function EmailWrapper(
   return (
     <Container
       style={{
-        backgroundColor: '#fafafa',
+        backgroundColor: emailTheme.background,
         margin: 'auto',
-        fontFamily: 'sans-serif',
-        color: '#242424',
+        fontFamily: "'Figtree', 'Segoe UI', Helvetica, Arial, sans-serif",
+        color: emailTheme.text,
         width: '100%',
       }}
     >
       <Container
         style={{
-          maxWidth: '720px',
-          backgroundColor: '#fafafa',
-          margin: 'auto',
+          maxWidth: '560px',
+          backgroundColor: emailTheme.background,
+          margin: '0 auto',
+          padding: '32px 20px',
         }}
-        className={'mx-auto px-[20px] py-[40px] ' + props.className || ''}
       >
         {props.children}
       </Container>

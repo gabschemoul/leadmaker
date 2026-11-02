@@ -20,6 +20,8 @@ const SendOtpEmailSchema = z.object({
     .max(86400 * 7)
     .default(3600)
     .optional(),
+  // Langue de l'interface : l'e-mail part dans cette langue
+  language: z.string().trim().min(2).max(10).optional(),
 });
 
 /**
@@ -47,7 +49,7 @@ export const sendOtpEmailAction = authActionClient
     }
 
     try {
-      const { purpose, expiresInSeconds } = data;
+      const { purpose, expiresInSeconds, language } = data;
 
       logger.info(
         { ...ctx, email, purpose },
@@ -68,6 +70,7 @@ export const sendOtpEmailAction = authActionClient
       await otpApi.sendOtpEmail({
         email,
         otp: tokenResult.token,
+        language,
       });
 
       logger.info(

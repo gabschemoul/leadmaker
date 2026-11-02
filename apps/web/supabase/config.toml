@@ -86,24 +86,27 @@ url = ""
 [auth.rate_limit]
 email_sent = 1000
 
+# Modèles d'e-mails Prospectigo : français par défaut, anglais si l'utilisateur s'est inscrit depuis
+# l'interface anglaise (user_metadata.lang = "en"). Le sujet suit la même règle (modèle Go).
+# En ligne, ces modèles sont poussés par apps/web/scripts/push-auth-emails.sh (base partagée prod + pré-prod).
 [auth.email.template.invite]
-subject = "You are invited to Makerkit"
+subject = '{{ $en := false }}{{ with .Data }}{{ with .lang }}{{ if eq . "en" }}{{ $en = true }}{{ end }}{{ end }}{{ end }}{{ if $en }}You are invited to Prospectigo{{ else }}Vous êtes invité(e) sur Prospectigo{{ end }}'
 content_path = "./supabase/templates/invite-user.html"
 
 [auth.email.template.confirmation]
-subject = "Confirm your email"
+subject = '{{ $en := false }}{{ with .Data }}{{ with .lang }}{{ if eq . "en" }}{{ $en = true }}{{ end }}{{ end }}{{ end }}{{ if $en }}Confirm your email address{{ else }}Confirmez votre adresse e-mail{{ end }}'
 content_path = "./supabase/templates/confirm-email.html"
 
 [auth.email.template.recovery]
-subject = "Reset your password"
+subject = '{{ $en := false }}{{ with .Data }}{{ with .lang }}{{ if eq . "en" }}{{ $en = true }}{{ end }}{{ end }}{{ end }}{{ if $en }}Reset your Prospectigo password{{ else }}Réinitialisez votre mot de passe Prospectigo{{ end }}'
 content_path = "./supabase/templates/reset-password.html"
 
 [auth.email.template.email_change]
-subject = "Confirm your email change"
+subject = '{{ $en := false }}{{ with .Data }}{{ with .lang }}{{ if eq . "en" }}{{ $en = true }}{{ end }}{{ end }}{{ end }}{{ if $en }}Confirm your new email address{{ else }}Confirmez votre nouvelle adresse e-mail{{ end }}'
 content_path = "./supabase/templates/change-email-address.html"
 
 [auth.email.template.magic_link]
-subject = "Sign in to Makerkit"
+subject = '{{ $en := false }}{{ with .Data }}{{ with .lang }}{{ if eq . "en" }}{{ $en = true }}{{ end }}{{ end }}{{ end }}{{ if $en }}Your Prospectigo sign-in link{{ else }}Votre lien de connexion Prospectigo{{ end }}'
 content_path = "./supabase/templates/magic-link.html"
 
 [auth.passkey]

@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TriangleAlert } from 'lucide-react';
+import { useLocale } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -66,6 +67,8 @@ export function VerifyOtpForm({
   // Track errors
   const [error, setError] = useState<string | null>(null);
 
+  const locale = useLocale();
+
   const { execute: executeSendOtp, isPending } = useAction(sendOtpEmailAction, {
     onSuccess: ({ data }) => {
       if (data?.success) {
@@ -103,6 +106,7 @@ export function VerifyOtpForm({
     executeSendOtp({
       purpose,
       email,
+      language: locale,
     });
   };
 

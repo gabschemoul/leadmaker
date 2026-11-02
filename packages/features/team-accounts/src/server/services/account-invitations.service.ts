@@ -143,11 +143,13 @@ class AccountInvitationsService {
     accountSlug,
     invitations,
     invitedBy,
+    language,
   }: {
     invitations: z.output<typeof InviteMembersSchema>['invitations'];
     accountId: string;
     accountSlug: string;
     invitedBy: string;
+    language?: string;
   }) {
     const logger = await getLogger();
 
@@ -253,7 +255,7 @@ class AccountInvitationsService {
       'Invitations added to account',
     );
 
-    await this.dispatchInvitationEmails(ctx, responseInvitations);
+    await this.dispatchInvitationEmails(ctx, responseInvitations, language);
   }
 
   /**
@@ -385,6 +387,7 @@ class AccountInvitationsService {
   private async dispatchInvitationEmails(
     ctx: { accountSlug: string; name: string },
     invitations: Database['public']['Tables']['invitations']['Row'][],
+    language?: string,
   ) {
     if (!invitations.length) {
       return;
@@ -403,6 +406,7 @@ class AccountInvitationsService {
         const data = await service.sendInvitationEmail({
           invitation,
           link,
+          language,
         });
 
         // return the result

@@ -32,6 +32,9 @@ export const createInvitationsAction = authActionClient
     InviteMembersSchema.and(
       z.object({
         accountId: z.string().uuid(),
+        // Langue de l'interface de la personne qui invite : l'e-mail d'invitation
+        // est envoyé dans cette langue (par défaut, celle de l'application).
+        language: z.string().trim().min(2).max(10).optional(),
       }),
     ),
   )
@@ -120,6 +123,7 @@ export const createInvitationsAction = authActionClient
         ...invitationParams,
         accountId: account.id,
         invitedBy: user.id,
+        language: params.language,
       });
 
       revalidateMemberPage();

@@ -9,7 +9,6 @@ import {
   Preview,
   Row,
   Section,
-  Tailwind,
   Text,
   render,
 } from 'react-email';
@@ -20,6 +19,7 @@ import { CtaButton } from '../components/cta-button';
 import { EmailFooter } from '../components/footer';
 import { EmailHeader } from '../components/header';
 import { EmailHeading } from '../components/heading';
+import { emailTheme } from '../components/theme';
 import { EmailWrapper } from '../components/wrapper';
 import { escapeHtml } from '../lib/escape-html';
 import { initializeEmailI18n } from '../lib/i18n';
@@ -34,6 +34,13 @@ interface Props {
   language?: string;
 }
 
+const paragraph = {
+  margin: '0 0 14px 0',
+  fontSize: '16px',
+  lineHeight: '24px',
+  color: emailTheme.text,
+} as const;
+
 export async function renderInviteEmail(props: Props) {
   const namespace = 'invite-email';
 
@@ -42,8 +49,12 @@ export async function renderInviteEmail(props: Props) {
     namespace,
   });
 
-  const previewText = `Join ${props.invitedUserEmail} on ${props.productName}`;
-  const subject = t(`subject`);
+  const subject = t(`subject`, {
+    teamName: props.teamName,
+    productName: props.productName,
+  });
+
+  const previewText = subject;
 
   const heading = t(`heading`, {
     teamName: props.teamName,
@@ -77,62 +88,81 @@ export async function renderInviteEmail(props: Props) {
 
       <Preview>{previewText}</Preview>
 
-      <Tailwind>
-        <Body>
-          <EmailWrapper>
-            <EmailHeader>
-              <EmailHeading>{heading}</EmailHeading>
-            </EmailHeader>
+      <Body>
+        <EmailWrapper>
+          <EmailHeader productName={props.productName}>
+            <EmailHeading>{heading}</EmailHeading>
+          </EmailHeader>
 
-            <EmailContent>
-              <Text className="text-[16px] leading-[24px] text-[#242424]">
-                {hello}
-              </Text>
+          <EmailContent>
+            <Text style={paragraph}>{hello}</Text>
 
-              <Text
-                className="text-[16px] leading-[24px] text-[#242424]"
-                dangerouslySetInnerHTML={{ __html: mainText }}
-              />
+            <Text
+              style={paragraph}
+              dangerouslySetInnerHTML={{ __html: mainText }}
+            />
 
-              {props.teamLogo && (
-                <Section>
-                  <Row>
-                    <Column align="center">
-                      <Img
-                        className="rounded-full"
-                        src={props.teamLogo}
-                        width="64"
-                        height="64"
-                      />
-                    </Column>
-                  </Row>
-                </Section>
-              )}
-
-              <Section className="mt-[32px] mb-[32px] text-center">
-                <CtaButton href={props.link}>{joinTeam}</CtaButton>
+            {props.teamLogo && (
+              <Section>
+                <Row>
+                  <Column align="center">
+                    <Img
+                      style={{ borderRadius: '32px' }}
+                      src={props.teamLogo}
+                      width="64"
+                      height="64"
+                    />
+                  </Column>
+                </Row>
               </Section>
+            )}
 
-              <Text className="text-[16px] leading-[24px] text-[#242424]">
-                {t(`copyPasteLink`)}{' '}
-                <Link href={props.link} className="text-blue-600 no-underline">
-                  {props.link}
-                </Link>
-              </Text>
+            <Section style={{ margin: '24px 0', textAlign: 'center' }}>
+              <CtaButton href={props.link}>{joinTeam}</CtaButton>
+            </Section>
 
-              <Hr className="mx-0 my-[26px] w-full border border-solid border-[#eaeaea]" />
+            <Text
+              style={{
+                ...paragraph,
+                fontSize: '14px',
+                lineHeight: '22px',
+                color: emailTheme.muted,
+              }}
+            >
+              {t(`copyPasteLink`)}{' '}
+              <Link
+                href={props.link}
+                style={{ color: emailTheme.primary, wordBreak: 'break-all' }}
+              >
+                {props.link}
+              </Link>
+            </Text>
 
-              <Text className="text-[12px] leading-[24px] text-[#666666]">
-                {t(`invitationIntendedFor`, {
-                  invitedUserEmail: props.invitedUserEmail,
-                })}
-              </Text>
-            </EmailContent>
+            <Hr
+              style={{
+                margin: '20px 0',
+                border: 'none',
+                borderTop: `1px solid ${emailTheme.border}`,
+              }}
+            />
 
-            <EmailFooter>{props.productName}</EmailFooter>
-          </EmailWrapper>
-        </Body>
-      </Tailwind>
+            <Text
+              style={{
+                margin: 0,
+                fontSize: '12px',
+                lineHeight: '20px',
+                color: emailTheme.muted,
+              }}
+            >
+              {t(`invitationIntendedFor`, {
+                invitedUserEmail: props.invitedUserEmail,
+              })}
+            </Text>
+          </EmailContent>
+
+          <EmailFooter>{props.productName}</EmailFooter>
+        </EmailWrapper>
+      </Body>
     </Html>,
   );
 

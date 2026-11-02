@@ -50,7 +50,10 @@ def check_maps() -> str:
             page.close()
         if opened == 0:
             raise RuntimeError("aucune fiche Google Maps n'a pu être ouverte")
-    return f"Google Maps par le proxy : {len(cards)} fiches listées, {opened} ouvertes en {time.monotonic() - started:.0f} s"
+        mode = "avec identifiant" if scraper._intercept else "sans identifiant (cache actif)"
+        used = scraper.bytes / 1e6
+    return (f"Google Maps par le proxy {mode} : {len(cards)} fiches listées, {opened} ouvertes "
+            f"en {time.monotonic() - started:.0f} s, {used:.1f} Mo")
 
 
 # Sites de test très stables : un seul doit s'afficher (un site isolé peut couper une connexion).

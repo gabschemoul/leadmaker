@@ -24,6 +24,10 @@ BLOCKED_URL_PARTS = (
     "/maps/vt", "/kh/v=", "googleusercontent.com", "ggpht.com", "streetviewpixels", "fonts.gstatic.com",
     "/maps/preview/log", "/gen_204", "/log?",
 )
+# Même liste au format du protocole Chrome (mode sans interception, voir GMapsScraper.open)
+BLOCKED_URLS = [f"*{part}*" for part in BLOCKED_URL_PARTS] + [
+    "*.png*", "*.jpg*", "*.jpeg*", "*.gif*", "*.webp*", "*.woff2*", "*.woff*", "*.ttf*", "*.mp4*",
+]
 PLACE_ID = re.compile(r"!1s(0x[0-9a-f]+:0x[0-9a-f]+)")
 COORDS = re.compile(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)")
 STATUS = re.compile(r"^(open|closed|opens|closes|temporarily|permanently|\d)", re.I)
@@ -168,6 +172,7 @@ class GMapsScraper:
         self.delay = delay
         self.stop_flag = stop_flag or (lambda: False)
         self._pw = self._browser = self._ctx = None
+        self._intercept = True
         self.searches = 0
         # octets reçus à travers le proxy depuis l'ouverture (voir _meter)
         self.bytes = 0
@@ -181,20 +186,28 @@ class GMapsScraper:
 
     def open(self):
         self._pw = sync_playwright().start()
-        self._browser = self._pw.chromium.launch(headless=self.headless, proxy=_proxy_settings())
+        proxy = _proxy_settings()
+        # Deux façons de ne pas télécharger images, vidéos, polices et tuiles de carte (coût du proxy) :
+        # - proxy AVEC identifiant : interception (route), seule façon pour que Chromium envoie l'identifiant
+        #   (vérifié le 1/11/2026), mais elle coupe le cache : chaque fiche retélécharge Google Maps.
+        # - proxy SANS identifiant (adresse du serveur autorisée chez le fournisseur) : images coupées dans
+        #   Chromium + adresses bloquées par le protocole Chrome (_meter). Le cache marche : ~10 fois moins cher.
+        self._intercept = bool(proxy and proxy.get("username"))
+        self._browser = self._pw.chromium.launch(
+            headless=self.headless, proxy=proxy,
+            args=[] if self._intercept else ["--blink-settings=imagesEnabled=false"],
+        )
         self._ctx = self._browser.new_context(
             user_agent=USER_AGENT, locale="en-US", viewport={"width": 1300, "height": 900}
         )
-        # Images, vidéos, polices et tuiles de carte ne servent pas à lire les fiches : on ne les télécharge
-        # pas. L'interception (route) reste nécessaire : sans elle, Chromium n'envoie pas l'identifiant du
-        # proxy et les pages ne chargent plus (vérifié le 1/11/2026). Elle désactive le cache du navigateur.
-        self._ctx.route(
-            "**/*",
-            lambda route: route.abort()
-            if route.request.resource_type in ("image", "media", "font")
-            or any(part in route.request.url for part in BLOCKED_URL_PARTS)
-            else route.continue_(),
-        )
+        if self._intercept:
+            self._ctx.route(
+                "**/*",
+                lambda route: route.abort()
+                if route.request.resource_type in ("image", "media", "font")
+                or any(part in route.request.url for part in BLOCKED_URL_PARTS)
+                else route.continue_(),
+            )
         self.searches = 0
 
     def close(self):
@@ -217,6 +230,8 @@ class GMapsScraper:
         try:
             cdp = self._ctx.new_cdp_session(page)
             cdp.send("Network.enable")
+            if not self._intercept:
+                cdp.send("Network.setBlockedURLs", {"urls": BLOCKED_URLS})
 
             def add(event: dict) -> None:
                 self.bytes += int(event.get("encodedDataLength") or 0)

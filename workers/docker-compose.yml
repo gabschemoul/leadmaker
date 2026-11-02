@@ -56,3 +56,35 @@ services:
     deploy:
       replicas: ${SEND_REPLICAS:-4}
       resources: { limits: { memory: 1500M } }
+
+  # Surveillant (leadmaker_workers/watchdog.py) : prévient Gabriel par e-mail (Resend) quand les robots
+  # n'avancent plus alors qu'il y a du travail. Chaque serveur surveille L'AUTRE : le principal surveille les
+  # prises de contact (robots d'envoi), le serveur d'envoi surveille la recherche. Si un serveur meurt
+  # entièrement, l'autre le signale. Variables dans .env : RESEND_API_KEY, ALERT_EMAIL (scripts/set-alert-email.sh).
+  watch:
+    <<: *robot
+    command: ["python", "-m", "leadmaker_workers.watchdog"]
+    environment:
+      WATCH_SCOPE: contact
+      WATCH_SERVER: serveur principal
+    volumes:
+      - watch_state:/app/state
+    shm_size: 64m
+    deploy:
+      resources: { limits: { memory: 256M } }
+
+  watch-send:
+    <<: *robot
+    profiles: ["send"]
+    command: ["python", "-m", "leadmaker_workers.watchdog"]
+    environment:
+      WATCH_SCOPE: search
+      WATCH_SERVER: serveur d'envoi
+    volumes:
+      - watch_state:/app/state
+    shm_size: 64m
+    deploy:
+      resources: { limits: { memory: 256M } }
+
+volumes:
+  watch_state:

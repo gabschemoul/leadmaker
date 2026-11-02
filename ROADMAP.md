@@ -151,13 +151,27 @@ Pistes à discuter :
   - Prises de contact : « Formulaires en préparation : 25 sites », « Formulaire trouvé sur dupont-plomberie.fr/contact », « Message envoyé à Dupont Plomberie », « Site inaccessible, passé ».
 - **À trancher** : le niveau de détail (une ligne par recherche ou un résumé par minute), et ce qu'on ne montre jamais (plafond de proxy, budget par client, pannes internes).
 
+### 16. E-mails de l’app en français, aux couleurs de Prospectigo 🟢 — FAIT en pré-production le 2/11
+- **Deux familles d’e-mails** : ceux envoyés par l’application (invitation à rejoindre une équipe, code de vérification, confirmation de suppression de compte) et ceux envoyés par Supabase, le service de connexion (confirmation d’adresse à l’inscription, mot de passe oublié, changement d’adresse, lien de connexion).
+- **Langue** : chaque e-mail part dans la langue de la personne. Pour l’invitation et le code : la langue de l’interface de celui qui déclenche l’envoi. Pour les e-mails de connexion : la langue de l’interface au moment de l’inscription (mémorisée sur le compte) ; sans indication, français. Un utilisateur inscrit avant cette version reçoit les e-mails en français.
+- **Apparence** : logo texte Prospectigo avec le point jaune, bouton vert, carte blanche sur fond gris-vert (thème Atlas), même gabarit pour tous.
+- **Mise en ligne** : l’invitation et le code suivent la publication normale (staging → main). Les e-mails de connexion sont réglés dans Supabase, partagé par prospectigo.com et la pré-production : `./apps/web/scripts/push-auth-emails.sh` (jeton personnel Supabase à créer une fois), à lancer au « publie ». Les modèles sont générés par `apps/web/scripts/generate-auth-emails.py`.
+
+### 17. Alerte quand les robots n’avancent plus 🟢 — FAIT en pré-production le 2/11
+- **Le principe** : un petit surveillant tourne sur chaque serveur. Toutes les 2 minutes il regarde la base : y a-t-il du travail à faire (recherches dont l’heure est venue, formulaires à préparer, messages validés à envoyer) et quelque chose s’est-il terminé depuis 20 minutes ? Si du travail attend et que rien ne se termine, Gabriel reçoit un e-mail (Resend, depuis noreply@prospectigo.com).
+- **Deux surveillants, croisés** : le serveur principal surveille les prises de contact (robots d’envoi, sur l’autre serveur), le serveur d’envoi surveille la recherche. Si un serveur meurt entièrement, l’autre le signale. Base de données injoignable 10 minutes → alerte aussi.
+- **Pas de fausse alerte** pour les pauses normales : campagne en pause, plafond quotidien de proxy atteint (recherches reportées à demain), crédits épuisés, limite d’envois du jour d’une campagne atteinte.
+- **Rythme** : une alerte au début, un rappel toutes les 2 h tant que ça dure, un « c’est reparti » à la reprise. L’e-mail dit ce qui est bloqué depuis quand, combien de tâches attendent, les campagnes concernées, si des robots sont encore vus, les dernières erreurs, et quoi faire (retour arrière avec `deploy-robots.sh --rollback`).
+- **Testé le 2/11** en local avec une tâche bloquée artificielle : e-mail d’alerte puis e-mail de reprise reçus.
+- **Mise en ligne** (par Gabriel) : 1) `./workers/scripts/set-alert-email.sh` (dépose la clé Resend sur les deux serveurs et envoie un e-mail d’essai depuis chacun) ; 2) `./workers/scripts/deploy-robots.sh --all` (installe le surveillant avec le reste). Réglages possibles dans le `.env` des serveurs : `ALERT_EMAIL`, `WATCH_STALL_MINUTES` (20), `WATCH_REMIND_HOURS` (2).
+
 ## Déjà prévu (liste du 31 octobre)
 
 1. **Premier envoi réel surveillé** sur 2-3 entreprises choisies par Gabriel. Le robot d'envoi reste coupé tant que Gabriel ne dit pas « Envoie ».
 2. **Test de volume** une fois le premier envoi validé.
 3. **Stripe en mode réel** (paiements et abonnements pour de vrai) : marche à suivre écrite le 2/11 dans `docs/prospectigo/stripe-mode-reel.md`, à faire par Gabriel après la publication des forfaits.
 4. **Design** : couleurs plus agréables, vrai logo, remplacer le tableau de bord de démonstration.
-5. **E-mails de l'app** (invitations, mots de passe) envoyés depuis une adresse @prospectigo.com. À faire avant d'ouvrir à d'autres utilisateurs.
+5. ~~**E-mails de l'app** (invitations, mots de passe) envoyés depuis une adresse @prospectigo.com.~~ Resend branché le 2/11 ; textes français et couleurs : n°16.
 6. **Nettoyage** : supprimer le projet en double chez Vercel, supprimer l'équipe « Review » de Nath une fois qu'il a rejoint Namma Booster.
 7. **Lot 3** : tableau de bord, statistiques par message, suivi des réponses.
 8. **IA dans le robot** pour les cas douteux : choisir la bonne adresse e-mail, reconnaître un formulaire atypique, juger si le message est bien parti.

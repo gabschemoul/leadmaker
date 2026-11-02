@@ -1,6 +1,6 @@
 #!/bin/bash
 # Mise à jour des robots sur les serveurs Hetzner, AVEC CONTRÔLE AVANT BASCULE.
-#   ./workers/scripts/deploy-robots.sh               → serveur principal (recherche, estimation, préparation)
+#   ./workers/scripts/deploy-robots.sh               → serveur principal (recherche, estimation, préparation, surveillant)
 #   ./workers/scripts/deploy-robots.sh --send        → serveur d'envoi (adresse dans workers/.send-server-ip)
 #   ./workers/scripts/deploy-robots.sh --all         → les deux
 #   ./workers/scripts/deploy-robots.sh --rollback    → remet la version précédente (serveur principal)
@@ -85,7 +85,7 @@ REMOTE
 }
 
 MAIN_UP='docker compose up -d --build'
-SEND_UP='docker compose --profile send up -d --build send'
+SEND_UP='docker compose --profile send up -d --build send watch-send'
 
 case "$MODE" in
   main) deploy "$MAIN" "" "$MAIN_UP" ;;

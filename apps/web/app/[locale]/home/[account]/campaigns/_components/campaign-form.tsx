@@ -148,7 +148,7 @@ export function CampaignForm(props: {
         radiusKm: values.radiusKm ?? 30,
         cities: (values.cities ?? []) as CityRef[],
         maxCities: MAX_CITIES_LIMIT,
-        categoriesMode: values.categoriesMode ?? 'generic',
+        categoriesMode: 'list' as const,
         categories: (values.categories ?? []) as CategoryRef[],
       }),
     [
@@ -157,7 +157,6 @@ export function CampaignForm(props: {
       values.radiusCity,
       values.radiusKm,
       values.cities,
-      values.categoriesMode,
       values.categories,
     ],
   );
@@ -707,7 +706,6 @@ function CitiesListField(props: {
 function CategoriesSection() {
   const t = useTranslations('campaigns');
   const locale = useLocale();
-  const mode = useWatch({ name: 'categoriesMode' });
   const [browsing, setBrowsing] = useState(false);
 
   const searchCategories = async (query: string) => {
@@ -738,151 +736,115 @@ function CategoriesSection() {
 
       <CardContent className={'flex flex-col gap-4'}>
         <FormField
-          name={'categoriesMode'}
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <ChoiceGroup
-                  data-test={'campaign-categories-mode'}
-                  value={field.value}
-                  onChange={field.onChange}
-                  options={[
-                    {
-                      value: 'list',
-                      label: 'campaigns.form.categoriesList',
-                      description: 'campaigns.form.categoriesListHint',
-                    },
-                    {
-                      value: 'generic',
-                      label: 'campaigns.form.categoriesGeneric',
-                      description: 'campaigns.form.categoriesGenericHint',
-                    },
-                    {
-                      value: 'all',
-                      label: 'campaigns.form.categoriesAll',
-                      description: 'campaigns.form.categoriesAllHint',
-                    },
-                  ]}
-                />
-              </FormControl>
+          name={'categories'}
+          render={({ field }) => {
+            const categories = (field.value ?? []) as CategoryRef[];
 
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            return (
+              <FormItem>
+                <div
+                  className={
+                    'flex flex-wrap items-center justify-between gap-2'
+                  }
+                >
+                  <FormLabel>
+                    <Trans i18nKey={'campaigns.form.categoriesListLabel'} />
+                  </FormLabel>
 
-        <If condition={mode === 'list'}>
-          <FormField
-            name={'categories'}
-            render={({ field }) => {
-              const categories = (field.value ?? []) as CategoryRef[];
+                  <Button
+                    type={'button'}
+                    size={'sm'}
+                    variant={'outline'}
+                    data-test={'campaign-categories-browse'}
+                    onClick={() => setBrowsing(true)}
+                  >
+                    <ListTree className={'mr-1.5 size-4'} />
+                    <Trans i18nKey={'campaigns.form.browseOpen'} />
+                  </Button>
+                </div>
 
-              return (
-                <FormItem>
+                <FormControl>
+                  <SearchPicker
+                    data-test={'campaign-categories-search'}
+                    queryKey={['lm-categories', locale]}
+                    minLength={2}
+                    search={searchCategories}
+                    getKey={(item) => item.gcid}
+                    isSelected={(item) =>
+                      categories.some((c) => c.gcid === item.gcid)
+                    }
+                    renderItem={(item) => (
+                      <>
+                        <span>{item.label}</span>
+
+                        <span className={'text-muted-foreground text-xs'}>
+                          {item.family}
+                        </span>
+                      </>
+                    )}
+                    onSelect={(item) => {
+                      if (!categories.some((c) => c.gcid === item.gcid)) {
+                        field.onChange([...categories, item]);
+                      }
+                    }}
+                    placeholder={t('form.categorySearchPlaceholder')}
+                  />
+                </FormControl>
+
+                <If condition={categories.length > 0}>
                   <div
                     className={
-                      'flex flex-wrap items-center justify-between gap-2'
+                      'flex items-center justify-between gap-2 text-sm'
                     }
                   >
-                    <FormLabel>
-                      <Trans i18nKey={'campaigns.form.categoriesListLabel'} />
-                    </FormLabel>
+                    <span className={'text-muted-foreground'}>
+                      <Trans
+                        i18nKey={'campaigns.form.browseSelected'}
+                        values={{ count: categories.length }}
+                      />
+                    </span>
 
                     <Button
                       type={'button'}
                       size={'sm'}
-                      variant={'outline'}
-                      data-test={'campaign-categories-browse'}
-                      onClick={() => setBrowsing(true)}
+                      variant={'ghost'}
+                      onClick={() => field.onChange([])}
                     >
-                      <ListTree className={'mr-1.5 size-4'} />
-                      <Trans i18nKey={'campaigns.form.browseOpen'} />
+                      <Trans i18nKey={'campaigns.form.citiesClear'} />
                     </Button>
                   </div>
+                </If>
 
-                  <FormControl>
-                    <SearchPicker
-                      data-test={'campaign-categories-search'}
-                      queryKey={['lm-categories', locale]}
-                      minLength={2}
-                      search={searchCategories}
-                      getKey={(item) => item.gcid}
-                      isSelected={(item) =>
-                        categories.some((c) => c.gcid === item.gcid)
+                <ChipList>
+                  {categories.map((category) => (
+                    <SelectedChip
+                      key={category.gcid}
+                      label={category.label}
+                      detail={category.family}
+                      onRemove={() =>
+                        field.onChange(
+                          categories.filter((c) => c.gcid !== category.gcid),
+                        )
                       }
-                      renderItem={(item) => (
-                        <>
-                          <span>{item.label}</span>
-
-                          <span className={'text-muted-foreground text-xs'}>
-                            {item.family}
-                          </span>
-                        </>
-                      )}
-                      onSelect={(item) => {
-                        if (!categories.some((c) => c.gcid === item.gcid)) {
-                          field.onChange([...categories, item]);
-                        }
-                      }}
-                      placeholder={t('form.categorySearchPlaceholder')}
                     />
-                  </FormControl>
+                  ))}
+                </ChipList>
 
-                  <If condition={categories.length > 0}>
-                    <div
-                      className={
-                        'flex items-center justify-between gap-2 text-sm'
-                      }
-                    >
-                      <span className={'text-muted-foreground'}>
-                        <Trans
-                          i18nKey={'campaigns.form.browseSelected'}
-                          values={{ count: categories.length }}
-                        />
-                      </span>
+                <FormMessage />
 
-                      <Button
-                        type={'button'}
-                        size={'sm'}
-                        variant={'ghost'}
-                        onClick={() => field.onChange([])}
-                      >
-                        <Trans i18nKey={'campaigns.form.citiesClear'} />
-                      </Button>
-                    </div>
-                  </If>
-
-                  <ChipList>
-                    {categories.map((category) => (
-                      <SelectedChip
-                        key={category.gcid}
-                        label={category.label}
-                        detail={category.family}
-                        onRemove={() =>
-                          field.onChange(
-                            categories.filter((c) => c.gcid !== category.gcid),
-                          )
-                        }
-                      />
-                    ))}
-                  </ChipList>
-
-                  <FormMessage />
-
-                  <CategoryBrowserDialog
-                    open={browsing}
-                    onOpenChange={setBrowsing}
-                    selected={categories}
-                    onChange={(next) =>
-                      field.onChange(next, { shouldValidate: true })
-                    }
-                    max={1000}
-                  />
-                </FormItem>
-              );
-            }}
-          />
-        </If>
+                <CategoryBrowserDialog
+                  open={browsing}
+                  onOpenChange={setBrowsing}
+                  selected={categories}
+                  onChange={(next) =>
+                    field.onChange(next, { shouldValidate: true })
+                  }
+                  max={1000}
+                />
+              </FormItem>
+            );
+          }}
+        />
       </CardContent>
     </Card>
   );
@@ -1105,13 +1067,9 @@ function CampaignRecap() {
         });
 
   const what =
-    values.categoriesMode === 'generic'
-      ? t('whatGeneric')
-      : values.categoriesMode === 'all'
-        ? t('whatAll')
-        : categories.length === 0
-          ? null
-          : preview(categories.map((category) => category.label));
+    categories.length === 0
+      ? null
+      : preview(categories.map((category) => category.label));
 
   const where =
     values.citiesMode === 'radius'

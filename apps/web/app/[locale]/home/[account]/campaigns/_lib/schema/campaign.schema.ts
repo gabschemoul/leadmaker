@@ -58,7 +58,11 @@ const CampaignFieldsSchema = z.object({
   radiusKm: decimal(1, 500),
   cities: z.array(CityRefSchema).max(MAX_LIST_CITIES),
   maxCities: integer(1, MAX_CITIES_LIMIT),
-  categoriesMode: z.enum(['generic', 'all', 'list']),
+  // Seul « Je choisis moi-même » est proposé (roadmap n°10, 2/11/2026) :
+  // « Toutes les activités » faisait essayer des milliers d'activités sans
+  // prospect avant de creuser les bonnes. Les anciennes campagnes gardent
+  // leur mode en base (TargetingSchema) mais repassent par une liste ici.
+  categoriesMode: z.literal('list'),
   categories: z.array(CategoryRefSchema).max(1000),
   ratingMin: decimal(0, 5),
   ratingMax: decimal(0, 5),
@@ -88,7 +92,7 @@ function refineCampaign(values: CampaignFields, ctx: z.RefinementCtx) {
     });
   }
 
-  if (values.categoriesMode === 'list' && values.categories.length === 0) {
+  if (values.categories.length === 0) {
     ctx.addIssue({
       code: 'custom',
       path: ['categories'],
@@ -198,20 +202,14 @@ export function buildTargeting(values: TargetingInput): Targeting | null {
     };
   }
 
-  let categories: Targeting['categories'];
-
-  if (values.categoriesMode === 'list') {
-    if (values.categories.length === 0) {
-      return null;
-    }
-
-    categories = {
-      mode: 'list',
-      gcids: values.categories.map((category) => category.gcid),
-    };
-  } else {
-    categories = { mode: values.categoriesMode };
+  if (values.categories.length === 0) {
+    return null;
   }
+
+  const categories: Targeting['categories'] = {
+    mode: 'list',
+    gcids: values.categories.map((category) => category.gcid),
+  };
 
   return { cities, categories, max_cities: maxCities };
 }
@@ -350,7 +348,7 @@ export function campaignToFormValues(campaign: {
     radiusKm: cities?.mode === 'radius' ? cities.radius_km : 30,
     cities: cities?.mode === 'list' ? campaign.cities : [],
     maxCities: MAX_CITIES_LIMIT,
-    categoriesMode: categories?.mode ?? 'generic',
+    categoriesMode: 'list',
     categories: categories?.mode === 'list' ? campaign.categories : [],
     ratingMin: f.rating_min ?? 0.8,
     ratingMax: f.rating_max ?? 3.5,

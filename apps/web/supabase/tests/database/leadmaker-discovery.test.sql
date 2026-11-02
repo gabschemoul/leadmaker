@@ -12,8 +12,8 @@ select public.create_team_account('Disc B', tests.get_supabase_uid('disc_b'), 'd
 set local role postgres;
 
 -- Données de référence propres au test (la base de test peut être vide)
-insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreach_credits, daily_send_limit, active_campaigns, auto_validation)
-values ('growth', 'Growth', 2, 3, 15000, 5000, 500, 1, false) on conflict (id) do nothing;
+insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreach_credits, active_campaigns, auto_validation)
+values ('growth', 'Growth', 2, 3, 30000, 15000, 1, false) on conflict (id) do nothing;
 insert into public.lm_discovery_settings (id) values (true) on conflict (id) do nothing;
 insert into public.lm_country_coverage (country_code, name) values ('ZZ', 'Testland') on conflict do nothing;
 insert into public.lm_geo_cities (geoname_id, name, ascii_name, country_code, population, latitude, longitude) values
@@ -111,7 +111,7 @@ select is(public.lm_record_prospect((select id from public.lm_campaigns where na
 select is(public.lm_record_prospect((select id from public.lm_campaigns where name = 'Campagne A'),
   '{"place_id":"p2","name":"Dupont bis","site_key":"dupont.fr","website":"https://www.dupont.fr/x"}'), 'duplicate', 'Même site : doublon');
 select is((select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'disc-a')),
-  14999, 'Un seul crédit débité');
+  29999, 'Un seul crédit débité');
 
 -- Fiche déjà vue : pas rouverte
 select is(public.lm_mark_place_seen((select id from public.lm_spaces where name = 'Espace A'), 'p9', 'x.fr'), true, 'Première vue');

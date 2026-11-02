@@ -14,7 +14,6 @@ create table if not exists public.lm_plans (
   spaces integer not null,
   discovery_credits integer not null, -- par mois
   outreach_credits integer not null,  -- par mois
-  daily_send_limit integer not null,
   active_campaigns integer,           -- null = illimité
   auto_validation boolean not null default false,
   -- Roadmap n°14 : budget de proxy par mois (Go), invisible pour le client. Au-delà, sa recherche ralentit

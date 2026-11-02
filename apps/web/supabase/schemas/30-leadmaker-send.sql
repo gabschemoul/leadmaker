@@ -3,8 +3,9 @@
  * Section: LeadMaker outreach — envoi des formulaires validés
  * Le worker « send » reprend chaque tentative validée, soumet le formulaire,
  * prend une capture après envoi et enregistre le résultat. Un crédit outreach
- * est débité à chaque soumission effective. Limites : par campagne (daily_limit)
- * et par organisation (forfait), un seul contact par site, jamais sans validation.
+ * est débité à chaque soumission effective. Limite : par campagne (daily_limit, réglée par
+ * l'utilisateur ; depuis le 2/11/2026 le forfait ne fixe plus de plafond par jour, seul le crédit
+ * mensuel compte), un seul contact par site, jamais sans validation.
  * -------------------------------------------------------
  */
 
@@ -22,7 +23,7 @@ $$;
 grant execute on function public.lm_sends_today(uuid) to authenticated, service_role;
 
 -- Planification (worker, rôle service) : met en file les tentatives validées dans la limite quotidienne
--- de chaque campagne et de chaque organisation, tant qu'il reste des crédits outreach.
+-- de chaque campagne, tant qu'il reste des crédits outreach à l'organisation.
 -- Une tentative restée « en envoi » plus de 20 minutes (worker arrêté) passe « à vérifier », jamais renvoyée.
 create or replace function public.lm_queue_sends() returns integer
 set search_path = ''
@@ -32,8 +33,6 @@ as $$
 declare
   v_queued integer := 0;
   r record;
-  v_account_today integer;
-  v_account_limit integer;
   v_balance integer;
   v_campaign_today integer;
 begin
@@ -53,23 +52,11 @@ begin
                           and t.payload ->> 'attempt_id' = a.id::text)
      order by a.validated_at
   loop
-    select coalesce(p.daily_send_limit, 0), coalesce(cr.outreach_balance, 0) into v_account_limit, v_balance
-      from public.lm_account_credits cr left join public.lm_plans p on p.id = cr.plan_id
+    select coalesce(cr.outreach_balance, 0) into v_balance
+      from public.lm_account_credits cr
      where cr.account_id = r.account_id;
 
     if v_balance is null or v_balance <= 0 then
-      continue;
-    end if;
-
-    select count(*)::integer into v_account_today from public.lm_attempts a
-     where a.account_id = r.account_id
-       and (a.status = 'sending' or (a.sent_at is not null and a.sent_at >= date_trunc('day', now())));
-    -- tâches déjà en file aujourd'hui (pas encore « en envoi »)
-    v_account_today := v_account_today + (
-      select count(*)::integer from public.lm_tasks t
-       where t.kind = 'send' and t.status = 'queued' and t.account_id = r.account_id);
-
-    if v_account_today >= v_account_limit then
       continue;
     end if;
 

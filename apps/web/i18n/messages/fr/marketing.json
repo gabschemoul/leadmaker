@@ -13,7 +13,7 @@
   "faq": "FAQ",
   "faqSubtitle": "Tout ce qu'il faut savoir avant de lancer votre première campagne",
   "pricing": "Tarifs",
-  "pricingSubtitle": "Choisissez votre volume, changez de forfait quand vous voulez",
+  "pricingSubtitle": "Choisissez votre volume, changez de forfait quand vous voulez. Prix en dollars américains.",
   "backToBlog": "Retour au blog",
   "noPosts": "Aucun article trouvé",
   "blogPaginationNext": "Page suivante",
@@ -78,7 +78,16 @@
     "pricingPill": "Tarifs",
     "pricingPillText": "Sans engagement, résiliable à tout moment",
     "pricingTitle": "Des forfaits selon votre volume",
-    "pricingSubtitle": "Growth pour une entreprise, Business et Scale pour les agences."
+    "pricingSubtitle": "Growth pour une entreprise, Business et Scale pour les agences.",
+    "pricingNotesTitle": "Comment les crédits fonctionnent",
+    "pricingNote1Label": "Un crédit, un prospect",
+    "pricingNote1": "Dans la plupart des campagnes, chaque entreprise trouvée sur Google Maps coûte 1 crédit de prospection, et chaque formulaire envoyé 1 crédit de prise de contact.",
+    "pricingNote2Label": "Campagnes difficiles : 2 à 4 crédits par prospect",
+    "pricingNote2": "Quand vos filtres ne retiennent qu'une petite part des entreprises (par exemple « note entre 0,7 et 3,8 »), le robot doit parcourir beaucoup plus de fiches pour trouver chaque prospect. Ces campagnes coûtent 2, 3 ou 4 crédits de prospection par prospect. Le tarif est calculé par l'estimation, affiché avant le lancement et ne change plus ensuite.",
+    "pricingNote3Label": "Aucun plafond par jour",
+    "pricingNote3": "Vos crédits se consomment au rythme que vous choisissez, campagne par campagne. Ils se renouvellent chaque mois. En annuel, vous payez 10 mois pour 12.",
+    "pricingNote4Label": "Prix en dollars américains",
+    "pricingNote4": "Les forfaits sont facturés en USD, par carte, sans engagement. Vous changez de forfait ou résiliez quand vous voulez depuis vos réglages de facturation."
   },
   "faqItems": {
     "q1": "Dans quels pays Prospectigo fonctionne-t-il ?",
@@ -86,13 +95,15 @@
     "q2": "Comment les messages sont-ils envoyés ?",
     "a2": "Par le formulaire de contact du site de l'entreprise, rempli par un robot. Rien ne part de votre boîte mail. Quand une adresse e-mail est trouvée sur le site, elle vous est aussi affichée.",
     "q3": "Que sont les crédits de prospection et de prise de contact ?",
-    "a3": "Un crédit de prospection est utilisé pour chaque entreprise trouvée sur Google Maps. Un crédit de prise de contact est décompté quand un formulaire a bien été envoyé. Les deux se renouvellent chaque mois selon votre forfait.",
-    "q4": "Puis-je contrôler les messages avant qu'ils partent ?",
-    "a4": "Oui. Chaque formulaire préparé est présenté avec une capture d'écran. Vous validez ou vous passez. Sur les forfaits Business et Scale, vous pouvez activer la validation automatique campagne par campagne.",
-    "q5": "Je suis une agence, puis-je gérer plusieurs clients ?",
-    "a5": "Oui. Créez un dossier par client, avec son propre expéditeur et ses campagnes. Invitez vos collaborateurs selon le nombre de sièges de votre forfait.",
-    "q6": "Y a-t-il un engagement ?",
-    "a6": "Non. Les forfaits sont mensuels ou annuels et résiliables à tout moment depuis vos réglages de facturation."
+    "a3": "Un crédit de prospection est utilisé pour chaque entreprise trouvée sur Google Maps (2 à 4 crédits pour les campagnes difficiles, voir la question suivante). Un crédit de prise de contact est décompté quand un formulaire a bien été envoyé. Les deux se renouvellent chaque mois selon votre forfait, sans plafond par jour.",
+    "q4": "Pourquoi certaines campagnes coûtent-elles plusieurs crédits par prospect ?",
+    "a4": "Parce qu'elles demandent beaucoup plus de travail au robot. Avant le lancement, l'estimation mesure la part des entreprises qui passent vos filtres. Si au moins 10 % passent, chaque prospect coûte 1 crédit. Entre 3 et 10 %, 2 crédits. Entre 1 et 3 %, 3 crédits. En dessous de 1 %, 4 crédits. Ce tarif est affiché dans l'onglet Trouver avant de lancer, puis figé pour toute la vie de la campagne.",
+    "q5": "Puis-je contrôler les messages avant qu'ils partent ?",
+    "a5": "Oui. Chaque formulaire préparé est présenté avec une capture d'écran. Vous validez ou vous passez. Sur les forfaits Business et Scale, vous pouvez activer la validation automatique campagne par campagne.",
+    "q6": "Je suis une agence, puis-je gérer plusieurs clients ?",
+    "a6": "Oui. Créez un dossier par client, avec son propre expéditeur et ses campagnes. Invitez vos collaborateurs selon le nombre de sièges de votre forfait.",
+    "q7": "Y a-t-il un engagement ?",
+    "a7": "Non. Les forfaits sont mensuels ou annuels et résiliables à tout moment depuis vos réglages de facturation."
   },
   "theme": "Thème clair / sombre"
 }

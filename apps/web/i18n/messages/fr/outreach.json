@@ -95,7 +95,7 @@
       "title": "Envoi",
       "intro": "Ces réglages s'appliquent à cette campagne.",
       "dailyLimit": "Prises de contact par jour, au maximum",
-      "dailyLimitHint": "Le robot n'envoie jamais plus de formulaires que ce nombre en une journée pour cette campagne (le forfait fixe aussi un plafond global).",
+      "dailyLimitHint": "Le robot n'envoie jamais plus de formulaires que ce nombre en une journée pour cette campagne.",
       "autoValidation": "Validation automatique",
       "autoValidationHint": "Un formulaire préparé sans la moindre alerte est validé tout seul, sans relecture. Les formulaires à compléter ou avec une remarque restent à relire.",
       "autoValidationPlanHint": "Disponible avec les forfaits Business et Scale.",

@@ -12,8 +12,8 @@ select public.create_team_account('Org A', tests.get_supabase_uid('owner_a'), 'o
 select public.create_team_account('Org B', tests.get_supabase_uid('owner_b'), 'org-b');
 set local role postgres;
 
-insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreach_credits, daily_send_limit, active_campaigns, auto_validation)
-values ('growth', 'Growth', 2, 3, 15000, 5000, 500, 1, false)
+insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreach_credits, active_campaigns, auto_validation)
+values ('growth', 'Growth', 2, 3, 30000, 15000, 1, false)
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------- Espace par défaut créé avec l'organisation
@@ -48,7 +48,7 @@ $$, 'Avec Growth, A crée un deuxième espace');
 
 select is(
   (select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'org-a')),
-  15000,
+  30000,
   'A lit son solde de crédits découverte');
 
 -- A ne peut pas écrire dans l'organisation B
@@ -105,7 +105,7 @@ select is(
 
 select is(
   (select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'org-a')),
-  14990, 'Le solde a baissé de 10 une seule fois');
+  29990, 'Le solde a baissé de 10 une seule fois');
 
 select is(
   public.lm_debit_credits((select id from public.accounts where slug = 'org-b'), 'outreach', 1, 'test:debit:2', 'test'),
@@ -116,7 +116,7 @@ select public.lm_reset_credits((select id from public.accounts where slug = 'org
 
 select is(
   (select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'org-a')),
-  14990, 'Un renouvellement déjà traité ne remet pas le solde à zéro');
+  29990, 'Un renouvellement déjà traité ne remet pas le solde à zéro');
 
 -- Résiliation effective : forfait et crédits retirés
 insert into public.billing_customers (account_id, provider, customer_id)

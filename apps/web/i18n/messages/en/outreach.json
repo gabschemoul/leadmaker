@@ -95,7 +95,7 @@
       "title": "Sending",
       "intro": "These settings apply to this campaign.",
       "dailyLimit": "Maximum outreach per day",
-      "dailyLimitHint": "The robot never sends more forms than this number per day for this campaign (your plan also sets a global cap).",
+      "dailyLimitHint": "The robot never sends more forms than this number per day for this campaign.",
       "autoValidation": "Automatic validation",
       "autoValidationHint": "A form prepared without any warning is validated on its own, without review. Forms to complete or with a remark still wait for your review.",
       "autoValidationPlanHint": "Available on the Business and Scale plans.",

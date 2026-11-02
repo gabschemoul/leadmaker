@@ -1,6 +1,9 @@
 /**
- * Configuration de facturation LeadMaker.
- * Trois forfaits (Growth, Business, Scale), mensuels ou annuels (deux mois offerts).
+ * Configuration de facturation Prospectigo.
+ * Trois forfaits (Growth, Business, Scale), facturés en dollars américains,
+ * mensuels ou annuels (annuel = 10 mois : deux mois offerts).
+ * Volumes décidés le 2/11/2026 : 30 000 / 80 000 / 200 000 crédits de prospection
+ * et 15 000 / 40 000 / 100 000 prises de contact par mois. Aucun plafond par jour.
  * Les identifiants de prix Stripe sont lus dans l'environnement : tant qu'ils ne sont
  * pas renseignés, des valeurs de substitution permettent de faire tourner l'application.
  */
@@ -20,7 +23,7 @@ export default createBillingSchema({
       id: 'growth',
       name: 'Growth',
       description: 'Pour une PME qui prospecte pour elle-même',
-      currency: 'EUR',
+      currency: 'USD',
       plans: [
         {
           name: 'Growth mensuel',
@@ -58,8 +61,8 @@ export default createBillingSchema({
         },
       ],
       features: [
-        '15 000 prospects par mois',
-        '5 000 prises de contact par mois',
+        '30 000 crédits de prospection par mois',
+        '15 000 prises de contact par mois',
         '1 siège',
         '1 campagne active',
         'Support et onboarding',
@@ -71,7 +74,7 @@ export default createBillingSchema({
       badge: 'Populaire',
       highlighted: true,
       description: "L'offre principale pour les agences",
-      currency: 'EUR',
+      currency: 'USD',
       plans: [
         {
           name: 'Business mensuel',
@@ -85,7 +88,7 @@ export default createBillingSchema({
                 'price_business_monthly',
               ),
               name: 'Business',
-              cost: 999,
+              cost: 990,
               type: 'flat' as const,
             },
           ],
@@ -102,15 +105,15 @@ export default createBillingSchema({
                 'price_business_yearly',
               ),
               name: 'Business',
-              cost: 9990,
+              cost: 9900,
               type: 'flat' as const,
             },
           ],
         },
       ],
       features: [
-        '45 000 prospects par mois',
-        '15 000 prises de contact par mois',
+        '80 000 crédits de prospection par mois',
+        '40 000 prises de contact par mois',
         '3 sièges',
         '3 campagnes actives',
         'Support et onboarding',
@@ -120,7 +123,7 @@ export default createBillingSchema({
       id: 'scale',
       name: 'Scale',
       description: 'Pour les agences et réseaux à fort volume',
-      currency: 'EUR',
+      currency: 'USD',
       plans: [
         {
           name: 'Scale mensuel',
@@ -158,8 +161,8 @@ export default createBillingSchema({
         },
       ],
       features: [
-        '105 000 prospects par mois',
-        '35 000 prises de contact par mois',
+        '200 000 crédits de prospection par mois',
+        '100 000 prises de contact par mois',
         '6 sièges',
         '10 campagnes actives',
         'Support prioritaire et onboarding',

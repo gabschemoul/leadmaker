@@ -549,14 +549,14 @@ isOneToOne: false
                   ]
                 },"lm_plans": {
                   Row: {
-                    "active_campaigns": number | null,"auto_validation": boolean,"created_at": string,"daily_send_limit": number,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"proxy_gb_month": number | null,"seats": number | null,"spaces": number,"updated_at": string
+                    "active_campaigns": number | null,"auto_validation": boolean,"created_at": string,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"proxy_gb_month": number | null,"seats": number | null,"spaces": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"daily_send_limit": number,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"proxy_gb_month"?: number | null,"seats"?: number | null,"spaces": number,"updated_at"?: string
+                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"discovery_credits": number,"id": string,"name": string,"outreach_credits": number,"proxy_gb_month"?: number | null,"seats"?: number | null,"spaces": number,"updated_at"?: string
                   }
                   Update: {
-                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"daily_send_limit"?: number,"discovery_credits"?: number,"id"?: string,"name"?: string,"outreach_credits"?: number,"proxy_gb_month"?: number | null,"seats"?: number | null,"spaces"?: number,"updated_at"?: string
+                    "active_campaigns"?: number | null,"auto_validation"?: boolean,"created_at"?: string,"discovery_credits"?: number,"id"?: string,"name"?: string,"outreach_credits"?: number,"proxy_gb_month"?: number | null,"seats"?: number | null,"spaces"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     

@@ -11,8 +11,8 @@ select public.create_team_account('Edit A', tests.get_supabase_uid('edit_a'), 'e
 select public.create_team_account('Edit B', tests.get_supabase_uid('edit_b'), 'edit-b');
 set local role postgres;
 
-insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreach_credits, daily_send_limit, active_campaigns, auto_validation)
-values ('growth', 'Growth', 2, 3, 15000, 5000, 500, 1, false) on conflict (id) do nothing;
+insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreach_credits, active_campaigns, auto_validation)
+values ('growth', 'Growth', 2, 3, 30000, 15000, 1, false) on conflict (id) do nothing;
 insert into public.lm_discovery_settings (id) values (true) on conflict (id) do nothing;
 insert into public.lm_country_coverage (country_code, name) values ('ZZ', 'Testland') on conflict do nothing;
 insert into public.lm_geo_cities (geoname_id, name, ascii_name, country_code, population, latitude, longitude) values

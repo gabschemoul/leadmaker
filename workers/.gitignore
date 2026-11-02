@@ -4,3 +4,4 @@ __pycache__/
 scripts/.cache/
 logs/
 .send-server-ip
+.stripe-prices.env

@@ -13,7 +13,7 @@
   "faq": "FAQ",
   "faqSubtitle": "Everything to know before launching your first campaign",
   "pricing": "Pricing",
-  "pricingSubtitle": "Pick your volume, change plans whenever you want",
+  "pricingSubtitle": "Pick your volume, change plans whenever you want. Prices in US dollars.",
   "backToBlog": "Back to blog",
   "noPosts": "No posts found",
   "blogPaginationNext": "Next Page",
@@ -78,7 +78,16 @@
     "pricingPill": "Pricing",
     "pricingPillText": "No commitment, cancel anytime",
     "pricingTitle": "Plans that match your volume",
-    "pricingSubtitle": "Growth for a single business, Business and Scale for agencies."
+    "pricingSubtitle": "Growth for a single business, Business and Scale for agencies.",
+    "pricingNotesTitle": "How credits work",
+    "pricingNote1Label": "One credit, one prospect",
+    "pricingNote1": "In most campaigns, each business found on Google Maps costs 1 prospecting credit, and each form sent costs 1 outreach credit.",
+    "pricingNote2Label": "Hard campaigns: 2 to 4 credits per prospect",
+    "pricingNote2": "When your filters keep only a small share of businesses (for example \"rating between 0.7 and 3.8\"), the robot has to go through many more listings to find each prospect. These campaigns cost 2, 3 or 4 prospecting credits per prospect. The rate is computed by the estimate, shown before launch and never changes afterwards.",
+    "pricingNote3Label": "No daily cap",
+    "pricingNote3": "Your credits are used at the pace you choose, campaign by campaign. They renew every month. On the yearly plan you pay 10 months for 12.",
+    "pricingNote4Label": "Prices in US dollars",
+    "pricingNote4": "Plans are billed in USD, by card, with no commitment. Change plans or cancel anytime from your billing settings."
   },
   "faqItems": {
     "q1": "Which countries does Prospectigo work in?",
@@ -86,13 +95,15 @@
     "q2": "How are messages sent?",
     "a2": "Through the contact form on the business's website, filled by a robot. Nothing leaves your mailbox. When an e-mail address is found on the site, it is shown to you as well.",
     "q3": "What are prospecting and outreach credits?",
-    "a3": "A prospecting credit is used for each business found on Google Maps. An outreach credit is counted when a form has been sent successfully. Both renew every month with your plan.",
-    "q4": "Can I review messages before they go out?",
-    "a4": "Yes. Every prepared form is shown with a screenshot. You approve or skip. On Business and Scale plans you can turn on automatic validation per campaign.",
-    "q5": "I run an agency, can I manage several clients?",
-    "a5": "Yes. Create one folder per client, with its own sender and campaigns. Invite teammates up to your plan's seat count.",
-    "q6": "Is there a commitment?",
-    "a6": "No. Plans are monthly or yearly and can be cancelled anytime from your billing settings."
+    "a3": "A prospecting credit is used for each business found on Google Maps (2 to 4 credits for hard campaigns, see the next question). An outreach credit is counted when a form has been sent successfully. Both renew every month with your plan, with no daily cap.",
+    "q4": "Why do some campaigns cost several credits per prospect?",
+    "a4": "Because they take the robot much more work. Before launch, the estimate measures the share of businesses that pass your filters. If at least 10% pass, each prospect costs 1 credit. Between 3 and 10%, 2 credits. Between 1 and 3%, 3 credits. Below 1%, 4 credits. This rate is shown in the Find tab before you launch, then frozen for the life of the campaign.",
+    "q5": "Can I review messages before they go out?",
+    "a5": "Yes. Every prepared form is shown with a screenshot. You approve or skip. On Business and Scale plans you can turn on automatic validation per campaign.",
+    "q6": "I run an agency, can I manage several clients?",
+    "a6": "Yes. Create one folder per client, with its own sender and campaigns. Invite teammates up to your plan's seat count.",
+    "q7": "Is there a commitment?",
+    "a7": "No. Plans are monthly or yearly and can be cancelled anytime from your billing settings."
   },
   "theme": "Light / dark theme"
 }

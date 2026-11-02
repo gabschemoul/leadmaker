@@ -1,7 +1,7 @@
 # Prospectigo — Roadmap des améliorations
 
 Liste vivante des idées et améliorations. On ajoute au fil de l'eau, on coche quand c'est livré.
-Dernière mise à jour : 2 novembre 2026 (après-midi).
+Dernière mise à jour : 2 novembre 2026 (fin d'après-midi).
 
 **Comment on publie** (depuis le 1er novembre 2026) :
 1. Chaque développement part d'abord en pré-production, sur https://staging.prospectigo.com.
@@ -16,7 +16,9 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 
 **Le constat (mesures du 2/11)** : le seul vrai coût variable est le proxy DataImpulse de la recherche Google Maps (~1 $ le Go, facturé au poids). Prises de contact et serveurs : quelques euros par client et par mois. Une recherche (une activité dans un quartier) pèse ~2 Mo pour la liste + ~2 Mo par fiche ouverte. Le coût d'un prospect dépend des filtres : 18,6 prospects par recherche sans filtre de note, 4,5 avec note > 0,8, 1,4 en « mauvaises notes » (0,7-3,8). Sans proxy, depuis nos serveurs Hetzner, seule 1 recherche sur 3 aboutit (test du 2/11) : le proxy reste nécessaire.
 
-**Forfaits DÉCIDÉS par Gabriel le 2 novembre 2026 (pas encore dans l'app)** : facturation en dollars. Growth 499 $ / mois = 30 000 prospects + 15 000 prises de contact ; Business 990 $ = 80 000 + 40 000 ; Scale 1 999 $ = 200 000 + 100 000. Annuel = 10 mois (4 990 $ / 9 900 $ / 19 990 $). **Aucun plafond de prises de contact par jour** : seul le crédit mensuel limite (le réglage par campagne reste). Sièges 1 / 3 / 6, campagnes actives 1 / 3 / 10, crédits selon la difficulté (n°13) et budget proxy 50 / 100 / 200 Go (n°14) inchangés. Coût proxy mesuré : 3 à 13 % du prix au pire, marge > 85 %. L'app affiche encore 15 000 / 5 000, 45 000 / 15 000, 105 000 / 35 000 en euros.
+**Forfaits DÉCIDÉS par Gabriel le 2 novembre 2026 — APPLIQUÉS en pré-production le 2/11 (après-midi), à publier avec les n°13 et 14** : facturation en dollars. Growth 499 $ / mois = 30 000 crédits de prospection + 15 000 prises de contact ; Business 990 $ = 80 000 + 40 000 ; Scale 1 999 $ = 200 000 + 100 000. Annuel = 10 mois (4 990 $ / 9 900 $ / 19 990 $). **Aucun plafond de prises de contact par jour** : seul le crédit mensuel limite (le réglage par campagne reste). Sièges 1 / 3 / 6, campagnes actives 1 / 3 / 10, crédits selon la difficulté (n°13) et budget proxy 50 / 100 / 200 Go (n°14) inchangés. Coût proxy mesuré : 3 à 13 % du prix au pire, marge > 85 %.
+- **Fait en pré-production (2/11)** : forfaits en base (migration `20261102142404_leadmaker_plans_usd.sql` : nouveaux volumes, colonne `daily_send_limit` supprimée, `lm_queue_sends` ne regarde plus que la limite par campagne et le crédit mensuel), prix en dollars dans l'app (`billing.config.ts`, mensuel et annuel), cartes en « crédits de prospection » / « prises de contact », page Tarifs avec un encart « Comment les crédits fonctionnent » (1 crédit par prospect en général, 2 à 4 pour les campagnes difficiles, aucun plafond par jour, prix en USD), FAQ enrichie (question sur les crédits par prospect), mention du « plafond global du forfait » retirée du réglage d'envoi des campagnes. Les soldes déjà crédités (Namma Booster, Review Cleaner, jerem) ne bougent pas : les nouveaux volumes s'appliquent à la prochaine recharge.
+- **Stripe mode réel** : marche à suivre dans `docs/prospectigo/stripe-mode-reel.md`, script `workers/scripts/stripe-create-prices.sh` pour créer les 3 produits et 6 prix en dollars sans faute de frappe.
 
 ### 10. Ne garder que « Je choisis moi-même » pour les activités 🟢 — EN LIGNE (publié le 2/11)
 - Supprimer « Activités courantes » et « Toutes les activités » dans « Quelles entreprises ? ».
@@ -48,13 +50,22 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 - **Comment ça marche** : l'estimation (« Estimer le nombre de prospects ») calcule le taux et affiche « Tarif : 2 crédits de prospection par prospect ». Au premier lancement, la campagne reprend le tarif de l'estimation faite avec exactement son ciblage et ses filtres, et le garde pour toujours (modifier la campagne ensuite ne le change pas). S'il n'y a pas d'estimation, le clic sur « Lancer » lance d'abord la mesure (30 recherches, 1 à 4 minutes), l'onglet Trouver affiche « Mesure : 12 sur 30 » puis le tarif, et on clique de nouveau sur « Lancer ». Chaque prospect débite ce tarif ; une campagne déjà lancée avant cette version reste à 1 crédit.
 - **Classement des activités par prospects par Mo** (et non plus par recherche) : le robot attribue le vrai trafic de chaque recherche à son activité ; le planificateur creuse l'activité qui rapporte le plus de prospects par Mo de proxy (« Hotel » rapporte mais coûte ~35 Mo par recherche, il passe derrière). Sans mesure, 4 Mo par recherche sont supposés.
 - Vérifié en local le 2/11 : brouillon « Boulangeries Lyon 20 km » → Lancer → mesure 30 recherches en 3 min 38 → 6,8 % → 2 crédits → lancement, tarif figé, pause. Test de base `leadmaker-credit-difficulty.test.sql` (31 vérifications).
-- **Mise en ligne** (la base est partagée avec prospectigo.com, donc en même temps que la publication) : 1) `cd ~/LeadMaker/app/apps/web && pnpm exec supabase db push` ; 2) publier staging → main ; 3) `./workers/scripts/deploy-robots.sh` (le robot qui attribue le trafic aux activités). Tant que la migration n'est pas poussée, l'onglet Trouver de la pré-production affiche « Mesuré au lancement » et le lancement marche comme avant.
+- **Mise en ligne** (la base est partagée avec prospectigo.com, donc en même temps que la publication) : voir « Publication forfaits + n°13 + n°14 » ci-dessous. Tant que la migration n'est pas poussée, l'onglet Trouver de la pré-production affiche « Mesuré au lancement » et le lancement marche comme avant.
 
 ### 14. Budget de proxy invisible par client 🟡 — FAIT en pré-production le 2/11, à mettre en ligne avec la publication
 - Filet de sécurité : ≈ 10 % du prix en Go par mois (Growth 50 Go, Business 100, Scale 200 ; réglable dans `lm_plans.proxy_gb_month`, vide = pas de plafond). Au-delà, la recherche du client ralentit au lieu de coûter plus.
 - **Comment ça marche** : chaque recherche et chaque estimation ajoute son vrai trafic au compteur du compte (`lm_account_credits.proxy_bytes_period`), remis à zéro à chaque recharge de crédits. Quand le compteur atteint le budget du forfait, le compte entier n'a plus qu'**une recherche à la fois** toutes campagnes confondues (réglage `over_budget_tasks_per_account`), au lieu de 6 par campagne : environ 6 à 18 fois plus lent. Rien n'est affiché au client, rien n'est facturé en plus. Le plafond quotidien global (8 Go/jour) reste en place.
 - Tests de base `leadmaker-proxy-budget.test.sql` (9 vérifications). Les comptes actuels (Namma Booster = Scale 200 Go, Review Cleaner = Business 100 Go, jerem = Scale) partent d'un compteur à zéro à la mise en ligne.
 - **Mise en ligne** : avec le n°13 (même `db push`, puis `deploy-robots.sh` : le robot compte aussi le trafic des estimations).
+
+### Publication forfaits + n°13 + n°14 — PRÊTE, attend le « publie » de Gabriel
+Ordre à respecter (base d'abord, puis site, puis robots ; test avant chaque bascule) :
+1. **Base** (3 migrations : `20261102133517_leadmaker_credit_difficulty`, `20261102134915_leadmaker_proxy_budget`, `20261102142404_leadmaker_plans_usd`) : `cd ~/LeadMaker/app/apps/web && pnpm exec supabase db push`. Compatible avec le site en ligne actuel : les anciennes fonctions gardent leur signature, le tarif des campagnes existantes reste 1 crédit, les compteurs de proxy partent de zéro, la file d'envoi ne regarde plus le plafond du forfait (déjà à 100 000 en ligne, donc aucun changement visible).
+2. **Contrôle base** (1 min) : `select id, discovery_credits, outreach_credits, proxy_gb_month from lm_plans` → 30 000/15 000, 80 000/40 000, 200 000/100 000 et 50/100/200 ; une campagne en cours continue à produire des prospects.
+3. **Site** : `git checkout main && git merge --ff-only staging && git push && git checkout staging` (Vercel déploie prospectigo.com en ~3 min). Vérifier /pricing (dollars, encart crédits), /faq (7 questions), l'onglet Trouver d'une campagne (tarif en crédits).
+4. **Robots** (serveur principal seulement) : `./workers/scripts/deploy-robots.sh` → test automatique avant bascule ; si le test échoue, rien ne change. Le robot nouvelle version attribue le trafic de chaque recherche à son activité et au compteur du compte (n°13, n°14).
+5. **Vérification 10-15 min** : `lm_tasks.result.proxy_bytes` renseigné, `lm_campaign_categories.proxy_bytes` et `lm_account_credits.proxy_bytes_period` qui montent, 0 erreur dans les logs, prospects par heure inchangés. En cas de souci : `deploy-robots.sh --rollback` (robots) ; la base n'a pas besoin de retour arrière.
+6. **Après** : Stripe en mode réel (`docs/prospectigo/stripe-mode-reel.md`), puis fixer les comptes existants au nouveau forfait si Gabriel le veut (`lm_reset_credits`).
 
 ---
 
@@ -144,7 +155,7 @@ Pistes à discuter :
 
 1. **Premier envoi réel surveillé** sur 2-3 entreprises choisies par Gabriel. Le robot d'envoi reste coupé tant que Gabriel ne dit pas « Envoie ».
 2. **Test de volume** une fois le premier envoi validé.
-3. **Stripe en mode réel** (paiements et abonnements pour de vrai).
+3. **Stripe en mode réel** (paiements et abonnements pour de vrai) : marche à suivre écrite le 2/11 dans `docs/prospectigo/stripe-mode-reel.md`, à faire par Gabriel après la publication des forfaits.
 4. **Design** : couleurs plus agréables, vrai logo, remplacer le tableau de bord de démonstration.
 5. **E-mails de l'app** (invitations, mots de passe) envoyés depuis une adresse @prospectigo.com. À faire avant d'ouvrir à d'autres utilisateurs.
 6. **Nettoyage** : supprimer le projet en double chez Vercel, supprimer l'équipe « Review » de Nath une fois qu'il a rejoint Namma Booster.

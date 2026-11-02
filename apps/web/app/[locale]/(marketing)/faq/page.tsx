@@ -20,7 +20,7 @@ export const generateMetadata = async () => {
 async function FAQPage() {
   const t = await getTranslations('marketing');
 
-  const faqItems = [1, 2, 3, 4, 5, 6].map((n) => ({
+  const faqItems = [1, 2, 3, 4, 5, 6, 7].map((n) => ({
     question: t(`faqItems.q${n}`),
     answer: t(`faqItems.a${n}`),
   }));

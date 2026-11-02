@@ -9,8 +9,8 @@ set local role service_role;
 select public.create_team_account('PB A', tests.get_supabase_uid('pb_a'), 'pb-a');
 set local role postgres;
 
-insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreach_credits, daily_send_limit, active_campaigns, auto_validation)
-values ('growth', 'Growth', 2, 3, 15000, 5000, 500, 1, false) on conflict (id) do nothing;
+insert into public.lm_plans (id, name, seats, spaces, discovery_credits, outreach_credits, active_campaigns, auto_validation)
+values ('growth', 'Growth', 2, 3, 30000, 15000, 1, false) on conflict (id) do nothing;
 update public.lm_plans set proxy_gb_month = 50, active_campaigns = 5 where id = 'growth';
 insert into public.lm_discovery_settings (id) values (true) on conflict (id) do nothing;
 insert into public.lm_country_coverage (country_code, name) values ('ZZ', 'Testland') on conflict do nothing;

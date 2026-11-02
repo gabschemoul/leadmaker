@@ -23,10 +23,13 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 - Raison : « Toutes les activités » fait essayer les 3 896 activités Google (orphelinats, compagnies d'opéra…) avant de creuser celles qui rapportent. Campagnes concernées : « review cleaner » et « Namma test rapiditié » (Namma Booster).
 - À décider avec Gabriel : que faire de ces deux campagnes déjà lancées (réduire leurs activités à celles qui ont rapporté ?).
 
-### 11. Ouvrir moins de fiches Google Maps 🟡 — VALIDÉ (2/11)
-- Aujourd'hui (correctif restaurants du 1/11) : toute carte sans bouton « Website » est ouverte, pour toutes les activités.
-- Demain : ne l'ouvrir que pour les activités où Google cache ce bouton (restaurants, hôtels, boulangeries, traiteurs…).
-- AVANT : vérifier sur un échantillon (plombiers, avocats, dentistes…) combien de cartes sans bouton ont quand même un site.
+### 11. Ouvrir moins de fiches Google Maps 🟡 — FAIT en pré-production le 2/11, robots à mettre à jour
+- Échantillon du 2/11 (14 recherches en France et aux États-Unis, 282 fiches ouvertes) : ce n'est pas l'activité qui compte, c'est l'affichage de la liste.
+  - Quand les cartes affichent leurs boutons (« Itinéraire »), une carte sans bouton « Website » n'a pas de site : 0 sur 107. Inutile de l'ouvrir.
+  - Quand Google affiche une liste compacte, sans aucun bouton (restaurants, hôtels, coiffeurs, fleuristes, mais aussi dentistes à Chicago), le site n'est visible que sur la fiche : 149 sur 173 en avaient un. On continue à les ouvrir.
+- Aussi corrigé : pour les artisans sans adresse (plombiers, électriciens…), le robot ouvrait la fiche juste pour lire l'activité. Elle est maintenant lue sur la carte.
+- Contrôle : plombiers à Lyon, 36 prospects gardés avant comme après, 0 fiche ouverte au lieu de 7 à 11, 9 secondes au lieu de 32.
+- Le gain réel en proxy sera mesuré sur le vrai trafic après la mise à jour des robots.
 
 ### 12. Choisir les activités qui rapportent, abandonner vite les autres 🟡 — VALIDÉ (2/11)
 - Exploration limitée (≈ 1 recherche sur 4 pour une activité jamais essayée), le reste sur les activités qui rapportent le plus.

@@ -1,7 +1,7 @@
 # Prospectigo — Roadmap des améliorations
 
 Liste vivante des idées et améliorations. On ajoute au fil de l'eau, on coche quand c'est livré.
-Dernière mise à jour : 2 novembre 2026.
+Dernière mise à jour : 2 novembre 2026 (après-midi).
 
 **Comment on publie** (depuis le 1er novembre 2026) :
 1. Chaque développement part d'abord en pré-production, sur https://staging.prospectigo.com.
@@ -18,12 +18,12 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 
 **Forfaits envisagés par Gabriel (à confirmer, PAS encore dans l'app)** : Growth 499 $ = 30 000 prospects / 15 000 prises de contact ; Business 990 $ = 80 000 / 40 000 ; Scale 1 999 $ = 200 000 / 100 000. L'app affiche aujourd'hui 15 000 / 5 000, 45 000 / 15 000, 105 000 / 35 000.
 
-### 10. Ne garder que « Je choisis moi-même » pour les activités 🟢 — VALIDÉ (2/11)
+### 10. Ne garder que « Je choisis moi-même » pour les activités 🟢 — EN LIGNE (publié le 2/11)
 - Supprimer « Activités courantes » et « Toutes les activités » dans « Quelles entreprises ? ».
 - Raison : « Toutes les activités » fait essayer les 3 896 activités Google (orphelinats, compagnies d'opéra…) avant de creuser celles qui rapportent. Campagnes concernées : « review cleaner » et « Namma test rapiditié » (Namma Booster).
 - À décider avec Gabriel : que faire de ces deux campagnes déjà lancées (réduire leurs activités à celles qui ont rapporté ?).
 
-### 11. Ouvrir moins de fiches Google Maps 🟡 — FAIT en pré-production le 2/11, robots à mettre à jour
+### 11. Ouvrir moins de fiches Google Maps 🟡 — EN LIGNE (robots mis à jour le 2/11, validé)
 - Échantillon du 2/11 (14 recherches en France et aux États-Unis, 282 fiches ouvertes) : ce n'est pas l'activité qui compte, c'est l'affichage de la liste.
   - Quand les cartes affichent leurs boutons (« Itinéraire »), une carte sans bouton « Website » n'a pas de site : 0 sur 107. Inutile de l'ouvrir.
   - Quand Google affiche une liste compacte, sans aucun bouton (restaurants, hôtels, coiffeurs, fleuristes, mais aussi dentistes à Chicago), le site n'est visible que sur la fiche : 149 sur 173 en avaient un. On continue à les ouvrir.
@@ -33,7 +33,7 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 - **Mis en ligne le 2/11 à 12h48**, vérifié 10 min : 0 plantage, ~3 100 prospects/h, 1,7 Mo par prospect (2 avant).
 - **Estimation des listes compactes (2/11, après-midi)** : l'estimation (qui n'ouvre jamais les fiches) comptait « sans site » toutes les cartes d'une liste compacte, d'où des restaurants, hôtels, coiffeurs… très sous-estimés. Elle compte maintenant ces cartes à 86 % (149 sur 173 dans l'échantillon), de façon fixe par fiche pour que le dédoublonnage reste juste. Contrôle à Lyon sans ouvrir de fiche : Restaurant 0 → 111 « avec site » sur 120 cartes, Hôtel 0 → 99, Plombiers inchangés (89). Robots à mettre à jour.
 
-### 12. Choisir les activités qui rapportent, abandonner vite les autres 🟡 — FAIT en pré-production le 2/11, à mettre en ligne après validation du n°11
+### 12. Choisir les activités qui rapportent, abandonner vite les autres 🟡 — EN LIGNE (2/11, validé : 5 140 prospects/h, 0,45 Mo par prospect sur « Namma test rapiditié »)
 - **Avant** : le robot essayait chaque activité une fois avant de creuser les bonnes. Sur « Namma test rapiditié » (3 896 activités), 1 090 activités essayées, 392 ont rapporté, 0 abandonnée ; 1 300 recherches en file dont ~1 230 sur des activités jamais essayées.
 - **Maintenant** (tout est dans la base, les robots n'ont pas besoin d'être mis à jour) :
   - Sur 6 places de recherche par campagne, 2 explorent une activité jamais essayée (les générales d'abord), 4 creusent l'activité qui rapporte le plus (prospects par recherche, en comptant les recherches en cours pour répartir entre les meilleures). Réglages `explore_share` (1/4) et `abandon_zero_after` (5) dans `lm_discovery_settings`.
@@ -131,6 +131,14 @@ Pistes à discuter :
 - **Aussi** : adapter le seuil d'abandon des activités (5 % après 40 recherches) aux campagnes très sélectives, comme « mauvaises notes ».
 
 ---
+
+### 15. Fil d'activité en direct sur la campagne 🟡 — idée de Gabriel (2/11), lignes à définir ensemble
+- **Le principe** : dès qu'on lance la recherche ou les prises de contact d'une campagne, un fil de lignes défile, comme dans Claude Code quand il travaille. Ça montre qu'il se passe quelque chose : plus pro, plus sérieux, rassurant.
+- **Règle proposée** : chaque ligne correspond à un vrai événement (jamais de texte décoratif), pour que le fil reste crédible même quand la recherche ralentit ou s'arrête.
+- **Exemples de lignes possibles (à valider)** :
+  - Recherche : « Campagne lancée », « Lyon découpée en 12 secteurs », « 1 840 recherches planifiées », « Recherche « Plombier » à Lyon 3e : 120 fiches lues, 14 prospects gardés », « Nouvelle activité essayée : Chauffagiste », « Activité abandonnée : aucun prospect après 5 recherches », « Campagne en pause ».
+  - Prises de contact : « Formulaires en préparation : 25 sites », « Formulaire trouvé sur dupont-plomberie.fr/contact », « Message envoyé à Dupont Plomberie », « Site inaccessible, passé ».
+- **À trancher** : le niveau de détail (une ligne par recherche ou un résumé par minute), et ce qu'on ne montre jamais (plafond de proxy, budget par client, pannes internes).
 
 ## Déjà prévu (liste du 31 octobre)
 

@@ -468,7 +468,7 @@ function PlanIntervalSwitcher(
         const selected = plan === props.interval;
 
         const className = cn(
-          'h-8 rounded-full px-4 transition-all focus:!ring-0',
+          'h-8 rounded-full px-3 transition-all focus:!ring-0 sm:px-4',
           {
             ['hover:text-foreground text-muted-foreground']: !selected,
             ['bg-card text-foreground ring-pill-ring shadow-soft hover:bg-card cursor-default ring-[0.5px]']:
@@ -486,7 +486,9 @@ function PlanIntervalSwitcher(
           >
             <span className={'flex items-center'}>
               <span
-                className={'text-[0.875rem] font-normal first-letter:uppercase'}
+                className={
+                  'text-[0.8125rem] font-normal first-letter:uppercase sm:text-[0.875rem]'
+                }
               >
                 <Trans i18nKey={`billing.billingInterval.${plan}`} />
               </span>

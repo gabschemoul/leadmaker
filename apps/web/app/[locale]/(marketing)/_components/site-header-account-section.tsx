@@ -103,10 +103,15 @@ function AuthButtons() {
           <Trans i18nKey={'auth.signIn'} />
         </PillLink>
 
+        {/* Plus petit sur téléphone pour ne pas toucher le logo centré ;
+            masqué sur les tout petits écrans (le menu contient S'inscrire). */}
         <PillLink
           href={pathsConfig.auth.signUp}
           variant={'primary'}
           size={'md'}
+          className={
+            'h-8 px-3 text-[0.8125rem] max-[22rem]:hidden md:h-9 md:px-3.5 md:text-sm'
+          }
         >
           <Trans i18nKey={'auth.signUp'} />
         </PillLink>

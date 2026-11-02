@@ -175,7 +175,8 @@ class PrepareRunner:
         row = conn.execute(
             """update public.lm_attempts a set status = 'preparing'
                 where a.id = %s and a.status = 'pending'
-            returning a.id, a.account_id, a.space_id, a.campaign_id, a.prospect_id, a.extra""",
+            returning a.id, a.account_id, a.space_id, a.campaign_id, a.prospect_id, a.extra, a.template_name,
+                      to_jsonb(a) ->> 'autopilot_id' as autopilot_id""",
             (attempt_id,),
         ).fetchone()
         if not row:
@@ -202,10 +203,21 @@ class PrepareRunner:
         counts = {r["template_name"]: r["n"] for r in conn.execute(
             "select template_name, count(*) as n from public.lm_attempts where campaign_id = %s and template_name is not null group by 1",
             (row["campaign_id"],))}
-        template = pick_balanced(messages, counts)
+        # Pilote automatique (roadmap n°18) : le message est choisi à l'avance (test A/B à parts égales entre les
+        # messages cochés). S'il a été renommé depuis, on choisit parmi les seuls messages cochés du pilote.
+        # Mode Avancé : rotation équilibrée sur tous les messages, comme avant.
+        # (to_jsonb : ce code tourne aussi sur une base qui n'a pas encore la colonne autopilot_id)
+        if row.get("autopilot_id"):
+            pilot = conn.execute("select messages from public.lm_autopilots where id = %s",
+                                 (row["autopilot_id"],)).fetchone()
+            chosen = set(pilot["messages"]) if pilot else set()
+            messages = [m for m in messages if m["name"] in chosen]
+        preset = next((m for m in messages if m["name"] == row.get("template_name")), None)
+        template = preset or pick_balanced(messages, counts)
         if not template:
-            conn.execute("select public.lm_finish_prepare(%s, %s)",
-                         (attempt_id, Jsonb({"status": "failed", "detail": "aucun message rédigé dans la campagne"})))
+            detail = ("les messages choisis pour le pilote automatique n'existent plus (étape Rédiger)"
+                      if row.get("autopilot_id") else "aucun message rédigé dans la campagne")
+            conn.execute("select public.lm_finish_prepare(%s, %s)", (attempt_id, Jsonb({"status": "failed", "detail": detail})))
             return {"status": "failed"}
 
         sender_dict = dict(sender)

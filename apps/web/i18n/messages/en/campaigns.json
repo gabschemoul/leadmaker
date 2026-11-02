@@ -259,7 +259,9 @@
       "contacterPreparing": "{count} being prepared",
       "contacterReady": "{count} to review",
       "contacterValidated": "{count} validated, sending",
-      "contacterSent": "{count} sent"
+      "contacterSent": "{count} sent",
+      "contacterAutopilot": "Autopilot · {sent, number} / {target, number} sent",
+      "contacterAutopilotPaused": "Autopilot paused · {sent, number} / {target, number}"
     },
     "target": {
       "whereTitle": "Where to search?",
@@ -295,16 +297,16 @@
       "senderFill": "Fill in the sender"
     },
     "contact": {
-      "noMessage": "The message is missing: the robot does not know what to write in the forms.",
+      "noMessage": "The message is missing: Prospectigo does not know what to write in the forms.",
       "writeMessage": "Write the message",
-      "noSender": "The sender is missing: the robot does not know which details to write.",
+      "noSender": "The sender is missing: Prospectigo does not know which details to write.",
       "noProspects": "No prospect yet: launch the search first.",
       "goDiscover": "Go to Find",
       "prepareTitle": "a. Prepare",
       "prepareCount": "{count, number}",
       "prepareOf": "of {count, plural, one {# prospect} other {# prospects}}",
-      "prepareIdle": "The robot visits every website, finds the contact form and fills it with your message. Allow about a minute per site.",
-      "prepareWorking": "The robot is working: {count, plural, one {# form in progress} other {# forms in progress}}.",
+      "prepareIdle": "Prospectigo visits every website, finds the contact form and fills it with your message. Allow about a minute per site.",
+      "prepareWorking": "Prospectigo is working: {count, plural, one {# form in progress} other {# forms in progress}}.",
       "prepareDone": "Every prospect has been visited. Run again after a new search.",
       "prepareButton": "Prepare the forms",
       "prepareAgain": "Prepare the new prospects",
@@ -360,7 +362,7 @@
       "button": "Review"
     },
     "verifySent": {
-      "text": "{count, plural, one {# send to confirm} other {# sends to confirm}}: the robot saw no confirmation",
+      "text": "{count, plural, one {# send to confirm} other {# sends to confirm}}: Prospectigo saw no confirmation",
       "button": "Decide"
     },
     "complete": {
@@ -368,7 +370,7 @@
       "button": "Complete"
     },
     "preparing": {
-      "text": "The robot is preparing {count, plural, one {# form} other {# forms}}",
+      "text": "Prospectigo is preparing {count, plural, one {# form} other {# forms}}",
       "button": "Follow"
     },
     "sending": {
@@ -394,6 +396,138 @@
     "noProspects": {
       "text": "Search finished with no result: widen the targeting",
       "button": "Edit targeting"
+    },
+    "autopilot": {
+      "text": "Autopilot: {sent, number} / {target, number} sent",
+      "button": "Follow"
+    },
+    "autopilotPaused": {
+      "text": "Autopilot paused: {sent, number} / {target, number} sent",
+      "button": "Resume"
+    },
+    "autopilotPreview": {
+      "text": "Your first forms are ready: check them before sending",
+      "button": "Check"
+    }
+  },
+  "autopilot": {
+    "mode": {
+      "label": "Sending mode",
+      "auto": "Autopilot",
+      "advanced": "Advanced",
+      "autoHint": "You pick a number, Prospectigo handles the rest.",
+      "advancedHint": "You stay in control of every form."
+    },
+    "question": "How many businesses do you want to contact?",
+    "questionHint": "Prospectigo visits each website, fills in the contact form with your message and sends it at the time you chose. Nothing for you to check.",
+    "less": "Less",
+    "more": "More",
+    "countLabel": "Number of businesses to contact",
+    "all": "All ({count, number})",
+    "maxHint": "Type a number or use the buttons. Maximum {max, number}: {prospects, plural, one {# prospect not contacted yet} other {# prospects not contacted yet}}, {credits, plural, one {# outreach credit available} other {# outreach credits available}}.",
+    "maxHintEdit": "Between {min, number} (already sent or in progress) and {max, number} (remaining prospects and available outreach credits).",
+    "targetAdjusted": "Number adjusted to {count, number} (remaining prospects and available credits).",
+    "pace": {
+      "title": "When to send?",
+      "office": "Business hours (recommended)",
+      "officeSub": "Monday to Friday, 9am – 6pm, in the contacted businesses' time zone.",
+      "spread": "Spread over several days",
+      "spreadSub": "A steady pace, to follow replies as they come.",
+      "continuous": "Non-stop",
+      "continuousSub": "Everything goes out as soon as possible, day and night.",
+      "spreadOver": "Spread over",
+      "days": "{count, plural, one {# business day} other {# business days}}",
+      "officeText": "Your messages arrive when businesses are open and reading their requests. Nothing goes out in the evening or at weekends.",
+      "spreadText": "About {perDay, plural, one {# message} other {# messages}} per business day, during business hours, over {days, plural, one {# day} other {# days}}.",
+      "continuousText": "{count, plural, one {# message sent} other {# messages sent}} as soon as possible, day and night."
+    },
+    "messages": {
+      "title": "Which message to send?",
+      "edit": "Edit in Write",
+      "ab": "A/B test: {count, number} messages sent in equal shares (about {share, number}% each).",
+      "single": "One message: everyone receives the same. Tick several to compare them (A/B test)."
+    },
+    "preview": {
+      "toggle": "Show me the first 3 forms before sending",
+      "toggleHint": "Recommended for your first campaign: you see exactly what businesses receive.",
+      "waitingTitle": "Preparing your first 3 forms",
+      "waiting": "Prospectigo is visiting the first websites: {ready, number} of {total, number} ready. Nothing is sent.",
+      "readyTitle": "{count, plural, one {Your first form is ready} other {Your first # forms are ready}}",
+      "readyHint": "Nothing has gone out yet. Check they suit you, then launch the rest.",
+      "emptyTitle": "No usable form yet",
+      "emptyHint": "The first websites had no usable form (captcha, unknown field, no form). Cancel and launch again, or switch to Advanced mode.",
+      "screenshotAlt": "Screenshot of {name}'s form",
+      "ready": "Ready",
+      "confirm": "{count, plural, one {All good, send this form and launch the rest} other {All good, send these # forms and launch the rest}}",
+      "editMessage": "Edit the message",
+      "cancel": "Cancel"
+    },
+    "launch": "Launch the autopilot",
+    "launchPreview": "{count, plural, one {Prepare the first form} other {Prepare the first # forms}}",
+    "update": "Update",
+    "cancelEdit": "Cancel",
+    "how": {
+      "title": "What will happen",
+      "step1": "Prospectigo takes your prospects in the order they were found.",
+      "step2": "It fills in the form and sends it at the chosen time if everything is clear.",
+      "step3": "Doubtful cases (captcha, unknown field) are set aside, no credit spent.",
+      "step4": "It stops at {count, plural, one {# message sent} other {# messages sent}}. You can pause at any time.",
+      "credits": "1 outreach credit per message sent, so {count, number} at most."
+    },
+    "blocked": {
+      "noCredits": "No outreach credits left: top up your plan to contact more businesses.",
+      "noProspects": "Every prospect of this campaign has already been contacted or prepared. Run a new search to find more, or switch to Advanced mode.",
+      "billing": "See my plan"
+    },
+    "run": {
+      "running": "Autopilot running",
+      "paused": "Paused",
+      "doneTitle": "Done: {count, plural, one {# business contacted} other {# businesses contacted}}",
+      "doneNoProspects": "Done, no prospect left to contact: {count, plural, =0 {no business contacted} one {# business contacted} other {# businesses contacted}}",
+      "pause": "Pause",
+      "resume": "Resume",
+      "edit": "Change the number",
+      "again": "Contact more businesses",
+      "ofSent": "/ {count, number} sent",
+      "progressLabel": "Messages sent",
+      "nextSend": "Outside business hours: next send {when} ({zone} time).",
+      "noCredits": "No outreach credits left: the autopilot is waiting.",
+      "billing": "Top up",
+      "sent": "Sent",
+      "inFlight": "In progress",
+      "aside": "Set aside",
+      "asideHint": "Set aside: no form, captcha or unknown field. No credit spent.",
+      "seeAdvanced": "See them in Advanced mode"
+    },
+    "feed": {
+      "title": "Live",
+      "empty": "Visiting the first websites…",
+      "sent": "Message sent to {name}",
+      "toVerify": "Message sent to {name} (confirmation to check)",
+      "sending": "Sending: {name}",
+      "found": "Form found on {site}",
+      "doubt": "Doubt on {site}: set aside",
+      "visiting": "Visiting {site}",
+      "queued": "Queued: {site}",
+      "captcha": "Captcha on {site}: set aside",
+      "unknownField": "Unknown field on {site}: set aside",
+      "noForm": "No form on {site}: skipped",
+      "skipped": "{name}: skipped",
+      "excluded": "{name}: excluded",
+      "unreachable": "Website unreachable: {site}, skipped"
+    },
+    "errors": {
+      "generic": "That didn't work. Try again in a moment.",
+      "notFound": "Campaign not found.",
+      "noSender": "Fill in the sender first (Write step).",
+      "noMessages": "Write at least one message first (Write step).",
+      "messages": "A ticked message no longer exists: reload the page.",
+      "active": "The autopilot is already running on this campaign: reload the page.",
+      "noProspects": "No prospect to contact: all of them have already been contacted or prepared.",
+      "noCredits": "No outreach credits left.",
+      "target": "Pick at least one business.",
+      "schedule": "Choose how many days to spread the sends over.",
+      "notActive": "This autopilot run is already over: reload the page."
     }
   }
 }

@@ -105,7 +105,9 @@ begin
     values (r.account_id, r.space_id, r.campaign_id, r.id, 'pending')
     on conflict (space_id, prospect_id) do update
       set status = 'pending', campaign_id = excluded.campaign_id, detail = null, missing = '[]'::jsonb,
-          filled = '{}'::jsonb, protection_type = null, screenshot_before = null, form_url = null
+          filled = '{}'::jsonb, protection_type = null, screenshot_before = null, form_url = null,
+          -- re-préparée à la main : elle quitte le pilote automatique et le robot rechoisit le message
+          template_name = null, autopilot_id = null
       where public.lm_attempt_repreparable(public.lm_attempts.status)
     returning id into v_attempt_id;
 
@@ -165,16 +167,14 @@ grant execute on function public.lm_prepare_campaign(uuid) to authenticated, ser
 -- Résultat de la préparation écrit par le worker (rôle service) : statut, message rendu, champs, capture.
 -- Une tentative passée entre-temps (validée, exclue…) n'est pas écrasée.
 -- Validation automatique : réservée aux forfaits qui l'incluent (et à l'option activée sur la campagne).
+-- Depuis le 2/11/2026 (roadmap n°18) : ouverte à TOUS les forfaits, il suffit d'avoir un forfait.
 create or replace function public.lm_auto_validation_allowed(p_account_id uuid) returns boolean
 set search_path = ''
 language sql
 stable
 security definer
 as $$
-  select coalesce((select p.auto_validation
-                     from public.lm_account_credits c
-                     join public.lm_plans p on p.id = c.plan_id
-                    where c.account_id = p_account_id), false);
+  select exists (select 1 from public.lm_account_credits c where c.account_id = p_account_id and c.plan_id is not null);
 $$;
 revoke all on function public.lm_auto_validation_allowed(uuid) from public;
 
@@ -223,7 +223,7 @@ begin
          screenshot_before = p_result ->> 'screenshot_before',
          detail = p_result ->> 'detail'
    where id = p_attempt_id and status in ('pending', 'preparing')
-  returning prospect_id, account_id, campaign_id, status, detail, missing, protection_type into v_attempt;
+  returning prospect_id, account_id, campaign_id, status, detail, missing, protection_type, autopilot_id into v_attempt;
 
   v_prospect := v_attempt.prospect_id;
 
@@ -234,11 +234,22 @@ begin
   -- Validation automatique (option de la campagne + forfait) : seulement un formulaire prêt sans la moindre alerte
   if v_attempt.status = 'ready' and v_attempt.detail is null and v_attempt.protection_type is null
      and coalesce(jsonb_array_length(v_attempt.missing), 0) = 0
+     and v_attempt.autopilot_id is null  -- le pilote automatique a ses propres règles (aperçu, pause), plus bas
      and exists (select 1 from public.lm_campaigns c where c.id = v_attempt.campaign_id and c.auto_validation)
      and public.lm_auto_validation_allowed(v_attempt.account_id) then
     update public.lm_attempts
        set status = 'validated', validated_at = now(), validated_by = null
      where id = p_attempt_id;
+  end if;
+
+  -- Pilote automatique en marche (roadmap n°18) : un formulaire prêt sans aucun doute est validé et partira
+  -- au moment choisi. En aperçu ou en pause, il reste « prêt » (confirmation ou reprise le valideront).
+  if v_attempt.autopilot_id is not null
+     and public.lm_attempt_is_clean(v_attempt.status, v_attempt.detail, v_attempt.protection_type, v_attempt.missing)
+     and exists (select 1 from public.lm_autopilots ap where ap.id = v_attempt.autopilot_id and ap.status = 'running') then
+    update public.lm_attempts
+       set status = 'validated', validated_at = now(), validated_by = null
+     where id = p_attempt_id and status = 'ready';
   end if;
 
   -- Email relevé sur le site : enregistré sur le prospect s'il n'en avait pas
@@ -279,8 +290,9 @@ declare
   v_count integer;
 begin
   with upd as (
+    -- validé à la main (mode Avancé) : le formulaire quitte le pilote automatique et suit l'envoi normal
     update public.lm_attempts a
-       set status = 'validated', validated_by = (select auth.uid()), validated_at = now()
+       set status = 'validated', validated_by = (select auth.uid()), validated_at = now(), autopilot_id = null
      where a.id = any (p_ids)
        and public.has_role_on_account(a.account_id)
        and a.status in ('ready', 'incomplete')

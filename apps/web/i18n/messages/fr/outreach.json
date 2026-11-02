@@ -37,7 +37,7 @@
     "countryRequired": "Choisissez un pays.",
     "tooLong": "Ce texte est trop long.",
     "missingTitle": "Profil expéditeur à compléter",
-    "missingDescription": "Renseignez-le avant de préparer des formulaires : sans lui, le robot ne sait pas quoi écrire."
+    "missingDescription": "Renseignez-le avant de préparer des formulaires : sans lui, Prospectigo ne sait pas quoi écrire."
   },
   "messages": {
     "pageTitle": "Messages",
@@ -95,7 +95,7 @@
       "title": "Envoi",
       "intro": "Ces réglages s'appliquent à cette campagne.",
       "dailyLimit": "Prises de contact par jour, au maximum",
-      "dailyLimitHint": "Le robot n'envoie jamais plus de formulaires que ce nombre en une journée pour cette campagne.",
+      "dailyLimitHint": "Prospectigo n'envoie jamais plus de formulaires que ce nombre en une journée pour cette campagne.",
       "autoValidation": "Validation automatique",
       "autoValidationHint": "Un formulaire préparé sans la moindre alerte est validé tout seul, sans relecture. Les formulaires à compléter ou avec une remarque restent à relire.",
       "autoValidationPlanHint": "Disponible avec les forfaits Business et Scale.",
@@ -106,7 +106,7 @@
   },
   "forms": {
     "pageTitle": "Formulaires",
-    "intro": "Les formulaires de contact remplis par le robot, à vérifier avant envoi. Rien ne part sans votre validation.",
+    "intro": "Les formulaires de contact remplis par Prospectigo, à vérifier avant envoi. Rien ne part sans votre validation.",
     "folderLabel": "Dossier client",
     "groups": {
       "ready": "Prêts",
@@ -139,16 +139,16 @@
     },
     "groupHints": {
       "ready": "Le formulaire est rempli. Vérifiez la capture et le message, puis validez.",
-      "incomplete": "Le site demande une information que le robot n'a pas : ouvrez le formulaire et renseignez-la.",
-      "intervention_required": "Le site est protégé par un captcha. Le robot ne l'a pas résolu : vous pouvez envoyer à la main depuis le site.",
-      "validated": "Validés par vous. Le robot les envoie dans la journée, dans la limite quotidienne de la campagne et du forfait.",
-      "preparing": "Le robot travaille. Cette liste se met à jour toute seule.",
+      "incomplete": "Le site demande une information que Prospectigo n'a pas : ouvrez le formulaire et renseignez-la.",
+      "intervention_required": "Le site est protégé par un captcha. Prospectigo ne l'a pas résolu : vous pouvez envoyer à la main depuis le site.",
+      "validated": "Validés par vous. Prospectigo les envoie dans la journée, dans la limite quotidienne de la campagne.",
+      "preparing": "Prospectigo travaille. Cette liste se met à jour toute seule.",
       "no_form": "Aucun formulaire de contact trouvé. Quand une adresse email a été repérée sur le site, elle est notée sur le prospect.",
       "unreachable": "Site injoignable, erreur, ou envoi qui a échoué. Vous pouvez relancer la préparation depuis la page Prospects.",
       "skipped": "Formulaires passés sans envoi.",
       "sent": "Formulaires envoyés (confirmation vue sur le site). Un crédit de prise de contact a été débité par formulaire.",
       "excluded": "Entreprises à ne jamais contacter.",
-      "to_verify": "Le robot a cliqué sur Envoyer mais n'a pas vu de confirmation claire. Regardez la capture après envoi et tranchez : bien arrivé ou pas arrivé."
+      "to_verify": "Prospectigo a cliqué sur Envoyer mais n'a pas vu de confirmation claire. Regardez la capture après envoi et tranchez : bien arrivé ou pas arrivé."
     },
     "columns": {
       "company": "Entreprise",
@@ -220,7 +220,7 @@
       "screenshot": "Capture du formulaire rempli",
       "subject": "Objet",
       "body": "Message",
-      "filled": "Champs remplis par le robot",
+      "filled": "Champs remplis par Prospectigo",
       "missing": "Champs à renseigner",
       "missingHint": "Le site exige ces informations. Ce que vous écrivez ici sera saisi au moment de l'envoi.",
       "protection": "Protection rencontrée :",
@@ -234,7 +234,7 @@
       "button": "Préparer les formulaires",
       "campaignButton": "Préparer les formulaires",
       "title": "Préparer {count, plural, one {# formulaire} other {# formulaires}}",
-      "description": "Le robot ouvre chaque site, remplit le formulaire de contact et le met de côté. Rien n'est envoyé : vous validerez ensuite dans la page Formulaires.",
+      "description": "Prospectigo ouvre chaque site, remplit le formulaire de contact et le met de côté. Rien n'est envoyé : vous validerez ensuite dans la page Formulaires.",
       "campaignLabel": "Messages à utiliser",
       "campaignHint": "Certains prospects sélectionnés viennent d'un import : choisissez la campagne dont les messages serviront.",
       "campaignRequired": "Choisissez une campagne.",
@@ -246,7 +246,7 @@
       "capReached": "Vous avez déjà beaucoup de formulaires prêts à valider. Validez-les ou passez-les avant d'en préparer d'autres.",
       "failed": "La préparation n'a pas pu être lancée. Réessayez dans un instant."
     },
-    "preparingBanner": "Le robot travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page.",
+    "preparingBanner": "Prospectigo travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page.",
     "balance": "Crédits de prise de contact restants : {count, number}."
   }
 }

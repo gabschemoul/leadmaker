@@ -17,6 +17,7 @@ import {
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import { type AttemptGroup, isAttemptGroup } from '~/lib/leadmaker/attempts';
+import { fetchAutopilotSummary } from '~/lib/leadmaker/autopilot-query';
 import { buildProspectsHref } from '~/lib/leadmaker/prospects-query';
 import { parseTemplates, usableMessages } from '~/lib/leadmaker/templates';
 
@@ -33,7 +34,10 @@ import {
 import { loadSenderProfile } from '../../sender/_lib/server/sender.loader';
 import { CampaignHeaderActions } from '../_components/campaign-header-actions';
 import { CampaignStepsRail } from '../_components/steps/campaign-steps-rail';
-import { ContactStep } from '../_components/steps/contact-step';
+import {
+  type ContactMode,
+  ContactStep,
+} from '../_components/steps/contact-step';
 import { DiscoverStep } from '../_components/steps/discover-step';
 import { TargetStep } from '../_components/steps/target-step';
 import { WriteStep } from '../_components/steps/write-step';
@@ -119,14 +123,16 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     notFound();
   }
 
-  const [live, counts, sender] = await Promise.all([
+  const [live, counts, sender, autopilot] = await Promise.all([
     fetchCampaignLive(client, id),
     loadCampaignAttemptCounts(client, id),
     loadSenderProfile(client, campaign.space_id),
+    fetchAutopilotSummary(client, id),
   ]);
 
   const templates = parseTemplates(campaign.templates);
-  const messagesCount = usableMessages(templates).length;
+  const messages = usableMessages(templates);
+  const messagesCount = messages.length;
 
   const facts: CampaignStepFacts = {
     status: live.status,
@@ -134,6 +140,13 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     messagesCount,
     hasSender: sender !== null,
     attempts: counts,
+    autopilot: autopilot?.status
+      ? {
+          status: autopilot.status,
+          sent: autopilot.sent,
+          target: autopilot.target ?? 0,
+        }
+      : null,
   };
 
   const step: CampaignStep = isCampaignStep(rawSearchParams.etape)
@@ -247,6 +260,22 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
                 ? rawSearchParams.statut
                 : 'ready'
             }
+            // mode Avancé : demandé dans l'adresse, ou lien direct vers un onglet de formulaires
+            mode={
+              rawSearchParams.mode === 'avance' ||
+              isAttemptGroup(rawSearchParams.statut)
+                ? 'advanced'
+                : 'auto'
+            }
+            autopilot={autopilot}
+            messages={messages.map((message) => ({
+              name: message.name,
+              preview: message.body.replace(/\s+/g, ' ').trim().slice(0, 120),
+            }))}
+            billingHref={pathsConfig.app.accountBilling.replace(
+              '[account]',
+              slug,
+            )}
             writeHref={stepHref('rediger')}
             discoverHref={stepHref('trouver')}
           />
@@ -319,19 +348,31 @@ async function ContactStepContent(props: {
   basePath: string;
   facts: CampaignStepFacts;
   group: AttemptGroup;
+  mode: ContactMode;
+  autopilot: Awaited<ReturnType<typeof fetchAutopilotSummary>>;
+  messages: Array<{ name: string; preview: string }>;
+  billingHref: string;
   writeHref: string;
   discoverHref: string;
 }) {
   const client = getSupabaseServerClient();
 
-  const rows = await loadAttempts(client, {
-    spaceId: props.campaign.space_id,
-    campaignId: props.campaign.id,
-    group: props.group,
-  });
+  // la liste des formulaires n'est chargée qu'en mode Avancé
+  const rows =
+    props.mode === 'advanced'
+      ? await loadAttempts(client, {
+          spaceId: props.campaign.space_id,
+          campaignId: props.campaign.id,
+          group: props.group,
+        })
+      : [];
 
   return (
     <ContactStep
+      mode={props.mode}
+      autopilot={props.autopilot}
+      messages={props.messages}
+      billingHref={props.billingHref}
       campaignId={props.campaign.id}
       accountId={props.accountId}
       spaceId={props.campaign.space_id}

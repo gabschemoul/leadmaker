@@ -12,19 +12,28 @@ import { Alert, AlertDescription } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { cn } from '@kit/ui/utils';
 
 import type { AttemptGroup } from '~/lib/leadmaker/attempts';
 import type { AttemptRow } from '~/lib/leadmaker/attempts-query';
+import type { AutopilotSummary } from '~/lib/leadmaker/autopilot-query';
 
 import { attemptsTotal } from '../../_lib/steps';
 import { CampaignFormsPanel } from './campaign-forms-panel';
+import { type AutopilotMessage, ContactAutopilot } from './contact-autopilot';
 import { PrepareCampaignButton } from './prepare-campaign-button';
 
+export type ContactMode = 'auto' | 'advanced';
+
 /**
- * Étape 4, Contacter : préparer les formulaires, les vérifier, les envoyer,
- * puis la liste des formulaires de cette campagne par statut.
+ * Étape 4, Contacter. Deux modes (roadmap n°18) :
+ * - Pilote automatique (par défaut) : un nombre d'entreprises, Prospectigo
+ *   prépare et envoie tout seul ;
+ * - Avancé : préparer, vérifier, envoyer à la main (a/b/c), puis la liste des
+ *   formulaires de cette campagne par statut.
  */
 export async function ContactStep(props: {
+  mode: ContactMode;
   campaignId: string;
   accountId: string;
   spaceId: string;
@@ -39,20 +48,55 @@ export async function ContactStep(props: {
   rows: AttemptRow[];
   writeHref: string;
   discoverHref: string;
+  billingHref: string;
+  autopilot: AutopilotSummary | null;
+  messages: AutopilotMessage[];
 }) {
   const t = await getTranslations('campaigns.steps.contact');
-  const format = await getFormatter();
+  const tMode = await getTranslations('campaigns.autopilot.mode');
   const { counts } = props;
   const total = attemptsTotal(counts);
 
-  const canPrepare =
-    props.prospects > 0 && props.messagesCount > 0 && props.hasSender;
-
   const groupHref = (target: AttemptGroup) =>
-    `${props.basePath}?etape=contacter${target === 'ready' ? '' : `&statut=${target}`}`;
+    `${props.basePath}?etape=contacter&mode=avance${target === 'ready' ? '' : `&statut=${target}`}`;
+
+  const autoHref = `${props.basePath}?etape=contacter`;
+  const advancedHref = `${props.basePath}?etape=contacter&mode=avance`;
 
   return (
     <div className={'flex flex-col gap-4'} data-test={'campaign-step-contact'}>
+      <div className={'flex flex-wrap items-center justify-between gap-3'}>
+        <nav
+          aria-label={tMode('label')}
+          className={'bg-muted inline-flex gap-1 rounded-xl p-1'}
+        >
+          {(
+            [
+              ['auto', autoHref, tMode('auto')],
+              ['advanced', advancedHref, tMode('advanced')],
+            ] as const
+          ).map(([mode, href, label]) => (
+            <Link
+              key={mode}
+              href={href}
+              aria-current={props.mode === mode ? 'page' : undefined}
+              data-test={`contact-mode-${mode}`}
+              className={cn(
+                'rounded-lg px-4 py-2 text-sm font-bold transition-colors',
+                props.mode === mode
+                  ? 'bg-card text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        <p className={'text-muted-foreground text-sm'}>
+          {props.mode === 'auto' ? tMode('autoHint') : tMode('advancedHint')}
+        </p>
+      </div>
       {props.prospects === 0 ? (
         <Hint
           icon={<Search className={'h-4'} />}
@@ -85,6 +129,39 @@ export async function ContactStep(props: {
         />
       ) : null}
 
+      {props.mode === 'auto' ? (
+        <ContactAutopilot
+          campaignId={props.campaignId}
+          initialSummary={props.autopilot}
+          messages={props.messages}
+          writeHref={props.writeHref}
+          advancedHref={groupHref('intervention_required')}
+          billingHref={props.billingHref}
+          // le nombre de prospects contactables est vérifié par le pilote lui-même
+          ready={props.messagesCount > 0 && props.hasSender}
+        />
+      ) : (
+        <AdvancedContact {...props} total={total} groupHref={groupHref} />
+      )}
+    </div>
+  );
+}
+
+async function AdvancedContact(
+  props: Parameters<typeof ContactStep>[0] & {
+    total: number;
+    groupHref: (target: AttemptGroup) => string;
+  },
+) {
+  const t = await getTranslations('campaigns.steps.contact');
+  const format = await getFormatter();
+  const { counts, total, groupHref } = props;
+
+  const canPrepare =
+    props.prospects > 0 && props.messagesCount > 0 && props.hasSender;
+
+  return (
+    <>
       <div className={'grid grid-cols-1 gap-3 md:grid-cols-3'}>
         <StepCard title={t('prepareTitle')} testId={'contact-prepare-card'}>
           <Big
@@ -189,7 +266,7 @@ export async function ContactStep(props: {
         initialRows={props.rows}
         total={total}
       />
-    </div>
+    </>
   );
 }
 

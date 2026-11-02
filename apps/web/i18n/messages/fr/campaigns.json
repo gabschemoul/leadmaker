@@ -259,7 +259,9 @@
       "contacterPreparing": "{count, plural, one {# en préparation} other {# en préparation}}",
       "contacterReady": "{count, plural, one {# à vérifier} other {# à vérifier}}",
       "contacterValidated": "{count, plural, one {# validé, envoi en cours} other {# validés, envoi en cours}}",
-      "contacterSent": "{count, plural, one {# envoyé} other {# envoyés}}"
+      "contacterSent": "{count, plural, one {# envoyé} other {# envoyés}}",
+      "contacterAutopilot": "Pilote · {sent, number} / {target, number} envoyés",
+      "contacterAutopilotPaused": "Pilote en pause · {sent, number} / {target, number}"
     },
     "target": {
       "whereTitle": "Où chercher ?",
@@ -295,16 +297,16 @@
       "senderFill": "Renseigner l'expéditeur"
     },
     "contact": {
-      "noMessage": "Il manque le message : le robot ne sait pas quoi écrire dans les formulaires.",
+      "noMessage": "Il manque le message : Prospectigo ne sait pas quoi écrire dans les formulaires.",
       "writeMessage": "Rédiger le message",
-      "noSender": "Il manque l'expéditeur : le robot ne sait pas quelles coordonnées écrire.",
+      "noSender": "Il manque l'expéditeur : Prospectigo ne sait pas quelles coordonnées écrire.",
       "noProspects": "Aucun prospect pour l'instant : lancez d'abord la recherche.",
       "goDiscover": "Aller à Trouver",
       "prepareTitle": "a. Préparer",
       "prepareCount": "{count, number}",
       "prepareOf": "sur {count, plural, one {# prospect} other {# prospects}}",
-      "prepareIdle": "Le robot visite chaque site, trouve le formulaire de contact et le remplit avec votre message. Comptez environ une minute par site.",
-      "prepareWorking": "Le robot travaille : {count, plural, one {# formulaire en cours} other {# formulaires en cours}}.",
+      "prepareIdle": "Prospectigo visite chaque site, trouve le formulaire de contact et le remplit avec votre message. Comptez environ une minute par site.",
+      "prepareWorking": "Prospectigo travaille : {count, plural, one {# formulaire en cours} other {# formulaires en cours}}.",
       "prepareDone": "Tous les prospects ont été visités. Relancez après une nouvelle recherche.",
       "prepareButton": "Préparer les formulaires",
       "prepareAgain": "Préparer les nouveaux prospects",
@@ -360,7 +362,7 @@
       "button": "Vérifier"
     },
     "verifySent": {
-      "text": "{count, plural, one {# envoi à confirmer} other {# envois à confirmer}} : le robot n'a pas vu de confirmation",
+      "text": "{count, plural, one {# envoi à confirmer} other {# envois à confirmer}} : Prospectigo n'a pas vu de confirmation",
       "button": "Trancher"
     },
     "complete": {
@@ -368,7 +370,7 @@
       "button": "Compléter"
     },
     "preparing": {
-      "text": "Le robot prépare {count, plural, one {# formulaire} other {# formulaires}}",
+      "text": "Prospectigo prépare {count, plural, one {# formulaire} other {# formulaires}}",
       "button": "Suivre"
     },
     "sending": {
@@ -380,8 +382,8 @@
       "button": "Suivre"
     },
     "prepare": {
-      "text": "{count, plural, one {# prospect trouvé} other {# prospects trouvés}}, aucun formulaire préparé",
-      "button": "Préparer les formulaires"
+      "text": "{count, plural, one {# prospect trouvé} other {# prospects trouvés}}, aucun encore contacté",
+      "button": "Contacter"
     },
     "finished": {
       "text": "Terminée · {sent, plural, one {# envoyé} other {# envoyés}}",
@@ -394,6 +396,138 @@
     "noProspects": {
       "text": "Recherche terminée sans résultat : élargissez le ciblage",
       "button": "Modifier le ciblage"
+    },
+    "autopilot": {
+      "text": "Pilote automatique : {sent, number} / {target, number} envoyés",
+      "button": "Suivre"
+    },
+    "autopilotPaused": {
+      "text": "Pilote automatique en pause : {sent, number} / {target, number} envoyés",
+      "button": "Reprendre"
+    },
+    "autopilotPreview": {
+      "text": "Vos premiers formulaires sont prêts : vérifiez-les avant l'envoi",
+      "button": "Vérifier"
+    }
+  },
+  "autopilot": {
+    "mode": {
+      "label": "Mode d'envoi",
+      "auto": "Pilote automatique",
+      "advanced": "Avancé",
+      "autoHint": "Vous choisissez un nombre, Prospectigo s'occupe du reste.",
+      "advancedHint": "Vous gardez la main sur chaque formulaire."
+    },
+    "question": "Combien d'entreprises voulez-vous contacter ?",
+    "questionHint": "Prospectigo visite chaque site, remplit le formulaire de contact avec votre message et l'envoie au moment choisi. Vous n'avez rien à vérifier.",
+    "less": "Moins",
+    "more": "Plus",
+    "countLabel": "Nombre d'entreprises à contacter",
+    "all": "Tous ({count, number})",
+    "maxHint": "Tapez un nombre ou utilisez les boutons. Maximum {max, number} : {prospects, plural, one {# prospect pas encore contacté} other {# prospects pas encore contactés}}, {credits, plural, one {# crédit de prise de contact disponible} other {# crédits de prise de contact disponibles}}.",
+    "maxHintEdit": "Entre {min, number} (déjà envoyés ou en cours) et {max, number} (prospects restants et crédits de prise de contact disponibles).",
+    "targetAdjusted": "Nombre ajusté à {count, number} (prospects restants et crédits disponibles).",
+    "pace": {
+      "title": "Quand envoyer ?",
+      "office": "Heures de bureau (recommandé)",
+      "officeSub": "Du lundi au vendredi, 9 h – 18 h, heure des entreprises contactées.",
+      "spread": "Étalé sur plusieurs jours",
+      "spreadSub": "Un rythme régulier, pour suivre les réponses au fil de l'eau.",
+      "continuous": "En continu",
+      "continuousSub": "Tout part dès que possible, sans pause, jour et nuit.",
+      "spreadOver": "Répartir sur",
+      "days": "{count, plural, one {# jour ouvré} other {# jours ouvrés}}",
+      "officeText": "Vos messages arrivent quand les entreprises sont ouvertes et lisent leurs demandes. Rien ne part le soir ni le week-end.",
+      "spreadText": "Environ {perDay, plural, one {# message} other {# messages}} par jour ouvré, pendant les heures de bureau, sur {days, plural, one {# jour} other {# jours}}.",
+      "continuousText": "{count, plural, one {# message envoyé} other {# messages envoyés}} dès que possible, jour et nuit."
+    },
+    "messages": {
+      "title": "Quel message envoyer ?",
+      "edit": "Modifier dans Rédiger",
+      "ab": "Test A/B : {count, number} messages envoyés à parts égales (environ {share, number} % chacun).",
+      "single": "Un seul message : tout le monde reçoit le même. Cochez-en plusieurs pour les comparer (test A/B)."
+    },
+    "preview": {
+      "toggle": "Me montrer les 3 premiers formulaires avant d'envoyer",
+      "toggleHint": "Recommandé pour votre première campagne : vous voyez exactement ce que reçoivent les entreprises.",
+      "waitingTitle": "Préparation de vos 3 premiers formulaires",
+      "waiting": "Prospectigo visite les premiers sites : {ready, number} sur {total, number} prêts. Rien n'est envoyé.",
+      "readyTitle": "{count, plural, one {Votre premier formulaire est prêt} other {Vos # premiers formulaires sont prêts}}",
+      "readyHint": "Rien n'est encore parti. Vérifiez qu'ils vous conviennent, puis lancez le reste.",
+      "emptyTitle": "Aucun formulaire exploitable pour l'instant",
+      "emptyHint": "Les premiers sites n'avaient pas de formulaire utilisable (captcha, champ inconnu, pas de formulaire). Annulez puis relancez, ou passez en mode Avancé.",
+      "screenshotAlt": "Capture du formulaire de {name}",
+      "ready": "Prêt",
+      "confirm": "{count, plural, one {Tout est bon, envoyer ce formulaire et lancer la suite} other {Tout est bon, envoyer ces # formulaires et lancer la suite}}",
+      "editMessage": "Modifier le message",
+      "cancel": "Annuler"
+    },
+    "launch": "Lancer le pilote automatique",
+    "launchPreview": "{count, plural, one {Préparer le premier formulaire} other {Préparer les # premiers formulaires}}",
+    "update": "Mettre à jour",
+    "cancelEdit": "Annuler",
+    "how": {
+      "title": "Ce qui va se passer",
+      "step1": "Prospectigo prend vos prospects dans l'ordre où ils ont été trouvés.",
+      "step2": "Il remplit le formulaire et l'envoie au moment choisi si tout est clair.",
+      "step3": "Les cas douteux (captcha, champ inconnu) sont mis de côté, sans crédit dépensé.",
+      "step4": "Il s'arrête à {count, plural, one {# message envoyé} other {# messages envoyés}}. Vous pouvez mettre en pause à tout moment.",
+      "credits": "1 crédit de prise de contact par message envoyé, soit {count, number} au plus."
+    },
+    "blocked": {
+      "noCredits": "Plus aucun crédit de prise de contact : rechargez votre forfait pour contacter d'autres entreprises.",
+      "noProspects": "Tous les prospects de cette campagne ont déjà été contactés ou préparés. Lancez une nouvelle recherche pour en trouver d'autres, ou passez en mode Avancé.",
+      "billing": "Voir mon forfait"
+    },
+    "run": {
+      "running": "Pilote automatique en marche",
+      "paused": "En pause",
+      "doneTitle": "Terminé : {count, plural, one {# entreprise contactée} other {# entreprises contactées}}",
+      "doneNoProspects": "Terminé, plus aucun prospect à contacter : {count, plural, =0 {aucune entreprise contactée} one {# entreprise contactée} other {# entreprises contactées}}",
+      "pause": "Pause",
+      "resume": "Reprendre",
+      "edit": "Modifier le nombre",
+      "again": "Contacter d'autres entreprises",
+      "ofSent": "/ {count, number} envoyés",
+      "progressLabel": "Messages envoyés",
+      "nextSend": "Hors des heures de bureau : prochain envoi {when} (heure de {zone}).",
+      "noCredits": "Plus aucun crédit de prise de contact : le pilote attend.",
+      "billing": "Recharger",
+      "sent": "Envoyés",
+      "inFlight": "En cours",
+      "aside": "Mis de côté",
+      "asideHint": "Mis de côté : sans formulaire, captcha ou champ inconnu. Aucun crédit dépensé.",
+      "seeAdvanced": "Les voir en mode Avancé"
+    },
+    "feed": {
+      "title": "En direct",
+      "empty": "Les premiers sites sont en cours de visite…",
+      "sent": "Message envoyé à {name}",
+      "toVerify": "Message envoyé à {name} (confirmation à vérifier)",
+      "sending": "Envoi en cours : {name}",
+      "found": "Formulaire trouvé sur {site}",
+      "doubt": "Doute sur {site} : mis de côté",
+      "visiting": "Visite de {site}",
+      "queued": "En file d'attente : {site}",
+      "captcha": "Captcha sur {site} : mis de côté",
+      "unknownField": "Champ inconnu sur {site} : mis de côté",
+      "noForm": "Pas de formulaire sur {site} : passé",
+      "skipped": "{name} : passé",
+      "excluded": "{name} : exclu",
+      "unreachable": "Site inaccessible : {site}, passé"
+    },
+    "errors": {
+      "generic": "L'action n'a pas abouti. Réessayez dans un instant.",
+      "notFound": "Campagne introuvable.",
+      "noSender": "Renseignez d'abord l'expéditeur (étape Rédiger).",
+      "noMessages": "Rédigez d'abord au moins un message (étape Rédiger).",
+      "messages": "Un message coché n'existe plus : rechargez la page.",
+      "active": "Le pilote automatique est déjà lancé sur cette campagne : rechargez la page.",
+      "noProspects": "Aucun prospect à contacter : tous ont déjà été contactés ou préparés.",
+      "noCredits": "Plus aucun crédit de prise de contact.",
+      "target": "Choisissez au moins une entreprise.",
+      "schedule": "Choisissez sur combien de jours étaler les envois.",
+      "notActive": "Ce passage du pilote est déjà terminé : rechargez la page."
     }
   }
 }

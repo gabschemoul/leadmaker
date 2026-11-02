@@ -53,17 +53,30 @@ export function CampaignStepsRail(props: {
         ? t('sub.redigerTodo')
         : t('sub.redigerDone', { count: facts.messagesCount }),
     contacter:
-      facts.attempts.sent > 0
-        ? t('sub.contacterSent', { count: facts.attempts.sent })
-        : facts.attempts.ready > 0
-          ? t('sub.contacterReady', { count: facts.attempts.ready })
-          : facts.attempts.validated > 0
-            ? t('sub.contacterValidated', { count: facts.attempts.validated })
-            : facts.attempts.preparing > 0
-              ? t('sub.contacterPreparing', {
-                  count: facts.attempts.preparing,
-                })
-              : t('sub.contacterTodo'),
+      facts.autopilot?.status === 'running' ||
+      facts.autopilot?.status === 'preview'
+        ? t('sub.contacterAutopilot', {
+            sent: facts.autopilot.sent,
+            target: facts.autopilot.target,
+          })
+        : facts.autopilot?.status === 'paused'
+          ? t('sub.contacterAutopilotPaused', {
+              sent: facts.autopilot.sent,
+              target: facts.autopilot.target,
+            })
+          : facts.attempts.sent > 0
+            ? t('sub.contacterSent', { count: facts.attempts.sent })
+            : facts.attempts.ready > 0
+              ? t('sub.contacterReady', { count: facts.attempts.ready })
+              : facts.attempts.validated > 0
+                ? t('sub.contacterValidated', {
+                    count: facts.attempts.validated,
+                  })
+                : facts.attempts.preparing > 0
+                  ? t('sub.contacterPreparing', {
+                      count: facts.attempts.preparing,
+                    })
+                  : t('sub.contacterTodo'),
   };
 
   return (

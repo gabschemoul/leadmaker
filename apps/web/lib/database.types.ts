@@ -199,14 +199,14 @@ isOneToOne: false
                   ]
                 },"lm_attempts": {
                   Row: {
-                    "account_id": string,"body": string | null,"campaign_id": string,"created_at": string,"created_by": string | null,"detail": string | null,"extra": NonNullable<Json>,"filled": NonNullable<Json>,"form_url": string | null,"id": string,"missing": NonNullable<Json>,"prospect_id": string,"protection_type": string | null,"screenshot_after": string | null,"screenshot_before": string | null,"sent_at": string | null,"space_id": string,"status": Database["public"]['Enums']["lm_attempt_status"],"subject": string | null,"template_name": string | null,"template_used": string | null,"updated_at": string,"updated_by": string | null,"validated_at": string | null,"validated_by": string | null
+                    "account_id": string,"autopilot_id": string | null,"body": string | null,"campaign_id": string,"created_at": string,"created_by": string | null,"detail": string | null,"extra": NonNullable<Json>,"filled": NonNullable<Json>,"form_url": string | null,"id": string,"missing": NonNullable<Json>,"prospect_id": string,"protection_type": string | null,"screenshot_after": string | null,"screenshot_before": string | null,"sent_at": string | null,"space_id": string,"status": Database["public"]['Enums']["lm_attempt_status"],"subject": string | null,"template_name": string | null,"template_used": string | null,"updated_at": string,"updated_by": string | null,"validated_at": string | null,"validated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"body"?: string | null,"campaign_id": string,"created_at"?: string,"created_by"?: string | null,"detail"?: string | null,"extra"?: NonNullable<Json>,"filled"?: NonNullable<Json>,"form_url"?: string | null,"id"?: string,"missing"?: NonNullable<Json>,"prospect_id": string,"protection_type"?: string | null,"screenshot_after"?: string | null,"screenshot_before"?: string | null,"sent_at"?: string | null,"space_id": string,"status"?: Database["public"]['Enums']["lm_attempt_status"],"subject"?: string | null,"template_name"?: string | null,"template_used"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"validated_at"?: string | null,"validated_by"?: string | null
+                    "account_id": string,"autopilot_id"?: string | null,"body"?: string | null,"campaign_id": string,"created_at"?: string,"created_by"?: string | null,"detail"?: string | null,"extra"?: NonNullable<Json>,"filled"?: NonNullable<Json>,"form_url"?: string | null,"id"?: string,"missing"?: NonNullable<Json>,"prospect_id": string,"protection_type"?: string | null,"screenshot_after"?: string | null,"screenshot_before"?: string | null,"sent_at"?: string | null,"space_id": string,"status"?: Database["public"]['Enums']["lm_attempt_status"],"subject"?: string | null,"template_name"?: string | null,"template_used"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"validated_at"?: string | null,"validated_by"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"body"?: string | null,"campaign_id"?: string,"created_at"?: string,"created_by"?: string | null,"detail"?: string | null,"extra"?: NonNullable<Json>,"filled"?: NonNullable<Json>,"form_url"?: string | null,"id"?: string,"missing"?: NonNullable<Json>,"prospect_id"?: string,"protection_type"?: string | null,"screenshot_after"?: string | null,"screenshot_before"?: string | null,"sent_at"?: string | null,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_attempt_status"],"subject"?: string | null,"template_name"?: string | null,"template_used"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"validated_at"?: string | null,"validated_by"?: string | null
+                    "account_id"?: string,"autopilot_id"?: string | null,"body"?: string | null,"campaign_id"?: string,"created_at"?: string,"created_by"?: string | null,"detail"?: string | null,"extra"?: NonNullable<Json>,"filled"?: NonNullable<Json>,"form_url"?: string | null,"id"?: string,"missing"?: NonNullable<Json>,"prospect_id"?: string,"protection_type"?: string | null,"screenshot_after"?: string | null,"screenshot_before"?: string | null,"sent_at"?: string | null,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_attempt_status"],"subject"?: string | null,"template_name"?: string | null,"template_used"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"validated_at"?: string | null,"validated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -228,6 +228,12 @@ isOneToOne: false
       referencedRelation: "user_accounts"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "lm_attempts_autopilot_id_fkey"
+      columns: ["autopilot_id"]
+isOneToOne: false
+      referencedRelation: "lm_autopilots"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "lm_attempts_campaign_id_fkey"
       columns: ["campaign_id"]
 isOneToOne: false
@@ -241,6 +247,50 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "lm_attempts_space_id_fkey"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "lm_spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_autopilots": {
+                  Row: {
+                    "account_id": string,"campaign_id": string,"created_at": string,"created_by": string | null,"finished_at": string | null,"finished_reason": string | null,"id": string,"messages": (string)[],"schedule": Database["public"]['Enums']["lm_autopilot_schedule"],"space_id": string,"spread_days": number,"status": Database["public"]['Enums']["lm_autopilot_status"],"target": number,"timezone": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"campaign_id": string,"created_at"?: string,"created_by"?: string | null,"finished_at"?: string | null,"finished_reason"?: string | null,"id"?: string,"messages": (string)[],"schedule"?: Database["public"]['Enums']["lm_autopilot_schedule"],"space_id": string,"spread_days"?: number,"status"?: Database["public"]['Enums']["lm_autopilot_status"],"target": number,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"campaign_id"?: string,"created_at"?: string,"created_by"?: string | null,"finished_at"?: string | null,"finished_reason"?: string | null,"id"?: string,"messages"?: (string)[],"schedule"?: Database["public"]['Enums']["lm_autopilot_schedule"],"space_id"?: string,"spread_days"?: number,"status"?: Database["public"]['Enums']["lm_autopilot_status"],"target"?: number,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_autopilots_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_autopilots_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_autopilots_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_autopilots_campaign_id_fkey"
+      columns: ["campaign_id"]
+isOneToOne: false
+      referencedRelation: "lm_campaigns"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_autopilots_space_id_fkey"
       columns: ["space_id"]
 isOneToOne: false
       referencedRelation: "lm_spaces"
@@ -1159,11 +1209,96 @@ isOneToOne: false
               "status": Database["public"]['Enums']["lm_attempt_status"],"total": number
             }[]
                            },
+"lm_attempt_is_clean":
+{ Args: { "p_detail": string,"p_missing": Json,"p_protection_type": string,"p_status": Database["public"]['Enums']["lm_attempt_status"] }; Returns: boolean
+                           },
 "lm_attempt_repreparable":
 { Args: { "p_status": Database["public"]['Enums']["lm_attempt_status"] }; Returns: boolean
                            },
 "lm_auto_validation_allowed":
 { Args: { "p_account_id": string }; Returns: boolean
+                           },
+"lm_autopilot_active":
+{ Args: { "p_autopilot_id": string }; Returns: {
+              "account_id": string,
+"campaign_id": string,
+"created_at": string,
+"created_by": string | null,
+"finished_at": string | null,
+"finished_reason": string | null,
+"id": string,
+"messages": (string)[],
+"schedule": Database["public"]['Enums']["lm_autopilot_schedule"],
+"space_id": string,
+"spread_days": number,
+"status": Database["public"]['Enums']["lm_autopilot_status"],
+"target": number,
+"timezone": string,
+"updated_at": string,
+"updated_by": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "lm_autopilots"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"lm_autopilot_ahead":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"lm_autopilot_check":
+{ Args: { "p_campaign_id": string,"p_messages": (string)[] }; Returns: {
+              "account_id": string,
+"auto_validation": boolean,
+"country_code": string,
+"created_at": string,
+"created_by": string | null,
+"credits_per_prospect": number,
+"daily_limit": number,
+"estimate_id": string | null,
+"filters": NonNullable<Json>,
+"id": string,
+"name": string,
+"space_id": string,
+"status": Database["public"]['Enums']["lm_campaign_status"],
+"targeting": NonNullable<Json>,
+"templates": NonNullable<Json>,
+"updated_at": string,
+"updated_by": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "lm_campaigns"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"lm_autopilot_contactable":
+{ Args: { "p_campaign_id": string }; Returns: number
+                           },
+"lm_autopilot_counts":
+{ Args: { "p_autopilot_id": string }; Returns: {
+              "aside": number,"in_flight": number,"preview_ready": number,"sent": number,"total": number
+            }[]
+                           },
+"lm_autopilot_hold":
+{ Args: { "p_autopilot_id": string,"p_sends_only": boolean }; Returns: undefined
+                           },
+"lm_autopilot_preview_size":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"lm_autopilot_slot":
+{ Args: { "p_autopilot_id": string }; Returns: string
+                           },
+"lm_autopilot_summary":
+{ Args: { "p_campaign_id": string }; Returns: {
+              "aside": number,"autopilot_id": string,"balance": number,"contactable": number,"contacted_before": boolean,"finished_reason": string,"in_flight": number,"messages": (string)[],"next_send_at": string,"preview_ready": number,"schedule": Database["public"]['Enums']["lm_autopilot_schedule"],"sent": number,"spread_days": number,"started_at": string,"status": Database["public"]['Enums']["lm_autopilot_status"],"target": number,"timezone": string
+            }[]
+                           },
+"lm_autopilot_tick":
+{ Args: { "p_only"?: string }; Returns: number
+                           },
+"lm_autopilot_validate_clean":
+{ Args: { "p_autopilot_id": string }; Returns: number
                            },
 "lm_campaign_pricing":
 { Args: { "p_campaign_id": string }; Returns: {
@@ -1174,6 +1309,12 @@ isOneToOne: false
 { Args: { "p_campaign_id": string }; Returns: {
               "abandoned": number,"cards": number,"categories": number,"in_flight": number,"last_search_at": string,"productive": number,"prospects": number,"searches_done": number,"searches_total": number,"zones": number
             }[]
+                           },
+"lm_campaign_timezone":
+{ Args: { "p_campaign_id": string }; Returns: string
+                           },
+"lm_cancel_autopilot":
+{ Args: { "p_autopilot_id": string }; Returns: boolean
                            },
 "lm_city_grid":
 { Args: { "p_lat": number,"p_lng": number,"p_population": number }; Returns: {
@@ -1211,6 +1352,9 @@ isOneToOne: false
       } },
 "lm_complete_task":
 { Args: { "p_id": number,"p_result": Json }; Returns: undefined
+                           },
+"lm_confirm_autopilot":
+{ Args: { "p_autopilot_id": string }; Returns: number
                            },
 "lm_credits_for_rate":
 { Args: { "p_rate": number }; Returns: number
@@ -1266,6 +1410,9 @@ isOneToOne: false
 "lm_mark_place_seen":
 { Args: { "p_place_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
                            },
+"lm_pause_autopilot":
+{ Args: { "p_autopilot_id": string }; Returns: boolean
+                           },
 "lm_pause_campaign":
 { Args: { "p_campaign_id": string,"p_reason"?: string }; Returns: undefined
                            },
@@ -1320,6 +1467,9 @@ isOneToOne: false
 "lm_restore_prospects":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },
+"lm_resume_autopilot":
+{ Args: { "p_autopilot_id": string }; Returns: boolean
+                           },
 "lm_schedule_discovery":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -1340,6 +1490,9 @@ isOneToOne: false
                            },
 "lm_space_limit":
 { Args: { "p_account_id": string }; Returns: number
+                           },
+"lm_start_autopilot":
+{ Args: { "p_campaign_id": string,"p_messages": (string)[],"p_preview": boolean,"p_schedule": Database["public"]['Enums']["lm_autopilot_schedule"],"p_spread_days": number,"p_target": number }; Returns: string
                            },
 "lm_start_campaign":
 { Args: { "p_campaign_id": string }; Returns: undefined
@@ -1364,6 +1517,9 @@ isOneToOne: false
                            },
 "lm_update_attempt":
 { Args: { "p_body": string,"p_extra": Json,"p_id": string,"p_subject": string }; Returns: boolean
+                           },
+"lm_update_autopilot":
+{ Args: { "p_autopilot_id": string,"p_messages": (string)[],"p_schedule": Database["public"]['Enums']["lm_autopilot_schedule"],"p_spread_days": number,"p_target": number }; Returns: number
                            },
 "lm_update_campaign":
 { Args: { "p_campaign_id": string,"p_country_code": string,"p_filters": Json,"p_name": string,"p_targeting": Json }; Returns: string
@@ -1428,7 +1584,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy"|"estimate"|"emails","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
+            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_autopilot_schedule": "office"|"spread"|"continuous","lm_autopilot_status": "preview"|"running"|"paused"|"done"|"cancelled","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy"|"estimate"|"emails","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
           }
           CompositeTypes: {
             "invitation": {
@@ -1807,7 +1963,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy", "estimate", "emails"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
+            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_autopilot_schedule": ["office", "spread", "continuous"],"lm_autopilot_status": ["preview", "running", "paused", "done", "cancelled"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy", "estimate", "emails"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
           }
         },"storage": {
           Enums: {

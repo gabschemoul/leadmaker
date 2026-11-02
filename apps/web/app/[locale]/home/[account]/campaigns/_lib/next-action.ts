@@ -7,7 +7,7 @@ import {
 /**
  * La prochaine action d'une campagne, pour le tableau de bord : où en est-on,
  * et quel bouton cliquer. `kind` dit si l'utilisateur doit agir (`todo`),
- * si le robot travaille (`working`) ou si la campagne est au bout (`done`).
+ * si Prospectigo travaille (`working`) ou si la campagne est au bout (`done`).
  */
 export interface NextAction {
   kind: 'todo' | 'working' | 'done';
@@ -40,12 +40,41 @@ export function nextAction(facts: CampaignStepFacts): NextAction {
     };
   }
 
+  // Pilote automatique (roadmap n°18)
+  if (facts.autopilot?.status === 'preview') {
+    return {
+      kind: 'todo',
+      key: 'autopilotPreview',
+      values: {},
+      step: 'contacter',
+    };
+  }
+
+  if (facts.autopilot?.status === 'paused') {
+    return {
+      kind: 'todo',
+      key: 'autopilotPaused',
+      values: { sent: facts.autopilot.sent, target: facts.autopilot.target },
+      step: 'contacter',
+    };
+  }
+
+  if (facts.autopilot?.status === 'running') {
+    return {
+      kind: 'working',
+      key: 'autopilot',
+      values: { sent: facts.autopilot.sent, target: facts.autopilot.target },
+      step: 'contacter',
+    };
+  }
+
   if (attempts.ready > 0) {
     return {
       kind: 'todo',
       key: 'review',
       values: { count: attempts.ready },
       step: 'contacter',
+      statut: 'ready',
     };
   }
 
@@ -75,6 +104,7 @@ export function nextAction(facts: CampaignStepFacts): NextAction {
       key: 'preparing',
       values: { count: attempts.preparing },
       step: 'contacter',
+      statut: 'preparing',
     };
   }
 

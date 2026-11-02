@@ -31,37 +31,71 @@ function emptyCounts() {
  * pour nommer leur prochaine action, et les chiffres clés de l'organisation.
  */
 export async function loadDashboard(client: Client, accountId: string) {
-  const [campaigns, attempts, senders, credits] = await Promise.all([
-    client
-      .from('lm_campaigns')
-      .select(
-        'id, name, status, space_id, templates, created_at, prospects:lm_prospects(count)',
-      )
-      .eq('account_id', accountId)
-      .neq('status', 'archived')
-      .order('created_at', { ascending: false }),
-    client
-      .from('lm_attempts')
-      .select('campaign_id, status')
-      .eq('account_id', accountId)
-      .limit(ATTEMPT_ROWS_LIMIT),
-    client
-      .from('lm_sender_profiles')
-      .select('space_id')
-      .eq('account_id', accountId),
-    client
-      .from('lm_account_credits')
-      .select(
-        'discovery_balance, outreach_balance, plan:lm_plans(discovery_credits, outreach_credits, active_campaigns)',
-      )
-      .eq('account_id', accountId)
-      .maybeSingle(),
-  ]);
+  const [campaigns, attempts, senders, credits, autopilots] = await Promise.all(
+    [
+      client
+        .from('lm_campaigns')
+        .select(
+          'id, name, status, space_id, templates, created_at, prospects:lm_prospects(count)',
+        )
+        .eq('account_id', accountId)
+        .neq('status', 'archived')
+        .order('created_at', { ascending: false }),
+      client
+        .from('lm_attempts')
+        .select('campaign_id, status, autopilot_id')
+        .eq('account_id', accountId)
+        .limit(ATTEMPT_ROWS_LIMIT),
+      client
+        .from('lm_sender_profiles')
+        .select('space_id')
+        .eq('account_id', accountId),
+      client
+        .from('lm_account_credits')
+        .select(
+          'discovery_balance, outreach_balance, plan:lm_plans(discovery_credits, outreach_credits, active_campaigns)',
+        )
+        .eq('account_id', accountId)
+        .maybeSingle(),
+      client
+        .from('lm_autopilots')
+        .select('id, campaign_id, status, target')
+        .eq('account_id', accountId)
+        .in('status', ['preview', 'running', 'paused']),
+    ],
+  );
 
   if (campaigns.error) throw campaigns.error;
   if (attempts.error) throw attempts.error;
   if (senders.error) throw senders.error;
   if (credits.error) throw credits.error;
+  if (autopilots.error) throw autopilots.error;
+
+  // messages partis par passage du pilote automatique
+  const sentByAutopilot = new Map<string, number>();
+
+  for (const row of attempts.data ?? []) {
+    if (
+      row.autopilot_id &&
+      (row.status === 'sent' || row.status === 'to_verify')
+    ) {
+      sentByAutopilot.set(
+        row.autopilot_id,
+        (sentByAutopilot.get(row.autopilot_id) ?? 0) + 1,
+      );
+    }
+  }
+
+  const autopilotByCampaign = new Map(
+    (autopilots.data ?? []).map((row) => [
+      row.campaign_id,
+      {
+        status: row.status,
+        target: row.target,
+        sent: sentByAutopilot.get(row.id) ?? 0,
+      },
+    ]),
+  );
 
   const countsByCampaign = new Map<string, Record<AttemptGroup, number>>();
   const totals = emptyCounts();
@@ -87,6 +121,7 @@ export async function loadDashboard(client: Client, accountId: string) {
       messagesCount: usableMessages(parseTemplates(campaign.templates)).length,
       hasSender: spacesWithSender.has(campaign.space_id),
       attempts: countsByCampaign.get(campaign.id) ?? emptyCounts(),
+      autopilot: autopilotByCampaign.get(campaign.id) ?? null,
     };
 
     return { id: campaign.id, name: campaign.name, facts };

@@ -1,7 +1,7 @@
 # Prospectigo — Roadmap des améliorations
 
 Liste vivante des idées et améliorations. On ajoute au fil de l'eau, on coche quand c'est livré.
-Dernière mise à jour : 2 novembre 2026 (fin d'après-midi).
+Dernière mise à jour : 2 novembre 2026 (soir).
 
 **Comment on publie** (depuis le 1er novembre 2026) :
 1. Chaque développement part d'abord en pré-production, sur https://staging.prospectigo.com.
@@ -169,7 +169,11 @@ Pistes à discuter :
 - **Testé le 2/11** en local avec une tâche bloquée artificielle : e-mail d’alerte puis e-mail de reprise reçus.
 - **Mise en ligne** (par Gabriel) : 1) `./workers/scripts/set-alert-email.sh` (dépose la clé Resend sur les deux serveurs et envoie un e-mail d’essai depuis chacun) ; 2) `./workers/scripts/deploy-robots.sh --all` (installe le surveillant avec le reste). Réglages possibles dans le `.env` des serveurs : `ALERT_EMAIL`, `WATCH_STALL_MINUTES` (20), `WATCH_REMIND_HOURS` (2).
 
-### 18. Étape « Contacter » : pilote automatique + mode Avancé 🟡 — DÉCIDÉ le 2/11, maquette en cours de validation
+### 18. Étape « Contacter » : pilote automatique + mode Avancé 🟡 — CODÉ le 2/11 (soir), en pré-production
+- **Fait le 2/11 (soir)** : écran « Pilote automatique » (par défaut) / « Avancé » (a/b/c), d'après la maquette validée par Gabriel et Nath. Nombre tapable avec −/+ et raccourcis, plafonné aux prospects jamais préparés et aux crédits restants ; 1 à 4 messages cochés (test A/B à parts égales, message choisi à l'avance pour chaque entreprise) ; Heures de bureau (lun-ven 9 h-18 h, fuseau de la plus grande ville ciblée) / Étalé sur 3-5-10-20 jours ouvrés (intervalle régulier) / En continu ; aperçu des 3 premiers formulaires (coché d'office si l'organisation n'a jamais envoyé) ; suivi en direct (envoyés / en cours / mis de côté, barre, Pause, Modifier le nombre, fil « En direct » de vrais événements) ; résumé dans le rail et le tableau de bord. Plus de « robot » dans les textes de l'app et du site.
+- **Comment ça marche** : table `lm_autopilots` (un passage par lancement), tout le pilotage en SQL (`lm_autopilot_tick`, appelé par `lm_queue_sends` que les robots d'envoi appellent déjà). Les envois hors créneau partent en file avec une heure de départ future (pas de fausse alerte du surveillant). Un formulaire du pilote validé à la main en mode Avancé quitte le pilote. Au passage : `lm_queue_sends` ne met plus en file deux fois le même formulaire ni plus d'envois que de crédits restants. Migration `20261102162654_leadmaker_autopilot.sql`, test `leadmaker-autopilot.test.sql` (65 ok), relecture indépendante faite et corrigée.
+- **Robots** : un seul changement (`outreach/runner.py` : le robot de préparation utilise le message choisi par le pilote), compatible avant et après la migration. Ordre de mise en ligne : robots (deploy-robots.sh, serveur principal) → migration en base → staging.
+- **Testé en local de bout en bout** (site de test, faux sites avec captcha et sans formulaire) : 6 envoyés sur 6 demandés, 3 par message, 2 mis de côté sans crédit, aperçu, pause/reprise, modification, heures de bureau hors créneau.
 - **Le problème** : préparer, vérifier, envoyer (a/b/c) est fastidieux et peu naturel.
 - **Pilote automatique (mode par défaut)** : une seule question, « Combien d'entreprises voulez-vous contacter ? » (plafonné aux crédits et aux prospects pas encore contactés), un rythme (le plus vite possible / par jour), puis le robot prépare et envoie dans la foulée, prospect après prospect, jusqu'au nombre choisi. Suivi en direct (envoyés / en cours / mis de côté) et bouton Pause.
 - **Cas douteux** (captcha, champ inconnu, pas de formulaire) : mis de côté, sans crédit dépensé ; on les retrouve dans « Vérifier » du mode Avancé.

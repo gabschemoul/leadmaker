@@ -3,6 +3,8 @@
     python scripts/test_contact_site.py   # http://formulaire-test.localhost:8089/
 
 Pages : /  (formulaire)   /recus (messages reçus)   /vider (efface les messages reçus)
+Variantes selon le nom du site (tout *.localhost:8089 répond) : un nom contenant « captcha » affiche un reCAPTCHA
+dans le formulaire, un nom contenant « sansform » n'a pas de formulaire (pour tester les cas mis de côté).
 Les envois sont stockés dans data/test_contact_received.json. Aucun email n'est envoyé.
 """
 from __future__ import annotations
@@ -83,13 +85,22 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/envoyer":
             self._send(THANKS)
         else:
-            self._send(PAGE)
+            host = (self.headers.get("Host") or "").lower()
+            if "sansform" in host:
+                self._send(PAGE.split('<h2 id="contact">')[0] + "<p>Appelez-nous au 01 23 45 67 89.</p></body></html>")
+            elif "captcha" in host:
+                self._send(PAGE.replace('<button type="submit">',
+                                        '<div class="g-recaptcha" style="width:300px;height:78px;border:1px solid #ccc">reCAPTCHA</div>'
+                                        '<button type="submit">'))
+            else:
+                self._send(PAGE)
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length") or 0)
         form = parse_qs(self.rfile.read(length).decode("utf-8"), keep_blank_values=True)
         row = {k: v[0] for k, v in form.items()}
         row["recu_le"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row["site"] = self.headers.get("Host") or ""
         rows = load(); rows.append(row)
         STORE.parent.mkdir(exist_ok=True); STORE.write_text(json.dumps(rows, ensure_ascii=False, indent=1))
         self._send(THANKS)

@@ -37,7 +37,7 @@
     "countryRequired": "Choose a country.",
     "tooLong": "This text is too long.",
     "missingTitle": "Sender profile to complete",
-    "missingDescription": "Fill it in before preparing forms: without it, the robot does not know what to write."
+    "missingDescription": "Fill it in before preparing forms: without it, Prospectigo does not know what to write."
   },
   "messages": {
     "pageTitle": "Messages",
@@ -95,7 +95,7 @@
       "title": "Sending",
       "intro": "These settings apply to this campaign.",
       "dailyLimit": "Maximum outreach per day",
-      "dailyLimitHint": "The robot never sends more forms than this number per day for this campaign.",
+      "dailyLimitHint": "Prospectigo never sends more forms than this number per day for this campaign.",
       "autoValidation": "Automatic validation",
       "autoValidationHint": "A form prepared without any warning is validated on its own, without review. Forms to complete or with a remark still wait for your review.",
       "autoValidationPlanHint": "Available on the Business and Scale plans.",
@@ -106,7 +106,7 @@
   },
   "forms": {
     "pageTitle": "Forms",
-    "intro": "Contact forms filled in by the robot, to review before sending. Nothing goes out without your approval.",
+    "intro": "Contact forms filled in by Prospectigo, to review before sending. Nothing goes out without your approval.",
     "folderLabel": "Client folder",
     "groups": {
       "ready": "Ready",
@@ -139,16 +139,16 @@
     },
     "groupHints": {
       "ready": "The form is filled in. Check the screenshot and the message, then validate.",
-      "incomplete": "The site asks for something the robot does not have: open the form and fill it in.",
-      "intervention_required": "The site is protected by a captcha. The robot did not solve it: you can send by hand from the site.",
-      "validated": "Validated by you. The robot sends them during the day, within the campaign's and plan's daily limit.",
-      "preparing": "The robot is working. This list refreshes by itself.",
+      "incomplete": "The site asks for something Prospectigo does not have: open the form and fill it in.",
+      "intervention_required": "The site is protected by a captcha. Prospectigo did not solve it: you can send by hand from the site.",
+      "validated": "Validated by you. Prospectigo sends them during the day, within the campaign's daily limit.",
+      "preparing": "Prospectigo is working. This list refreshes by itself.",
       "no_form": "No contact form found. When an email address was spotted on the site, it is saved on the prospect.",
       "unreachable": "Site unreachable, error, or a send that failed. You can relaunch the preparation from the Prospects page.",
       "skipped": "Forms skipped without sending.",
       "sent": "Forms sent (confirmation seen on the site). One outreach credit was debited per form.",
       "excluded": "Businesses never to contact.",
-      "to_verify": "The robot clicked Send but saw no clear confirmation. Look at the after-send screenshot and decide: delivered or not."
+      "to_verify": "Prospectigo clicked Send but saw no clear confirmation. Look at the after-send screenshot and decide: delivered or not."
     },
     "columns": {
       "company": "Business",
@@ -220,7 +220,7 @@
       "screenshot": "Screenshot of the filled form",
       "subject": "Subject",
       "body": "Message",
-      "filled": "Fields filled by the robot",
+      "filled": "Fields filled by Prospectigo",
       "missing": "Fields to fill in",
       "missingHint": "The site requires this information. What you write here will be typed in when sending.",
       "protection": "Protection met:",
@@ -234,7 +234,7 @@
       "button": "Prepare forms",
       "campaignButton": "Prepare forms",
       "title": "Prepare {count, plural, one {# form} other {# forms}}",
-      "description": "The robot opens each site, fills in the contact form and sets it aside. Nothing is sent: you will validate afterwards on the Forms page.",
+      "description": "Prospectigo opens each site, fills in the contact form and sets it aside. Nothing is sent: you will validate afterwards on the Forms page.",
       "campaignLabel": "Messages to use",
       "campaignHint": "Some selected prospects come from an import: choose the campaign whose messages will be used.",
       "campaignRequired": "Choose a campaign.",
@@ -246,7 +246,7 @@
       "capReached": "You already have many forms ready to validate. Validate or skip them before preparing more.",
       "failed": "The preparation could not be started. Please try again shortly."
     },
-    "preparingBanner": "The robot is working: {count, plural, one {# form being prepared} other {# forms being prepared}} (about a minute per site). Results land in the tabs below without reloading the page.",
+    "preparingBanner": "Prospectigo is working: {count, plural, one {# form being prepared} other {# forms being prepared}} (about a minute per site). Results land in the tabs below without reloading the page.",
     "balance": "Outreach credits left: {count, number}."
   }
 }

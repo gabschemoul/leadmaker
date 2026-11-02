@@ -35,7 +35,23 @@ declare
   r record;
   v_balance integer;
   v_campaign_today integer;
+  v_run_after timestamptz;
+  v_reserved integer;
 begin
+  -- Une seule mise en file à la fois (une trentaine de robots appellent cette fonction) : sans ce verrou, deux
+  -- robots pouvaient créer chacun une tâche d'envoi pour le même formulaire
+  if not pg_try_advisory_xact_lock(hashtext('lm_queue_sends')) then
+    return 0;
+  end if;
+
+  -- Pilote automatique (roadmap n°18) : préparations suivantes et fin des passages. Une erreur du pilote ne doit
+  -- jamais bloquer les envois.
+  begin
+    perform public.lm_autopilot_tick();
+  exception when others then
+    raise warning 'lm_autopilot_tick : %', sqlerrm;
+  end;
+
   -- Envois interrompus
   update public.lm_attempts a
      set status = 'to_verify', sent_at = coalesce(sent_at, now()),
@@ -43,9 +59,10 @@ begin
    where a.status = 'sending' and a.updated_at < now() - interval '20 minutes';
 
   for r in
-    select a.id, a.account_id, a.campaign_id, c.daily_limit
+    select a.id, a.account_id, a.campaign_id, c.daily_limit, a.autopilot_id, ap.status as autopilot_status
       from public.lm_attempts a
       join public.lm_campaigns c on c.id = a.campaign_id
+      left join public.lm_autopilots ap on ap.id = a.autopilot_id
      where a.status = 'validated'
        and not exists (select 1 from public.lm_tasks t
                         where t.kind = 'send' and t.status in ('queued', 'running')
@@ -56,14 +73,45 @@ begin
       from public.lm_account_credits cr
      where cr.account_id = r.account_id;
 
-    if v_balance is null or v_balance <= 0 then
+    -- Envois déjà en file ou en cours de l'organisation : jamais plus d'envois que de crédits
+    select count(*)::integer into v_reserved from public.lm_tasks t
+     where t.account_id = r.account_id and t.kind = 'send' and t.status in ('queued', 'running');
+
+    if v_balance is null or v_balance - v_reserved <= 0 then
+      continue;
+    end if;
+
+    -- Pilote automatique : son propre rythme (heures de bureau, étalé, en continu) remplace la limite du jour.
+    -- Hors créneau, l'envoi est mis en file avec une heure de départ future.
+    -- (aperçu ou pause : rien ne part ; pilote terminé ou annulé : envoi normal)
+    if r.autopilot_status in ('preview', 'paused') then
+      continue;
+    end if;
+
+    if r.autopilot_status = 'running' then
+      begin
+        v_run_after := public.lm_autopilot_slot(r.autopilot_id);
+      exception when others then
+        raise warning 'lm_autopilot_slot : %', sqlerrm;
+        v_run_after := now() + interval '1 hour';
+      end;
+
+      insert into public.lm_tasks (account_id, kind, payload, idempotency_key, max_attempts, run_after)
+      values (r.account_id, 'send', jsonb_build_object('attempt_id', r.id),
+              -- à la microseconde : un envoi reprogrammé (changement de rythme) ne bute pas sur la clé de l'ancien
+              'send:' || r.id::text || ':' || extract(epoch from clock_timestamp())::numeric(20, 6)::text, 1, v_run_after)
+      on conflict (idempotency_key) do nothing;
+
+      v_queued := v_queued + 1;
       continue;
     end if;
 
     v_campaign_today := public.lm_sends_today(r.campaign_id) + (
       select count(*)::integer from public.lm_tasks t
         join public.lm_attempts a2 on a2.id::text = t.payload ->> 'attempt_id'
-       where t.kind = 'send' and t.status = 'queued' and a2.campaign_id = r.campaign_id);
+       where t.kind = 'send' and t.status = 'queued' and a2.campaign_id = r.campaign_id
+         -- les envois d'un pilote en marche suivent son rythme, pas la limite du jour de la campagne
+         and not exists (select 1 from public.lm_autopilots ap2 where ap2.id = a2.autopilot_id and ap2.status = 'running'));
 
     if v_campaign_today >= r.daily_limit then
       continue;

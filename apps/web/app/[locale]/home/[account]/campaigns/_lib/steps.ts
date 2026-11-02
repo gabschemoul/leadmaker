@@ -27,6 +27,12 @@ export interface CampaignStepFacts {
   messagesCount: number;
   hasSender: boolean;
   attempts: Record<AttemptGroup, number>;
+  /** Dernier passage du pilote automatique (roadmap n°18), null s'il n'y en a jamais eu */
+  autopilot: {
+    status: Database['public']['Enums']['lm_autopilot_status'];
+    sent: number;
+    target: number;
+  } | null;
 }
 
 export function isCampaignStep(value: unknown): value is CampaignStep {
@@ -56,7 +62,16 @@ export function stepStates(
             ? 'done'
             : 'active',
     rediger: facts.messagesCount > 0 && facts.hasSender ? 'done' : 'todo',
-    contacter: facts.attempts.sent > 0 ? 'done' : total > 0 ? 'active' : 'todo',
+    contacter:
+      facts.autopilot?.status === 'running' ||
+      facts.autopilot?.status === 'preview' ||
+      facts.autopilot?.status === 'paused'
+        ? 'active'
+        : facts.attempts.sent > 0
+          ? 'done'
+          : total > 0
+            ? 'active'
+            : 'todo',
   };
 }
 
@@ -67,7 +82,7 @@ export function stepStates(
  * Contacter (tout est prêt pour préparer les formulaires).
  */
 export function defaultStep(facts: CampaignStepFacts): CampaignStep {
-  if (attemptsTotal(facts.attempts) > 0) {
+  if (facts.autopilot || attemptsTotal(facts.attempts) > 0) {
     return 'contacter';
   }
 

@@ -16,6 +16,17 @@ const integer = (min: number, max: number) =>
     .min(min, { error: NUMBER_RANGE })
     .max(max, { error: NUMBER_RANGE });
 
+// La note Google va de 1 à 5 : jamais de note minimale sous 1 (demande de
+// Gabriel, 2/11/2026). Le robot exclut déjà les fiches sans note dès que la
+// note minimale dépasse 0, donc 0,8 et 1 donnaient le même résultat.
+export const RATING_FLOOR = 1;
+
+const rating = () =>
+  z
+    .number({ error: NUMBER_INVALID })
+    .min(RATING_FLOOR, { error: 'campaigns.form.ratingOutOfRange' })
+    .max(5, { error: 'campaigns.form.ratingOutOfRange' });
+
 const decimal = (min: number, max: number) =>
   z
     .number({ error: NUMBER_INVALID })
@@ -64,8 +75,8 @@ const CampaignFieldsSchema = z.object({
   // leur mode en base (TargetingSchema) mais repassent par une liste ici.
   categoriesMode: z.literal('list'),
   categories: z.array(CategoryRefSchema).max(1000),
-  ratingMin: decimal(0, 5),
-  ratingMax: decimal(0, 5),
+  ratingMin: rating(),
+  ratingMax: rating(),
   minReviews: integer(0, 1_000_000),
   website: z.enum(['with', 'without', 'all']),
   excludePublic: z.boolean(),
@@ -350,7 +361,7 @@ export function campaignToFormValues(campaign: {
     maxCities: MAX_CITIES_LIMIT,
     categoriesMode: 'list',
     categories: categories?.mode === 'list' ? campaign.categories : [],
-    ratingMin: f.rating_min ?? 0.8,
+    ratingMin: Math.max(RATING_FLOOR, f.rating_min ?? RATING_FLOOR),
     ratingMax: f.rating_max ?? 3.5,
     minReviews: f.min_reviews ?? 1,
     website: f.website ?? 'with',

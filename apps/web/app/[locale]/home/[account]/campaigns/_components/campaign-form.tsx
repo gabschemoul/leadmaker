@@ -48,6 +48,7 @@ import {
   type CityRef,
   MAX_CITIES_LIMIT,
   MAX_LIST_CITIES,
+  RATING_FLOOR,
   buildTargeting,
 } from '../_lib/schema/campaign.schema';
 import {
@@ -125,7 +126,7 @@ export function CampaignForm(props: {
       // « Restauration » lancée sur les activités courantes ramenait des pharmacies)
       categoriesMode: 'list' as const,
       categories: [],
-      ratingMin: 0.8,
+      ratingMin: RATING_FLOOR,
       ratingMax: 3.5,
       minReviews: 1,
       website: 'with' as const,
@@ -164,7 +165,10 @@ export function CampaignForm(props: {
   // L'estimation dépend aussi des filtres (note, site web, avis).
   const estimateFilters = useMemo(
     () => ({
-      rating_min: finiteOr(values.ratingMin, 0),
+      rating_min: Math.max(
+        RATING_FLOOR,
+        finiteOr(values.ratingMin, RATING_FLOOR),
+      ),
       rating_max: finiteOr(values.ratingMax, 5),
       min_reviews: finiteOr(values.minReviews, 0),
       website: values.website ?? 'all',
@@ -878,7 +882,7 @@ function FiltersSection() {
                 <FormControl>
                   <NumberInput
                     data-test={'campaign-rating-min-input'}
-                    min={0}
+                    min={RATING_FLOOR}
                     max={5}
                     step={0.1}
                     value={field.value}
@@ -902,7 +906,7 @@ function FiltersSection() {
                 <FormControl>
                   <NumberInput
                     data-test={'campaign-rating-max-input'}
-                    min={0}
+                    min={RATING_FLOOR}
                     max={5}
                     step={0.1}
                     value={field.value}

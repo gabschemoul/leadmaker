@@ -86,6 +86,7 @@
     "citiesRequired": "Add at least one city.",
     "categoriesRequired": "Add at least one activity.",
     "ratingRange": "The maximum rating must be greater than or equal to the minimum rating.",
+    "ratingOutOfRange": "Google ratings go from 1 to 5.",
     "numberInvalid": "Enter a number.",
     "numberOutOfRange": "This value isn't allowed.",
     "mainCategoryOnlyLabel": "Only businesses whose main activity this is (recommended)",

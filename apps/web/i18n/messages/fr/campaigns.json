@@ -86,6 +86,7 @@
     "citiesRequired": "Ajoutez au moins une ville.",
     "categoriesRequired": "Ajoutez au moins une activité.",
     "ratingRange": "La note maximale doit être supérieure ou égale à la note minimale.",
+    "ratingOutOfRange": "La note Google va de 1 à 5.",
     "numberInvalid": "Indiquez un nombre.",
     "numberOutOfRange": "Cette valeur n'est pas autorisée.",
     "mainCategoryOnlyLabel": "Uniquement les entreprises dont c'est l'activité principale (recommandé)",

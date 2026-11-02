@@ -4,7 +4,7 @@ Usage (depuis la racine du dépôt) :
     workers/.venv/bin/python -I workers/scripts/proxy_usage.py
 
 Affiche les 7 derniers jours, la consommation moyenne par recherche, et les campagnes du jour.
-Chiffres majorés de 15 % comme le plafond (le fournisseur facture aussi l'envoi et le chiffrement).
+Chiffres = trafic réseau réel des robots (depuis le 2/11 ; avant : compteur du navigateur, 2 à 3 fois trop bas),\nmajorés de 5 % comme le plafond.
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import psycopg
 
-OVERHEAD = 1.15
+OVERHEAD = 1.05
 
 
 def database_url() -> str:

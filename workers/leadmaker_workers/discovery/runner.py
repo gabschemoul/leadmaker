@@ -19,7 +19,7 @@ from .text import normalize, site_key
 
 log = logging.getLogger("leadmaker.discovery")
 
-RESTART_EVERY = 150  # nouveau navigateur toutes les 150 recherches (mémoire, empreinte)
+RESTART_EVERY = 20  # nouveau navigateur toutes les 20 recherches : au-delà, la mémoire monte jusqu'au plantage (2/11/2026)
 
 
 def _exclude_fn(filters: dict[str, Any]):

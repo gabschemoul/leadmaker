@@ -1,12 +1,14 @@
 """Plafond quotidien de consommation du proxy résidentiel (facturé au volume).
 
-Chaque recherche Google Maps mesure ce qu'elle télécharge à travers le proxy et l'enregistre dans le
-résultat de sa tâche (`proxy_bytes`). Avant chaque recherche, le robot additionne la consommation du
+Chaque recherche Google Maps mesure son VRAI trafic réseau (octets reçus et envoyés par la carte réseau
+du conteneur, processus de fond de Chromium compris, essais ratés compris) et l'enregistre dans le
+résultat de sa tâche (`proxy_bytes`). Le compteur du navigateur n'en voyait qu'un tiers à la moitié
+(mesuré le 2/11/2026) ; il ne sert plus que si la carte réseau n'est pas lisible (Mac en local). Avant chaque recherche, le robot additionne la consommation du
 jour (heure de Paris) ; au-delà de PROXY_DAILY_BUDGET_GB (3 Go par défaut), il remet la recherche à
 plus tard et se met en pause jusqu'au lendemain. Un forfait ne peut donc plus se vider en une soirée.
 
-La mesure compte les octets reçus par le navigateur ; le fournisseur facture aussi l'envoi et le
-chiffrement : on majore de 15 % pour rester du bon côté.
+Le trafic réseau compte déjà l'envoi et le chiffrement ; on garde 5 % de marge (requêtes de la base
+de données incluses dans la mesure, écarts de comptage du fournisseur).
 """
 from __future__ import annotations
 
@@ -17,7 +19,7 @@ from zoneinfo import ZoneInfo
 import psycopg
 
 PARIS = ZoneInfo("Europe/Paris")
-OVERHEAD = 1.15
+OVERHEAD = 1.05
 
 
 class BudgetExceeded(RuntimeError):
@@ -26,6 +28,40 @@ class BudgetExceeded(RuntimeError):
     def __init__(self, used_gb: float, budget_gb: float, seconds_left: float):
         super().__init__(f"plafond proxy du jour atteint ({used_gb:.2f} Go sur {budget_gb:.2f} Go)")
         self.seconds_left = seconds_left
+
+
+def network_bytes() -> int | None:
+    """Octets reçus + envoyés par la carte réseau du conteneur depuis son démarrage (None hors conteneur)."""
+    try:
+        total = 0
+        for name in ("rx_bytes", "tx_bytes"):
+            with open(f"/sys/class/net/eth0/statistics/{name}") as fh:
+                total += int(fh.read())
+        return total
+    except (OSError, ValueError):
+        return None
+
+
+def add_task_bytes(conn: psycopg.Connection, task_id: int, nbytes: int) -> None:
+    """Ajoute des octets au compte d'une tâche (essai raté ou remis en file : il a consommé quand même)."""
+    if nbytes <= 0:
+        return
+    conn.execute(
+        """update public.lm_tasks
+              set result = coalesce(result, '{}'::jsonb)
+                           || jsonb_build_object('proxy_bytes', coalesce((result ->> 'proxy_bytes')::bigint, 0) + %s)
+            where id = %s""",
+        (nbytes, task_id),
+    )
+
+
+def previous_task_bytes(conn: psycopg.Connection, task_id: int) -> int:
+    row = conn.execute(
+        "select coalesce((result ->> 'proxy_bytes')::bigint, 0) as b from public.lm_tasks where id = %s", (task_id,)
+    ).fetchone()
+    if not row:
+        return 0
+    return int(row["b"] if isinstance(row, dict) else row[0])
 
 
 def budget_gb() -> float:

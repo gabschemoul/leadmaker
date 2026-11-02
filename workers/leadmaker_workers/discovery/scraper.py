@@ -24,6 +24,7 @@ BLOCKED_URL_PARTS = (
     "/maps/vt", "/kh/v=", "googleusercontent.com", "ggpht.com", "streetviewpixels", "fonts.gstatic.com",
     "/maps/preview/log", "/gen_204", "/log?",
 )
+DETAIL_TAB_REUSE = 15  # fiches ouvertes dans un même onglet avant de le remplacer
 PLACE_ID = re.compile(r"!1s(0x[0-9a-f]+:0x[0-9a-f]+)")
 COORDS = re.compile(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)")
 STATUS = re.compile(r"^(open|closed|opens|closes|temporarily|permanently|\d)", re.I)
@@ -353,6 +354,7 @@ class GMapsScraper:
             else:
                 cards = self._collect_cards(page, max_results)
             yield "info", f"« {query} » : {len(cards)} fiches"
+            opened = 0
 
             for c in cards:
                 if self.stop_flag():
@@ -404,6 +406,12 @@ class GMapsScraper:
                     place.category = place.card_category
                     place.address, place.phone = card_details(c.get("text", ""))
                 else:
+                    opened += 1
+                    if opened % DETAIL_TAB_REUSE == 0:
+                        # Un onglet qui enchaîne des dizaines de fiches gonfle jusqu'à planter : on le renouvelle
+                        detail.close()
+                        detail = self._ctx.new_page()
+                        self._meter(detail)
                     self._scrape_detail(detail, c["href"], place)
                     if "/sorry/" in detail.url:
                         raise BlockedError("Google a bloqué la lecture d'une fiche (captcha)")

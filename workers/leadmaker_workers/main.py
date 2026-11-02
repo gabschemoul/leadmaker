@@ -13,9 +13,10 @@ import os
 import signal
 import time
 
-from . import handlers, queue
+from . import handlers, proxy_budget, queue
 
 log = logging.getLogger("leadmaker.worker")
+PROXY_KINDS = ("discovery", "estimate")  # tâches qui passent par le proxy résidentiel (facturé au volume)
 
 OUTAGE_WAITS = (60, 120, 300, 600, 900)  # secondes d'attente après 1, 2, 3, 4, 5+ pannes de proxy d'affilée
 
@@ -72,9 +73,25 @@ def main() -> None:
 
         started = time.monotonic()
         log.info("tâche %s (%s) essai %s/%s", task.id, task.kind, task.attempts, task.max_attempts)
+        net_before = proxy_budget.network_bytes() if task.kind in PROXY_KINDS else None
+
+        def spent() -> int:
+            after = proxy_budget.network_bytes() if net_before is not None else None
+            return max(after - net_before, 0) if after is not None else 0
+
         try:
             result = handlers.run(task, conn)
         except Exception as exc:
+            if net_before is not None:
+                try:
+                    used = spent()
+                    if type(exc).__name__ == "BudgetExceeded":
+                        used = 0  # rien n'a été téléchargé : le plafond est vérifié avant la recherche
+                    proxy_budget.add_task_bytes(conn, task.id, used)
+                except Exception:
+                    log.exception("consommation du proxy non enregistrée")
+            if "crashed" in str(exc).lower():
+                handlers.shutdown()  # onglet ou navigateur planté (mémoire) : on repart d'un navigateur neuf
             if type(exc).__name__ == "BudgetExceeded":
                 # Plafond quotidien de proxy atteint : la recherche attend le lendemain, ce robot aussi
                 wait = float(getattr(exc, "seconds_left", 3600))
@@ -113,9 +130,19 @@ def main() -> None:
 
         backoff = 0.0
         outage = 0
+        if net_before is not None:
+            try:
+                result["proxy_bytes_browser"] = result.get("proxy_bytes")
+                result["proxy_bytes"] = proxy_budget.previous_task_bytes(conn, task.id) + spent()
+            except Exception:
+                log.exception("consommation du proxy non mesurée")
         result["duration_ms"] = int((time.monotonic() - started) * 1000)
         queue.complete(conn, task.id, result)
-        log.info("tâche %s terminée en %s ms", task.id, result["duration_ms"])
+        if net_before is not None and "proxy_bytes" in result:
+            log.info("tâche %s terminée en %s ms, %.1f Mo de trafic réel", task.id, result["duration_ms"],
+                     result["proxy_bytes"] / 1e6)
+        else:
+            log.info("tâche %s terminée en %s ms", task.id, result["duration_ms"])
 
     handlers.shutdown()
     conn.close()

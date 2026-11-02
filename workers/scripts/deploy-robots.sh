@@ -27,6 +27,7 @@ send_ip() {
 }
 
 # deploy <ip> <arguments du test> <commande compose de bascule>
+# (ssh recolle les arguments en une seule ligne : ils sont protégés par printf %q)
 deploy() {
   local ip=$1 test_args=$2 up_cmd=$3
   echo "→ $ip : copie de la nouvelle version (à côté de celle qui tourne)"
@@ -34,13 +35,13 @@ deploy() {
   rsync -az --delete "${EXCLUDES[@]}" -e "${SSH[*]}" workers/ root@"$ip":/opt/leadmaker/workers-next/
 
   echo "→ $ip : construction et test de la nouvelle version (1 à 3 minutes)"
-  if ! "${SSH[@]}" root@"$ip" bash -s -- "$test_args" <<'REMOTE'
+  if ! "${SSH[@]}" root@"$ip" bash -s -- "$(printf '%q' "$test_args")" <<'REMOTE'
 set -euo pipefail
 cd /opt/leadmaker/workers-next
 cp ../workers/.env .env
 export ROBOT_IMAGE_TAG=candidate
 docker compose -p lmcheck build -q discovery
-timeout 240 docker compose -p lmcheck run --rm --no-deps -T discovery python -m leadmaker_workers.selftest $1
+timeout 240 docker compose -p lmcheck run --rm --no-deps -T discovery python -m leadmaker_workers.selftest ${1:-}
 REMOTE
   then
     echo ""
@@ -50,14 +51,14 @@ REMOTE
   fi
 
   echo "→ $ip : test réussi, bascule des robots"
-  "${SSH[@]}" root@"$ip" bash -s -- "$up_cmd" <<'REMOTE'
+  "${SSH[@]}" root@"$ip" bash -s -- "$(printf '%q' "$up_cmd")" <<'REMOTE'
 set -euo pipefail
 cd /opt/leadmaker
 docker image inspect leadmaker-worker:latest >/dev/null 2>&1 && docker tag leadmaker-worker:latest leadmaker-worker:previous
 rm -rf workers-previous && cp -a workers workers-previous
 rsync -a --exclude .env --exclude logs --exclude data/bench workers-next/ workers/
 cd workers
-eval "$1"
+eval "${1:-}"
 sleep 20
 docker compose ps --format '{{.Service}} {{.State}}' | sort | uniq -c
 if docker compose ps --format '{{.State}}' | grep -q restarting; then
@@ -71,13 +72,13 @@ REMOTE
 rollback() {
   local ip=$1 up_cmd=$2
   echo "→ $ip : retour à la version précédente"
-  "${SSH[@]}" root@"$ip" bash -s -- "$up_cmd" <<'REMOTE'
+  "${SSH[@]}" root@"$ip" bash -s -- "$(printf '%q' "$up_cmd")" <<'REMOTE'
 set -euo pipefail
 cd /opt/leadmaker
 [ -d workers-previous ] || { echo "Aucune version précédente gardée sur ce serveur."; exit 1; }
 rsync -a --exclude .env --exclude logs --exclude data/bench workers-previous/ workers/
 cd workers
-eval "$1"
+eval "${1:-}"
 sleep 20
 docker compose ps --format '{{.Service}} {{.State}}' | sort | uniq -c
 REMOTE

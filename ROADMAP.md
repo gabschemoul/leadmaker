@@ -169,6 +169,15 @@ Pistes à discuter :
 - **Testé le 2/11** en local avec une tâche bloquée artificielle : e-mail d’alerte puis e-mail de reprise reçus.
 - **Mise en ligne** (par Gabriel) : 1) `./workers/scripts/set-alert-email.sh` (dépose la clé Resend sur les deux serveurs et envoie un e-mail d’essai depuis chacun) ; 2) `./workers/scripts/deploy-robots.sh --all` (installe le surveillant avec le reste). Réglages possibles dans le `.env` des serveurs : `ALERT_EMAIL`, `WATCH_STALL_MINUTES` (20), `WATCH_REMIND_HOURS` (2).
 
+### 18. Étape « Contacter » : pilote automatique + mode Avancé 🟡 — DÉCIDÉ le 2/11, maquette en cours de validation
+- **Le problème** : préparer, vérifier, envoyer (a/b/c) est fastidieux et peu naturel.
+- **Pilote automatique (mode par défaut)** : une seule question, « Combien d'entreprises voulez-vous contacter ? » (plafonné aux crédits et aux prospects pas encore contactés), un rythme (le plus vite possible / par jour), puis le robot prépare et envoie dans la foulée, prospect après prospect, jusqu'au nombre choisi. Suivi en direct (envoyés / en cours / mis de côté) et bouton Pause.
+- **Cas douteux** (captcha, champ inconnu, pas de formulaire) : mis de côté, sans crédit dépensé ; on les retrouve dans « Vérifier » du mode Avancé.
+- **Décidé (2/11)** : ouvert à TOUS les forfaits (la validation automatique n'est plus réservée à Business/Scale) ; prospects pris dans l'ordre où ils ont été trouvés ; aperçu des 3 premiers formulaires avant d'envoyer pour la première campagne ; pilote automatique par défaut, Avancé à un clic.
+- **Mode Avancé** : l'écran actuel (a/b/c).
+- **Maquette cliquable** : https://claude.ai/artifact/9NemsP4RpCnLuPMCL8PZ6W
+- À revoir aussi plus tard : l'étape 3 « Rédiger ».
+
 ## Déjà prévu (liste du 31 octobre)
 
 1. **Premier envoi réel surveillé** sur 2-3 entreprises choisies par Gabriel. Le robot d'envoi reste coupé tant que Gabriel ne dit pas « Envoie ».

@@ -51,12 +51,19 @@ create table if not exists public.lm_discovery_settings (
   max_results integer not null default 120,
   tasks_per_campaign integer not null default 2,
   default_rate numeric(6,4) not null default 0.3,
+  -- Part des places de recherche réservée aux activités jamais essayées (le reste va à celles qui rapportent)
+  explore_share numeric(4,3) not null default 0.25,
+  -- Une activité sans aucun prospect après ce nombre de recherches est abandonnée
+  abandon_zero_after integer not null default 5,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (id),
   constraint lm_discovery_settings_single_row check (id),
   constraint lm_discovery_settings_positive check (
     prior >= 0 and min_searches > 0 and min_rate >= 0 and chain_min > 1 and max_results > 0 and tasks_per_campaign > 0
+  ),
+  constraint lm_discovery_settings_explore check (
+    explore_share >= 0 and explore_share <= 1 and abandon_zero_after > 0
   )
 );
 
@@ -468,9 +475,15 @@ revoke all on function public.lm_pause_campaign(uuid, text) from public;
 grant execute on function public.lm_pause_campaign(uuid, text) to authenticated, service_role;
 
 -- Planification : pour chaque campagne en cours, réserve les prochaines recherches (catégorie × ville).
--- Catégories jamais essayées d'abord (générales avant les autres), puis par rendement lissé :
---   (fiches retenues + PRIOR × rendement moyen) / (recherches + PRIOR).
--- Une catégorie est abandonnée après MIN_SEARCHES recherches si elle retient moins de MIN_RATE fiche par recherche.
+-- Les places (TASKS_PER_CAMPAIGN par campagne) se partagent entre deux régimes :
+--   exploration (EXPLORE_SHARE des places, au moins une) : une activité jamais essayée, générales d'abord ;
+--   exploitation (le reste) : l'activité qui rapporte le plus, classée par
+--     fiches retenues / (recherches faites + recherches en cours + PRIOR),
+--     ce qui répartit naturellement les places entre les meilleures activités.
+-- Les activités essayées sans aucun prospect passent en dernier dans les deux régimes ;
+-- quand un régime n'a plus de candidate, l'autre prend la place.
+-- Abandon (lm_finish_search) : aucun prospect après ABANDON_ZERO_AFTER recherches,
+-- ou moins de MIN_RATE fiche par recherche après MIN_SEARCHES recherches.
 create or replace function public.lm_schedule_discovery() returns integer
 set search_path = ''
 language plpgsql
@@ -479,11 +492,13 @@ as $$
 declare
   v_settings public.lm_discovery_settings%rowtype;
   v_campaign record;
-  v_mean numeric;
   v_pick record;
   v_zone public.lm_campaign_zones%rowtype;
   v_created integer := 0;
   v_slots integer;
+  v_explore_slots integer;
+  v_exploring integer;
+  v_explore boolean;
   v_zone_count integer;
   v_inserted integer;
 begin
@@ -493,6 +508,9 @@ begin
   end if;
 
   select * into v_settings from public.lm_discovery_settings where id;
+
+  -- Places d'exploration : la part réglée, arrondie, au moins une
+  v_explore_slots := greatest(1, round(v_settings.explore_share * v_settings.tasks_per_campaign));
 
   for v_campaign in
     select c.id, c.account_id, c.country_code
@@ -506,19 +524,26 @@ begin
 
     select count(*) into v_zone_count from public.lm_campaign_zones where campaign_id = v_campaign.id;
 
-    select coalesce(sum(kept)::numeric / nullif(sum(searches), 0), v_settings.default_rate) into v_mean
-      from public.lm_campaign_categories where campaign_id = v_campaign.id;
+    -- Recherches en cours sur des activités dont on n'a encore aucun résultat
+    select coalesce(sum(in_flight), 0) into v_exploring
+      from public.lm_campaign_categories where campaign_id = v_campaign.id and searches = 0;
 
     while v_slots > 0 loop
-      select cc.gcid, cc.next_zone_idx, cat.label_en into v_pick
+      v_explore := v_exploring < v_explore_slots;
+
+      select cc.gcid, cc.next_zone_idx, cat.label_en, (cc.searches + cc.in_flight = 0) as untried into v_pick
         from public.lm_campaign_categories cc
         join public.lm_categories cat using (gcid)
        where cc.campaign_id = v_campaign.id
          and not cc.abandoned and not cc.removed
          and cc.next_zone_idx < v_zone_count
-       order by (cc.searches + cc.in_flight > 0),
-                cc.is_generic desc,
-                (cc.kept + v_settings.prior * v_mean) / (cc.searches + v_settings.prior) desc,
+       order by case
+                  when cc.searches + cc.in_flight = 0 then (case when v_explore then 0 else 1 end)
+                  when cc.kept > 0 then (case when v_explore then 1 else 0 end)
+                  else 2
+                end,
+                (cc.searches + cc.in_flight = 0 and cc.is_generic) desc,
+                cc.kept::numeric / (cc.searches + cc.in_flight + v_settings.prior) desc,
                 random()
        limit 1
        for update of cc skip locked;
@@ -555,6 +580,10 @@ begin
       update public.lm_campaign_categories
          set next_zone_idx = next_zone_idx + 1, in_flight = in_flight + v_inserted
        where campaign_id = v_campaign.id and gcid = v_pick.gcid;
+
+      if v_pick.untried then
+        v_exploring := v_exploring + v_inserted;
+      end if;
 
       v_created := v_created + v_inserted;
       v_slots := v_slots - v_inserted;
@@ -679,6 +708,8 @@ revoke all on function public.lm_record_prospect(uuid, jsonb) from public;
 grant execute on function public.lm_record_prospect(uuid, jsonb) to service_role;
 
 -- Fin d'une recherche : journal, rendement de la catégorie, abandon éventuel
+-- (aucun prospect après ABANDON_ZERO_AFTER recherches, ou moins de MIN_RATE par recherche après MIN_SEARCHES).
+-- Une recherche échouée ne passe pas ici (lm_release_search) : elle ne compte pas.
 create or replace function public.lm_finish_search(
   p_campaign_id uuid, p_gcid text, p_zone_idx integer,
   p_cards integer, p_new integer, p_kept integer, p_duration_ms integer, p_error text default null
@@ -710,10 +741,10 @@ begin
          cards = cc.cards + p_cards,
          cards_new = cc.cards_new + p_new,
          kept = cc.kept + p_kept,
-         abandoned = cc.abandoned or (
-           cc.searches + 1 >= v_settings.min_searches
-           and (cc.kept + p_kept) < v_settings.min_rate * (cc.searches + 1)
-         )
+         abandoned = cc.abandoned
+           or (cc.kept + p_kept = 0 and cc.searches + 1 >= v_settings.abandon_zero_after)
+           or (cc.searches + 1 >= v_settings.min_searches
+               and (cc.kept + p_kept) < v_settings.min_rate * (cc.searches + 1))
    where cc.campaign_id = p_campaign_id and cc.gcid = p_gcid;
 end;
 $$;
@@ -739,7 +770,7 @@ grant execute on function public.lm_release_search(uuid, text) to service_role;
 -- Avancement d'une campagne, lisible par ses membres
 create or replace function public.lm_campaign_progress(p_campaign_id uuid)
 returns table (zones integer, categories integer, searches_total bigint, searches_done bigint, in_flight bigint,
-               abandoned integer, prospects bigint, cards bigint, last_search_at timestamptz)
+               abandoned integer, productive integer, prospects bigint, cards bigint, last_search_at timestamptz)
 set search_path = ''
 language sql
 stable
@@ -751,6 +782,7 @@ as $$
          coalesce(sum(cc.searches), 0),
          coalesce(sum(cc.in_flight), 0),
          count(*) filter (where cc.abandoned and not cc.removed)::integer,
+         count(*) filter (where cc.kept > 0 and not cc.removed)::integer,
          (select count(*) from public.lm_credit_ledger l where l.campaign_id = p_campaign_id and l.kind = 'discovery' and l.delta < 0),
          coalesce(sum(cc.cards), 0),
          (select max(s.created_at) from public.lm_searches s where s.campaign_id = p_campaign_id)

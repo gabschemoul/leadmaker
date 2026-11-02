@@ -178,6 +178,8 @@
     "citiesAndCategories": "Villes × activités",
     "abandonedCategories": "Activités abandonnées",
     "abandonedHint": "Arrêtées car elles ne donnaient presque rien.",
+    "productiveCategories": "Activités qui rapportent",
+    "productiveHint": "Elles reçoivent la plupart des recherches.",
     "lastActivity": "Dernière activité",
     "latestProspectsTitle": "Derniers prospects",
     "latestProspectsDescription": "Les 50 dernières entreprises trouvées par cette campagne.",

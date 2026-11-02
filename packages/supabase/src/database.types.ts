@@ -429,14 +429,14 @@ isOneToOne: false
                   ]
                 },"lm_discovery_settings": {
                   Row: {
-                    "chain_min": number,"created_at": string,"default_rate": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"prior": number,"tasks_per_campaign": number,"updated_at": string
+                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"default_rate": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"prior": number,"tasks_per_campaign": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "chain_min"?: number,"created_at"?: string,"default_rate"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"default_rate"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "chain_min"?: number,"created_at"?: string,"default_rate"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"default_rate"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"prior"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -1164,7 +1164,7 @@ isOneToOne: false
                            },
 "lm_campaign_progress":
 { Args: { "p_campaign_id": string }; Returns: {
-              "abandoned": number,"cards": number,"categories": number,"in_flight": number,"last_search_at": string,"prospects": number,"searches_done": number,"searches_total": number,"zones": number
+              "abandoned": number,"cards": number,"categories": number,"in_flight": number,"last_search_at": string,"productive": number,"prospects": number,"searches_done": number,"searches_total": number,"zones": number
             }[]
                            },
 "lm_city_grid":

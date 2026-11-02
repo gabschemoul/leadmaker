@@ -46,6 +46,7 @@ export async function fetchCampaignLive(
       searchesDone: Number(row?.searches_done ?? 0),
       inFlight: Number(row?.in_flight ?? 0),
       abandoned: row?.abandoned ?? 0,
+      productive: row?.productive ?? 0,
       prospects: Number(row?.prospects ?? 0),
       lastSearchAt: row?.last_search_at ?? null,
     },

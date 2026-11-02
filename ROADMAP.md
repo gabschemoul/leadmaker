@@ -31,9 +31,14 @@ Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) �
 - Contrôle : plombiers à Lyon, 36 prospects gardés avant comme après, 0 fiche ouverte au lieu de 7 à 11, 9 secondes au lieu de 32.
 - Le gain réel en proxy sera mesuré sur le vrai trafic après la mise à jour des robots.
 
-### 12. Choisir les activités qui rapportent, abandonner vite les autres 🟡 — VALIDÉ (2/11)
-- Exploration limitée (≈ 1 recherche sur 4 pour une activité jamais essayée), le reste sur les activités qui rapportent le plus.
-- Abandon d'une activité sans aucun prospect après ~5 recherches (aujourd'hui : moins de 5 % après 40 recherches, jamais atteint).
+### 12. Choisir les activités qui rapportent, abandonner vite les autres 🟡 — FAIT en pré-production le 2/11, à mettre en ligne après validation du n°11
+- **Avant** : le robot essayait chaque activité une fois avant de creuser les bonnes. Sur « Namma test rapiditié » (3 896 activités), 1 090 activités essayées, 392 ont rapporté, 0 abandonnée ; 1 300 recherches en file dont ~1 230 sur des activités jamais essayées.
+- **Maintenant** (tout est dans la base, les robots n'ont pas besoin d'être mis à jour) :
+  - Sur 6 places de recherche par campagne, 2 explorent une activité jamais essayée (les générales d'abord), 4 creusent l'activité qui rapporte le plus (prospects par recherche, en comptant les recherches en cours pour répartir entre les meilleures). Réglages `explore_share` (1/4) et `abandon_zero_after` (5) dans `lm_discovery_settings`.
+  - Une activité sans aucun prospect après 5 recherches est abandonnée (les 5 premiers quartiers sont les plus peuplés, donc c'est fiable). L'ancienne règle (moins de 5 % par recherche après 40) reste. Une recherche échouée (proxy) ne compte pas.
+  - Écran Trouver : nouveau compteur « Activités qui rapportent ».
+- **Mise en ligne** (par Gabriel, quand le n°11 est validé) : 1) `cd ~/LeadMaker/app/apps/web && pnpm exec supabase db push` (la nouvelle planification démarre aussitôt sur les robots en place) ; 2) `workers/.venv/bin/python -I workers/scripts/replan_discovery.py --apply` depuis `~/LeadMaker/app` pour vider les 1 300 recherches d'exploration déjà en file (sans ça, elles passeraient avant les nouvelles règles) ; 3) vérifier 15 min après : prospects par recherche en hausse, répartition des recherches par activité.
+- Test de base : `leadmaker-discovery-explore.test.sql` (19 vérifications).
 
 ### 13. Crédits selon la difficulté de la campagne 🟡 — VALIDÉ, seuils à caler après 1 semaine de mesures
 - Tarif fixé au lancement à partir de l'estimation (part des entreprises qui passent les filtres) et affiché avant de lancer : > 10 % = 1 crédit par prospect, 3-10 % = 2, 1-3 % = 3, < 1 % = 4 (seuils provisoires).

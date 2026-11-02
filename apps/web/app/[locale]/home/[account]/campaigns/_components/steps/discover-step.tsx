@@ -325,7 +325,11 @@ function ProgressCard({
           <Progress value={percent} locale={locale} />
         </div>
 
-        <dl className={'grid grid-cols-2 gap-4 text-sm md:grid-cols-4'}>
+        <dl
+          className={
+            'grid grid-cols-2 gap-4 text-sm md:grid-cols-3 lg:grid-cols-5'
+          }
+        >
           <Stat
             label={'campaigns.detail.prospectsFound'}
             value={format.number(progress.prospects)}
@@ -335,6 +339,12 @@ function ProgressCard({
           <Stat
             label={'campaigns.detail.citiesAndCategories'}
             value={`${format.number(progress.zones)} × ${format.number(progress.categories)}`}
+          />
+
+          <Stat
+            label={'campaigns.detail.productiveCategories'}
+            value={format.number(progress.productive)}
+            hint={'campaigns.detail.productiveHint'}
           />
 
           <Stat

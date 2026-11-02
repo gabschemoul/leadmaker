@@ -1,7 +1,7 @@
 # Prospectigo — Roadmap des améliorations
 
 Liste vivante des idées et améliorations. On ajoute au fil de l'eau, on coche quand c'est livré.
-Dernière mise à jour : 1er novembre 2026.
+Dernière mise à jour : 2 novembre 2026.
 
 **Comment on publie** (depuis le 1er novembre 2026) :
 1. Chaque développement part d'abord en pré-production, sur https://staging.prospectigo.com.
@@ -9,6 +9,34 @@ Dernière mise à jour : 1er novembre 2026.
 3. prospectigo.com n'est mis à jour que quand Gabriel dit « publie ».
 
 Légende de taille : 🟢 petit (quelques heures) · 🟡 moyen (une journée) · 🔴 gros (plusieurs jours)
+
+---
+
+## Coûts et marges de la recherche — plan VALIDÉ par Gabriel le 2 novembre 2026
+
+**Le constat (mesures du 2/11)** : le seul vrai coût variable est le proxy DataImpulse de la recherche Google Maps (~1 $ le Go, facturé au poids). Prises de contact et serveurs : quelques euros par client et par mois. Une recherche (une activité dans un quartier) pèse ~2 Mo pour la liste + ~2 Mo par fiche ouverte. Le coût d'un prospect dépend des filtres : 18,6 prospects par recherche sans filtre de note, 4,5 avec note > 0,8, 1,4 en « mauvaises notes » (0,7-3,8). Sans proxy, depuis nos serveurs Hetzner, seule 1 recherche sur 3 aboutit (test du 2/11) : le proxy reste nécessaire.
+
+**Forfaits envisagés par Gabriel (à confirmer, PAS encore dans l'app)** : Growth 499 $ = 30 000 prospects / 15 000 prises de contact ; Business 990 $ = 80 000 / 40 000 ; Scale 1 999 $ = 200 000 / 100 000. L'app affiche aujourd'hui 15 000 / 5 000, 45 000 / 15 000, 105 000 / 35 000.
+
+### 10. Ne garder que « Je choisis moi-même » pour les activités 🟢 — VALIDÉ (2/11)
+- Supprimer « Activités courantes » et « Toutes les activités » dans « Quelles entreprises ? ».
+- Raison : « Toutes les activités » fait essayer les 3 896 activités Google (orphelinats, compagnies d'opéra…) avant de creuser celles qui rapportent. Campagnes concernées : « review cleaner » et « Namma test rapiditié » (Namma Booster).
+- À décider avec Gabriel : que faire de ces deux campagnes déjà lancées (réduire leurs activités à celles qui ont rapporté ?).
+
+### 11. Ouvrir moins de fiches Google Maps 🟡 — VALIDÉ (2/11)
+- Aujourd'hui (correctif restaurants du 1/11) : toute carte sans bouton « Website » est ouverte, pour toutes les activités.
+- Demain : ne l'ouvrir que pour les activités où Google cache ce bouton (restaurants, hôtels, boulangeries, traiteurs…).
+- AVANT : vérifier sur un échantillon (plombiers, avocats, dentistes…) combien de cartes sans bouton ont quand même un site.
+
+### 12. Choisir les activités qui rapportent, abandonner vite les autres 🟡 — VALIDÉ (2/11)
+- Exploration limitée (≈ 1 recherche sur 4 pour une activité jamais essayée), le reste sur les activités qui rapportent le plus.
+- Abandon d'une activité sans aucun prospect après ~5 recherches (aujourd'hui : moins de 5 % après 40 recherches, jamais atteint).
+
+### 13. Crédits selon la difficulté de la campagne 🟡 — VALIDÉ, seuils à caler après 1 semaine de mesures
+- Tarif fixé au lancement à partir de l'estimation (part des entreprises qui passent les filtres) et affiché avant de lancer : > 10 % = 1 crédit par prospect, 3-10 % = 2, 1-3 % = 3, < 1 % = 4 (seuils provisoires).
+
+### 14. Budget de proxy invisible par client 🟡 — VALIDÉ (2/11)
+- Filet de sécurité : ≈ 10 % du prix en Go par mois (Growth 50 Go, Business 100, Scale 200). Au-delà, la recherche du client ralentit au lieu de coûter plus.
 
 ---
 

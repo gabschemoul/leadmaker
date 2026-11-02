@@ -175,6 +175,7 @@ Pistes à discuter :
 - **Cas douteux** (captcha, champ inconnu, pas de formulaire) : mis de côté, sans crédit dépensé ; on les retrouve dans « Vérifier » du mode Avancé.
 - **Décidé (2/11)** : ouvert à TOUS les forfaits (la validation automatique n'est plus réservée à Business/Scale) ; prospects pris dans l'ordre où ils ont été trouvés ; aperçu des 3 premiers formulaires avant d'envoyer pour la première campagne ; pilote automatique par défaut, Avancé à un clic.
 - **Choix du message (2/11)** : on coche un ou plusieurs des 4 messages de l'étape Rédiger ; plusieurs cochés = test A/B, envoyés à parts égales. Pour savoir lequel « gagne », il faut le suivi des réponses (lot 3) : sans lui, on ne compte que les envois par message.
+- **Quand envoyer ? (proposition du 2/11, à valider)** : « Heures de bureau » (par défaut : lundi-vendredi 9 h-18 h, heure du pays des entreprises contactées), « Étalé sur plusieurs jours » (3 / 5 / 10 / 20 jours ouvrés, nombre par jour calculé tout seul), « En continu » (dès que possible, jour et nuit). Remplace les « 200 / 50 par jour ». Nouveau pour les robots : respecter les heures de bureau du pays.
 - **Mode Avancé** : l'écran actuel (a/b/c).
 - **Maquette cliquable** : https://claude.ai/artifact/9NemsP4RpCnLuPMCL8PZ6W
 - Vocabulaire (2/11) : ne plus écrire « robot » dans l'app et le site, mais « Prospectigo » (≈ 23 textes à reprendre, dans la même livraison).

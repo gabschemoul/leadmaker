@@ -95,13 +95,16 @@ Pistes à discuter :
 - **Demain** : bouton « Importer » sur la page d'une campagne. Les contacts importés suivent ensuite le même chemin que ceux trouvés sur Google Maps (préparation des formulaires, e-mails, envoi).
 - **Aussi** : pouvoir rattacher des prospects déjà importés à une campagne existante (action groupée).
 
-### 5. Acheter des crédits supplémentaires 🟡
-- **Le principe** : quand les crédits du mois sont épuisés, on achète un pack en plus sans changer de forfait, comme dans Claude.
-- **Ce qu'il faut** : des packs (ex. 1 000 / 5 000 / 10 000 envois), paiement Stripe en une fois, crédits ajoutés tout de suite.
-- **Décidé (1/11)** : les crédits achetés restent valables 12 mois, et on consomme d'abord ceux du forfait.
-- **À trancher** : prix des packs.
-- **Option** : rechargement automatique quand le solde passe sous un seuil.
-- Dépend du branchement de Stripe en mode réel (voir plus bas).
+### 5. Acheter des crédits supplémentaires 🟡 — tarifs DÉCIDÉS le 2/11
+- **Le principe** : quand les crédits du mois sont épuisés, on achète un pack en plus sans changer de forfait.
+- **Décidé (2/11)** : packs MIXTES, un seul prix, même proportion que les forfaits (2 prospects pour 1 prise de contact) :
+  - S : 5 000 crédits de prospection + 2 500 crédits de prise de contact = 99 $
+  - M : 15 000 + 7 500 = 279 $
+  - L : 30 000 + 15 000 = 549 $
+  - Environ 10 à 20 % plus cher que dans Growth : monter de forfait reste plus intéressant. Marge > 85 %.
+- **Décidé** : un seul tarif pour tout le monde ; réservé aux abonnés (forfait actif) ; crédits achetés valables 12 mois ; on consomme d'abord ceux du forfait (1/11).
+- **Plus tard (Gabriel, 2/11 : « d'abord une plateforme clean »)** : rechargement automatique (interrupteur, pack choisi, seuil 10 %, 3 rechargements max par mois, gestion 3D Secure et carte refusée).
+- Dépend de Stripe en mode réel.
 
 ### 6. Plusieurs profils d'expéditeur 🟡
 - **Aujourd'hui** : un seul expéditeur par dossier client (nom, société, e-mail, téléphone…).

@@ -38,8 +38,10 @@ export function LogoImage({
         className,
       )}
     >
-      <LogoMark className={'mr-[0.373em]'} />
-      Prospectigo
+      <LogoMark className={'mr-[0.373em] group-data-[collapsible=icon]:mr-0'} />
+      <span className={'group-data-[collapsible=icon]:hidden'}>
+        Prospectigo
+      </span>
     </span>
   );
 }

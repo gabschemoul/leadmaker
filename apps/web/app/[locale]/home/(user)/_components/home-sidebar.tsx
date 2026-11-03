@@ -1,9 +1,15 @@
 import { Suspense } from 'react';
 
 import { If } from '@kit/ui/if';
-import { Sidebar, SidebarContent, SidebarHeader } from '@kit/ui/sidebar';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+} from '@kit/ui/sidebar';
 import { SidebarNavigation } from '@kit/ui/sidebar-navigation';
 
+import { LogoImage } from '~/components/app-logo';
 import { SidebarHeaderSkeleton } from '~/components/skeletons/page-skeletons';
 import { WorkspaceDropdown } from '~/components/workspace-dropdown';
 import featuresFlagConfig from '~/config/feature-flags.config';
@@ -32,6 +38,13 @@ export function HomeSidebar() {
       <SidebarContent>
         <SidebarNavigation config={personalAccountNavigationConfig} />
       </SidebarContent>
+      <SidebarFooter
+        className={
+          'mt-auto px-4 pt-3 pb-5 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0'
+        }
+      >
+        <LogoImage className={'text-lg'} />
+      </SidebarFooter>
     </Sidebar>
   );
 }

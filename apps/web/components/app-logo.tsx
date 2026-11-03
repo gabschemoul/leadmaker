@@ -3,24 +3,29 @@ import Link from 'next/link';
 import { cn } from '@kit/ui/utils';
 
 /**
- * Logo Prospectigo « Le repère » (choisi le 2/11/2026, version validée sur
- * le téléphone de Gabriel) : un gros point orange posé au-dessus d'un petit
- * trait, comme une épingle au-dessus de son point d'ancrage, devant le nom.
+ * Logo Prospectigo « le dernier o » (choisi le 3/11/2026 par Nath, à
+ * l'essai sur staging) : le o final du nom devient un rond orange, avec un
+ * petit trait en dessous, comme une épingle au-dessus de son point d'ancrage.
  *
- * Proportions en unités pour 1000 em (Host Grotesk 600, capitales = 700) :
- * point de 498 de diamètre aligné sur le haut des capitales, trait de
- * 234 × 62 posé sur la ligne de base, 373 d'espace avant le nom. Les mêmes
- * chiffres servent aux icônes (favicon) et aux e-mails.
+ * Le rond prend exactement la place du vrai o de la police (Host Grotesk 600,
+ * en unités pour 1000 em) : 576 de chasse, 520 de diamètre, du haut du o
+ * (508 au-dessus de la ligne de base) à 12 en dessous. Le trait de 244 × 65
+ * est 146 plus bas, il descend à 223 sous la ligne de base, comme le g. Ce
+ * sont les proportions de l'ancien symbole (rond 498, trait 234 × 62, écart
+ * 140) : les icônes (favicon) restent donc valables.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg
       aria-hidden
-      viewBox={'0 0 498 700'}
-      className={cn('h-[0.7em] w-[0.498em] shrink-0', className)}
+      viewBox={'0 0 576 731'}
+      className={cn(
+        'inline-block h-[0.731em] w-[0.576em] shrink-0 overflow-visible align-[-0.223em]',
+        className,
+      )}
     >
-      <circle cx={249} cy={249} r={249} className={'fill-brand'} />
-      <rect x={132} y={638} width={234} height={62} fill={'currentColor'} />
+      <circle cx={288} cy={260} r={260} className={'fill-brand'} />
+      <rect x={166} y={666} width={244} height={65} fill={'currentColor'} />
     </svg>
   );
 }
@@ -33,15 +38,17 @@ export function LogoImage({
 }) {
   return (
     <span
+      role={'img'}
+      aria-label={'Prospectigo'}
       className={cn(
-        'text-foreground in-data-[sidebar=sidebar]:text-sidebar-accent-foreground font-heading inline-flex items-baseline text-[1.375rem] leading-none font-semibold tracking-[-0.025em] select-none',
+        'text-foreground in-data-[sidebar=sidebar]:text-sidebar-accent-foreground font-heading inline-block text-[1.375rem] leading-none font-semibold tracking-[-0.025em] whitespace-nowrap select-none',
         className,
       )}
     >
-      <LogoMark className={'mr-[0.373em] group-data-[collapsible=icon]:mr-0'} />
-      <span className={'group-data-[collapsible=icon]:hidden'}>
-        Prospectigo
+      <span aria-hidden className={'group-data-[collapsible=icon]:hidden'}>
+        Prospectig
       </span>
+      <LogoMark />
     </span>
   );
 }

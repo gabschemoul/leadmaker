@@ -939,27 +939,50 @@ grant execute on function public.lm_credits_for_rate(numeric) to authenticated, 
 
 
 -- Avancement d'une campagne, lisible par ses membres
+-- Avancement d'une campagne. SECURITY DEFINER : les droits sont vérifiés UNE fois (organisation + double
+-- authentification), au lieu du RLS ligne par ligne sur les quartiers et les crédits (3,7 s sur une campagne de
+-- 16 000 quartiers, délai de 8 s dépassé sous charge le 3/11/2026). Rôle service ou postgres : accès direct.
 create or replace function public.lm_campaign_progress(p_campaign_id uuid)
 returns table (zones integer, categories integer, searches_total bigint, searches_done bigint, in_flight bigint,
                abandoned integer, productive integer, prospects bigint, cards bigint, last_search_at timestamptz)
 set search_path = ''
-language sql
+language plpgsql
 stable
+security definer
 as $$
-  select (select count(*)::integer from public.lm_campaign_zones z where z.campaign_id = p_campaign_id and not z.removed),
+declare
+  v_account_id uuid;
+  v_zones integer;
+begin
+  select c.account_id into v_account_id from public.lm_campaigns c where c.id = p_campaign_id;
+
+  if v_account_id is null
+     or (coalesce(current_setting('role', true), 'none') in ('authenticated', 'anon')
+         and not (public.has_role_on_account(v_account_id) and public.is_mfa_compliant())) then
+    return;
+  end if;
+
+  select count(*)::integer into v_zones
+    from public.lm_campaign_zones z where z.campaign_id = p_campaign_id and not z.removed;
+
+  return query
+  select v_zones,
          count(cc.gcid) filter (where not cc.removed)::integer,
-         (select count(*) from public.lm_campaign_zones z where z.campaign_id = p_campaign_id and not z.removed)
-           * count(cc.gcid) filter (where not cc.removed),
+         v_zones * count(cc.gcid) filter (where not cc.removed),
          coalesce(sum(cc.searches), 0),
          coalesce(sum(cc.in_flight), 0),
          count(*) filter (where cc.abandoned and not cc.removed)::integer,
          count(*) filter (where cc.kept > 0 and not cc.removed)::integer,
-         (select count(*) from public.lm_credit_ledger l where l.campaign_id = p_campaign_id and l.kind = 'discovery' and l.delta < 0),
+         (select count(*) from public.lm_credit_ledger l
+           where l.campaign_id = p_campaign_id and l.kind = 'discovery' and l.delta < 0),
          coalesce(sum(cc.cards), 0),
          (select max(s.created_at) from public.lm_searches s where s.campaign_id = p_campaign_id)
     from public.lm_campaign_categories cc
    where cc.campaign_id = p_campaign_id;
+end;
 $$;
+
+revoke all on function public.lm_campaign_progress(uuid) from public;
 
 grant execute on function public.lm_campaign_progress(uuid) to authenticated, service_role;
 

@@ -129,6 +129,10 @@ grant select on table public.lm_credit_ledger to authenticated;
 create index if not exists ix_lm_credit_ledger_account_id_created_at
   on public.lm_credit_ledger (account_id, created_at desc);
 
+-- Débits d'une campagne (avancement : prospects trouvés) sans parcourir tout le registre
+create index if not exists ix_lm_credit_ledger_campaign_id
+  on public.lm_credit_ledger (campaign_id) where campaign_id is not null;
+
 create policy "lm_credit_ledger_read" on public.lm_credit_ledger for select
   to authenticated using (public.has_role_on_account(account_id));
 

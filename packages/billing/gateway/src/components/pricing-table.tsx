@@ -193,8 +193,9 @@ function PricingItem(
         <div
           className={cn(
             'relative flex min-h-[11.5rem] flex-col justify-between overflow-hidden rounded-2xl p-4',
-            // bg-fluid : fond liquide irisé de la marque (apps/web/styles/visuals.css)
-            highlighted ? 'bg-fluid text-black' : 'bg-muted',
+            // bg-fluid : fond liquide irisé de la marque (apps/web/styles/visuals.css),
+            // fluid-fast (sans « bg- », que tailwind-merge fusionnerait avec bg-fluid) : il bouge environ 3 fois plus vite qu'ailleurs
+            highlighted ? 'bg-fluid fluid-fast text-black' : 'bg-muted',
           )}
         >
           <div className={'flex flex-col gap-y-1.5'}>

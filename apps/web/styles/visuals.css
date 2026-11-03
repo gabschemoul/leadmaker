@@ -45,6 +45,11 @@
     animation: fluid-drift 18s ease-in-out infinite alternate;
   }
 
+  /* Variante plus vive, pour la carte du forfait mis en avant (Business). */
+  .fluid-fast {
+    animation-duration: 6s;
+  }
+
   .bg-fluid::after {
     content: '';
     position: absolute;

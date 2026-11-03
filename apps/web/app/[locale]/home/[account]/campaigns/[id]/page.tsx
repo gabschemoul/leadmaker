@@ -20,6 +20,7 @@ import { type AttemptGroup, isAttemptGroup } from '~/lib/leadmaker/attempts';
 import { fetchAutopilotSummary } from '~/lib/leadmaker/autopilot-query';
 import { buildProspectsHref } from '~/lib/leadmaker/prospects-query';
 import { parseTemplates, usableMessages } from '~/lib/leadmaker/templates';
+import { requireUserInServerComponent } from '~/lib/server/require-user-in-server-component';
 
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
@@ -50,6 +51,7 @@ import {
   loadLocalDiscoveryState,
   loadPreviewProspects,
 } from '../_lib/server/campaigns.loader';
+import { isPowerUser } from '../_lib/server/power-user';
 import {
   type CampaignStep,
   type CampaignStepFacts,
@@ -331,11 +333,15 @@ async function WriteStepContent(props: {
   senderHref: string;
 }) {
   const client = getSupabaseServerClient();
+  const user = await requireUserInServerComponent();
 
-  const [prospects, autoValidationAllowed] = await Promise.all([
-    loadPreviewProspects(client, props.campaign.space_id),
-    loadAutoValidationAllowed(client, props.accountId),
-  ]);
+  const [prospects, autoValidationAllowed, companyOptional] = await Promise.all(
+    [
+      loadPreviewProspects(client, props.campaign.space_id),
+      loadAutoValidationAllowed(client, props.accountId),
+      isPowerUser(user.id),
+    ],
+  );
 
   return (
     <WriteStep
@@ -350,6 +356,7 @@ async function WriteStepContent(props: {
         autoValidation: props.campaign.auto_validation,
         autoValidationAllowed,
       }}
+      companyOptional={companyOptional}
     />
   );
 }

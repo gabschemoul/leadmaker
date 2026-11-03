@@ -74,6 +74,8 @@ export function CampaignMessagesForm(props: {
     /** le forfait de l'organisation inclut la validation automatique */
     autoValidationAllowed: boolean;
   };
+  /** dispensé de mentionner la société (utilisateurs sans limite) */
+  companyOptional: boolean;
 }) {
   const t = useTranslations('outreach.messages');
 
@@ -138,8 +140,9 @@ export function CampaignMessagesForm(props: {
     const subject = slotValues?.subject ?? '';
     const unknown = unknownVariables(`${subject} ${body} ${short}`);
     const companyMissing =
-      (body.trim() !== '' && !mentionsCompany(body, company)) ||
-      (short.trim() !== '' && !mentionsCompany(short, company));
+      !props.companyOptional &&
+      ((body.trim() !== '' && !mentionsCompany(body, company)) ||
+        (short.trim() !== '' && !mentionsCompany(short, company)));
 
     return (
       <div className={'flex flex-col gap-6'}>

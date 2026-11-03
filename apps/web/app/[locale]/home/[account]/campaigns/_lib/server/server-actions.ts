@@ -26,7 +26,7 @@ import {
   buildTargeting,
 } from '../schema/campaign.schema';
 import { SaveCampaignTemplatesSchema } from '../schema/templates.schema';
-import { getCategoryLimit } from './category-limit';
+import { getCategoryLimit, isPowerUser } from './power-user';
 
 /** Échappe les jokers de LIKE (% et _) saisis par l'utilisateur. */
 function escapeLike(value: string) {
@@ -729,7 +729,8 @@ export const setLocalDiscoveryAction = authActionClient
 /**
  * Enregistre les messages d'une campagne. Contrôle bloquant : chaque message
  * rempli doit mentionner la société de l'expéditeur (variable {my_company} ou
- * nom en clair), pour que l'entreprise contactée sache qui lui écrit.
+ * nom en clair), pour que l'entreprise contactée sache qui lui écrit. Les
+ * utilisateurs sans limite (Gabriel et Nath, power-user.ts) en sont dispensés.
  */
 export const saveCampaignTemplatesAction = authActionClient
   .inputSchema(SaveCampaignTemplatesSchema)
@@ -748,11 +749,14 @@ export const saveCampaignTemplatesAction = authActionClient
       throw new Error('outreach.messages.campaignNotFound');
     }
 
-    const sender = await client
-      .from('lm_sender_profiles')
-      .select('company')
-      .eq('space_id', campaign.data.space_id)
-      .maybeSingle();
+    const [sender, companyOptional] = await Promise.all([
+      client
+        .from('lm_sender_profiles')
+        .select('company')
+        .eq('space_id', campaign.data.space_id)
+        .maybeSingle(),
+      isPowerUser(ctx.user.id),
+    ]);
 
     if (sender.error) throw sender.error;
 
@@ -778,7 +782,10 @@ export const saveCampaignTemplatesAction = authActionClient
         throw new Error('outreach.messages.unknownVariable');
       }
 
-      if (!mentionsCompany(message.body, sender.data?.company ?? null)) {
+      if (
+        !companyOptional &&
+        !mentionsCompany(message.body, sender.data?.company ?? null)
+      ) {
         throw new Error('outreach.messages.companyMissing');
       }
     }

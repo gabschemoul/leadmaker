@@ -25,7 +25,7 @@ import { loadTeamWorkspace } from '../../../_lib/server/team-account-workspace.l
 import { CampaignForm } from '../../_components/campaign-form';
 import { campaignToFormValues } from '../../_lib/schema/campaign.schema';
 import { loadCampaignForEdit } from '../../_lib/server/campaigns.loader';
-import { getCategoryLimit } from '../../_lib/server/category-limit';
+import { getCategoryLimit } from '../../_lib/server/power-user';
 
 interface EditCampaignPageProps {
   params: Promise<{ account: string; id: string }>;

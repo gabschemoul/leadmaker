@@ -34,6 +34,7 @@ export async function WriteStep(props: {
     autoValidation: boolean;
     autoValidationAllowed: boolean;
   };
+  companyOptional: boolean;
 }) {
   const t = await getTranslations('campaigns.steps.write');
   const { sender } = props;
@@ -108,6 +109,7 @@ export async function WriteStep(props: {
         senderHref={props.senderHref}
         prospects={props.prospects}
         sending={props.sending}
+        companyOptional={props.companyOptional}
       />
     </div>
   );

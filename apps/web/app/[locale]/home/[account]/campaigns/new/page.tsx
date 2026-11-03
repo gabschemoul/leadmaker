@@ -21,7 +21,7 @@ import {
 } from '../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../_lib/server/team-account-workspace.loader';
 import { CampaignForm } from '../_components/campaign-form';
-import { getCategoryLimit } from '../_lib/server/category-limit';
+import { getCategoryLimit } from '../_lib/server/power-user';
 
 interface NewCampaignPageProps {
   params: Promise<{ account: string }>;

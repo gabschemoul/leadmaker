@@ -43,11 +43,16 @@ def worker_id() -> str:
     return os.environ.get("WORKER_ID") or f"{socket.gethostname()}:{os.getpid()}"
 
 
-def claim(conn: psycopg.Connection, kinds: list[str], worker: str) -> Task | None:
-    row = conn.execute(
-        "select * from public.lm_claim_task(%s::public.lm_task_kind[], %s)",
-        (kinds, worker),
-    ).fetchone()
+def claim(conn: psycopg.Connection, kinds: list[str], worker: str, local: bool = False) -> Task | None:
+    """Réserve une tâche. local=True : robot d'un ordinateur dédié, qui ne prend que les recherches des
+    campagnes marquées « ordinateur dédié » (lm_claim_local_task) ; les robots des serveurs les sautent."""
+    if local:
+        row = conn.execute("select * from public.lm_claim_local_task(%s)", (worker,)).fetchone()
+    else:
+        row = conn.execute(
+            "select * from public.lm_claim_task(%s::public.lm_task_kind[], %s)",
+            (kinds, worker),
+        ).fetchone()
     if not row:
         return None
     payload = row["payload"] if isinstance(row["payload"], dict) else json.loads(row["payload"] or "{}")

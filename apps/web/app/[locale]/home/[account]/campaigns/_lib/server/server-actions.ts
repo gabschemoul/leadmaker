@@ -16,6 +16,7 @@ import {
   DuplicateCampaignSchema,
   EstimateCampaignSchema,
   FamilyCategoriesSchema,
+  LocalDiscoverySchema,
   NearbyCitiesSchema,
   SearchCategoriesSchema,
   SearchCitiesSchema,
@@ -585,6 +586,41 @@ export const pauseCampaignAction = authActionClient
     revalidatePath('/home/[account]/campaigns', 'layout');
 
     return { success: true };
+  });
+
+/**
+ * Fait chercher la campagne sur l'ordinateur dédié (sans proxy) ou la remet
+ * sur les serveurs. Réservé aux utilisateurs listés en base (contrôlé par
+ * lm_set_local_discovery).
+ */
+export const setLocalDiscoveryAction = authActionClient
+  .inputSchema(LocalDiscoverySchema)
+  .action(async ({ parsedInput: { campaignId, enabled }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { error } = await client.rpc('lm_set_local_discovery', {
+      p_campaign_id: campaignId,
+      p_enabled: enabled,
+    });
+
+    if (error) {
+      const logger = await getLogger();
+      logger.error(
+        {
+          name: 'leadmaker.campaigns.localDiscovery',
+          campaignId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to switch local discovery',
+      );
+
+      throw new Error('campaigns.localDiscovery.failed');
+    }
+
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    return { enabled };
   });
 
 /**

@@ -155,6 +155,38 @@ export async function loadPreviewProspects(client: Client, spaceId: string) {
   return data ?? [];
 }
 
+/**
+ * Recherche sur l'ordinateur dédié : l'utilisateur peut-il basculer la
+ * campagne, est-elle basculée, dernier signe de vie du robot de l'ordinateur.
+ * Ne fait jamais échouer la page (null en cas d'erreur).
+ */
+export async function loadLocalDiscoveryState(
+  client: Client,
+  campaignId: string,
+) {
+  const { data, error } = await client.rpc('lm_local_discovery_state', {
+    p_campaign_id: campaignId,
+  });
+
+  if (error || !data || typeof data !== 'object' || Array.isArray(data)) {
+    return null;
+  }
+
+  const state = data as {
+    allowed?: boolean;
+    enabled?: boolean;
+    minutes_ago?: number | null;
+  };
+
+  return {
+    allowed: state.allowed === true,
+    enabled: state.enabled === true,
+    /** minutes depuis le dernier signe de vie du robot (null : jamais vu) */
+    minutesAgo:
+      typeof state.minutes_ago === 'number' ? state.minutes_ago : null,
+  };
+}
+
 /** Le forfait de l'organisation inclut-il la validation automatique des formulaires ? */
 export async function loadAutoValidationAllowed(
   client: Client,

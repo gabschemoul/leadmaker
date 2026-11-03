@@ -5,6 +5,10 @@
 Variables : DATABASE_URL, WORKER_KINDS (ex. « discovery »), WORKER_ID, WORKER_IDLE_SECONDS,
 HEADLESS (true/false), SCRAPE_DELAY (secondes), PROXY_URL (facultatif), BLOCK_BACKOFF_MINUTES,
 PROXY_DAILY_BUDGET_GB (plafond quotidien du proxy, 3 Go par défaut, 0 = sans plafond).
+
+LOCAL_DISCOVERY=1 : robot d'un ordinateur dédié (scripts/run-mac-discovery.sh). Il ne fait que les recherches
+Google Maps des campagnes marquées « ordinateur dédié », par la connexion internet de l'ordinateur (sans proxy) :
+son trafic n'est compté ni dans le plafond du proxy ni dans le budget des clients.
 """
 from __future__ import annotations
 
@@ -24,6 +28,11 @@ OUTAGE_WAITS = (60, 120, 300, 600, 900)  # secondes d'attente après 1, 2, 3, 4,
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     kinds = [k.strip() for k in os.environ.get("WORKER_KINDS", "dummy").split(",") if k.strip()]
+    local = os.environ.get("LOCAL_DISCOVERY", "").strip() == "1"
+    if local:
+        kinds = ["discovery"]  # le robot d'un ordinateur dédié ne fait que les recherches Google Maps
+        os.environ.pop("PROXY_URL", None)  # jamais de proxy : la connexion de l'ordinateur, gratuite
+        os.environ["PROXY_DAILY_BUDGET_GB"] = "0"  # le plafond du proxy des serveurs ne le concerne pas
     idle = float(os.environ.get("WORKER_IDLE_SECONDS", "5"))
     base_backoff = float(os.environ.get("BLOCK_BACKOFF_MINUTES", "30"))
     worker = queue.worker_id()
@@ -41,7 +50,8 @@ def main() -> None:
     signal.signal(signal.SIGINT, _stop)
 
     conn = queue.connect()
-    log.info("worker %s démarré, types : %s", worker, ", ".join(kinds))
+    log.info("worker %s démarré, types : %s%s", worker, ", ".join(kinds),
+             " (ordinateur dédié : campagnes marquées seulement, sans proxy)" if local else "")
 
     def pause(seconds: float) -> None:
         end = time.monotonic() + seconds
@@ -57,7 +67,7 @@ def main() -> None:
                 conn.execute("select public.lm_schedule_discovery()")
             if "send" in kinds:
                 conn.execute("select public.lm_queue_sends()")
-            task = queue.claim(conn, kinds, worker)
+            task = queue.claim(conn, kinds, worker, local=local)
         except Exception:
             log.exception("file injoignable, nouvel essai dans %ss", idle)
             pause(idle)
@@ -73,7 +83,8 @@ def main() -> None:
 
         started = time.monotonic()
         log.info("tâche %s (%s) essai %s/%s", task.id, task.kind, task.attempts, task.max_attempts)
-        net_before = proxy_budget.network_bytes() if task.kind in PROXY_KINDS else None
+        # Ordinateur dédié : pas de proxy, rien à compter dans le plafond du proxy ni dans le budget du client
+        net_before = proxy_budget.network_bytes() if task.kind in PROXY_KINDS and not local else None
 
         def spent() -> int:
             after = proxy_budget.network_bytes() if net_before is not None else None
@@ -146,6 +157,10 @@ def main() -> None:
                     proxy_budget.add_search_bytes(conn, task.id, used)
             except Exception:
                 log.exception("consommation du proxy non mesurée")
+        if local and "proxy_bytes" in result:
+            # Trafic de la connexion de l'ordinateur, pas du proxy : rangé à part pour ne pas entamer le plafond
+            result["local_bytes"] = result.pop("proxy_bytes")
+            result["local_worker"] = True
         result["duration_ms"] = int((time.monotonic() - started) * 1000)
         queue.complete(conn, task.id, result)
         if net_before is not None and "proxy_bytes" in result:

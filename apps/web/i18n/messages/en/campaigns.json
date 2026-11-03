@@ -529,5 +529,16 @@
       "schedule": "Choose how many days to spread the sends over.",
       "notActive": "This autopilot run is already over: reload the page."
     }
+  },
+  "localDiscovery": {
+    "title": "Search on the dedicated computer (no proxy)",
+    "offHint": "Turn on to run this campaign's Google Maps searches on the team's computer, through its own internet connection: no proxy cost. Slower, and the search only moves forward while the computer is on with the robot running.",
+    "onHint": "This campaign's Google Maps searches run on the dedicated computer. They only move forward while it is on with the robot running.",
+    "neverSeen": "No sign of the computer yet: start the robot on it.",
+    "seenNow": "Computer active just now.",
+    "seenAgo": "Last sign of the computer {minutes} min ago.",
+    "enabledToast": "Searches now run on the dedicated computer.",
+    "disabledToast": "Searches are back on the servers.",
+    "failed": "Could not change where the searches run."
   }
 }

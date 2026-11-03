@@ -255,14 +255,14 @@ isOneToOne: false
                   ]
                 },"lm_autopilots": {
                   Row: {
-                    "account_id": string,"campaign_id": string,"created_at": string,"created_by": string | null,"finished_at": string | null,"finished_reason": string | null,"id": string,"messages": (string)[],"schedule": Database["public"]['Enums']["lm_autopilot_schedule"],"space_id": string,"spread_days": number,"status": Database["public"]['Enums']["lm_autopilot_status"],"target": number,"timezone": string,"updated_at": string,"updated_by": string | null
+                    "account_id": string,"campaign_id": string,"created_at": string,"created_by": string | null,"cursor_created_at": string | null,"cursor_prospect_id": string | null,"finished_at": string | null,"finished_reason": string | null,"id": string,"messages": (string)[],"schedule": Database["public"]['Enums']["lm_autopilot_schedule"],"space_id": string,"spread_days": number,"status": Database["public"]['Enums']["lm_autopilot_status"],"target": number,"ticked_at": string | null,"timezone": string,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"campaign_id": string,"created_at"?: string,"created_by"?: string | null,"finished_at"?: string | null,"finished_reason"?: string | null,"id"?: string,"messages": (string)[],"schedule"?: Database["public"]['Enums']["lm_autopilot_schedule"],"space_id": string,"spread_days"?: number,"status"?: Database["public"]['Enums']["lm_autopilot_status"],"target": number,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id": string,"campaign_id": string,"created_at"?: string,"created_by"?: string | null,"cursor_created_at"?: string | null,"cursor_prospect_id"?: string | null,"finished_at"?: string | null,"finished_reason"?: string | null,"id"?: string,"messages": (string)[],"schedule"?: Database["public"]['Enums']["lm_autopilot_schedule"],"space_id": string,"spread_days"?: number,"status"?: Database["public"]['Enums']["lm_autopilot_status"],"target": number,"ticked_at"?: string | null,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"campaign_id"?: string,"created_at"?: string,"created_by"?: string | null,"finished_at"?: string | null,"finished_reason"?: string | null,"id"?: string,"messages"?: (string)[],"schedule"?: Database["public"]['Enums']["lm_autopilot_schedule"],"space_id"?: string,"spread_days"?: number,"status"?: Database["public"]['Enums']["lm_autopilot_status"],"target"?: number,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id"?: string,"campaign_id"?: string,"created_at"?: string,"created_by"?: string | null,"cursor_created_at"?: string | null,"cursor_prospect_id"?: string | null,"finished_at"?: string | null,"finished_reason"?: string | null,"id"?: string,"messages"?: (string)[],"schedule"?: Database["public"]['Enums']["lm_autopilot_schedule"],"space_id"?: string,"spread_days"?: number,"status"?: Database["public"]['Enums']["lm_autopilot_status"],"target"?: number,"ticked_at"?: string | null,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -553,6 +553,54 @@ isOneToOne: false
                   }
                   Update: {
                     "admin1_code"?: string | null,"ascii_name"?: string,"country_code"?: string,"geoname_id"?: number,"latitude"?: number,"longitude"?: number,"name"?: string,"population"?: number,"timezone"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"lm_local_discovery_campaigns": {
+                  Row: {
+                    "campaign_id": string,"created_at": string,"enabled_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "campaign_id": string,"created_at"?: string,"enabled_by"?: string | null
+                  }
+                  Update: {
+                    "campaign_id"?: string,"created_at"?: string,"enabled_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_local_discovery_campaigns_campaign_id_fkey"
+      columns: ["campaign_id"]
+isOneToOne: true
+      referencedRelation: "lm_campaigns"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"lm_local_discovery_users": {
+                  Row: {
+                    "created_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"lm_local_workers": {
+                  Row: {
+                    "seen_at": string,"worker_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "seen_at"?: string,"worker_id": string
+                  }
+                  Update: {
+                    "seen_at"?: string,"worker_id"?: string
                   }
                   Relationships: [
                     
@@ -1224,6 +1272,8 @@ isOneToOne: false
 "campaign_id": string,
 "created_at": string,
 "created_by": string | null,
+"cursor_created_at": string | null,
+"cursor_prospect_id": string | null,
 "finished_at": string | null,
 "finished_reason": string | null,
 "id": string,
@@ -1233,6 +1283,7 @@ isOneToOne: false
 "spread_days": number,
 "status": Database["public"]['Enums']["lm_autopilot_status"],
 "target": number,
+"ticked_at": string | null,
 "timezone": string,
 "updated_at": string,
 "updated_by": string | null
@@ -1324,6 +1375,32 @@ isOneToOne: false
 "lm_city_label":
 { Args: { "p_country_name": string,"p_name": string }; Returns: string
                            },
+"lm_claim_local_task":
+{ Args: { "p_worker_id": string }; Returns: {
+              "account_id": string,
+"attempts": number,
+"created_at": string,
+"error": string | null,
+"finished_at": string | null,
+"id": number,
+"idempotency_key": string,
+"kind": Database["public"]['Enums']["lm_task_kind"],
+"locked_at": string | null,
+"max_attempts": number,
+"payload": NonNullable<Json>,
+"priority": number,
+"result": Json | null,
+"run_after": string,
+"status": Database["public"]['Enums']["lm_task_status"],
+"updated_at": string,
+"worker_id": string | null
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "lm_tasks"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "lm_claim_task":
 { Args: { "p_kinds": (Database["public"]['Enums']["lm_task_kind"])[],"p_worker_id": string }; Returns: {
               "account_id": string,
@@ -1404,11 +1481,17 @@ isOneToOne: false
               "duplicates": number,"inserted": number
             }[]
                            },
+"lm_local_discovery_state":
+{ Args: { "p_campaign_id": string }; Returns: Json
+                           },
 "lm_mark_attempts":
 { Args: { "p_ids": (string)[],"p_outcome": string }; Returns: number
                            },
 "lm_mark_place_seen":
 { Args: { "p_place_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
+                           },
+"lm_outreach_reserved":
+{ Args: { "p_account_id": string }; Returns: number
                            },
 "lm_pause_autopilot":
 { Args: { "p_autopilot_id": string }; Returns: boolean
@@ -1478,6 +1561,9 @@ isOneToOne: false
                            },
 "lm_sends_today":
 { Args: { "p_campaign_id": string }; Returns: number
+                           },
+"lm_set_local_discovery":
+{ Args: { "p_campaign_id": string,"p_enabled": boolean }; Returns: boolean
                            },
 "lm_site_known":
 { Args: { "p_site_key": string,"p_space_id": string }; Returns: boolean

@@ -61,6 +61,20 @@ Proxy : seule la recherche Google Maps passe par PROXY_URL (préparation, e-mail
 Robot d'envoi : serveur dédié « leadmaker-envoi-1 » (cx53, créé par `scripts/setup-send-server.sh`, SEND_REPLICAS=30 dans son .env). Mise à jour : `scripts/deploy-robots.sh --send` (ou `--all`). Pour couper l'envoi : `docker compose --profile send stop send` sur ce serveur.
 Suivi : `docker compose ps`, `docker compose logs -f prepare`. Chaque robot finit sa tâche en cours avant de s'arrêter.
 
+## Recherche sur un ordinateur dédié (sans proxy)
+
+Pour ne pas payer le proxy sur une campagne, un utilisateur autorisé (table `lm_local_discovery_users`, à remplir en
+SQL) active « Recherche sur l'ordinateur dédié » sur la page de la campagne. Les robots des serveurs laissent alors ses
+recherches Google Maps de côté (`lm_claim_task`) et le robot du Mac les fait par la connexion du Mac
+(`LOCAL_DISCOVERY=1` → `lm_claim_local_task`, jamais de proxy, trafic rangé dans `local_bytes`, hors plafond).
+Le surveillant ignore ces campagnes. Estimations, préparation et envoi restent sur les serveurs.
+
+```bash
+./workers/scripts/run-mac-discovery.sh          # lance 1 robot sur la vraie base (workers/.env.cloud)
+./workers/scripts/run-mac-discovery.sh status   # en marche ? dernières lignes du journal
+./workers/scripts/run-mac-discovery.sh stop     # arrêt propre
+```
+
 ## Charger les données de référence
 
 ```bash

@@ -304,6 +304,11 @@ export const CampaignIdSchema = z.object({
   campaignId: z.string().uuid(),
 });
 
+/** Recherche Google Maps sur l'ordinateur dédié (utilisateurs autorisés seulement). */
+export const LocalDiscoverySchema = CampaignIdSchema.extend({
+  enabled: z.boolean(),
+});
+
 export const DuplicateCampaignSchema = CampaignIdSchema.extend({
   accountSlug: z.string().min(1),
   /** nom de la copie, traduit côté client (« X (copie) ») */

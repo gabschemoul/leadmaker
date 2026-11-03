@@ -56,32 +56,8 @@ create policy "restrict_mfa_lm_tasks" on public.lm_tasks
   as restrictive to authenticated using (public.is_mfa_compliant());
 
 -- Réserve une tâche prête pour un worker. Renvoie 0 ou 1 ligne.
-create or replace function public.lm_claim_task(
-  p_kinds public.lm_task_kind[],
-  p_worker_id text
-) returns setof public.lm_tasks
-set search_path = ''
-language sql
-security definer
-as $$
-  update public.lm_tasks t
-     set status = 'running',
-         worker_id = p_worker_id,
-         locked_at = now(),
-         attempts = t.attempts + 1
-   where t.id = (
-     select id from public.lm_tasks
-      where status = 'queued' and kind = any (p_kinds) and run_after <= now()
-      order by priority, created_at
-      for update skip locked
-      limit 1
-   )
-  returning t.*;
-$$;
-
-revoke all on function public.lm_claim_task(public.lm_task_kind[], text) from public;
-
-grant execute on function public.lm_claim_task(public.lm_task_kind[], text) to service_role;
+-- lm_claim_task (réservation d'une tâche par un robot des serveurs) : voir 34-leadmaker-local-discovery.sql
+-- (elle laisse de côté les recherches des campagnes faites sur l'ordinateur dédié).
 
 create or replace function public.lm_complete_task(p_id bigint, p_result jsonb) returns void
 set search_path = ''

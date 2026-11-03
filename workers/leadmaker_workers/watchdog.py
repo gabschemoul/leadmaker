@@ -102,7 +102,11 @@ def check_search(conn: psycopg.Connection) -> dict:
                min(case when status = 'queued' then run_after else locked_at end) as due_since
           from public.lm_tasks
          where kind = any (%s::public.lm_task_kind[])
-           and ((status = 'queued' and run_after <= now()) or status = 'running')""", (kinds,))
+           and ((status = 'queued' and run_after <= now()) or status = 'running')
+           and not (kind = 'discovery' and exists (
+                 select 1 from public.lm_local_discovery_campaigns l
+                  where l.campaign_id::text = payload ->> 'campaign_id'))""", (kinds,))
+    # (les campagnes cherchées sur un ordinateur dédié ne comptent pas : elles attendent quand il est éteint)
     progress = _one(conn, """
         select max(updated_at) as last_progress
           from public.lm_tasks
@@ -118,6 +122,7 @@ def check_search(conn: psycopg.Connection) -> dict:
           join public.lm_campaigns c on c.id = (t.payload ->> 'campaign_id')::uuid
           join public.accounts a on a.id = c.account_id
          where t.kind = 'discovery' and ((t.status = 'queued' and t.run_after <= now()) or t.status = 'running')
+           and not exists (select 1 from public.lm_local_discovery_campaigns l where l.campaign_id = c.id)
          group by 1, 2 order by 3 desc limit 6""").fetchall()
     return {
         "pending": int(pending.get("queued") or 0) + int(pending.get("running") or 0),

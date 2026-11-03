@@ -33,6 +33,7 @@ import {
 } from '../../forms/_lib/server/forms.loader';
 import { loadSenderProfile } from '../../sender/_lib/server/sender.loader';
 import { CampaignHeaderActions } from '../_components/campaign-header-actions';
+import { CampaignLocalDiscovery } from '../_components/campaign-local-discovery';
 import { CampaignStepsRail } from '../_components/steps/campaign-steps-rail';
 import {
   type ContactMode,
@@ -46,6 +47,7 @@ import {
   loadAutoValidationAllowed,
   loadCampaign,
   loadCampaignForEdit,
+  loadLocalDiscoveryState,
   loadPreviewProspects,
 } from '../_lib/server/campaigns.loader';
 import {
@@ -123,11 +125,12 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     notFound();
   }
 
-  const [live, counts, sender, autopilot] = await Promise.all([
+  const [live, counts, sender, autopilot, localDiscovery] = await Promise.all([
     fetchCampaignLive(client, id),
     loadCampaignAttemptCounts(client, id),
     loadSenderProfile(client, campaign.space_id),
     fetchAutopilotSummary(client, id),
+    loadLocalDiscoveryState(client, id),
   ]);
 
   const templates = parseTemplates(campaign.templates);
@@ -195,6 +198,15 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
             <Trans i18nKey={'campaigns.detail.folder'} />{' '}
             <span className={'text-foreground'}>{folderName}</span>
           </p>
+        ) : null}
+
+        {localDiscovery ? (
+          <CampaignLocalDiscovery
+            campaignId={id}
+            allowed={localDiscovery.allowed}
+            enabled={localDiscovery.enabled}
+            minutesAgo={localDiscovery.minutesAgo}
+          />
         ) : null}
 
         <CampaignStepsRail

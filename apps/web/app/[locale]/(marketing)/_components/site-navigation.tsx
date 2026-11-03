@@ -7,17 +7,21 @@ import { MobileSiteNavigation } from './mobile-site-navigation';
 import { SiteNavigationItem, SiteNavigationLink } from './site-navigation-item';
 
 const links = {
+  HowItWorks: {
+    label: 'marketing.navHow',
+    path: '/#fonctionnement',
+  },
   Pricing: {
     label: 'marketing.pricing',
     path: '/pricing',
   },
+  Demo: {
+    label: 'marketing.navDemo',
+    path: '/#demo',
+  },
   FAQ: {
     label: 'marketing.faq',
     path: '/faq',
-  },
-  Contact: {
-    label: 'marketing.contact',
-    path: '/contact',
   },
   SignIn: {
     label: 'auth.signIn',

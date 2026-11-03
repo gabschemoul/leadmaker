@@ -4,14 +4,15 @@ import { SiteHeaderAccountSection } from './site-header-account-section';
 import { SiteNavigation } from './site-navigation';
 
 /**
- * En-tête du site, façon ElevenLabs : logo, liens au centre-gauche, boutons
- * en pilule à droite. Collant, fond légèrement translucide et filet fin.
+ * En-tête du site : logo, liens, boutons en pilule à droite. Collant, fond
+ * légèrement translucide et filet fin. Aussi large que la page d'accueil
+ * (marges de 16 à 88 px, comme Apollo).
  */
 export function SiteHeader() {
   return (
     <header
       className={
-        'site-header bg-background/90 border-hairline sticky top-0 z-20 w-full border-b px-4 backdrop-blur-lg sm:px-6'
+        'site-header bg-background/90 border-hairline sticky top-0 z-20 w-full border-b px-[clamp(16px,5.4vw,88px)] backdrop-blur-lg'
       }
     >
       {/* Comme ElevenLabs sur téléphone : logo à gauche, puis le bouton
@@ -19,7 +20,7 @@ export function SiteHeader() {
           boutons. */}
       <div
         className={
-          'mx-auto flex h-16 w-full max-w-[62rem] items-center gap-x-3 md:gap-x-8'
+          'mx-auto flex h-16 w-full max-w-[1880px] items-center gap-x-3 md:h-[72px] md:gap-x-9'
         }
       >
         <AppLogo href="/" linkClassName={'shrink-0'} />

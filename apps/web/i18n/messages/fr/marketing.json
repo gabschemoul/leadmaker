@@ -188,5 +188,177 @@
     "a7": "Non. Les forfaits sont mensuels ou annuels et résiliables à tout moment depuis vos réglages de facturation."
   },
   "theme": "Thème clair / sombre",
-  "faqTitleShort": "Questions fréquentes"
+  "faqTitleShort": "Questions fréquentes",
+  "homeV2": {
+    "metaTitle": "Prospection commerciale en pilote automatique",
+    "eyebrow": "Prospection automatisée, partout dans le monde",
+    "title": "Votre prospection commerciale, en pilote automatique.",
+    "lead": "Prospectigo trouve des prospects qualifiés pour votre secteur d'activité et les contacte directement. Vous choisissez la zone géographique et le secteur, Prospectigo s'occupe du reste.",
+    "start": "Commencer gratuitement",
+    "bookDemo": "Réserver une démo",
+    "fine": "Sans engagement · résiliable à tout moment",
+    "steps": {
+      "target": "1 · Ciblez",
+      "find": "2 · Trouvez",
+      "contact": "3 · Contactez"
+    },
+    "appAlt": "L'appli Prospectigo : on cible une zone et un secteur, les prospects apparaissent, puis les messages partent automatiquement.",
+    "app": {
+      "newCampaign": "Nouvelle campagne",
+      "stepBadge": "Étape 1 sur 3 · Ciblage",
+      "zone": "Zone géographique",
+      "zoneValue": "Austin, Texas",
+      "radius": "+ 20 km",
+      "sector": "Secteur d'activité",
+      "sector1": "Dentistes ✓",
+      "sector2": "Orthodontistes ✓",
+      "add": "+ Ajouter",
+      "filters": "Filtres",
+      "withWebsite": "Avec un site web",
+      "rating": "Note moyenne de 4 à 5",
+      "matching": "entreprises correspondent",
+      "launch": "Lancer la recherche →",
+      "qualified": "248 prospects qualifiés",
+      "export": "Exporter en CSV",
+      "colCompany": "Entreprise",
+      "colRating": "Note",
+      "colWebsite": "Site web",
+      "colEmail": "E-mail",
+      "colPhone": "Téléphone",
+      "found": "✓ Trouvé",
+      "searching": "Recherche…",
+      "campaign": "Campagne « Dentistes Austin »",
+      "sending": "Envoi automatique en cours",
+      "messageA": "Message A",
+      "messageB": "Message B",
+      "message": "Bonjour, <v>entreprise</v> fait partie des cabinets les mieux notés de <v>ville</v>. Nous aidons les dentistes à remplir leur agenda de nouveaux patients…",
+      "sender": "Expéditeur : Jordan Miller",
+      "schedule": "Lun → ven · 9 h – 17 h",
+      "today": "Aujourd'hui",
+      "sentCount": "42 / 100 envoyés",
+      "sent": "Envoyé ✓",
+      "inProgress": "● En cours"
+    },
+    "sectorsEyebrow": "Tous les secteurs d'activité, partout dans le monde",
+    "sectors": [
+      "Dentistes",
+      "Plombiers",
+      "Agences immobilières",
+      "Avocats",
+      "Restaurants",
+      "Salles de sport",
+      "Garages",
+      "Architectes",
+      "Électriciens",
+      "Vétérinaires",
+      "Experts-comptables",
+      "Coiffeurs"
+    ],
+    "concept": {
+      "eyebrow": "Comment ça marche",
+      "title": "Ciblez. Trouvez. Contactez.",
+      "text": "Trois étapes, et votre prospection tourne toute seule, campagne après campagne.",
+      "targetTitle": "Ciblez",
+      "targetText": "Choisissez la zone géographique et le secteur d'activité de vos futurs clients.",
+      "targetTags": ["Zone", "Secteur", "Filtres"],
+      "findTitle": "Trouvez",
+      "findText": "Prospectigo dresse la liste des entreprises qui correspondent, avec leurs coordonnées.",
+      "findTags": ["Site web", "E-mail", "Téléphone"],
+      "contactTitle": "Contactez",
+      "contactText": "Vos messages personnalisés partent automatiquement, au rythme que vous choisissez.",
+      "contactTags": ["Expéditeur", "A/B testing", "Planification"]
+    },
+    "target": {
+      "eyebrow": "Cibler",
+      "title": "Ciblez exactement les entreprises que vous voulez",
+      "text": "Une ville et ses alentours, une liste de villes ou un pays entier. Puis le secteur d'activité et les critères qui comptent pour vous.",
+      "zone": "<b>Zone géographique</b> : ville + rayon, liste de villes ou pays entier",
+      "sectors": "<b>Secteurs d'activité</b> : dentistes, plombiers, agences immobilières…",
+      "filters": "<b>Filtres précis</b> : avec ou sans site web, note moyenne, nombre d'avis",
+      "cta": "Essayer le ciblage",
+      "ui": {
+        "zone": "Zone géographique",
+        "modes": ["Ville + rayon", "Liste de villes", "Pays entier"],
+        "cities": ["Austin ×", "Dallas ×", "Houston ×", "San Antonio ×"],
+        "sector": "Secteur d'activité",
+        "sectors": [
+          "Dentistes ✓",
+          "Orthodontistes ✓",
+          "Cliniques",
+          "+ Ajouter"
+        ],
+        "filters": "Filtres",
+        "withWebsite": "Avec un site web",
+        "rating": "Note moyenne de 4 à 5",
+        "reviews": "Au moins 20 avis",
+        "count": "entreprises",
+        "live": "Estimation en direct"
+      }
+    },
+    "find": {
+      "eyebrow": "Trouver",
+      "title": "Une liste de prospects que vous contrôlez de A à Z",
+      "text": "Chaque prospect arrive avec son site web, son adresse e-mail et son numéro de téléphone. Vous gardez la main sur toute la liste.",
+      "manage": "<b>Gérez votre liste</b> : triez, retirez, ajoutez vos propres prospects",
+      "enrich": "<b>Enrichissement</b> : l'adresse e-mail trouvée pour vous, le téléphone affiché",
+      "export": "<b>Export CSV</b> en un clic, pour votre CRM ou vos outils",
+      "cta": "Essayer gratuitement",
+      "ui": {
+        "list": "Dentistes · Austin",
+        "add": "+ Ajouter",
+        "export": "Exporter CSV",
+        "reviews1": "★ 4,8 · 212 avis",
+        "reviews2": "★ 4,6 · 98 avis",
+        "findEmail": "Trouver l'e-mail",
+        "removed": "Retiré de la liste"
+      }
+    },
+    "demo": {
+      "eyebrow": "Démo · 20 minutes",
+      "title": "Voyez Prospectigo en action",
+      "text": "On lance ensemble une vraie recherche sur votre secteur et votre zone, en direct, et on répond à toutes vos questions.",
+      "cta": "Réserver ma démo",
+      "fine": "Gratuit · sans engagement · en visio"
+    },
+    "contact": {
+      "eyebrow": "Contacter",
+      "title": "Des messages personnalisés, envoyés en automatique",
+      "text": "Créez votre expéditeur, écrivez vos messages, choisissez quand ils partent. Prospectigo contacte chaque entreprise à votre place, en masse.",
+      "sender": "<b>Expéditeur</b> à votre nom, ou un par client",
+      "ab": "<b>A/B testing</b> : plusieurs versions d'un message, et la gagnante se voit",
+      "schedule": "<b>Planification</b> des envois : jours, horaires, volume par jour",
+      "cta": "Réserver une démo",
+      "ui": {
+        "sender": "Expéditeur",
+        "senderValue": "Jordan Miller · Miller Studio",
+        "ready": "Prêt",
+        "messages": "Messages",
+        "versions": "2 versions",
+        "message": "Bonjour, <v>entreprise</v> fait partie des mieux notés de <v>ville</v>…",
+        "schedule": "Planification",
+        "scheduleValue": "Lun → ven · 9 h – 17 h · 100 par jour",
+        "auto": "Envoi automatique",
+        "autoCount": "42 / 100"
+      }
+    },
+    "cards": {
+      "eyebrow": "Tout pour contacter à grande échelle",
+      "title": "Des centaines de prises de contact par jour, sans y passer vos journées",
+      "text": "Tout ce qu'il faut pour que vos campagnes partent seules, et pour savoir lesquelles marchent.",
+      "senders": "Expéditeurs",
+      "sendersText": "Vos coordonnées sur chaque message. Un expéditeur différent par campagne si vous prospectez pour plusieurs clients.",
+      "ab": "A/B testing",
+      "abText": "Plusieurs versions du même message, envoyées en alternance, pour garder celle qui fonctionne le mieux.",
+      "results": "Résultats par message",
+      "resultsText": "Combien de messages envoyés, combien de réponses, pour chaque version et chaque campagne.",
+      "bulk": "Envoi en masse automatisé",
+      "bulkText": "Choisissez vos jours, vos horaires et votre volume : Prospectigo envoie, vous recevez les réponses."
+    },
+    "final": {
+      "title": "Votre prochaine campagne peut partir aujourd'hui.",
+      "text": "Choisissez une zone et un secteur : Prospectigo trouve vos prospects et les contacte pour vous."
+    }
+  },
+  "navHow": "Fonctionnement",
+  "navDemo": "Démo"
 }

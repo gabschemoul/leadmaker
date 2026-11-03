@@ -48,7 +48,9 @@
   /* contour 0,5 px des boutons blancs */
   --pill-ring: rgba(0, 0, 0, 0.125);
 
-  --brand: #ff4704;
+  /* bleu Klein de la charte « Apollo en bleu » (3/11/2026), remplace
+     l'orange #ff4704 (gardé seulement dans /archives/accueil-v1) */
+  --brand: #3d3dff;
   --brand-foreground: #ffffff;
   --background: #fdfcfc;
   --foreground: #000000;
@@ -89,7 +91,7 @@
   --hairline: rgba(255, 255, 255, 0.07);
   --pill-ring: rgba(255, 255, 255, 0.14);
 
-  --brand: #ff6a33;
+  --brand: #6b6bff;
   --brand-foreground: #ffffff;
   --background: #0c0a09;
   --foreground: #faf8f8;

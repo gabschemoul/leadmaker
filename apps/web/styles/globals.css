@@ -15,6 +15,7 @@
 @import './markdoc.css';
 @import './makerkit.css';
 @import './visuals.css';
+@import './home.css';
 
 /* content sources - update the below if you add a new path */
 @source '../../../packages/*/src/**/*.{ts,tsx}';

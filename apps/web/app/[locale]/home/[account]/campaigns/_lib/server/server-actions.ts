@@ -36,6 +36,21 @@ function stripAccents(value: string) {
 }
 
 /**
+ * Texte de recherche d'activité : minuscules, sans accents, œ/æ développés,
+ * apostrophes (’ ou ') et tirets remplacés par des espaces. Même règle que la
+ * colonne lm_categories.search_key (27-leadmaker-discovery.sql).
+ */
+function foldSearch(value: string) {
+  return stripAccents(value.toLowerCase())
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae')
+    .replace(/ø/g, 'o')
+    .replace(/[’‘`´'-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Autocomplétion des villes d'un pays, par début de nom (sans accents), des
  * plus peuplées aux moins peuplées.
  */
@@ -250,20 +265,29 @@ export const searchCategoriesAction = authActionClient
   .action(async ({ parsedInput: { query } }) => {
     const client = getSupabaseServerClient();
 
-    // caractères qui casseraient la syntaxe du filtre `or` de PostgREST,
-    // et jokers LIKE (retirés plutôt qu'échappés : l'échappement n'est pas
-    // fiable à l'intérieur d'un filtre `or`)
-    const term = query.replace(/[,()"*:\\%_]/g, ' ').trim();
+    // Mots tapés, sans accents ni apostrophes ni tirets (comme search_key en
+    // base), et sans jokers LIKE ni caractères de syntaxe PostgREST. Chaque
+    // mot doit apparaître, dans n'importe quel ordre.
+    const words = foldSearch(query)
+      .replace(/[,()"*:\\%_.]/g, ' ')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 6);
 
-    if (!term) {
+    if (words.length === 0) {
       return [];
     }
 
-    const { data, error } = await client
+    let request = client
       .from('lm_categories')
       .select('gcid, label_fr, label_en, family')
-      .eq('is_excluded', false)
-      .or(`label_fr.ilike.%${term}%,label_en.ilike.%${term}%`)
+      .eq('is_excluded', false);
+
+    for (const word of words) {
+      request = request.ilike('search_key', `%${word}%`);
+    }
+
+    const { data, error } = await request
       .order('is_generic', { ascending: false })
       .order('label_fr', { ascending: true })
       .limit(30);

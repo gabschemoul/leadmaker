@@ -23,6 +23,11 @@ create table if not exists public.lm_categories (
   family text not null,
   is_generic boolean not null default false,
   is_excluded boolean not null default false,
+  -- Libellés français + anglais en minuscules, sans accents ni apostrophes ni tirets (recherche d'activité :
+  -- « eclairage » trouve « éclairage », « d’éclairage » trouve « d'éclairage »). Même règle que foldSearch() côté app.
+  search_key text generated always as (
+    btrim(regexp_replace(translate(replace(replace(lower(label_fr || ' ' || label_en), 'œ', 'oe'), 'æ', 'ae'), 'àâäáãåāçéèêëēíìîïñóòôöõøúùûüūýÿğ’‘`´''-', 'aaaaaaaceeeeeiiiinoooooouuuuuyyg      '), '\s+', ' ', 'g'))
+  ) stored,
   primary key (gcid)
 );
 

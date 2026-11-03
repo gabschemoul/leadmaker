@@ -419,14 +419,14 @@ isOneToOne: false
                   ]
                 },"lm_categories": {
                   Row: {
-                    "family": string,"gcid": string,"is_excluded": boolean,"is_generic": boolean,"label_en": string,"label_fr": string
+                    "family": string,"gcid": string,"is_excluded": boolean,"is_generic": boolean,"label_en": string,"label_fr": string,"search_key": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "family": string,"gcid": string,"is_excluded"?: boolean,"is_generic"?: boolean,"label_en": string,"label_fr": string
+                    "family": string,"gcid": string,"is_excluded"?: boolean,"is_generic"?: boolean,"label_en": string,"label_fr": string,"search_key"?: never
                   }
                   Update: {
-                    "family"?: string,"gcid"?: string,"is_excluded"?: boolean,"is_generic"?: boolean,"label_en"?: string,"label_fr"?: string
+                    "family"?: string,"gcid"?: string,"is_excluded"?: boolean,"is_generic"?: boolean,"label_en"?: string,"label_fr"?: string,"search_key"?: never
                   }
                   Relationships: [
                     

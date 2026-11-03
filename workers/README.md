@@ -69,6 +69,11 @@ recherches Google Maps de côté (`lm_claim_task`) et le robot du Mac les fait p
 (`LOCAL_DISCOVERY=1` → `lm_claim_local_task`, jamais de proxy, trafic rangé dans `local_bytes`, hors plafond).
 Le surveillant ignore ces campagnes. Estimations, préparation et envoi restent sur les serveurs.
 
+Le robot se lance TOUT SEUL : un veilleur (`leadmaker_workers/local_launcher.py`, démarré avec la session par
+launchd) regarde toutes les 15 s si une campagne en cours est marquée, lance le robot si oui et l'arrête sinon.
+Installation une fois par Mac : `./workers/scripts/install-mac-launcher.sh` (retrait : `… uninstall`,
+journal : `workers/logs/mac-launcher.log`). Commandes manuelles du robot, si besoin :
+
 ```bash
 ./workers/scripts/run-mac-discovery.sh          # lance 1 robot sur la vraie base (workers/.env.cloud)
 ./workers/scripts/run-mac-discovery.sh status   # en marche ? dernières lignes du journal

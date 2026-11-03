@@ -534,7 +534,7 @@
     "title": "Recherche sur l'ordinateur dédié (sans proxy)",
     "offHint": "Activez pour faire les recherches Google Maps de cette campagne sur l'ordinateur de l'équipe, par sa connexion internet : rien à payer en proxy. Plus lent, et la recherche n'avance que quand l'ordinateur est allumé avec le robot lancé.",
     "onHint": "Les recherches Google Maps de cette campagne se font sur l'ordinateur dédié. Elles n'avancent que quand il est allumé avec le robot lancé.",
-    "neverSeen": "Aucun signe de l'ordinateur pour l'instant : lancez le robot dessus.",
+    "neverSeen": "Pas encore de signe de l'ordinateur : le robot y démarre tout seul en moins d'une minute s'il est allumé.",
     "seenNow": "Ordinateur actif à l'instant.",
     "seenAgo": "Dernier signe de l'ordinateur il y a {minutes} min.",
     "enabledToast": "Les recherches passent sur l'ordinateur dédié.",

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ListTree, MapPin, X } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useFormContext, useWatch } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@kit/ui/alert';
 import { Badge } from '@kit/ui/badge';
@@ -36,6 +36,7 @@ import {
   RadioGroupItem,
   RadioGroupItemLabel,
 } from '@kit/ui/radio-group';
+import { Spinner } from '@kit/ui/spinner';
 import { Trans } from '@kit/ui/trans';
 
 import type { CountryOption } from '~/lib/leadmaker/countries';
@@ -46,6 +47,7 @@ import {
   CampaignFormSchema,
   type CampaignFormValues,
   type CityRef,
+  MAX_CATEGORIES,
   MAX_CITIES_LIMIT,
   MAX_LIST_CITIES,
   RATING_FLOOR,
@@ -53,6 +55,7 @@ import {
 } from '../_lib/schema/campaign.schema';
 import {
   createCampaignAction,
+  listAllCategoriesAction,
   searchCategoriesAction,
   searchCitiesAction,
   updateCampaignAction,
@@ -74,6 +77,8 @@ export function CampaignForm(props: {
   spaces: SpaceOption[];
   countries: CountryOption[];
   discoveryBalance: number;
+  /** activités au plus (1 000, davantage pour les utilisateurs sans limite) */
+  categoryLimit: number;
   /** campagne existante : le formulaire la modifie au lieu d'en créer une */
   campaign?: {
     id: string;
@@ -337,7 +342,7 @@ export function CampaignForm(props: {
 
           <CitiesSection countryCode={countryCode} />
 
-          <CategoriesSection />
+          <CategoriesSection limit={props.categoryLimit} />
 
           <FiltersSection />
 
@@ -707,10 +712,36 @@ function CitiesListField(props: {
   );
 }
 
-function CategoriesSection() {
+/** Activités affichées en étiquettes ; au-delà, un simple « + N autres ». */
+const CATEGORY_CHIPS_SHOWN = 150;
+
+function CategoriesSection(props: { limit: number }) {
   const t = useTranslations('campaigns');
   const locale = useLocale();
   const [browsing, setBrowsing] = useState(false);
+  // taille du catalogue, connue après un « Tout sélectionner »
+  const [catalogSize, setCatalogSize] = useState<number | null>(null);
+  const { setValue } = useFormContext<CampaignFormValues>();
+  const unlimited = props.limit > MAX_CATEGORIES;
+
+  const selectAll = useAction(listAllCategoriesAction, {
+    onSuccess: ({ data }) => {
+      if (!data) {
+        return;
+      }
+
+      setCatalogSize(data.length);
+      setValue(
+        'categories',
+        data.map((category) => ({
+          gcid: category.gcid,
+          label: locale.startsWith('fr') ? category.labelFr : category.labelEn,
+          family: category.family,
+        })),
+        { shouldDirty: true, shouldValidate: true },
+      );
+    },
+  });
 
   const searchCategories = async (query: string) => {
     const result = await searchCategoriesAction({ query });
@@ -743,6 +774,8 @@ function CategoriesSection() {
           name={'categories'}
           render={({ field }) => {
             const categories = (field.value ?? []) as CategoryRef[];
+            const allSelected =
+              catalogSize !== null && categories.length >= catalogSize;
 
             return (
               <FormItem>
@@ -755,17 +788,56 @@ function CategoriesSection() {
                     <Trans i18nKey={'campaigns.form.categoriesListLabel'} />
                   </FormLabel>
 
-                  <Button
-                    type={'button'}
-                    size={'sm'}
-                    variant={'outline'}
-                    data-test={'campaign-categories-browse'}
-                    onClick={() => setBrowsing(true)}
-                  >
-                    <ListTree className={'mr-1.5 size-4'} />
-                    <Trans i18nKey={'campaigns.form.browseOpen'} />
-                  </Button>
+                  <div className={'flex flex-wrap items-center gap-2'}>
+                    <If condition={unlimited}>
+                      <Button
+                        type={'button'}
+                        size={'sm'}
+                        variant={'outline'}
+                        disabled={selectAll.isPending}
+                        data-test={'campaign-categories-select-all'}
+                        onClick={() => {
+                          if (allSelected) {
+                            field.onChange([]);
+                          } else {
+                            selectAll.execute();
+                          }
+                        }}
+                      >
+                        {selectAll.isPending ? (
+                          <Spinner className={'mr-1.5 size-4'} />
+                        ) : null}
+
+                        <Trans
+                          i18nKey={
+                            allSelected
+                              ? 'campaigns.form.categoriesDeselectAll'
+                              : 'campaigns.form.categoriesSelectAll'
+                          }
+                        />
+                      </Button>
+                    </If>
+
+                    <Button
+                      type={'button'}
+                      size={'sm'}
+                      variant={'outline'}
+                      data-test={'campaign-categories-browse'}
+                      onClick={() => setBrowsing(true)}
+                    >
+                      <ListTree className={'mr-1.5 size-4'} />
+                      <Trans i18nKey={'campaigns.form.browseOpen'} />
+                    </Button>
+                  </div>
                 </div>
+
+                <If condition={selectAll.result.serverError}>
+                  {(message) => (
+                    <p className={'text-destructive text-sm'}>
+                      <Trans i18nKey={message} />
+                    </p>
+                  )}
+                </If>
 
                 <FormControl>
                   <SearchPicker
@@ -787,7 +859,10 @@ function CategoriesSection() {
                       </>
                     )}
                     onSelect={(item) => {
-                      if (!categories.some((c) => c.gcid === item.gcid)) {
+                      if (
+                        categories.length < props.limit &&
+                        !categories.some((c) => c.gcid === item.gcid)
+                      ) {
                         field.onChange([...categories, item]);
                       }
                     }}
@@ -820,7 +895,7 @@ function CategoriesSection() {
                 </If>
 
                 <ChipList>
-                  {categories.map((category) => (
+                  {categories.slice(0, CATEGORY_CHIPS_SHOWN).map((category) => (
                     <SelectedChip
                       key={category.gcid}
                       label={category.label}
@@ -832,6 +907,19 @@ function CategoriesSection() {
                       }
                     />
                   ))}
+
+                  <If condition={categories.length > CATEGORY_CHIPS_SHOWN}>
+                    <span
+                      className={'text-muted-foreground self-center text-sm'}
+                    >
+                      <Trans
+                        i18nKey={'campaigns.form.categoriesMore'}
+                        values={{
+                          count: categories.length - CATEGORY_CHIPS_SHOWN,
+                        }}
+                      />
+                    </span>
+                  </If>
                 </ChipList>
 
                 <FormMessage />
@@ -843,7 +931,7 @@ function CategoriesSection() {
                   onChange={(next) =>
                     field.onChange(next, { shouldValidate: true })
                   }
-                  max={1000}
+                  max={props.limit}
                 />
               </FormItem>
             );

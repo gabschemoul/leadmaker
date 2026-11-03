@@ -17,6 +17,7 @@ import {
   EstimateCampaignSchema,
   FamilyCategoriesSchema,
   LocalDiscoverySchema,
+  MAX_CATEGORIES,
   NearbyCitiesSchema,
   SearchCategoriesSchema,
   SearchCitiesSchema,
@@ -25,6 +26,7 @@ import {
   buildTargeting,
 } from '../schema/campaign.schema';
 import { SaveCampaignTemplatesSchema } from '../schema/templates.schema';
+import { getCategoryLimit } from './category-limit';
 
 /** Échappe les jokers de LIKE (% et _) saisis par l'utilisateur. */
 function escapeLike(value: string) {
@@ -196,13 +198,7 @@ export const nearbyCitiesAction = authActionClient
  * d'activités, pour parcourir les activités sans connaître leur nom exact.
  */
 export const listCategoryFamiliesAction = authActionClient.action(async () => {
-  const client = getSupabaseServerClient();
-
-  const { data, error } = await client
-    .from('lm_categories')
-    .select('family')
-    .eq('is_excluded', false)
-    .limit(10000);
+  const { data, error } = await loadCatalog(getSupabaseServerClient());
 
   if (error) {
     const logger = await getLogger();
@@ -224,6 +220,78 @@ export const listCategoryFamiliesAction = authActionClient.action(async () => {
     .map(([family, count]) => ({ family, count }))
     .sort((a, b) => a.family.localeCompare(b.family, 'fr'));
 });
+
+/** Lignes par requête : l'API de la base n'en renvoie pas plus (max_rows). */
+const CATALOG_PAGE = 1000;
+
+/**
+ * Tout le catalogue d'activités (hors activités exclues), lu par pages de
+ * CATALOG_PAGE : une seule requête s'arrêtait aux 1 000 premières des ~3 900.
+ */
+async function loadCatalog(client: ReturnType<typeof getSupabaseServerClient>) {
+  const rows: {
+    gcid: string;
+    label_fr: string;
+    label_en: string;
+    family: string;
+  }[] = [];
+
+  // 20 pages au plus : garde-fou si le catalogue grossissait démesurément
+  for (let page = 0; page < 20; page++) {
+    const { data, error } = await client
+      .from('lm_categories')
+      .select('gcid, label_fr, label_en, family')
+      .eq('is_excluded', false)
+      .order('gcid', { ascending: true })
+      .range(page * CATALOG_PAGE, (page + 1) * CATALOG_PAGE - 1);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    rows.push(...data);
+
+    if (data.length < CATALOG_PAGE) {
+      break;
+    }
+  }
+
+  return { data: rows, error: null };
+}
+
+/**
+ * Toutes les activités du catalogue, pour « Tout sélectionner » (utilisateurs
+ * sans limite d'activités seulement : sinon la sélection dépasserait la limite).
+ */
+export const listAllCategoriesAction = authActionClient.action(
+  async ({ ctx }) => {
+    const [limit, catalog] = await Promise.all([
+      getCategoryLimit(ctx.user.id),
+      loadCatalog(getSupabaseServerClient()),
+    ]);
+
+    if (catalog.error) {
+      const logger = await getLogger();
+      logger.error(
+        { name: 'leadmaker.categories.all', error: catalog.error },
+        'All categories failed',
+      );
+
+      throw new Error('campaigns.errors.searchFailed');
+    }
+
+    if (catalog.data.length > limit) {
+      throw new Error('campaigns.errors.tooManyCategories');
+    }
+
+    return catalog.data.map((category) => ({
+      gcid: category.gcid,
+      labelFr: category.label_fr,
+      labelEn: category.label_en,
+      family: category.family,
+    }));
+  },
+);
 
 /** Les activités d'une famille : les plus courantes d'abord, puis par ordre alphabétique. */
 export const listFamilyCategoriesAction = authActionClient
@@ -374,9 +442,18 @@ export const requestEstimateAction = authActionClient
     },
   );
 
+/** Plus d'activités que la limite de l'utilisateur (1 000, sauf Gabriel et Nath) : refusé. */
+async function assertCategoryLimit(count: number, userId: string) {
+  if (count > MAX_CATEGORIES && count > (await getCategoryLimit(userId))) {
+    throw new Error('campaigns.errors.tooManyCategories');
+  }
+}
+
 export const createCampaignAction = authActionClient
   .inputSchema(CreateCampaignSchema)
   .action(async ({ parsedInput: values, ctx }) => {
+    await assertCategoryLimit(values.categories.length, ctx.user.id);
+
     const targeting = buildTargeting(values);
 
     if (!targeting) {
@@ -426,6 +503,8 @@ export const createCampaignAction = authActionClient
 export const updateCampaignAction = authActionClient
   .inputSchema(UpdateCampaignSchema)
   .action(async ({ parsedInput: values, ctx }) => {
+    await assertCategoryLimit(values.categories.length, ctx.user.id);
+
     const targeting = buildTargeting(values);
 
     if (!targeting) {

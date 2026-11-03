@@ -92,12 +92,7 @@ export async function loadCampaignForEdit(
           .select('geoname_id, name, population')
           .in('geoname_id', geonameIds)
       : Promise.resolve({ data: [], error: null }),
-    gcids.length
-      ? client
-          .from('lm_categories')
-          .select('gcid, label_fr, label_en, family')
-          .in('gcid', gcids)
-      : Promise.resolve({ data: [], error: null }),
+    loadCategoriesByGcid(client, gcids),
   ]);
 
   if (cities.error) throw cities.error;
@@ -132,6 +127,39 @@ export async function loadCampaignForEdit(
     cities: geonameIds.flatMap((id) => cityById.get(id) ?? []),
     categories: gcids.flatMap((gcid) => categoryById.get(gcid) ?? []),
   };
+}
+
+/** Activités par requête : la liste va dans l'adresse de la requête, qui doit rester courte. */
+const GCID_CHUNK = 200;
+
+/**
+ * Libellés des activités choisies, par paquets de GCID_CHUNK : une campagne
+ * peut en compter des milliers (« Tout sélectionner », utilisateurs sans
+ * limite), trop pour une seule requête.
+ */
+async function loadCategoriesByGcid(client: Client, gcids: string[]) {
+  const chunks: string[][] = [];
+
+  for (let i = 0; i < gcids.length; i += GCID_CHUNK) {
+    chunks.push(gcids.slice(i, i + GCID_CHUNK));
+  }
+
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      client
+        .from('lm_categories')
+        .select('gcid, label_fr, label_en, family')
+        .in('gcid', chunk),
+    ),
+  );
+
+  const failed = results.find((result) => result.error);
+
+  if (failed?.error) {
+    return { data: null, error: failed.error };
+  }
+
+  return { data: results.flatMap((result) => result.data ?? []), error: null };
 }
 
 /**

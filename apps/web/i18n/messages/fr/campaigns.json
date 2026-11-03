@@ -131,7 +131,10 @@
       "whereRadius": "{city} et {km} km autour",
       "whereMissing": "aucune ville choisie",
       "andMore": "{list} et {count, plural, one {# autre} other {# autres}}"
-    }
+    },
+    "categoriesSelectAll": "Tout sélectionner",
+    "categoriesDeselectAll": "Tout désélectionner",
+    "categoriesMore": "+ {count, plural, one {# autre activité} other {# autres activités}}"
   },
   "estimate": {
     "title": "Estimation",
@@ -232,7 +235,8 @@
     "pauseFailed": "La campagne n'a pas pu être mise en pause. Réessayez dans un instant.",
     "updateFailed": "Les modifications n'ont pas pu être enregistrées. Réessayez dans un instant.",
     "countryLocked": "Le pays ne peut plus changer une fois la campagne lancée.",
-    "duplicateFailed": "La campagne n'a pas pu être dupliquée. Réessayez dans un instant."
+    "duplicateFailed": "La campagne n'a pas pu être dupliquée. Réessayez dans un instant.",
+    "tooManyCategories": "Une campagne peut contenir 1 000 activités au plus."
   },
   "duplicate": {
     "button": "Dupliquer",

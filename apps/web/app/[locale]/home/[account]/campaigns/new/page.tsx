@@ -21,6 +21,7 @@ import {
 } from '../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../_lib/server/team-account-workspace.loader';
 import { CampaignForm } from '../_components/campaign-form';
+import { getCategoryLimit } from '../_lib/server/category-limit';
 
 interface NewCampaignPageProps {
   params: Promise<{ account: string }>;
@@ -77,13 +78,14 @@ async function NewCampaignPageHeader({ params }: { params: Params }) {
 
 async function NewCampaignContent({ params }: { params: Params }) {
   const { account: slug } = await params;
-  const { account } = await loadTeamWorkspace(slug);
+  const { account, user } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
 
-  const [spaces, countries, balance] = await Promise.all([
+  const [spaces, countries, balance, categoryLimit] = await Promise.all([
     loadSpaces(client, account.id),
     loadCountryOptions(client),
     loadDiscoveryBalance(client, account.id),
+    getCategoryLimit(user.id),
   ]);
 
   return (
@@ -97,6 +99,7 @@ async function NewCampaignContent({ params }: { params: Params }) {
       }))}
       countries={countries}
       discoveryBalance={balance}
+      categoryLimit={categoryLimit}
     />
   );
 }

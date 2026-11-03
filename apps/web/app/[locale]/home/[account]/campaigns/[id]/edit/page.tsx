@@ -25,6 +25,7 @@ import { loadTeamWorkspace } from '../../../_lib/server/team-account-workspace.l
 import { CampaignForm } from '../../_components/campaign-form';
 import { campaignToFormValues } from '../../_lib/schema/campaign.schema';
 import { loadCampaignForEdit } from '../../_lib/server/campaigns.loader';
+import { getCategoryLimit } from '../../_lib/server/category-limit';
 
 interface EditCampaignPageProps {
   params: Promise<{ account: string; id: string }>;
@@ -78,16 +79,18 @@ async function EditCampaignContent({ params }: { params: Params }) {
     notFound();
   }
 
-  const { account } = await loadTeamWorkspace(slug);
+  const { account, user } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
   const locale = await getLocale();
 
-  const [campaign, spaces, countries, balance] = await Promise.all([
-    loadCampaignForEdit(client, id, locale),
-    loadSpaces(client, account.id),
-    loadCountryOptions(client),
-    loadDiscoveryBalance(client, account.id),
-  ]);
+  const [campaign, spaces, countries, balance, categoryLimit] =
+    await Promise.all([
+      loadCampaignForEdit(client, id, locale),
+      loadSpaces(client, account.id),
+      loadCountryOptions(client),
+      loadDiscoveryBalance(client, account.id),
+      getCategoryLimit(user.id),
+    ]);
 
   if (!campaign) {
     notFound();
@@ -111,6 +114,7 @@ async function EditCampaignContent({ params }: { params: Params }) {
         }))}
         countries={countries}
         discoveryBalance={balance}
+        categoryLimit={categoryLimit}
         campaign={{
           id: campaign.id,
           values: campaignToFormValues(campaign),

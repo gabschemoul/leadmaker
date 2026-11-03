@@ -131,7 +131,10 @@
       "whereRadius": "{city} and {km} km around",
       "whereMissing": "no city chosen",
       "andMore": "{list} and {count, plural, one {# other} other {# others}}"
-    }
+    },
+    "categoriesSelectAll": "Select all",
+    "categoriesDeselectAll": "Deselect all",
+    "categoriesMore": "+ {count, plural, one {# more trade} other {# more trades}}"
   },
   "estimate": {
     "title": "Estimate",
@@ -232,7 +235,8 @@
     "pauseFailed": "The campaign couldn't be paused. Please try again in a moment.",
     "updateFailed": "The changes couldn't be saved. Please try again in a moment.",
     "countryLocked": "The country can no longer change once the campaign has been launched.",
-    "duplicateFailed": "The campaign couldn't be duplicated. Please try again in a moment."
+    "duplicateFailed": "The campaign couldn't be duplicated. Please try again in a moment.",
+    "tooManyCategories": "A campaign can include at most 1,000 trades."
   },
   "duplicate": {
     "button": "Duplicate",

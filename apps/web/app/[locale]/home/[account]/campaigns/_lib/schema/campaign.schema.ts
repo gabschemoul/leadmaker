@@ -53,6 +53,17 @@ export const MAX_CITIES_LIMIT = 20000;
 /** Villes au plus dans le mode « Villes précises ». */
 export const MAX_LIST_CITIES = 1000;
 
+/** Activités au plus dans une campagne. */
+export const MAX_CATEGORIES = 1000;
+
+/**
+ * Activités au plus pour les utilisateurs sans limite (Gabriel et Nath, même
+ * liste que la recherche sur l'ordinateur dédié : lm_local_discovery_users).
+ * Le catalogue en compte ~4 000 : « Tout sélectionner » y tient. La limite
+ * réelle de chaque utilisateur est vérifiée par le serveur (server-actions.ts).
+ */
+export const MAX_CATEGORIES_UNLIMITED = 10_000;
+
 const CampaignFieldsSchema = z.object({
   name: z
     .string()
@@ -74,7 +85,7 @@ const CampaignFieldsSchema = z.object({
   // prospect avant de creuser les bonnes. Les anciennes campagnes gardent
   // leur mode en base (TargetingSchema) mais repassent par une liste ici.
   categoriesMode: z.literal('list'),
-  categories: z.array(CategoryRefSchema).max(1000),
+  categories: z.array(CategoryRefSchema).max(MAX_CATEGORIES_UNLIMITED),
   ratingMin: rating(),
   ratingMax: rating(),
   minReviews: integer(0, 1_000_000),
@@ -158,7 +169,7 @@ export const TargetingSchema = z.object({
     z.object({ mode: z.literal('all') }),
     z.object({
       mode: z.literal('list'),
-      gcids: z.array(z.string().min(1)).max(1000),
+      gcids: z.array(z.string().min(1)).max(MAX_CATEGORIES_UNLIMITED),
     }),
   ]),
   max_cities: z.number().int().min(1).max(MAX_CITIES_LIMIT).optional(),

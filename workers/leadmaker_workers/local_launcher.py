@@ -5,8 +5,8 @@
 Démarré à l'ouverture de session par launchd (scripts/install-mac-launcher.sh). Toutes les CHECK_SECONDS, il regarde
 dans la vraie base si une campagne EN COURS est marquée « Recherche sur l'ordinateur dédié » (interrupteur de la
 page de la campagne) :
-- oui, et aucun robot ne tourne → il lance le robot (scripts/run-mac-discovery.sh start) ;
-- non, et un robot tourne → il l'arrête (le robot finit sa fiche en cours), le Mac peut se remettre en veille.
+- oui, et moins de MAC_ROBOTS robots tournent (4 par défaut) → il lance les manquants (run-mac-discovery.sh start) ;
+- non, et des robots tournent → il les arrête (chacun finit sa fiche en cours), le Mac peut se remettre en veille.
 Il ne fait aucune recherche lui-même et n'empêche pas la veille. Journal : workers/logs/mac-launcher.log.
 """
 from __future__ import annotations
@@ -24,8 +24,9 @@ log = logging.getLogger("leadmaker.launcher")
 
 WORKERS_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = WORKERS_DIR / "scripts" / "run-mac-discovery.sh"
-PATTERN = "leadmaker_workers.main mac-discovery"  # marque des robots lancés par run-mac-discovery.sh
+PATTERN = r"^[^ ]*[Pp]ython[0-9.]* -m leadmaker_workers[.]main mac-discovery"  # commence par le Python du robot  # marque des robots lancés par run-mac-discovery.sh
 CHECK_SECONDS = float(os.environ.get("LAUNCHER_CHECK_SECONDS", "15"))
+ROBOTS = int(os.environ.get("MAC_ROBOTS", "4"))  # robots en parallèle (l'ancien outil : 4 sans blocage Google)
 
 WANTED_SQL = """
 select exists (
@@ -43,13 +44,13 @@ def database_url() -> str:
     raise RuntimeError("DATABASE_URL absent de workers/.env.cloud")
 
 
-def robot_running() -> bool:
-    out = subprocess.run(["pgrep", "-lf", PATTERN], capture_output=True, text=True).stdout
-    return any(line and "caffeinate" not in line for line in out.splitlines())
+def robots_running() -> int:
+    out = subprocess.run(["pgrep", "-lf", "--", PATTERN], capture_output=True, text=True).stdout
+    return sum(1 for line in out.splitlines() if line and "caffeinate" not in line)
 
 
-def script(action: str) -> None:
-    result = subprocess.run(["/bin/zsh", str(SCRIPT), action], capture_output=True, text=True, timeout=60)
+def script(*args: str) -> None:
+    result = subprocess.run(["/bin/zsh", str(SCRIPT), *args], capture_output=True, text=True, timeout=120)
     for line in (result.stdout + result.stderr).strip().splitlines():
         log.info("  %s", line)
 
@@ -84,14 +85,15 @@ def main() -> None:
                 pass
             conn = None
         else:
-            running = robot_running()
-            if wanted and not running and time.monotonic() - last_start > 60:
+            running = robots_running()
+            if wanted and running < ROBOTS and time.monotonic() - last_start > 60:
                 # au plus un lancement par minute : un robot qui plante au démarrage n'est pas relancé en boucle
-                log.info("campagne à chercher sur ce Mac : lancement du robot")
+                log.info("campagne à chercher sur ce Mac : %d robot(s) en marche sur %d, lancement des manquants",
+                         running, ROBOTS)
                 last_start = time.monotonic()
-                script("start")
+                script("start", str(ROBOTS))
             elif not wanted and running:
-                log.info("plus aucune campagne en cours sur ce Mac : arrêt du robot")
+                log.info("plus aucune campagne en cours sur ce Mac : arrêt des robots")
                 script("stop")
 
         end = time.monotonic() + CHECK_SECONDS

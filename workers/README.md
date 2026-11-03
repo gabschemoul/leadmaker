@@ -70,7 +70,8 @@ recherches Google Maps de côté (`lm_claim_task`) et le robot du Mac les fait p
 Le surveillant ignore ces campagnes. Estimations, préparation et envoi restent sur les serveurs.
 
 Le robot se lance TOUT SEUL : un veilleur (`leadmaker_workers/local_launcher.py`, démarré avec la session par
-launchd) regarde toutes les 15 s si une campagne en cours est marquée, lance le robot si oui et l'arrête sinon.
+launchd) regarde toutes les 15 s si une campagne en cours est marquée, lance 4 robots si oui (relance ceux qui
+s'arrêtent ; `MAC_ROBOTS` pour changer le nombre) et les arrête sinon.
 Installation une fois par Mac : `./workers/scripts/install-mac-launcher.sh` (retrait : `… uninstall`,
 journal : `workers/logs/mac-launcher.log`). Commandes manuelles du robot, si besoin :
 

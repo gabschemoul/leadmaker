@@ -70,12 +70,17 @@ create table if not exists public.lm_discovery_settings (
   -- Roadmap n°14 : compte au-delà de son budget de proxy du mois → ce nombre de recherches à la fois pour
   -- TOUTES ses campagnes (au lieu de tasks_per_campaign par campagne)
   over_budget_tasks_per_account integer not null default 1,
+  -- Poids de la dernière recherche dans le rendement récent d'une activité (moyenne glissante, 3/11/2026) :
+  -- le planificateur juge les activités sur leurs dernières recherches, comme l'ancien outil, pour lâcher
+  -- vite celles qui s'épuisent (« Hôtel » repassé dans tous les secteurs de Bruxelles déjà vus)
+  recent_weight numeric(4,3) not null default 0.3,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (id),
   constraint lm_discovery_settings_single_row check (id),
   constraint lm_discovery_settings_search_mb check (default_search_mb > 0),
   constraint lm_discovery_settings_over_budget check (over_budget_tasks_per_account > 0),
+  constraint lm_discovery_settings_recent_weight check (recent_weight > 0 and recent_weight <= 1),
   constraint lm_discovery_settings_positive check (
     prior >= 0 and min_searches > 0 and min_rate >= 0 and chain_min > 1 and max_results > 0 and tasks_per_campaign > 0
   ),
@@ -152,6 +157,9 @@ create table if not exists public.lm_campaign_categories (
   -- le planificateur classe les activités par prospects par Mo, pas par recherche (« Hotel » rapporte
   -- mais coûte ~35 Mo par recherche, roadmap n°13)
   proxy_bytes bigint not null default 0,
+  -- Prospects gardés par recherche, en moyenne glissante sur les dernières recherches (poids
+  -- lm_discovery_settings.recent_weight pour la dernière) ; null tant que l'activité n'a pas été cherchée
+  recent_kept numeric,
   abandoned boolean not null default false,
   -- Activité retirée du ciblage après le lancement
   removed boolean not null default false,
@@ -565,10 +573,12 @@ grant execute on function public.lm_pause_campaign(uuid, text) to authenticated,
 -- Planification : pour chaque campagne en cours, réserve les prochaines recherches (catégorie × ville).
 -- Les places (TASKS_PER_CAMPAIGN par campagne) se partagent entre deux régimes :
 --   exploration (EXPLORE_SHARE des places, au moins une) : une activité jamais essayée, générales d'abord ;
---   exploitation (le reste) : l'activité qui rapporte le plus, classée par
---     fiches retenues / Mo de proxy attendus (trafic mesuré, recherches en cours et PRIOR compris),
---     ce qui répartit naturellement les places entre les meilleures activités et écarte celles qui
---     coûtent cher pour peu de prospects (roadmap n°13).
+--   exploitation (le reste) : l'activité qui rapporte le plus EN CE MOMENT, classée par
+--     rendement récent (recent_kept, moyenne glissante des dernières recherches) / Mo de proxy attendus
+--     par recherche, divisé par (1 + recherches en cours) pour répartir les places entre les meilleures.
+--     Avant le 3/11/2026, le classement portait sur tout l'historique : une activité qui avait bien
+--     rapporté au début gardait la tête après s'être épuisée (« review cleaner » : 0,6 prospect par
+--     recherche dans les secteurs déjà vus de Bruxelles, pendant que d'autres en donnaient 8 à 9).
 -- Les activités essayées sans aucun prospect passent en dernier dans les deux régimes ;
 -- quand un régime n'a plus de candidate, l'autre prend la place.
 -- Abandon (lm_finish_search) : aucun prospect après ABANDON_ZERO_AFTER recherches,
@@ -641,13 +651,14 @@ begin
                   else 2
                 end,
                 (cc.searches + cc.in_flight = 0 and cc.is_generic) desc,
-                -- prospects par Mo de proxy attendu : trafic mesuré de l'activité (sa moyenne par recherche
-                -- s'applique aussi aux recherches en cours et au lissage), sinon le trafic par défaut
-                cc.kept::numeric / case
-                  when cc.proxy_bytes > 0 and cc.searches > 0
-                    then cc.proxy_bytes / 1e6 * (cc.searches + cc.in_flight + v_settings.prior) / cc.searches
-                  else v_settings.default_search_mb * (cc.searches + cc.in_flight + v_settings.prior)
-                end desc,
+                -- prospects récents par Mo de proxy attendu par recherche (trafic mesuré de l'activité,
+                -- sinon le trafic par défaut), partagés entre les recherches déjà en cours
+                coalesce(cc.recent_kept, cc.kept::numeric / nullif(cc.searches, 0), 0)
+                  / case
+                      when cc.proxy_bytes > 0 and cc.searches > 0 then cc.proxy_bytes / 1e6 / cc.searches
+                      else v_settings.default_search_mb
+                    end
+                  / (1 + cc.in_flight) desc,
                 random()
        limit 1
        for update of cc skip locked;
@@ -846,6 +857,13 @@ begin
          cards = cc.cards + p_cards,
          cards_new = cc.cards_new + p_new,
          kept = cc.kept + p_kept,
+         -- première recherche : son résultat ; sinon moyenne glissante (sans valeur récente, on part de la
+         -- moyenne de tout l'historique)
+         recent_kept = case
+           when cc.searches = 0 then p_kept
+           else (1 - v_settings.recent_weight) * coalesce(cc.recent_kept, cc.kept::numeric / cc.searches)
+                + v_settings.recent_weight * p_kept
+         end,
          abandoned = cc.abandoned
            or (cc.kept + p_kept = 0 and cc.searches + 1 >= v_settings.abandon_zero_after)
            or (cc.searches + 1 >= v_settings.min_searches

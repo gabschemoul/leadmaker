@@ -404,7 +404,7 @@ function Price({
     <div className={`flex items-baseline gap-1`}>
       <span
         className={
-          'font-heading flex items-center text-[2rem] leading-none font-light tracking-[-0.02em]'
+          'font-display flex items-center text-[2rem] leading-none font-medium tracking-[-0.01em]'
         }
       >
         {children}

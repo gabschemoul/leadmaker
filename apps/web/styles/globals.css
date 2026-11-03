@@ -9,6 +9,7 @@
 @import 'tw-animate-css';
 
 /* local styles - update the below if you add a new style */
+@import './fonts.css';
 @import './theme.css';
 @import './shadcn-ui.css';
 @import './markdoc.css';

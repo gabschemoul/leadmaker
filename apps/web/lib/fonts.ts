@@ -1,4 +1,5 @@
 import {
+  Hedvig_Letters_Serif as DisplayFallbackFont,
   Geist_Mono as MonoFont,
   Host_Grotesk as HeadingFont,
   Inter as SansFont,
@@ -30,6 +31,21 @@ const heading = HeadingFont({
   weight: ['300', '400', '500', '600', '700'],
 });
 
+/**
+ * @display
+ * @description Grands titres du site vitrine : Season Mix Medium (Displaay,
+ * police payante, chargée par styles/fonts.css depuis
+ * public/fonts/season-mix/). En attendant le fichier acheté, ou s'il ne se
+ * charge pas, on affiche Hedvig Letters Serif, gratuite et la plus proche.
+ */
+const displayFallback = DisplayFallbackFont({
+  subsets: ['latin'],
+  variable: '--font-display-fallback',
+  fallback: ['Georgia', 'serif'],
+  preload: true,
+  weight: '400',
+});
+
 /** Code et chiffres techniques. */
 const mono = MonoFont({
   subsets: ['latin'],
@@ -39,7 +55,7 @@ const mono = MonoFont({
 });
 
 // we export these fonts into the root layout
-export { sans, heading, mono };
+export { sans, heading, displayFallback, mono };
 
 /**
  * @name getFontsClassName
@@ -50,9 +66,12 @@ export { sans, heading, mono };
  * in the root layout, which prevents every route from having a static shell.
  */
 export function getFontsClassName() {
-  const font = [sans.variable, heading.variable, mono.variable].reduce<
-    string[]
-  >((acc, curr) => {
+  const font = [
+    sans.variable,
+    heading.variable,
+    displayFallback.variable,
+    mono.variable,
+  ].reduce<string[]>((acc, curr) => {
     if (acc.includes(curr)) return acc;
 
     return [...acc, curr];

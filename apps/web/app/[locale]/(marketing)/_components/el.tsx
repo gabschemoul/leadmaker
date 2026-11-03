@@ -134,7 +134,7 @@ export function Eyebrow({
   );
 }
 
-/** Titre fin, grand et serré : la signature de la DA. */
+/** Grand titre du site : Season Mix Medium (police de secours : Hedvig Letters Serif). */
 export function DisplayTitle({
   as: Tag = 'h2',
   size = 'section',
@@ -148,7 +148,7 @@ export function DisplayTitle({
   return (
     <Tag
       className={cn(
-        'font-heading text-foreground font-light tracking-[-0.02em] text-pretty',
+        'font-display text-foreground font-medium tracking-[-0.01em] text-pretty',
         {
           'text-[2.25rem] leading-[1.08] md:text-5xl md:leading-[1.08]':
             size === 'page',

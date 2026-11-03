@@ -18,7 +18,7 @@ const NEXT_ACTION_HEADER = 'next-action';
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|images|locales|assets|sitemap.xml|robots.txt|api/*).*)',
+    '/((?!_next/static|_next/image|images|fonts|locales|assets|sitemap.xml|robots.txt|api/*).*)',
   ],
 };
 

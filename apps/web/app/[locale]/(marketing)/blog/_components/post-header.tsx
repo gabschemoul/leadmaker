@@ -25,7 +25,7 @@ export async function PostHeader({ post }: { post: Cms.ContentItem }) {
 
           <h1
             className={
-              'font-heading text-2xl font-medium tracking-tighter xl:text-4xl dark:text-white'
+              'font-display text-2xl font-medium tracking-[-0.01em] xl:text-4xl dark:text-white'
             }
           >
             {title}

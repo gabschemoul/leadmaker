@@ -1,0 +1,23 @@
+/*
+* fonts.css
+*
+* Season Mix Medium (Displaay Type Foundry), police des grands titres du site
+* vitrine, choisie le 3/11/2026. C'est une police payante : le fichier n'est
+* pas fourni par Google Fonts, on l'héberge nous-mêmes.
+*
+* Où mettre le fichier : apps/web/public/fonts/season-mix/SeasonMix-Medium.ttf
+* (la version ACHETÉE, avec licence web pour prospectigo.com, jamais la
+* version d'essai « TRIAL »). Le dépôt doit rester privé (licence Displaay).
+*
+* Tant que le fichier n'est pas là, le navigateur ne le trouve pas et affiche
+* la police de secours, Hedvig Letters Serif (gratuite, voir lib/fonts.ts).
+* On n'a qu'une graisse (Medium) : elle sert pour toutes les épaisseurs.
+ */
+
+@font-face {
+  font-family: 'Season Mix';
+  src: url('/fonts/season-mix/SeasonMix-Medium.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

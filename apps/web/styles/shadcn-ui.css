@@ -5,6 +5,7 @@
   --font-mono: var(--font-geist-mono);
   --font-heading:
     var(--font-heading-face), var(--font-sans-fallback), system-ui, sans-serif;
+  --font-display: 'Season Mix', var(--font-display-fallback), Georgia, serif;
   --color-brand: var(--brand);
   --color-primary-hover: var(--primary-hover);
   --color-hairline: var(--hairline);

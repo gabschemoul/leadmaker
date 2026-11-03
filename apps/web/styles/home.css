@@ -18,7 +18,8 @@
   --hp-cyan: #8fd8ff;
   --hp-lilac: #c6b6ff;
   --hp-pink: #ffa9d8;
-  --hp-bg: #ffffff;
+  /* fond de page d'ElevenLabs (#fdfcfc), comme le reste du site */
+  --hp-bg: var(--background);
   --hp-cream: #f7f5f2;
   --hp-cream-2: #efece6;
   --hp-card: #ffffff;
@@ -42,7 +43,7 @@
 .dark .hp {
   --hp-blue-deep: #b9b9ff;
   --hp-blue-soft: #262666;
-  --hp-bg: #0c0a09;
+  --hp-bg: var(--background);
   --hp-cream: #1c1917;
   --hp-cream-2: #24201d;
   --hp-card: #221e1b;

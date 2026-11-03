@@ -298,7 +298,13 @@
       "senderIntro": "These details are written into every contact form. Businesses will reply to this e-mail and phone number.",
       "senderEdit": "Edit sender",
       "senderMissing": "No sender filled in yet.",
-      "senderFill": "Fill in the sender"
+      "senderFill": "Fill in the sender",
+      "senderChoose": "Sender for this campaign",
+      "senderDefaultOption": "Default: {name}",
+      "senderDefaultOptionEmpty": "Default",
+      "senderChosen": "Campaign sender saved.",
+      "senderChooseFailed": "The sender could not be changed. Please try again in a moment.",
+      "senderNotFound": "This sender no longer exists."
     },
     "contact": {
       "noMessage": "The message is missing: Prospectigo does not know what to write in the forms.",

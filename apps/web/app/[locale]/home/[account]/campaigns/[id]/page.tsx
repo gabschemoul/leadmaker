@@ -32,7 +32,10 @@ import {
   loadAttempts,
   loadCampaignAttemptCounts,
 } from '../../forms/_lib/server/forms.loader';
-import { loadSenderProfile } from '../../sender/_lib/server/sender.loader';
+import {
+  loadCampaignSender,
+  loadSenders,
+} from '../../sender/_lib/server/sender.loader';
 import { CampaignHeaderActions } from '../_components/campaign-header-actions';
 import { CampaignLocalDiscovery } from '../_components/campaign-local-discovery';
 import { CampaignStepsRail } from '../_components/steps/campaign-steps-rail';
@@ -130,7 +133,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
   const [live, counts, sender, autopilot, localDiscovery] = await Promise.all([
     fetchCampaignLive(client, id),
     loadCampaignAttemptCounts(client, id),
-    loadSenderProfile(client, campaign.space_id),
+    loadCampaignSender(client, campaign.id),
     fetchAutopilotSummary(client, id),
     loadLocalDiscoveryState(client, id),
   ]);
@@ -175,7 +178,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
   const basePath = `${campaignsPath}/${id}`;
   const stepHref = (target: CampaignStep) => `${basePath}?etape=${target}`;
   const formsHref = `${pathsConfig.app.accountForms.replace('[account]', slug)}?space=${campaign.space_id}`;
-  const senderHref = `${pathsConfig.app.accountSender.replace('[account]', slug)}?space=${campaign.space_id}`;
+  const senderHref = `${pathsConfig.app.accountSender.replace('[account]', slug)}?space=${campaign.space_id}${sender ? `&sender=${sender.id}` : ''}`;
 
   return (
     <>
@@ -329,19 +332,19 @@ async function WriteStepContent(props: {
   accountId: string;
   campaign: Campaign;
   templates: ReturnType<typeof parseTemplates>;
-  sender: Awaited<ReturnType<typeof loadSenderProfile>>;
+  sender: Awaited<ReturnType<typeof loadCampaignSender>>;
   senderHref: string;
 }) {
   const client = getSupabaseServerClient();
   const user = await requireUserInServerComponent();
 
-  const [prospects, autoValidationAllowed, companyOptional] = await Promise.all(
-    [
+  const [prospects, autoValidationAllowed, companyOptional, senders] =
+    await Promise.all([
       loadPreviewProspects(client, props.campaign.space_id),
       loadAutoValidationAllowed(client, props.accountId),
       isPowerUser(user.id),
-    ],
-  );
+      loadSenders(client, props.campaign.space_id),
+    ]);
 
   return (
     <WriteStep
@@ -357,6 +360,16 @@ async function WriteStepContent(props: {
         autoValidationAllowed,
       }}
       companyOptional={companyOptional}
+      senders={senders.map(
+        ({ id, first_name, last_name, company, is_default }) => ({
+          id,
+          first_name,
+          last_name,
+          company,
+          is_default,
+        }),
+      )}
+      chosenSenderId={props.campaign.sender_id}
     />
   );
 }

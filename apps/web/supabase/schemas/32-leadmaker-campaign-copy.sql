@@ -1,7 +1,7 @@
 /*
  * -------------------------------------------------------
  * Section: LeadMaker duplication de campagne
- * Copie en brouillon : ciblage, filtres, messages et réglages d'envoi.
+ * Copie en brouillon : ciblage, filtres, messages, expéditeur et réglages d'envoi.
  * -------------------------------------------------------
  */
 
@@ -23,10 +23,10 @@ begin
   end if;
 
   insert into public.lm_campaigns (account_id, space_id, name, country_code, targeting, filters, templates,
-                                   daily_limit, auto_validation)
+                                   daily_limit, auto_validation, sender_id)
   values (v_source.account_id, v_source.space_id, left(p_name, 255), v_source.country_code, v_source.targeting,
           v_source.filters - 'paused_reason', v_source.templates, v_source.daily_limit,
-          v_source.auto_validation and public.lm_auto_validation_allowed(v_source.account_id))
+          v_source.auto_validation and public.lm_auto_validation_allowed(v_source.account_id), v_source.sender_id)
   returning id into v_id;
 
   return v_id;

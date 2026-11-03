@@ -88,10 +88,11 @@ def _load_context(conn: psycopg.Connection, row: dict):
         "select name, city, category, rating, review_count, website from public.lm_prospects where id = %s",
         (row["prospect_id"],),
     ).fetchone()
+    # Expéditeur de la campagne (choisi pour elle, sinon celui par défaut de l'espace : lm_campaign_sender)
     sender = conn.execute(
         """select civility, first_name, last_name, job_title, company, email, phone, website, address, zip, city, country_code
-             from public.lm_sender_profiles where space_id = %s""",
-        (row["space_id"],),
+             from public.lm_campaign_sender(%s)""",
+        (row["campaign_id"],),
     ).fetchone()
     campaign = conn.execute(
         "select templates, country_code from public.lm_campaigns where id = %s", (row["campaign_id"],)
@@ -186,10 +187,11 @@ class PrepareRunner:
             "select name, city, category, rating, review_count, website from public.lm_prospects where id = %s",
             (row["prospect_id"],),
         ).fetchone()
+        # Expéditeur de la campagne (choisi pour elle, sinon celui par défaut de l'espace : lm_campaign_sender)
         sender = conn.execute(
             """select civility, first_name, last_name, job_title, company, email, phone, website, address, zip, city, country_code
-                 from public.lm_sender_profiles where space_id = %s""",
-            (row["space_id"],),
+                 from public.lm_campaign_sender(%s)""",
+            (row["campaign_id"],),
         ).fetchone()
         campaign = conn.execute(
             "select templates, country_code from public.lm_campaigns where id = %s", (row["campaign_id"],)

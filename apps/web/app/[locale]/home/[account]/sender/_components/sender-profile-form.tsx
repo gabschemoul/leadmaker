@@ -37,7 +37,10 @@ const CIVILITY_LABELS = {
 
 export function SenderProfileForm(props: {
   accountId: string;
+  accountSlug: string;
   spaceId: string;
+  /** expéditeur modifié ; absent = nouvel expéditeur */
+  senderId?: string;
   countries: CountryOption[];
   defaultValues: SenderProfileFormValues;
 }) {
@@ -45,6 +48,8 @@ export function SenderProfileForm(props: {
 
   const { execute, isPending } = useAction(saveSenderProfileAction, {
     onSuccess: () => toast.success(t('outreach.sender.saved')),
+    // nouvel expéditeur : l'action renvoie vers sa page
+    onNavigation: () => toast.success(t('outreach.sender.created')),
     onError: ({ error }) =>
       toast.error(t(error.serverError ?? 'outreach.sender.saveFailed')),
   });
@@ -105,7 +110,9 @@ export function SenderProfileForm(props: {
           execute({
             ...values,
             accountId: props.accountId,
+            accountSlug: props.accountSlug,
             spaceId: props.spaceId,
+            senderId: props.senderId,
           }),
         )}
       >
@@ -237,7 +244,13 @@ export function SenderProfileForm(props: {
             data-test={'sender-save-button'}
             disabled={disabled}
           >
-            <Trans i18nKey={'outreach.sender.save'} />
+            <Trans
+              i18nKey={
+                props.senderId
+                  ? 'outreach.sender.save'
+                  : 'outreach.sender.create'
+              }
+            />
           </Button>
         </div>
       </form>

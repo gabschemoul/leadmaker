@@ -315,6 +315,11 @@ export const CampaignIdSchema = z.object({
   campaignId: z.string().uuid(),
 });
 
+/** Expéditeur d'une campagne ; null = celui par défaut de l'organisation. */
+export const CampaignSenderSchema = CampaignIdSchema.extend({
+  senderId: z.string().uuid().nullable(),
+});
+
 /** Recherche Google Maps sur l'ordinateur dédié (utilisateurs autorisés seulement). */
 export const LocalDiscoverySchema = CampaignIdSchema.extend({
   enabled: z.boolean(),

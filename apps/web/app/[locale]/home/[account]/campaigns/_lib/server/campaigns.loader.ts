@@ -35,7 +35,7 @@ export async function loadCampaign(client: Client, campaignId: string) {
   const { data, error } = await client
     .from('lm_campaigns')
     .select(
-      'id, account_id, space_id, name, status, country_code, created_at, templates, auto_validation, daily_limit',
+      'id, account_id, space_id, name, status, country_code, created_at, templates, auto_validation, daily_limit, sender_id',
     )
     .eq('id', campaignId)
     .maybeSingle();

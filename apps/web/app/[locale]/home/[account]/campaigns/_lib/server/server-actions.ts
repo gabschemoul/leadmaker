@@ -12,6 +12,7 @@ import { mentionsCompany, unknownVariables } from '~/lib/leadmaker/templates';
 import {
   RequestEstimateSchema,
   CampaignIdSchema,
+  CampaignSenderSchema,
   CreateCampaignSchema,
   DuplicateCampaignSchema,
   EstimateCampaignSchema,
@@ -727,6 +728,48 @@ export const setLocalDiscoveryAction = authActionClient
   });
 
 /**
+ * Choisit l'expéditeur d'une campagne (null = celui par défaut). La base
+ * refuse un expéditeur d'un autre espace (lm_campaigns_check_sender) et le
+ * RLS une campagne d'une autre organisation.
+ */
+export const setCampaignSenderAction = authActionClient
+  .inputSchema(CampaignSenderSchema)
+  .action(async ({ parsedInput: { campaignId, senderId }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client
+      .from('lm_campaigns')
+      .update({ sender_id: senderId })
+      .eq('id', campaignId)
+      .select('id')
+      .maybeSingle();
+
+    if (error || !data) {
+      if (!error || error.code === '23514' || error.code === '42501') {
+        throw new Error('campaigns.steps.write.senderNotFound');
+      }
+
+      const logger = await getLogger();
+      logger.error(
+        {
+          name: 'leadmaker.campaigns.sender',
+          campaignId,
+          senderId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to set campaign sender',
+      );
+
+      throw new Error('campaigns.steps.write.senderChooseFailed');
+    }
+
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    return { success: true };
+  });
+
+/**
  * Enregistre les messages d'une campagne. Contrôle bloquant : chaque message
  * rempli doit mentionner la société de l'expéditeur (variable {my_company} ou
  * nom en clair), pour que l'entreprise contactée sache qui lui écrit. Les
@@ -750,10 +793,10 @@ export const saveCampaignTemplatesAction = authActionClient
     }
 
     const [sender, companyOptional] = await Promise.all([
+      // expéditeur de la campagne (choisi pour elle, sinon celui par défaut)
       client
-        .from('lm_sender_profiles')
+        .rpc('lm_campaign_sender', { p_campaign_id: campaign.data.id })
         .select('company')
-        .eq('space_id', campaign.data.space_id)
         .maybeSingle(),
       isPowerUser(ctx.user.id),
     ]);

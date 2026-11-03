@@ -53,5 +53,12 @@ export type SenderProfileFormValues = z.infer<typeof SenderProfileFormSchema>;
 
 export const SaveSenderProfileSchema = SenderProfileFormSchema.extend({
   accountId: z.string().uuid(),
+  accountSlug: z.string().min(1),
   spaceId: z.string().uuid(),
+  /** expéditeur modifié ; absent = nouvel expéditeur */
+  senderId: z.string().uuid().optional(),
+});
+
+export const SenderIdSchema = z.object({
+  senderId: z.string().uuid(),
 });

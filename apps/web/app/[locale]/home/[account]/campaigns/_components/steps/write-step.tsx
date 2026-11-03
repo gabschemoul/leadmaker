@@ -17,6 +17,7 @@ import type { CampaignTemplates } from '~/lib/leadmaker/templates';
 import type { SenderProfile } from '../../../sender/_lib/server/sender.loader';
 import type { loadPreviewProspects } from '../../_lib/server/campaigns.loader';
 import { CampaignMessagesForm } from '../campaign-messages-form';
+import { CampaignSenderSelect } from '../campaign-sender-select';
 
 /**
  * Étape 3, Rédiger : l'expéditeur (qui envoie) puis les messages de la
@@ -35,6 +36,16 @@ export async function WriteStep(props: {
     autoValidationAllowed: boolean;
   };
   companyOptional: boolean;
+  /** expéditeurs de l'organisation, pour choisir celui de la campagne */
+  senders: Array<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    company: string;
+    is_default: boolean;
+  }>;
+  /** expéditeur choisi pour la campagne (null = celui par défaut) */
+  chosenSenderId: string | null;
 }) {
   const t = await getTranslations('campaigns.steps.write');
   const { sender } = props;
@@ -87,6 +98,16 @@ export async function WriteStep(props: {
           >
             {sender ? t('senderEdit') : t('senderFill')}
           </Button>
+
+          {props.senders.length > 1 ? (
+            <div className={'w-full border-t pt-4'}>
+              <CampaignSenderSelect
+                campaignId={props.campaignId}
+                senders={props.senders}
+                chosenSenderId={props.chosenSenderId}
+              />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

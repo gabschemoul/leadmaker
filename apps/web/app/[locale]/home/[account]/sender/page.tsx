@@ -6,7 +6,13 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
-import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
@@ -24,9 +30,11 @@ import {
 } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { FolderSwitch } from './_components/folder-switch';
+import { SenderList } from './_components/sender-list';
 import { SenderProfileForm } from './_components/sender-profile-form';
 import { CIVILITIES } from './_lib/schema/sender-profile.schema';
-import { loadSenderProfile } from './_lib/server/sender.loader';
+import { senderLabel } from './_lib/sender-label';
+import { loadSenders } from './_lib/server/sender.loader';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -101,7 +109,19 @@ async function SenderContent(props: SenderPageProps) {
     typeof rawSearchParams.space === 'string' ? rawSearchParams.space : null;
 
   const space = spaces.find((item) => item.id === requested) ?? spaces[0]!;
-  const profile = await loadSenderProfile(client, space.id);
+  const senders = await loadSenders(client, space.id);
+
+  // ?sender=new : nouvel expéditeur ; ?sender=<id> : celui-là ; sinon celui par défaut
+  const requestedSender =
+    typeof rawSearchParams.sender === 'string' ? rawSearchParams.sender : null;
+
+  const creating = requestedSender === 'new' || senders.length === 0;
+
+  const profile = creating
+    ? null
+    : (senders.find((sender) => sender.id === requestedSender) ??
+      senders[0] ??
+      null);
 
   const civility = CIVILITIES.find((value) => value === profile?.civility);
 
@@ -124,7 +144,7 @@ async function SenderContent(props: SenderPageProps) {
 
   return (
     <div className={'flex flex-col gap-4'}>
-      {profile ? null : (
+      {senders.length > 0 ? null : (
         <Alert className={alertExtras.warning} data-test={'sender-missing'}>
           <AlertTitle>
             <Trans i18nKey={'outreach.sender.missingTitle'} />
@@ -136,11 +156,62 @@ async function SenderContent(props: SenderPageProps) {
         </Alert>
       )}
 
+      {senders.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Trans i18nKey={'outreach.sender.listTitle'} />
+            </CardTitle>
+
+            <CardDescription className={'max-w-xl'}>
+              <Trans i18nKey={'outreach.sender.listIntro'} />
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <SenderList
+              basePath={basePath}
+              senders={senders.map(
+                ({
+                  id,
+                  first_name,
+                  last_name,
+                  company,
+                  email,
+                  is_default,
+                }) => ({
+                  id,
+                  first_name,
+                  last_name,
+                  company,
+                  email,
+                  is_default,
+                }),
+              )}
+              selectedId={profile?.id ?? null}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader className={'flex flex-col gap-4'}>
-          <CardDescription className={'max-w-xl'}>
-            <Trans i18nKey={'outreach.sender.intro'} />
-          </CardDescription>
+          <div className={'flex flex-col gap-1.5'}>
+            <CardTitle data-test={'sender-form-title'}>
+              {profile ? (
+                <Trans
+                  i18nKey={'outreach.sender.editTitle'}
+                  values={{ name: senderLabel(profile) }}
+                />
+              ) : (
+                <Trans i18nKey={'outreach.sender.newTitle'} />
+              )}
+            </CardTitle>
+
+            <CardDescription className={'max-w-xl'}>
+              <Trans i18nKey={'outreach.sender.intro'} />
+            </CardDescription>
+          </div>
 
           {spaces.length > 1 ? (
             <div className={'flex flex-col gap-1.5'}>
@@ -159,10 +230,12 @@ async function SenderContent(props: SenderPageProps) {
 
         <CardContent>
           <SenderProfileForm
-            // changement de dossier : le formulaire repart des valeurs de ce dossier
-            key={space.id}
+            // autre expéditeur ou autre dossier : le formulaire repart de ses valeurs
+            key={`${space.id}:${profile?.id ?? 'new'}`}
             accountId={account.id}
+            accountSlug={slug}
             spaceId={space.id}
+            senderId={profile?.id}
             countries={countries}
             defaultValues={defaultValues}
           />

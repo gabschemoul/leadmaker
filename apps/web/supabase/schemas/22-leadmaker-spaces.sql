@@ -136,7 +136,9 @@ create trigger lm_spaces_space_quota
   before insert on public.lm_spaces
   for each row execute function public.lm_enforce_space_quota();
 
--- Profil expéditeur : un par espace
+-- Expéditeurs : plusieurs par espace depuis le 3/11/2026 (« selon la campagne c'est un expéditeur
+-- différent »). Un seul par défaut par espace (ux_lm_sender_profiles_default) : il sert aux campagnes qui n'en
+-- choisissent pas (lm_campaigns.sender_id null, voir lm_campaign_sender).
 create table if not exists public.lm_sender_profiles (
   id uuid not null default extensions.uuid_generate_v4(),
   account_id uuid references public.accounts(id) on delete cascade not null,
@@ -153,12 +155,14 @@ create table if not exists public.lm_sender_profiles (
   zip varchar(20),
   city varchar(150),
   country_code char(2) not null,
+  -- Expéditeur par défaut de l'espace : posé par les déclencheurs (le premier l'est d'office, un autre prend
+  -- le relais quand il est supprimé) et par lm_set_default_sender, jamais directement par l'utilisateur
+  is_default boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
   updated_by uuid references auth.users on delete set null,
   primary key (id),
-  constraint lm_sender_profiles_space_unique unique (space_id),
   constraint lm_sender_profiles_country_code_upper check (country_code = upper(country_code)),
   constraint lm_sender_profiles_required_not_blank check (
     length(trim(first_name)) > 0 and length(trim(last_name)) > 0
@@ -166,7 +170,7 @@ create table if not exists public.lm_sender_profiles (
   )
 );
 
-comment on table public.lm_sender_profiles is 'Identité utilisée pour remplir les formulaires d''un espace';
+comment on table public.lm_sender_profiles is 'Identités utilisées pour remplir les formulaires (plusieurs par espace, une par défaut)';
 
 alter table public.lm_sender_profiles enable row level security;
 
@@ -174,7 +178,7 @@ revoke all on public.lm_sender_profiles from anon, authenticated, service_role;
 
 grant select, insert, update, delete on table public.lm_sender_profiles to service_role;
 
-grant select, insert on table public.lm_sender_profiles to authenticated;
+grant select, insert, delete on table public.lm_sender_profiles to authenticated;
 
 grant update (civility, first_name, last_name, job_title, company, email, phone, website, address, zip, city, country_code)
   on table public.lm_sender_profiles to authenticated;
@@ -190,6 +194,88 @@ create trigger lm_sender_profiles_set_user_tracking
 create index if not exists ix_lm_sender_profiles_account_id
   on public.lm_sender_profiles (account_id);
 
+create index if not exists ix_lm_sender_profiles_space_id
+  on public.lm_sender_profiles (space_id, created_at);
+
+create unique index if not exists ux_lm_sender_profiles_default
+  on public.lm_sender_profiles (space_id) where is_default;
+
+-- Le premier expéditeur d'un espace est celui par défaut ; les suivants non (quelle que soit la valeur envoyée)
+create or replace function public.lm_sender_profiles_default_on_insert() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  new.is_default := not exists (
+    select 1 from public.lm_sender_profiles s where s.space_id = new.space_id and s.is_default
+  );
+
+  return new;
+end;
+$$;
+
+revoke all on function public.lm_sender_profiles_default_on_insert() from public;
+
+create trigger lm_sender_profiles_default_on_insert
+  before insert on public.lm_sender_profiles
+  for each row execute function public.lm_sender_profiles_default_on_insert();
+
+-- Expéditeur par défaut supprimé : le plus ancien des autres prend le relais
+create or replace function public.lm_sender_profiles_default_on_delete() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  if old.is_default then
+    update public.lm_sender_profiles
+       set is_default = true
+     where id = (select s.id from public.lm_sender_profiles s
+                  where s.space_id = old.space_id and s.id <> old.id
+                  order by s.created_at, s.id
+                  limit 1);
+  end if;
+
+  return old;
+end;
+$$;
+
+revoke all on function public.lm_sender_profiles_default_on_delete() from public;
+
+create trigger lm_sender_profiles_default_on_delete
+  after delete on public.lm_sender_profiles
+  for each row execute function public.lm_sender_profiles_default_on_delete();
+
+-- Choisit l'expéditeur par défaut de son espace (membre de l'organisation, double authentification à jour)
+create or replace function public.lm_set_default_sender(p_sender_id uuid) returns void
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_sender public.lm_sender_profiles%rowtype;
+begin
+  select * into v_sender from public.lm_sender_profiles where id = p_sender_id;
+
+  if v_sender.id is null
+     or (current_setting('role', true) in ('authenticated', 'anon')
+         and not (public.has_role_on_account(v_sender.account_id) and public.is_mfa_compliant())) then
+    raise exception 'sender not found' using errcode = 'P0002';
+  end if;
+
+  -- deux temps : l'index unique partiel n'admet jamais deux expéditeurs par défaut, même un instant
+  update public.lm_sender_profiles set is_default = false
+   where space_id = v_sender.space_id and is_default and id <> p_sender_id;
+
+  update public.lm_sender_profiles set is_default = true where id = p_sender_id and not is_default;
+end;
+$$;
+
+revoke all on function public.lm_set_default_sender(uuid) from public;
+
+grant execute on function public.lm_set_default_sender(uuid) to authenticated, service_role;
+
 create policy "lm_sender_profiles_read" on public.lm_sender_profiles for select
   to authenticated using (public.has_role_on_account(account_id));
 
@@ -202,6 +288,12 @@ create policy "lm_sender_profiles_insert" on public.lm_sender_profiles for inser
 create policy "lm_sender_profiles_update" on public.lm_sender_profiles for update
   to authenticated using (public.has_role_on_account(account_id))
   with check (public.has_role_on_account(account_id));
+
+-- Supprimer un expéditeur : réservé aux membres qui gèrent les réglages de l'organisation
+create policy "lm_sender_profiles_delete" on public.lm_sender_profiles for delete
+  to authenticated using (
+    public.has_permission((select auth.uid()), account_id, 'settings.manage'::public.app_permissions)
+  );
 
 create policy "restrict_mfa_lm_sender_profiles" on public.lm_sender_profiles
   as restrictive to authenticated using (public.is_mfa_compliant());

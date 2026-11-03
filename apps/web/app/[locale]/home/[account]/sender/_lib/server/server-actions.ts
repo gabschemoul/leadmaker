@@ -1,19 +1,25 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 import { authActionClient } from '@kit/next/safe-action';
 import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
-import { SaveSenderProfileSchema } from '../schema/sender-profile.schema';
+import pathsConfig from '~/config/paths.config';
+
+import {
+  SaveSenderProfileSchema,
+  SenderIdSchema,
+} from '../schema/sender-profile.schema';
 
 const orNull = (value: string) => (value.trim() === '' ? null : value.trim());
 
 /**
- * Enregistre le profil expéditeur d'un dossier client : création la première
- * fois, mise à jour ensuite. Le RLS limite l'écriture aux dossiers de
- * l'organisation du membre.
+ * Enregistre un expéditeur : modification de `senderId`, sinon création d'un
+ * nouvel expéditeur (le premier de l'organisation devient celui par défaut).
+ * Le RLS limite l'écriture aux expéditeurs de l'organisation du membre.
  */
 export const saveSenderProfileAction = authActionClient
   .inputSchema(SaveSenderProfileSchema)
@@ -35,33 +41,33 @@ export const saveSenderProfileAction = authActionClient
       country_code: parsedInput.countryCode,
     };
 
-    const existing = await client
-      .from('lm_sender_profiles')
-      .select('id')
-      .eq('space_id', parsedInput.spaceId)
-      .maybeSingle();
-
-    if (existing.error) {
-      throw existing.error;
-    }
-
-    const { error } = existing.data
+    const result = parsedInput.senderId
       ? await client
           .from('lm_sender_profiles')
           .update(values)
-          .eq('id', existing.data.id)
-      : await client.from('lm_sender_profiles').insert({
-          ...values,
-          account_id: parsedInput.accountId,
-          space_id: parsedInput.spaceId,
-        });
+          .eq('id', parsedInput.senderId)
+          .select('id')
+          .maybeSingle()
+      : await client
+          .from('lm_sender_profiles')
+          .insert({
+            ...values,
+            account_id: parsedInput.accountId,
+            space_id: parsedInput.spaceId,
+          })
+          .select('id')
+          .single();
 
-    if (error) {
-      // 42501 : le dossier n'appartient pas à l'organisation (refusé par le RLS)
-      if (error.code === '42501' || error.code === '23503') {
-        throw new Error('outreach.sender.folderNotFound');
-      }
+    // 42501 / 23503 : l'espace n'appartient pas à l'organisation (RLS) ; aucune ligne : expéditeur introuvable
+    if (
+      result.error?.code === '42501' ||
+      result.error?.code === '23503' ||
+      (!result.error && !result.data)
+    ) {
+      throw new Error('outreach.sender.notFound');
+    }
 
+    if (result.error || !result.data) {
       const logger = await getLogger();
 
       logger.error(
@@ -69,8 +75,9 @@ export const saveSenderProfileAction = authActionClient
           name: 'leadmaker.sender.save',
           accountId: parsedInput.accountId,
           spaceId: parsedInput.spaceId,
+          senderId: parsedInput.senderId,
           userId: ctx.user.id,
-          error,
+          error: result.error,
         },
         'Failed to save sender profile',
       );
@@ -79,6 +86,93 @@ export const saveSenderProfileAction = authActionClient
     }
 
     revalidatePath('/home/[account]/sender', 'page');
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    if (!parsedInput.senderId) {
+      // nouvel expéditeur : la page s'ouvre sur lui
+      redirect(
+        `${pathsConfig.app.accountSender.replace('[account]', parsedInput.accountSlug)}?sender=${result.data.id}`,
+      );
+    }
+
+    return { success: true };
+  });
+
+/** Choisit l'expéditeur par défaut (celui des campagnes qui n'en choisissent pas). */
+export const setDefaultSenderAction = authActionClient
+  .inputSchema(SenderIdSchema)
+  .action(async ({ parsedInput: { senderId }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { error } = await client.rpc('lm_set_default_sender', {
+      p_sender_id: senderId,
+    });
+
+    if (error) {
+      if (error.code === 'P0002') {
+        throw new Error('outreach.sender.notFound');
+      }
+
+      const logger = await getLogger();
+
+      logger.error(
+        {
+          name: 'leadmaker.sender.default',
+          senderId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to set default sender',
+      );
+
+      throw new Error('outreach.sender.saveFailed');
+    }
+
+    revalidatePath('/home/[account]/sender', 'page');
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    return { success: true };
+  });
+
+/**
+ * Supprime un expéditeur. Les campagnes qui l'utilisaient repassent sur
+ * l'expéditeur par défaut ; s'il était celui par défaut, le plus ancien des
+ * autres le remplace (déclencheurs de 22-leadmaker-spaces.sql). Réservé aux
+ * membres qui gèrent les réglages (RLS).
+ */
+export const deleteSenderAction = authActionClient
+  .inputSchema(SenderIdSchema)
+  .action(async ({ parsedInput: { senderId }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client
+      .from('lm_sender_profiles')
+      .delete()
+      .eq('id', senderId)
+      .select('id');
+
+    if (error) {
+      const logger = await getLogger();
+
+      logger.error(
+        {
+          name: 'leadmaker.sender.delete',
+          senderId,
+          userId: ctx.user.id,
+          error,
+        },
+        'Failed to delete sender',
+      );
+
+      throw new Error('outreach.sender.deleteFailed');
+    }
+
+    if (!data?.length) {
+      throw new Error('outreach.sender.deleteForbidden');
+    }
+
+    revalidatePath('/home/[account]/sender', 'page');
+    revalidatePath('/home/[account]/campaigns', 'layout');
 
     return { success: true };
   });

@@ -20,6 +20,9 @@ create table if not exists public.lm_campaigns (
   credits_per_prospect integer not null default 1,
   -- Estimation (lm_estimates) qui a servi à fixer ce tarif (pas de clé étrangère : la table est déclarée après)
   estimate_id uuid,
+  -- Expéditeur choisi pour cette campagne (même espace, contrôlé par lm_campaigns_check_sender) ;
+  -- null = l'expéditeur par défaut de l'espace (lm_campaign_sender)
+  sender_id uuid references public.lm_sender_profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -42,8 +45,54 @@ grant select, insert, update, delete on table public.lm_campaigns to service_rol
 grant select, insert, delete on table public.lm_campaigns to authenticated;
 
 -- status ne se change que par lm_start_campaign / lm_pause_campaign (quotas et préparation des zones)
-grant update (name, country_code, targeting, filters, templates, daily_limit, auto_validation)
+grant update (name, country_code, targeting, filters, templates, daily_limit, auto_validation, sender_id)
   on table public.lm_campaigns to authenticated;
+
+create index if not exists ix_lm_campaigns_sender_id
+  on public.lm_campaigns (sender_id) where sender_id is not null;
+
+-- L'expéditeur d'une campagne appartient à son espace (donc à son organisation)
+create or replace function public.lm_campaigns_check_sender() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  if new.sender_id is not null and not exists (
+    select 1 from public.lm_sender_profiles s where s.id = new.sender_id and s.space_id = new.space_id
+  ) then
+    raise exception 'sender not in campaign space' using errcode = '23514', hint = 'sender_space';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.lm_campaigns_check_sender() from public;
+
+create trigger lm_campaigns_check_sender
+  before insert or update of sender_id, space_id on public.lm_campaigns
+  for each row execute function public.lm_campaigns_check_sender();
+
+-- Expéditeur d'une campagne : celui qu'elle a choisi, sinon celui par défaut de son espace.
+-- Invoker : les membres ne voient que les expéditeurs de leur organisation (RLS) ; les robots (service) tout.
+create or replace function public.lm_campaign_sender(p_campaign_id uuid)
+returns setof public.lm_sender_profiles
+set search_path = ''
+language sql
+stable
+as $$
+  select s.*
+    from public.lm_campaigns c
+    join public.lm_sender_profiles s on s.space_id = c.space_id
+   where c.id = p_campaign_id
+     and (s.id = c.sender_id or (c.sender_id is null and s.is_default))
+   limit 1;
+$$;
+
+revoke all on function public.lm_campaign_sender(uuid) from public;
+
+grant execute on function public.lm_campaign_sender(uuid) to authenticated, service_role;
 
 create trigger lm_campaigns_set_timestamps
   before insert or update on public.lm_campaigns

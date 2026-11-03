@@ -298,7 +298,13 @@
       "senderIntro": "Ces coordonnées sont écrites dans chaque formulaire de contact. Les entreprises vous répondront à cet e-mail et à ce téléphone.",
       "senderEdit": "Modifier l'expéditeur",
       "senderMissing": "Aucun expéditeur renseigné pour l'instant.",
-      "senderFill": "Renseigner l'expéditeur"
+      "senderFill": "Renseigner l'expéditeur",
+      "senderChoose": "Expéditeur de cette campagne",
+      "senderDefaultOption": "Par défaut : {name}",
+      "senderDefaultOptionEmpty": "Par défaut",
+      "senderChosen": "Expéditeur de la campagne enregistré.",
+      "senderChooseFailed": "L'expéditeur n'a pas pu être changé. Réessayez dans un instant.",
+      "senderNotFound": "Cet expéditeur n'existe plus."
     },
     "contact": {
       "noMessage": "Il manque le message : Prospectigo ne sait pas quoi écrire dans les formulaires.",

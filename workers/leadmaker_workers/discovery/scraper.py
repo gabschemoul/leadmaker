@@ -25,6 +25,13 @@ BLOCKED_URL_PARTS = (
     "/maps/preview/log", "/gen_204", "/log?",
 )
 DETAIL_TAB_REUSE = 15  # fiches ouvertes dans un même onglet avant de le remplacer
+# Défilement « au plus tôt » (FAST_SCROLL=1, ordinateur dédié seulement pour l'instant, 3/11/2026) : au lieu d'une
+# pause fixe d'environ 1,2 s par tour, le robot redéfile dès que Google a chargé les fiches suivantes (10 par tour).
+# Mesuré : 25 s de défilement pour 120 fiches, dont l'essentiel en attente. Même nombre de demandes à Google,
+# simplement plus rapprochées.
+FAST_SCROLL_POLL = 0.15  # s entre deux vérifications du nombre de fiches
+FAST_SCROLL_WAIT = 3.0  # s au plus à attendre de nouvelles fiches avant de compter un tour « sans rien »
+FAST_SCROLL_STALE = 4  # tours sans rien d'affilée : fin de liste (environ 12 s sans aucune fiche nouvelle)
 PLACE_ID = re.compile(r"!1s(0x[0-9a-f]+:0x[0-9a-f]+)")
 
 
@@ -289,6 +296,7 @@ class GMapsScraper:
 
     def _collect_cards(self, page: Page, max_results: int) -> list[dict]:
         feed = page.locator('div[role="feed"]')
+        fast = os.environ.get("FAST_SCROLL", "").strip() == "1"
         stale = 0
         last = 0
         while not self.stop_flag():
@@ -296,11 +304,14 @@ class GMapsScraper:
             if count >= max_results or END_OF_LIST.search(feed.inner_text()):
                 break
             stale = stale + 1 if count == last else 0
-            if stale >= 8:
+            if stale >= (FAST_SCROLL_STALE if fast else 8):
                 break
             last = count
             feed.evaluate("el => el.scrollBy(0, el.scrollHeight)")
-            self._sleep(0.8)
+            if fast:
+                self._wait_more_cards(feed, count)
+            else:
+                self._sleep(0.8)
 
         return feed.evaluate(
             """el => [...el.querySelectorAll('a[href*="/maps/place/"]')].map(a => {
@@ -320,6 +331,16 @@ class GMapsScraper:
                 };
             })"""
         )[:max_results]
+
+    def _wait_more_cards(self, feed, count: int) -> None:
+        """FAST_SCROLL : attend que la liste dépasse `count` fiches (au plus FAST_SCROLL_WAIT), puis un court
+        temps aléatoire, comme une personne qui fait défiler."""
+        end = time.monotonic() + FAST_SCROLL_WAIT
+        while not self.stop_flag() and time.monotonic() < end:
+            time.sleep(FAST_SCROLL_POLL)
+            if feed.locator('a[href*="/maps/place/"]').count() > count:
+                break
+        time.sleep(random.uniform(0.15, 0.45))
 
     def _scrape_detail(self, page: Page, url: str, place: Place):
         page.goto(url, wait_until="domcontentloaded")

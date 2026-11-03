@@ -59,6 +59,7 @@ for i in $(seq 1 "$COUNT"); do
     WORKER_IDLE_SECONDS=10 \
     PROXY_DAILY_BUDGET_GB=0 \
     HEADLESS=true \
+    FAST_SCROLL=1 \
     nohup caffeinate -i .venv/bin/python -m leadmaker_workers.main "mac-discovery-$i" \
     >> "logs/mac-discovery-$i.log" 2>&1 &
 done

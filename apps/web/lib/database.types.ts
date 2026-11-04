@@ -343,14 +343,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_zones": {
                   Row: {
-                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude": number | null,"longitude": number | null,"population": number,"removed": boolean,"zoom": number | null
+                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude": number | null,"longitude": number | null,"population": number,"pos": number,"removed": boolean,"zoom": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"removed"?: boolean,"zoom"?: number | null
+                    "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"pos": number,"removed"?: boolean,"zoom"?: number | null
                   }
                   Update: {
-                    "account_id"?: string,"campaign_id"?: string,"geoname_id"?: number,"idx"?: number,"label"?: string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"removed"?: boolean,"zoom"?: number | null
+                    "account_id"?: string,"campaign_id"?: string,"geoname_id"?: number,"idx"?: number,"label"?: string,"latitude"?: number | null,"longitude"?: number | null,"population"?: number,"pos"?: number,"removed"?: boolean,"zoom"?: number | null
                   }
                   Relationships: [
                     {

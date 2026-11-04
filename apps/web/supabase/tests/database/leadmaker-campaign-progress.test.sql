@@ -26,8 +26,8 @@ select 'a0000000-0000-4000-8000-0000000c0001', a.id,
 insert into public.lm_geo_cities (geoname_id, name, ascii_name, country_code, population, latitude, longitude)
 values (990000301, 'Progressville', 'Progressville', 'FR', 1000, 45.0, 4.0) on conflict do nothing;
 
-insert into public.lm_campaign_zones (campaign_id, idx, account_id, geoname_id, label, population, removed)
-select 'a0000000-0000-4000-8000-0000000c0001', i, (select id from public.accounts where slug = 'pg-a'),
+insert into public.lm_campaign_zones (campaign_id, idx, pos, account_id, geoname_id, label, population, removed)
+select 'a0000000-0000-4000-8000-0000000c0001', i, i, (select id from public.accounts where slug = 'pg-a'),
        990000301, 'Zone ' || i, 1000, i = 2
   from generate_series(0, 2) i;
 

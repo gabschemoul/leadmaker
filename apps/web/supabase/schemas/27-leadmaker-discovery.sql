@@ -106,7 +106,9 @@ create trigger lm_discovery_settings_set_timestamps
 create policy "lm_discovery_settings_read" on public.lm_discovery_settings for select
   to authenticated using (true);
 
--- Villes figées au lancement d'une campagne, des plus peuplées aux moins peuplées
+-- Villes figées au lancement d'une campagne. Ordre de passage (pos, 4/11/2026) : d'abord une recherche par
+-- ville, des plus peuplées aux moins peuplées (« Hotel in Brussels », comme l'ancien bot), ensuite seulement
+-- les secteurs des grandes villes, en alternant les villes (secteur 1 de chacune, puis secteur 2…).
 create table if not exists public.lm_campaign_zones (
   campaign_id uuid references public.lm_campaigns(id) on delete cascade not null,
   idx integer not null,
@@ -120,7 +122,11 @@ create table if not exists public.lm_campaign_zones (
   zoom smallint,
   -- Ville retirée du ciblage après le lancement : sautée par la planification, les recherches faites restent
   removed boolean not null default false,
-  primary key (campaign_id, idx)
+  -- Ordre de passage de chaque activité (lm_campaign_categories.next_zone_idx est une position dans cet
+  -- ordre). idx reste l'identité de la zone : il figure dans les tâches et leur clé d'unicité.
+  pos integer not null,
+  primary key (campaign_id, idx),
+  constraint lm_campaign_zones_pos_unique unique (campaign_id, pos)
 );
 
 comment on table public.lm_campaign_zones is 'Zones (villes) parcourues par une campagne, fixées au lancement puis complétées à chaque modification du ciblage';
@@ -147,6 +153,7 @@ create table if not exists public.lm_campaign_categories (
   gcid text references public.lm_categories(gcid) on delete cascade not null,
   account_id uuid references public.accounts(id) on delete cascade not null,
   is_generic boolean not null default false,
+  -- Prochaine zone à chercher : position dans l'ordre de passage (lm_campaign_zones.pos)
   next_zone_idx integer not null default 0,
   in_flight integer not null default 0,
   searches integer not null default 0,
@@ -299,7 +306,8 @@ $$;
 
 grant execute on function public.lm_city_grid(double precision, double precision, integer) to authenticated, service_role;
 
--- Zones de recherche d'un ciblage : une par petite ville, un quadrillage pour les villes de 50 000 habitants et plus
+-- Zones de recherche d'un ciblage : une recherche par nom pour chaque ville, plus un quadrillage pour les villes
+-- de 50 000 habitants et plus (Google n'affiche que 120 fiches par recherche)
 create or replace function public.lm_target_zones(p_country_code text, p_targeting jsonb)
 returns table (geoname_id integer, label text, population integer, latitude double precision,
                longitude double precision, zoom smallint)
@@ -309,7 +317,6 @@ stable
 as $$
   select t.geoname_id, t.label, t.population, null::double precision, null::double precision, null::smallint
     from public.lm_target_cities(p_country_code, p_targeting) t
-   where t.population < 50000
   union all
   select t.geoname_id,
          t.label || ' · ' || row_number() over (partition by t.geoname_id order by g.ord),
@@ -500,11 +507,16 @@ begin
        set credits_per_prospect = coalesce(v_credits, 1), estimate_id = v_estimate_id
      where id = p_campaign_id;
 
-    insert into public.lm_campaign_zones (campaign_id, idx, account_id, geoname_id, label, population,
+    -- Ordre de passage : chaque ville par son nom (des plus peuplées aux moins peuplées), puis les secteurs
+    -- des grandes villes en alternant les villes
+    insert into public.lm_campaign_zones (campaign_id, idx, pos, account_id, geoname_id, label, population,
                                           latitude, longitude, zoom)
-      select p_campaign_id, (row_number() over (order by t.population desc, t.geoname_id, t.label)) - 1,
-             v_campaign.account_id, t.geoname_id, t.label, t.population, t.latitude, t.longitude, t.zoom
-        from public.lm_target_zones(v_campaign.country_code, v_campaign.targeting) t;
+      select p_campaign_id, z.rn - 1, z.rn - 1,
+             v_campaign.account_id, z.geoname_id, z.label, z.population, z.latitude, z.longitude, z.zoom
+        from (select t.*, row_number() over (
+                       order by t.latitude is not null, coalesce(substring(t.label from ' · ([0-9]+)$')::integer, 0),
+                                t.population desc, t.geoname_id, t.label) as rn
+                from public.lm_target_zones(v_campaign.country_code, v_campaign.targeting) t) z;
 
     insert into public.lm_campaign_categories (campaign_id, gcid, account_id, is_generic)
       select p_campaign_id, t.gcid, v_campaign.account_id, t.is_generic
@@ -665,8 +677,9 @@ begin
 
       exit when v_pick.gcid is null;
 
+      -- next_zone_idx : position dans l'ordre de passage (pos), pas l'identité de la zone (idx)
       select * into v_zone from public.lm_campaign_zones
-       where campaign_id = v_campaign.id and idx = v_pick.next_zone_idx;
+       where campaign_id = v_campaign.id and pos = v_pick.next_zone_idx;
 
       -- Ville retirée après le lancement : on passe à la suivante sans rien planifier
       if v_zone.removed then
@@ -1020,6 +1033,7 @@ declare
   v_campaign public.lm_campaigns%rowtype;
   v_launched boolean;
   v_next_idx integer;
+  v_next_pos integer;
   v_zone_count integer;
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
@@ -1054,15 +1068,21 @@ begin
            select t.geoname_id, t.label from public.lm_target_zones(v_campaign.country_code, p_targeting) t)
    where z.campaign_id = p_campaign_id;
 
-  -- Nouvelles villes : à la fin de la file, des plus peuplées aux moins peuplées
-  select coalesce(max(idx), -1) + 1 into v_next_idx from public.lm_campaign_zones where campaign_id = p_campaign_id;
+  -- Nouvelles villes : à la fin de la file, dans le même ordre qu'au lancement (villes par leur nom, puis secteurs)
+  select coalesce(max(idx), -1) + 1, coalesce(max(pos), -1) + 1 into v_next_idx, v_next_pos
+    from public.lm_campaign_zones where campaign_id = p_campaign_id;
 
-  insert into public.lm_campaign_zones (campaign_id, idx, account_id, geoname_id, label, population, latitude, longitude, zoom)
-    select p_campaign_id, v_next_idx + (row_number() over (order by t.population desc, t.geoname_id, t.label)) - 1,
-           v_campaign.account_id, t.geoname_id, t.label, t.population, t.latitude, t.longitude, t.zoom
-      from public.lm_target_zones(v_campaign.country_code, p_targeting) t
-     where not exists (select 1 from public.lm_campaign_zones z
-                        where z.campaign_id = p_campaign_id and z.geoname_id = t.geoname_id and z.label = t.label);
+  insert into public.lm_campaign_zones (campaign_id, idx, pos, account_id, geoname_id, label, population,
+                                        latitude, longitude, zoom)
+    select p_campaign_id, v_next_idx + z.rn - 1, v_next_pos + z.rn - 1,
+           v_campaign.account_id, z.geoname_id, z.label, z.population, z.latitude, z.longitude, z.zoom
+      from (select t.*, row_number() over (
+                     order by t.latitude is not null, coalesce(substring(t.label from ' · ([0-9]+)$')::integer, 0),
+                              t.population desc, t.geoname_id, t.label) as rn
+              from public.lm_target_zones(v_campaign.country_code, p_targeting) t
+             where not exists (select 1 from public.lm_campaign_zones z
+                                where z.campaign_id = p_campaign_id and z.geoname_id = t.geoname_id
+                                  and z.label = t.label)) z;
 
   -- Activités : même logique (une activité abandonnée pour faible rendement le reste)
   update public.lm_campaign_categories cc
@@ -1081,7 +1101,7 @@ begin
        select 1 from public.lm_campaign_categories cc
         where cc.campaign_id = p_campaign_id and not cc.abandoned and not cc.removed
           and exists (select 1 from public.lm_campaign_zones z
-                       where z.campaign_id = p_campaign_id and not z.removed and z.idx >= cc.next_zone_idx)) then
+                       where z.campaign_id = p_campaign_id and not z.removed and z.pos >= cc.next_zone_idx)) then
     update public.lm_campaigns set status = 'paused' where id = p_campaign_id;
     return 'paused';
   end if;

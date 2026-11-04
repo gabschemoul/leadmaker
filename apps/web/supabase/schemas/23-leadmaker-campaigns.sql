@@ -20,6 +20,9 @@ create table if not exists public.lm_campaigns (
   credits_per_prospect integer not null default 1,
   -- Estimation (lm_estimates) qui a servi à fixer ce tarif (pas de clé étrangère : la table est déclarée après)
   estimate_id uuid,
+  -- 4/11/2026 : la campagne part tout de suite, sans attendre la mesure de difficulté. Tant que la mesure
+  -- (estimate_id) tourne, 1 crédit par prospect ; à la fin, le tarif mesuré est fixé (lm_record_estimate_search)
+  price_pending boolean not null default false,
   -- Expéditeur choisi pour cette campagne (même espace, contrôlé par lm_campaigns_check_sender) ;
   -- null = l'expéditeur par défaut de l'espace (lm_campaign_sender)
   sender_id uuid references public.lm_sender_profiles(id) on delete set null,

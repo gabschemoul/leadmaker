@@ -197,10 +197,10 @@
     "pricingFrozenHintNoRate": "Fixed when the campaign launched.",
     "pricingPreviewHint": "From your estimate ({rate}% of businesses match your filters). Fixed at launch.",
     "pricingMeasuring": "Measuring: {done} of {total}",
-    "pricingMeasuringHint": "We read Google Maps to measure the share of businesses matching your filters. Click “Launch” when it is done.",
+    "pricingMeasuringHint": "We are measuring the share of businesses matching your filters. You can launch the campaign right away.",
+    "pricingMeasuringLaunchedHint": "The campaign is already running. Until the measurement ends, 1 credit per prospect.",
     "pricingUnknown": "Measured at launch",
-    "pricingUnknownHint": "When you click “Launch”, we read Google Maps for about a minute to fix the rate, then you launch.",
-    "estimateStarted": "We first measure the difficulty (about a minute). The rate will show here, then click “Launch” again."
+    "pricingUnknownHint": "The campaign starts as soon as you click “Launch”. The rate is measured in parallel, 1 credit per prospect meanwhile."
   },
   "import": {
     "button": "Import a CSV file",

@@ -58,10 +58,7 @@ create temp table t_cred as
   select id as campaign_id, account_id from public.lm_campaigns where name = 'Campagne Cred';
 grant select on t_cred to service_role, authenticated;
 
-select throws_ok(
-  $$ select public.lm_start_campaign((select campaign_id from t_cred)) $$,
-  'P0001', 'estimate required before launch',
-  'Sans estimation correspondante, la campagne ne se lance pas (hint estimate_required)');
+-- Depuis le 4/11/2026, lancer sans estimation ne bloque plus (leadmaker-launch-without-wait.test.sql)
 
 select is((select frozen from public.lm_campaign_pricing((select campaign_id from t_cred))), false,
   'Avant lancement, le tarif n''est pas figé');

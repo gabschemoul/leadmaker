@@ -98,12 +98,18 @@ begin
     raise exception 'account not found' using errcode = 'P0002';
   end if;
 
-  -- Une seule estimation à la fois par organisation : la précédente est abandonnée
-  update public.lm_estimates set status = 'failed', finished_at = now()
-   where account_id = p_account_id and status = 'running';
-
-  update public.lm_tasks set status = 'cancelled', finished_at = now()
-   where kind = 'estimate' and status = 'queued' and account_id = p_account_id;
+  -- Une seule estimation à la fois par organisation : la précédente est abandonnée, sauf celle qui fixera le
+  -- tarif d'une campagne déjà lancée (price_pending, 4/11/2026)
+  with dropped as (
+    update public.lm_estimates e set status = 'failed', finished_at = now()
+     where e.account_id = p_account_id and e.status = 'running'
+       and not exists (select 1 from public.lm_campaigns c where c.estimate_id = e.id and c.price_pending)
+    returning e.id
+  )
+  update public.lm_tasks t set status = 'cancelled', finished_at = now()
+    from dropped d
+   where t.kind = 'estimate' and t.status = 'queued' and t.account_id = p_account_id
+     and t.payload ->> 'estimate_id' = d.id::text;
 
   select count(*) into v_zones from public.lm_target_zones(p_country_code, p_targeting);
   select count(*) into v_categories from public.lm_target_categories(p_targeting);
@@ -215,6 +221,12 @@ begin
            expected_high = round(v_est.matching::numeric / v_est.sample_searches * v_est.total_searches * v_overlap * 1.3)
      where id = p_estimate_id;
   end if;
+
+  -- Campagnes lancées sans attendre cette mesure (4/11/2026) : leur tarif est fixé maintenant, pour la suite
+  update public.lm_campaigns c
+     set credits_per_prospect = coalesce(e.credits_per_prospect, 1), price_pending = false
+    from public.lm_estimates e
+   where e.id = p_estimate_id and c.estimate_id = p_estimate_id and c.price_pending;
 end;
 $$;
 
@@ -233,6 +245,7 @@ revoke all on function public.lm_skip_estimate_search(uuid) from public;
 
 -- Tarif d'une campagne, lisible par ses membres : figé si elle a déjà été lancée, sinon celui de la dernière
 -- estimation faite avec exactement son ciblage et ses filtres (terminée, en cours ou aucune).
+-- Lancée pendant la mesure (price_pending, 4/11/2026) : l'avancement de sa mesure tant qu'elle tourne.
 create or replace function public.lm_campaign_pricing(p_campaign_id uuid)
 returns table (frozen boolean, credits_per_prospect integer, rate numeric, estimate_id uuid, estimate_status text,
                done_searches integer, sample_searches integer)
@@ -244,22 +257,31 @@ as $$
     select c.*, exists (select 1 from public.lm_campaign_zones z where z.campaign_id = c.id) as launched
       from public.lm_campaigns c where c.id = p_campaign_id
   ), e as (
+    -- lancée : l'estimation qui a fixé (ou fixera) son tarif ; sinon la dernière faite avec ce ciblage
     select e.* from public.lm_estimates e, c
-     where e.account_id = c.account_id and e.country_code = c.country_code
-       and e.targeting = c.targeting and e.filters = (c.filters - 'paused_reason')
+     where e.account_id = c.account_id
+       and case when c.launched then e.id = c.estimate_id
+                else e.country_code = c.country_code and e.targeting = c.targeting
+                     and e.filters = (c.filters - 'paused_reason') end
      order by (e.status = 'done') desc, e.created_at desc
      limit 1
+  ), x as (
+    select c.*, c.launched and c.price_pending and e.status = 'running' as measuring,
+           e.id as e_id, e.status as e_status, e.credits_per_prospect as e_credits, e.rate as e_rate,
+           e.done_searches as e_done, e.sample_searches as e_sample
+      from c left join e on true
   )
-  select c.launched,
-         case when c.launched then c.credits_per_prospect
-              when e.status = 'done' then e.credits_per_prospect end,
-         case when c.launched then (select e2.rate from public.lm_estimates e2 where e2.id = c.estimate_id)
-              when e.status = 'done' then e.rate end,
-         case when c.launched then c.estimate_id else e.id end,
-         case when c.launched then null else e.status end,
-         case when c.launched then null else e.done_searches end,
-         case when c.launched then null else e.sample_searches end
-    from c left join e on true;
+  select x.launched,
+         case when x.measuring then null
+              when x.launched then x.credits_per_prospect
+              when x.e_status = 'done' then x.e_credits end,
+         case when x.measuring then null
+              when x.launched or x.e_status = 'done' then x.e_rate end,
+         case when x.launched then x.estimate_id else x.e_id end,
+         case when x.measuring then x.e_status when x.launched then null else x.e_status end,
+         case when x.measuring or not x.launched then x.e_done end,
+         case when x.measuring or not x.launched then x.e_sample end
+    from x;
 $$;
 
 grant execute on function public.lm_campaign_pricing(uuid) to authenticated, service_role;

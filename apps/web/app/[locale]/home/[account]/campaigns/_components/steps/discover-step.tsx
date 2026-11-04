@@ -205,30 +205,14 @@ function CampaignActions(props: {
     },
   });
 
-  const start = useAction(startCampaignAction, {
-    ...callbacks(
+  const start = useAction(
+    startCampaignAction,
+    callbacks(
       props.status === 'paused'
         ? 'campaigns.detail.resumed'
         : 'campaigns.detail.started',
     ),
-    onSuccess: ({ data }) => {
-      // Pas encore d'estimation : la mesure de la difficulté vient d'être lancée, le tarif
-      // s'affichera dans la carte d'avancement, puis l'utilisateur relance (roadmap n°13)
-      if (data?.estimateRequested) {
-        toast.info(t('campaigns.detail.estimateStarted'));
-      } else {
-        toast.success(
-          t(
-            props.status === 'paused'
-              ? 'campaigns.detail.resumed'
-              : 'campaigns.detail.started',
-          ),
-        );
-      }
-
-      void queryClient.invalidateQueries({ queryKey: props.queryKey });
-    },
-  });
+  );
 
   const pause = useAction(
     pauseCampaignAction,
@@ -399,7 +383,8 @@ function ProgressCard({
 
 /**
  * Tarif en crédits de prospection par prospect (roadmap n°13) : figé au lancement, sinon celui de la
- * dernière estimation (terminée ou en cours de mesure), sinon mesuré au premier clic sur « Lancer ».
+ * dernière estimation (terminée ou en cours de mesure), sinon mesuré au lancement. Depuis le 4/11/2026 la
+ * campagne part sans attendre : pendant la mesure, 1 crédit par prospect.
  */
 function PricingStat({ live }: { live: CampaignLive }) {
   const { pricing } = live;
@@ -453,7 +438,15 @@ function PricingStat({ live }: { live: CampaignLive }) {
             />
           </span>
         }
-        hint={<Trans i18nKey={'campaigns.detail.pricingMeasuringHint'} />}
+        hint={
+          <Trans
+            i18nKey={
+              pricing.frozen
+                ? 'campaigns.detail.pricingMeasuringLaunchedHint'
+                : 'campaigns.detail.pricingMeasuringHint'
+            }
+          />
+        }
       />
     );
   }

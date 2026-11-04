@@ -489,7 +489,6 @@ begin
   -- Premier lancement : on fige les villes, les catégories et le tarif (crédits par prospect)
   if not exists (select 1 from public.lm_campaign_zones where campaign_id = p_campaign_id) then
     -- Le tarif vient de l'estimation faite avec exactement ce ciblage et ces filtres (roadmap n°13).
-    -- Sans estimation, la campagne ne part pas : l'application en lance une (lm_request_campaign_estimate).
     select e.id, e.credits_per_prospect into v_estimate_id, v_credits
       from public.lm_estimates e
      where e.account_id = v_campaign.account_id and e.status = 'done'
@@ -499,13 +498,33 @@ begin
      order by e.created_at desc
      limit 1;
 
-    if v_estimate_id is null then
-      raise exception 'estimate required before launch' using errcode = 'P0001', hint = 'estimate_required';
-    end if;
+    if v_estimate_id is not null then
+      update public.lm_campaigns
+         set credits_per_prospect = coalesce(v_credits, 1), estimate_id = v_estimate_id, price_pending = false
+       where id = p_campaign_id;
+    else
+      -- 4/11/2026 : plus aucune attente avant le lancement. Sans estimation terminée, la campagne part tout
+      -- de suite à 1 crédit par prospect ; la mesure (celle en cours, sinon une nouvelle) tourne en parallèle
+      -- et fixe le tarif quand elle se termine (lm_record_estimate_search).
+      select e.id into v_estimate_id
+        from public.lm_estimates e
+       where e.account_id = v_campaign.account_id and e.status = 'running'
+         and e.country_code = v_campaign.country_code
+         and e.targeting = v_campaign.targeting
+         and e.filters = (v_campaign.filters - 'paused_reason')
+       order by e.created_at desc
+       limit 1
+         for update;
 
-    update public.lm_campaigns
-       set credits_per_prospect = coalesce(v_credits, 1), estimate_id = v_estimate_id
-     where id = p_campaign_id;
+      if v_estimate_id is null then
+        v_estimate_id := public.lm_request_estimate(v_campaign.account_id, v_campaign.country_code,
+                                                    v_campaign.targeting, v_campaign.filters - 'paused_reason');
+      end if;
+
+      update public.lm_campaigns
+         set credits_per_prospect = 1, estimate_id = v_estimate_id, price_pending = true
+       where id = p_campaign_id;
+    end if;
 
     -- Ordre de passage : chaque ville par son nom (des plus peuplées aux moins peuplées), puis les secteurs
     -- des grandes villes en alternant les villes

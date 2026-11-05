@@ -12,6 +12,9 @@
 - Fonctions appelées par l'appli : `public.lm_member(account_id)` sur chaque identifiant, refus métier avec
   `hint`. Fonctions des robots : `revoke all from public` + `grant execute to service_role`.
 - En-tête de chaque fonction : rôle, appelant (appli / robot / déclencheur), sécurité.
+- **RLS des grosses tables** (prospects : 120 000 lignes pour une seule équipe) : jamais une fonction appelée par
+  ligne. Écrire `account_id in (select public.lm_user_account_ids())` et `(select public.is_mfa_compliant())`
+  (évalués une fois par requête). Sinon le tableau de bord dépasse le délai de 8 s (erreur 500 du 5/11/2026).
 - Tout correctif de sécurité ou d'argent a son test pgTAP (voir `tests/database/leadmaker-audit-2026-11.test.sql`).
 
 ## Schema Organization

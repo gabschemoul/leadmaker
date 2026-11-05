@@ -17,10 +17,11 @@ import pathsConfig from '~/config/paths.config';
 const iconClasses = 'w-4';
 
 /**
- * `_showSpaces` : n'est plus utilisé (l'entrée « Dossiers clients » est toujours affichée depuis le 5/11/2026),
- * gardé pour ne pas toucher tous les appelants.
+ * `showSpaces` : l'entrée « Dossiers clients » n'apparaît que quand
+ * l'organisation en a plusieurs (une PME qui prospecte pour elle-même n'en
+ * a pas besoin). Par défaut cachée, le temps de charger le nombre de dossiers.
  */
-const getRoutes = (account: string, _showSpaces: boolean) => [
+const getRoutes = (account: string, showSpaces: boolean) => [
   {
     label: 'common.routes.application',
     children: [
@@ -56,13 +57,13 @@ const getRoutes = (account: string, _showSpaces: boolean) => [
         path: createPath(pathsConfig.app.accountMembers, account),
         Icon: <Users className={iconClasses} />,
       },
-      // Dossiers clients : toujours visible depuis l'audit du 5/11 (E16), sinon une agence avec un seul dossier
-      // ne trouvait jamais comment en créer un deuxième.
-      {
-        label: 'common.routes.spaces',
-        path: createPath(pathsConfig.app.accountSpaces, account),
-        Icon: <FolderKanban className={iconClasses} />,
-      },
+      showSpaces
+        ? {
+            label: 'common.routes.spaces',
+            path: createPath(pathsConfig.app.accountSpaces, account),
+            Icon: <FolderKanban className={iconClasses} />,
+          }
+        : undefined,
       featureFlagsConfig.enableTeamAccountBilling
         ? {
             label: 'common.routes.billing',

@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 
-import { SitePageHeader } from '~/(marketing)/_components/site-page-header';
+import { LegalPage } from '../_components/legal-page';
 
 export async function generateMetadata() {
   const t = await getTranslations('marketing');
@@ -10,20 +10,13 @@ export async function generateMetadata() {
   };
 }
 
-async function CookiePolicyPage() {
-  const t = await getTranslations('marketing');
-
+function CookiePolicyPage() {
   return (
-    <div>
-      <SitePageHeader
-        title={t(`cookiePolicy`)}
-        subtitle={t(`cookiePolicyDescription`)}
-      />
-
-      <div className={'container mx-auto py-8'}>
-        <div>Your terms of service content here</div>
-      </div>
-    </div>
+    <LegalPage
+      id={'cookies'}
+      titleKey={'cookiePolicy'}
+      subtitleKey={'cookiePolicyDescription'}
+    />
   );
 }
 

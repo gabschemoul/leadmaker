@@ -30,6 +30,8 @@
   "cookiePolicyDescription": "Our cookie policy and how we use them",
   "privacyPolicy": "Privacy Policy",
   "privacyPolicyDescription": "Our privacy policy and how we use your data",
+  "legalNotice": "Legal notice",
+  "legalNoticeDescription": "Publisher and hosting",
   "contactDescription": "Contact us for any questions or feedback",
   "contactHeading": "Send us a message",
   "contactSubheading": "We will get back to you as soon as possible",
@@ -194,7 +196,7 @@
     "eyebrow": "Automated prospecting, worldwide",
     "title": "Your sales prospecting, on autopilot.",
     "lead": "Prospectigo finds qualified prospects for your industry and reaches out to them directly. You pick the area and the industry, Prospectigo handles the rest.",
-    "start": "Get started for free",
+    "start": "Get started",
     "bookDemo": "Book a demo",
     "fine": "No commitment · cancel anytime",
     "steps": {
@@ -297,7 +299,7 @@
       "manage": "<b>Manage your list</b>: sort, remove, add your own prospects",
       "enrich": "<b>Enrichment</b>: the email address found for you, the phone number shown",
       "export": "<b>CSV export</b> in one click, for your CRM or your tools",
-      "cta": "Try it for free",
+      "cta": "Create my account",
       "ui": {
         "list": "Dentists · Austin",
         "add": "+ Add",

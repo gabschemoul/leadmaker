@@ -39,6 +39,7 @@ const sections = [
       { href: '/terms-of-service', label: 'marketing.termsOfService' },
       { href: '/privacy-policy', label: 'marketing.privacyPolicy' },
       { href: '/cookie-policy', label: 'marketing.cookiePolicy' },
+      { href: '/legal-notice', label: 'marketing.legalNotice' },
     ],
   },
 ];

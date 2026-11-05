@@ -14,6 +14,7 @@ const PUBLIC_PATHS = [
   '/terms-of-service',
   '/privacy-policy',
   '/cookie-policy',
+  '/legal-notice',
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

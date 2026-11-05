@@ -1,3 +1,11 @@
+-- Les robots tournent pendant la migration : on prend d'un coup, dans un ordre fixe, tous les verrous des tables
+-- modifiées, pour éviter l'interblocage rencontré au premier essai (5/11/2026). Les robots attendent quelques
+-- secondes ; au-delà de 30 s d'attente, la migration échoue proprement et peut être relancée.
+set local lock_timeout = '30s';
+
+lock table public.lm_account_credits, public.lm_spaces, public.lm_campaigns, public.lm_prospects,
+           public.lm_attempts, public.lm_suppressions in access exclusive mode;
+
 drop policy "lm_prospects_insert" on "public"."lm_prospects";
 
 drop policy "lm_suppressions_read" on "public"."lm_suppressions";

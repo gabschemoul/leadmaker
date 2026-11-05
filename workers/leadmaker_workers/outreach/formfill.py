@@ -77,6 +77,11 @@ NEWSLETTER = re.compile(r"newsletter|lettre d'information|actualit|offres? (comm
                         r"|etre (re)?contacte|me contacter|par telephone|sms|subscribe|mailing list|marketing|promotion"
                         r"|special offers|text messages?|receive (updates|news|offers|emails|texts)|werbung|boletin"
                         r"|novedades|nieuwsbrief", re.I)
+# Case OBLIGATOIRE : on la coche sauf si c'est vraiment une inscription (lettre d'info, offres, partenaires…).
+# « J'accepte d'être recontacté au sujet de ma demande » bloquait l'envoi (5/11/2026 : 7 formulaires sur 500).
+NEWSLETTER_STRICT = re.compile(r"newsletter|lettre d'information|actualit|offres? (commerciales|promotionnelles)|partenaires"
+                               r"|marketing|promotion|special offers|subscribe|mailing list|receive (updates|news|offers)"
+                               r"|werbung|boletin|novedades|nieuwsbrief", re.I)
 # Captchas « à recopier » (image, calcul)
 CAPTCHA_TEXT = re.compile(r"code de securite|entre[rz]? le code|recopie|antispam|anti-spam|combien font|resultat de l'operation"
                           r"|(?<!re)captcha|security code|enter the (code|characters)|what is \d+|solve|math question"
@@ -430,10 +435,16 @@ def _find_form(page: Page) -> Frame | None:
 
 
 def _contact_links(page: Page, base: str) -> list[str]:
-    links = page.evaluate("""() => [...document.querySelectorAll('a[href]')].map(a => [a.href, (a.innerText || a.title || a.getAttribute('aria-label') || '').trim()])""")
+    # liens <a> dans un dessin SVG : a.href n'y est pas un texte (objet SVGAnimatedString) → adresse relue à la main
+    # (5/11/2026 : kimonoya.fr classé « site inaccessible » à cause de ça)
+    links = page.evaluate("""() => [...document.querySelectorAll('a[href]')].map(a => {
+        let href = a.href;
+        if (typeof href !== 'string') { try { href = new URL(a.getAttribute('href'), document.baseURI).href; } catch (e) { href = ''; } }
+        return [href, (a.innerText || a.title || a.getAttribute('aria-label') || '').trim()];
+    })""")
     scored = []
     for href, text in links:
-        if not href.startswith("http"):
+        if not isinstance(href, str) or not href.startswith("http"):
             continue
         if not _same_site(href, base):
             if FORM_SERVICES.search(href):  # formulaire hébergé ailleurs : essayé après les pages du site
@@ -883,7 +894,7 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                 if CONSENT.search(text) and not NEWSLETTER.search(text):
                     _check(loc)
                     res.filled["consentement"] = label
-                elif f["required"] and not NEWSLETTER.search(text):
+                elif f["required"] and not NEWSLETTER_STRICT.search(text):
                     _check(loc)
                     res.filled[f"case obligatoire {f['i']}"] = label
             elif kind == "radio" and f["name"] in civ_radio:

@@ -132,6 +132,9 @@ as $$
 declare
   v_count integer;
 begin
+  -- un ajout à la fois par organisation : deux créations simultanées ne dépassent pas le quota (audit A14)
+  perform pg_advisory_xact_lock(hashtext('lm_space_quota:' || new.account_id::text));
+
   select count(*) into v_count from public.lm_spaces where account_id = new.account_id;
 
   if v_count >= public.lm_space_limit(new.account_id) then

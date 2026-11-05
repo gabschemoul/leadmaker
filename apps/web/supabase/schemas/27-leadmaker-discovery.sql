@@ -494,6 +494,9 @@ begin
     raise exception 'no discovery credits' using errcode = 'P0001', hint = 'no_credits';
   end if;
 
+  -- un lancement à la fois par organisation : deux lancements simultanés ne dépassent pas le quota (audit A14)
+  perform pg_advisory_xact_lock(hashtext('lm_start_campaign:' || v_campaign.account_id::text));
+
   select count(*) into v_running from public.lm_campaigns
    where account_id = v_campaign.account_id and status = 'running';
 

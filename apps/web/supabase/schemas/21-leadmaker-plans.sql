@@ -451,6 +451,9 @@ as $$
 declare
   v_count integer;
 begin
+  -- une arrivée à la fois par organisation : deux acceptations simultanées ne dépassent pas le quota (audit A14)
+  perform pg_advisory_xact_lock(hashtext('lm_seat_quota:' || new.account_id::text));
+
   select count(*) into v_count from public.accounts_memberships where account_id = new.account_id;
 
   if v_count >= public.lm_seat_limit(new.account_id) then

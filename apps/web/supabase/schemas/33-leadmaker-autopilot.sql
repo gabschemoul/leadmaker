@@ -164,17 +164,25 @@ grant execute on function public.lm_attempt_is_clean(public.lm_attempt_status, t
 -- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_autopilot_contactable(p_campaign_id uuid) returns integer
 set search_path = ''
-language sql
+language plpgsql
 stable
 security definer
 as $$
-  select count(*)::integer
-    from public.lm_prospects p
-   where p.campaign_id = p_campaign_id
-     and public.lm_member(p.account_id)
-     and p.excluded_at is null and p.website is not null
-     and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
-     and not exists (select 1 from public.lm_attempts a where a.space_id = p.space_id and a.prospect_id = p.id);
+begin
+  -- accès vérifié UNE fois (5/11/2026 : vérifié ligne à ligne, la page d'une campagne à 12 000 prospects
+  -- dépassait le délai de 8 s de la base)
+  if not exists (select 1 from public.lm_campaigns c where c.id = p_campaign_id and public.lm_member(c.account_id)) then
+    return 0;
+  end if;
+
+  return (
+    select count(*)::integer
+      from public.lm_prospects p
+     where p.campaign_id = p_campaign_id
+       and p.excluded_at is null and p.website is not null
+       and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
+       and not exists (select 1 from public.lm_attempts a where a.space_id = p.space_id and a.prospect_id = p.id));
+end;
 $$;
 
 revoke all on function public.lm_autopilot_contactable(uuid) from public;

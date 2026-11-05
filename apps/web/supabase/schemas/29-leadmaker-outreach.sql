@@ -151,11 +151,16 @@ as $$
 declare
   v_ids uuid[];
 begin
+  -- accès vérifié une fois, pas ligne à ligne (grosses campagnes)
+  if not exists (select 1 from public.lm_campaigns c where c.id = p_campaign_id and public.lm_member(c.account_id)) then
+    return query select 0, 0;
+    return;
+  end if;
+
   select array_agg(p.id order by p.created_at) into v_ids
     from public.lm_prospects p
     left join public.lm_attempts a on a.space_id = p.space_id and a.prospect_id = p.id
    where p.campaign_id = p_campaign_id
-     and public.lm_member(p.account_id)
      and p.excluded_at is null and p.website is not null
      and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
      and (a.id is null or public.lm_attempt_repreparable(a.status));

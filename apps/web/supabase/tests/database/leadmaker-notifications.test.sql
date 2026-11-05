@@ -27,14 +27,14 @@ select 'a0000000-0000-4000-8000-0000000a7001', acc, space, 'Campagne N', 'FR', '
 update public.lm_campaigns set status = 'completed' where id = 'a0000000-0000-4000-8000-0000000a7001';
 update public.lm_campaigns set status = 'paused' where id = 'a0000000-0000-4000-8000-0000000a7001';
 update public.lm_campaigns set status = 'completed' where id = 'a0000000-0000-4000-8000-0000000a7001';
-select is((select count(*)::int from public.lm_notifications where kind = 'search_done'), 1,
+select is((select count(*)::int from public.lm_notifications where kind = 'search_done' and campaign_id = 'a0000000-0000-4000-8000-0000000a7001'), 1,
   'Recherche terminée : une notification par jour, pas plus');
 
 -- Arrêt faute de crédits
 update public.lm_campaigns set status = 'running' where id = 'a0000000-0000-4000-8000-0000000a7001';
 update public.lm_campaigns set status = 'paused', filters = filters || '{"paused_reason":"no_credits"}'
  where id = 'a0000000-0000-4000-8000-0000000a7001';
-select is((select count(*)::int from public.lm_notifications where kind = 'search_no_credits'), 1,
+select is((select count(*)::int from public.lm_notifications where kind = 'search_no_credits' and campaign_id = 'a0000000-0000-4000-8000-0000000a7001'), 1,
   'Recherche arrêtée faute de crédits signalée');
 
 -- Crédits sous 20 %
@@ -47,6 +47,8 @@ select is((select count(*)::int from public.lm_notifications where kind = 'credi
   'Crédits de prospection bas : une seule notification par période');
 
 -- Réclamation : destinataires = membres, sauf ceux qui ont coupé le groupe
+-- (seules les notifications de ce test sont réclamables)
+update public.lm_notifications set status = 'sent' where account_id is distinct from (select acc from t_nt) and status = 'pending';
 set local role service_role;
 create temp table t_claim as select * from public.lm_claim_notifications(100);
 set local role postgres;
@@ -59,14 +61,14 @@ select is((select count(*)::int from public.lm_notifications where status = 'sen
 set local role service_role;
 select public.lm_finish_notification((select id from t_claim where kind = 'search_done'), true);
 set local role postgres;
-select is((select status from public.lm_notifications where kind = 'search_done'), 'sent', 'Notification envoyée close');
+select is((select status from public.lm_notifications where kind = 'search_done' and campaign_id = 'a0000000-0000-4000-8000-0000000a7001'), 'sent', 'Notification envoyée close');
 
 -- Préférences : le groupe « credits » coupé → plus de destinataire
 select makerkit.authenticate_as('nt_a');
 select lives_ok($$ insert into public.lm_notification_preferences (user_id, disabled_groups)
                    values (auth.uid(), '{credits}') $$, 'Préférence enregistrée');
 set local role postgres;
-update public.lm_notifications set status = 'pending' where kind = 'credits_low';
+update public.lm_notifications set status = 'pending' where kind = 'credits_low' and account_id = (select acc from t_nt);
 set local role service_role;
 select is((select jsonb_array_length(recipients) from public.lm_claim_notifications(100) where kind = 'credits_low'), 0,
   'Groupe coupé : aucun destinataire');

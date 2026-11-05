@@ -471,6 +471,10 @@ begin
     return;
   end if;
 
+  if v_campaign.status = 'archived' then
+    raise exception 'campaign archived' using errcode = 'P0001', hint = 'archived';
+  end if;
+
   select p.active_campaigns, c.discovery_balance into v_limit, v_balance
     from public.lm_account_credits c left join public.lm_plans p on p.id = c.plan_id
    where c.account_id = v_campaign.account_id;

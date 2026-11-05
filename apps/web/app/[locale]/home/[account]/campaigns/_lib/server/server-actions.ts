@@ -15,8 +15,9 @@ import {
 } from '~/lib/server/leadmaker/rpc-errors';
 
 import {
-  RequestEstimateSchema,
+  ArchiveCampaignSchema,
   CampaignIdSchema,
+  RequestEstimateSchema,
   CampaignSenderSchema,
   CreateCampaignSchema,
   DuplicateCampaignSchema,
@@ -607,7 +608,37 @@ const START_ERRORS: Record<string, string> = {
   no_credits: 'campaigns.errors.noCredits',
   campaign_limit: 'campaigns.errors.campaignLimit',
   no_cities: 'campaigns.errors.noCities',
+  archived: 'campaigns.errors.archived',
 };
+
+/**
+ * Archive ou désarchive une campagne (audit E18) : archivée, elle disparaît de la liste et du tableau de bord,
+ * sa recherche et son pilote s'arrêtent, les formulaires validés pas encore partis sont retenus.
+ */
+export const archiveCampaignAction = authActionClient
+  .inputSchema(ArchiveCampaignSchema)
+  .action(async ({ parsedInput: { campaignId, archived }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client.rpc('lm_set_campaign_archived', {
+      p_campaign_id: campaignId,
+      p_archived: archived,
+    });
+
+    if (error) {
+      await throwRpcError({
+        scope: 'campaigns.archive',
+        error,
+        hints: {},
+        fallback: 'campaigns.errors.archiveFailed',
+        context: { campaignId, archived, userId: ctx.user.id },
+      });
+    }
+
+    revalidatePath('/home/[account]', 'layout');
+
+    return { status: data };
+  });
 
 /**
  * Lance ou reprend une campagne, tout de suite (4/11/2026) : sans estimation terminée, la mesure de la

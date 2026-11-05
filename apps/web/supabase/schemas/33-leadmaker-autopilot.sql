@@ -499,6 +499,10 @@ begin
     raise exception 'campaign not found' using errcode = 'P0001', hint = 'not_found';
   end if;
 
+  if v_campaign.status = 'archived' then
+    raise exception 'campaign archived' using errcode = 'P0001', hint = 'archived';
+  end if;
+
   if not exists (select 1 from public.lm_sender_profiles s where s.space_id = v_campaign.space_id) then
     raise exception 'no sender profile' using errcode = 'P0001', hint = 'no_sender';
   end if;
@@ -917,3 +921,72 @@ $$;
 revoke all on function public.lm_autopilot_summary(uuid) from public;
 
 grant execute on function public.lm_autopilot_summary(uuid) to authenticated, service_role;
+
+-- Archive (ou désarchive) une campagne depuis l'appli (audit 5/11/2026, E18).
+-- Appelant : appli (authenticated), contrôle lm_member. Archiver met la recherche en pause, arrête le pilote
+-- automatique et retient les formulaires validés pas encore partis (ils repassent « prêts ») ; un envoi déjà en
+-- cours se termine. Désarchiver remet la campagne en pause (ou en brouillon si elle n'a jamais été lancée) :
+-- rien ne repart tout seul. Renvoie le nouveau statut.
+create or replace function public.lm_set_campaign_archived(p_campaign_id uuid, p_archived boolean) returns text
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_campaign public.lm_campaigns%rowtype;
+  v_status public.lm_campaign_status;
+  ap record;
+begin
+  select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
+
+  if v_campaign.id is null or not public.lm_member(v_campaign.account_id) then
+    raise exception 'campaign not found' using errcode = 'P0002';
+  end if;
+
+  if p_archived then
+    if v_campaign.status = 'archived' then
+      return 'archived';
+    end if;
+
+    if v_campaign.status = 'running' then
+      perform public.lm_pause_campaign(p_campaign_id, 'archived');
+    end if;
+
+    for ap in
+      select id from public.lm_autopilots
+       where campaign_id = p_campaign_id and status in ('preview', 'running', 'paused')
+    loop
+      perform public.lm_autopilot_hold(ap.id, false);
+      update public.lm_autopilots set status = 'cancelled', finished_reason = 'archived', finished_at = now()
+       where id = ap.id;
+    end loop;
+
+    -- formulaires validés à la main (hors pilote) pas encore partis
+    update public.lm_tasks t set status = 'cancelled', finished_at = now()
+     where t.kind = 'send' and t.status = 'queued'
+       and t.payload ->> 'attempt_id' in (select a.id::text from public.lm_attempts a
+                                           where a.campaign_id = p_campaign_id and a.status = 'validated');
+    update public.lm_attempts set status = 'ready', validated_at = null, validated_by = null
+     where campaign_id = p_campaign_id and status = 'validated';
+
+    update public.lm_campaigns set status = 'archived' where id = p_campaign_id;
+
+    return 'archived';
+  end if;
+
+  if v_campaign.status <> 'archived' then
+    return v_campaign.status::text;
+  end if;
+
+  v_status := case when exists (select 1 from public.lm_campaign_zones where campaign_id = p_campaign_id)
+                   then 'paused'::public.lm_campaign_status else 'draft'::public.lm_campaign_status end;
+
+  update public.lm_campaigns set status = v_status, filters = filters - 'paused_reason' where id = p_campaign_id;
+
+  return v_status::text;
+end;
+$$;
+
+revoke all on function public.lm_set_campaign_archived(uuid, boolean) from public;
+
+grant execute on function public.lm_set_campaign_archived(uuid, boolean) to authenticated, service_role;

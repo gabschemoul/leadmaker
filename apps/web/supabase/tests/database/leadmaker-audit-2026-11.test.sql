@@ -186,6 +186,28 @@ set local role postgres;
 select is((select outreach_balance from public.lm_account_credits where account_id = (select acc_a from t_au)),
   (select outreach_balance - 1 from t_bal), 'A13 : envoi confirmé à la main débité');
 
+-- ── E18 : archiver une campagne ─────────────────────────────────────────────────────────────────────────
+select makerkit.authenticate_as('au_b');
+select throws_ok($$ select public.lm_set_campaign_archived('a0000000-0000-4000-8000-00000000a0a1', true) $$,
+  'P0002', null, 'E18 : impossible d''archiver la campagne d''une autre organisation');
+select makerkit.authenticate_as('au_a');
+set local role postgres;
+update public.lm_attempts set status = 'validated', validated_at = now() where id = 'a0000000-0000-4000-8000-00000000a7a1';
+insert into public.lm_tasks (account_id, kind, payload, idempotency_key)
+select acc_a, 'send', jsonb_build_object('attempt_id', 'a0000000-0000-4000-8000-00000000a7a1'), 'send:audit-archive' from t_au;
+select makerkit.authenticate_as('au_a');
+select is(public.lm_set_campaign_archived('a0000000-0000-4000-8000-00000000a0a1', true), 'archived', 'E18 : campagne archivée');
+set local role postgres;
+select is((select status::text from public.lm_attempts where id = 'a0000000-0000-4000-8000-00000000a7a1'), 'ready',
+  'E18 : formulaire validé retenu (repasse « prêt »)');
+select is((select status::text from public.lm_tasks where idempotency_key = 'send:audit-archive'), 'cancelled',
+  'E18 : envoi en attente annulé');
+select makerkit.authenticate_as('au_a');
+select throws_ok($$ select public.lm_start_campaign('a0000000-0000-4000-8000-00000000a0a1') $$,
+  'P0001', 'campaign archived', 'E18 : une campagne archivée ne se relance pas');
+select is(public.lm_set_campaign_archived('a0000000-0000-4000-8000-00000000a0a1', false), 'paused',
+  'E18 : désarchivée, elle revient en pause');
+
 select * from finish();
 
 rollback;

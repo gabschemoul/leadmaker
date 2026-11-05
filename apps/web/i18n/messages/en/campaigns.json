@@ -237,7 +237,9 @@
     "countryLocked": "The country can no longer change once the campaign has been launched.",
     "duplicateFailed": "The campaign couldn't be duplicated. Please try again in a moment.",
     "tooManyCategories": "A campaign can include at most 1,000 trades.",
-    "estimateQuota": "You have reached today's estimate limit. Try again tomorrow, or launch the campaign directly: its rate is measured automatically."
+    "estimateQuota": "You have reached today's estimate limit. Try again tomorrow, or launch the campaign directly: its rate is measured automatically.",
+    "archived": "This campaign is archived: unarchive it first.",
+    "archiveFailed": "The campaign couldn't be archived. Please try again in a moment."
   },
   "duplicate": {
     "button": "Duplicate",
@@ -556,5 +558,20 @@
     "title": "Choose a plan to get started",
     "description": "You can set up your campaigns right away; a plan is needed to run the search and contact businesses.",
     "button": "See plans"
+  },
+  "archive": {
+    "button": "Archive",
+    "restoreButton": "Unarchive",
+    "confirmTitle": "Archive this campaign?",
+    "confirmDescription": "It disappears from the list and the dashboard. Its search and autopilot stop, and approved forms not yet sent are held back. Its prospects stay in the Prospects page. You can unarchive it at any time.",
+    "confirmButton": "Archive",
+    "archivedDone": "Campaign archived.",
+    "restoredDone": "Campaign unarchived: it is paused, click “Resume” to restart it.",
+    "bannerTitle": "Archived campaign",
+    "bannerDescription": "Nothing runs on this campaign. Unarchive it (button at the top) to resume it.",
+    "showArchived": "{count, plural, one {See the archived campaign} other {See the # archived campaigns}}",
+    "backToList": "Back to campaigns",
+    "listDescription": "Archived campaigns: nothing runs on them.",
+    "listEmpty": "No archived campaigns."
   }
 }

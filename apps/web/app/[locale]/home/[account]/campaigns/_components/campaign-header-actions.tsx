@@ -9,12 +9,14 @@ import { toast } from '@kit/ui/sonner';
 import { Trans } from '@kit/ui/trans';
 
 import { duplicateCampaignAction } from '../_lib/server/server-actions';
+import { CampaignArchiveButton } from './campaign-archive-button';
 
-/** Actions secondaires d'une campagne, dans l'en-tête : dupliquer, exporter. */
+/** Actions secondaires d'une campagne, dans l'en-tête : dupliquer, exporter, archiver. */
 export function CampaignHeaderActions(props: {
   campaignId: string;
   campaignName: string;
   accountSlug: string;
+  archived: boolean;
 }) {
   const t = useTranslations();
 
@@ -72,6 +74,11 @@ export function CampaignHeaderActions(props: {
           <Trans i18nKey={'prospects.export.button'} />
         </span>
       </Button>
+
+      <CampaignArchiveButton
+        campaignId={props.campaignId}
+        archived={props.archived}
+      />
     </div>
   );
 }

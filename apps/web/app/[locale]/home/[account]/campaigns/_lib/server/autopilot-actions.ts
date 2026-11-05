@@ -26,6 +26,7 @@ const AUTOPILOT_ERRORS: Record<string, string> = {
   target: 'campaigns.autopilot.errors.target',
   schedule: 'campaigns.autopilot.errors.schedule',
   not_active: 'campaigns.autopilot.errors.notActive',
+  archived: 'campaigns.errors.archived',
 };
 
 async function fail(

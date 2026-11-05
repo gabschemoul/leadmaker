@@ -44,6 +44,7 @@ import { loadCampaigns } from './_lib/server/campaigns.loader';
 
 interface CampaignsPageProps {
   params: Promise<{ account: string }>;
+  searchParams: Promise<{ archived?: string }>;
 }
 
 type Params = CampaignsPageProps['params'];
@@ -56,7 +57,7 @@ export const generateMetadata = async () => {
   };
 };
 
-function CampaignsPage({ params }: CampaignsPageProps) {
+function CampaignsPage({ params, searchParams }: CampaignsPageProps) {
   return (
     <PageBody>
       <Suspense fallback={<PageHeaderSkeleton />}>
@@ -71,7 +72,7 @@ function CampaignsPage({ params }: CampaignsPageProps) {
             </Delayed>
           }
         >
-          <CampaignsCard params={params} />
+          <CampaignsCard params={params} searchParams={searchParams} />
         </Suspense>
       </div>
     </PageBody>
@@ -92,12 +93,20 @@ async function CampaignsPageHeader({ params }: { params: Params }) {
   );
 }
 
-async function CampaignsCard({ params }: { params: Params }) {
+async function CampaignsCard({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: CampaignsPageProps['searchParams'];
+}) {
   const { account: slug } = await params;
+  // ?archived=1 : la liste des campagnes archivées (audit E18) ; sinon elles sont masquées
+  const showArchived = (await searchParams).archived === '1';
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
 
-  const [spaces, campaigns, countries, format] = await Promise.all([
+  const [spaces, allCampaigns, countries, format] = await Promise.all([
     loadSpaces(client, account.id),
     loadCampaigns(client, account.id),
     loadCountryOptions(client),
@@ -107,6 +116,14 @@ async function CampaignsCard({ params }: { params: Params }) {
   const campaignsPath = pathsConfig.app.accountCampaigns.replace(
     '[account]',
     slug,
+  );
+
+  const archivedCount = allCampaigns.filter(
+    (campaign) => campaign.status === 'archived',
+  ).length;
+
+  const campaigns = allCampaigns.filter(
+    (campaign) => (campaign.status === 'archived') === showArchived,
   );
 
   // un seul dossier (celui par défaut) : la notion n'est pas affichée
@@ -127,8 +144,33 @@ async function CampaignsCard({ params }: { params: Params }) {
           </CardTitle>
 
           <CardDescription>
-            <Trans i18nKey={'campaigns.list.description'} />
+            <Trans
+              i18nKey={
+                showArchived
+                  ? 'campaigns.archive.listDescription'
+                  : 'campaigns.list.description'
+              }
+            />
           </CardDescription>
+
+          {showArchived || archivedCount > 0 ? (
+            <Link
+              className={'text-muted-foreground text-sm underline'}
+              data-test={'campaigns-archived-toggle'}
+              href={
+                showArchived ? campaignsPath : `${campaignsPath}?archived=1`
+              }
+            >
+              <Trans
+                i18nKey={
+                  showArchived
+                    ? 'campaigns.archive.backToList'
+                    : 'campaigns.archive.showArchived'
+                }
+                values={{ count: archivedCount }}
+              />
+            </Link>
+          ) : null}
         </div>
 
         <Button
@@ -151,7 +193,13 @@ async function CampaignsCard({ params }: { params: Params }) {
             className={'text-muted-foreground py-6 text-center text-sm'}
             data-test={'campaigns-empty'}
           >
-            <Trans i18nKey={'campaigns.list.empty'} />
+            <Trans
+              i18nKey={
+                showArchived
+                  ? 'campaigns.archive.listEmpty'
+                  : 'campaigns.list.empty'
+              }
+            />
           </p>
         ) : (
           <Table data-test={'campaigns-table'}>

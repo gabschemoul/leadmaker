@@ -1617,6 +1617,9 @@ isOneToOne: false
 "lm_sends_today":
 { Args: { "p_campaign_id": string }; Returns: number
                            },
+"lm_set_campaign_archived":
+{ Args: { "p_archived": boolean,"p_campaign_id": string }; Returns: string
+                           },
 "lm_set_default_sender":
 { Args: { "p_sender_id": string }; Returns: undefined
                            },

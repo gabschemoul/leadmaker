@@ -6,6 +6,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import * as z from 'zod';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
@@ -191,10 +192,22 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
           campaignId={id}
           campaignName={campaign.name}
           accountSlug={slug}
+          archived={campaign.status === 'archived'}
         />
       </TeamAccountLayoutPageHeader>
 
       <div className={'flex flex-col gap-5 pb-32'}>
+        {campaign.status === 'archived' ? (
+          <Alert data-test={'campaign-archived-banner'}>
+            <AlertTitle>
+              <Trans i18nKey={'campaigns.archive.bannerTitle'} />
+            </AlertTitle>
+            <AlertDescription>
+              <Trans i18nKey={'campaigns.archive.bannerDescription'} />
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         {folderName ? (
           <p
             className={'text-muted-foreground text-sm'}

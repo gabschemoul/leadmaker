@@ -315,6 +315,11 @@ export const CampaignIdSchema = z.object({
   campaignId: z.string().uuid(),
 });
 
+/** Archiver (true) ou désarchiver (false) une campagne. */
+export const ArchiveCampaignSchema = CampaignIdSchema.extend({
+  archived: z.boolean(),
+});
+
 /** Expéditeur d'une campagne ; null = celui par défaut de l'organisation. */
 export const CampaignSenderSchema = CampaignIdSchema.extend({
   senderId: z.string().uuid().nullable(),

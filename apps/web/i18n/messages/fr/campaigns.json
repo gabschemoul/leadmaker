@@ -237,7 +237,9 @@
     "countryLocked": "Le pays ne peut plus changer une fois la campagne lancée.",
     "duplicateFailed": "La campagne n'a pas pu être dupliquée. Réessayez dans un instant.",
     "tooManyCategories": "Une campagne peut contenir 1 000 activités au plus.",
-    "estimateQuota": "Vous avez atteint le nombre d'estimations possibles pour aujourd'hui. Réessayez demain, ou lancez directement la campagne : le tarif est mesuré automatiquement."
+    "estimateQuota": "Vous avez atteint le nombre d'estimations possibles pour aujourd'hui. Réessayez demain, ou lancez directement la campagne : le tarif est mesuré automatiquement.",
+    "archived": "Cette campagne est archivée : désarchivez-la d'abord.",
+    "archiveFailed": "La campagne n'a pas pu être archivée. Réessayez dans un instant."
   },
   "duplicate": {
     "button": "Dupliquer",
@@ -556,5 +558,20 @@
     "title": "Choisissez un forfait pour démarrer",
     "description": "Vous pouvez préparer vos campagnes dès maintenant ; il faut un forfait pour lancer la recherche et contacter les entreprises.",
     "button": "Voir les forfaits"
+  },
+  "archive": {
+    "button": "Archiver",
+    "restoreButton": "Désarchiver",
+    "confirmTitle": "Archiver cette campagne ?",
+    "confirmDescription": "Elle disparaît de la liste et du tableau de bord. Sa recherche et son pilote automatique s'arrêtent, et les formulaires validés qui ne sont pas encore partis sont retenus. Ses prospects restent dans la page Prospects. Vous pourrez la désarchiver à tout moment.",
+    "confirmButton": "Archiver",
+    "archivedDone": "Campagne archivée.",
+    "restoredDone": "Campagne désarchivée : elle est en pause, cliquez sur « Reprendre » pour la relancer.",
+    "bannerTitle": "Campagne archivée",
+    "bannerDescription": "Rien ne tourne sur cette campagne. Désarchivez-la (bouton en haut) pour la reprendre.",
+    "showArchived": "{count, plural, one {Voir la campagne archivée} other {Voir les # campagnes archivées}}",
+    "backToList": "Revenir aux campagnes",
+    "listDescription": "Les campagnes archivées : rien ne tourne dessus.",
+    "listEmpty": "Aucune campagne archivée."
   }
 }

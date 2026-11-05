@@ -29,6 +29,8 @@ const INTERNAL_PACKAGES = [
 
 /** @type {import('next').NextConfig} */
 const config = {
+  // NEXT_DIST_DIR : un 2e serveur de dev en parallèle (ex. tests sur une base d'essai) ; jamais posé sur Vercel
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   /** Enables hot reloading for local packages without a build step */
   transpilePackages: INTERNAL_PACKAGES,

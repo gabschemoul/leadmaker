@@ -6,6 +6,12 @@ import { authActionClient } from '@kit/next/safe-action';
 import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
+import {
+  FIND_EMAILS_ERRORS,
+  PREPARE_ERRORS,
+  throwRpcError,
+} from '~/lib/server/leadmaker/rpc-errors';
+
 import { ImportProspectsSchema } from '../schema/import.schema';
 import {
   PrepareProspectsSchema,
@@ -114,12 +120,6 @@ export const deleteProspectsAction = authActionClient
     return result;
   });
 
-const PREPARE_ERRORS: Record<string, string> = {
-  no_sender: 'outreach.forms.prepare.noSender',
-  no_messages: 'outreach.forms.prepare.noMessages',
-  cap_reached: 'outreach.forms.prepare.capReached',
-};
-
 /**
  * Met des prospects en file de préparation : le robot remplira leur formulaire
  * de contact sans l'envoyer. Renvoie le nombre mis en file et le nombre ignorés
@@ -136,24 +136,13 @@ export const prepareProspectsAction = authActionClient
     });
 
     if (error) {
-      const known = error.hint ? PREPARE_ERRORS[error.hint] : undefined;
-
-      if (known) {
-        throw new Error(known);
-      }
-
-      const logger = await getLogger();
-      logger.error(
-        {
-          name: 'leadmaker.prospects.prepare',
-          accountId,
-          userId: ctx.user.id,
-          error,
-        },
-        'Failed to queue form preparation',
-      );
-
-      throw new Error('outreach.forms.prepare.failed');
+      await throwRpcError({
+        scope: 'prospects.prepare',
+        error,
+        hints: PREPARE_ERRORS,
+        fallback: 'outreach.forms.prepare.failed',
+        context: { accountId, userId: ctx.user.id },
+      });
     }
 
     revalidatePath('/home/[account]/forms', 'page');
@@ -173,18 +162,13 @@ export const findEmailsAction = authActionClient
     const { data, error } = await client.rpc('lm_find_emails', { p_ids: ids });
 
     if (error) {
-      const logger = await getLogger();
-      logger.error(
-        {
-          name: 'leadmaker.prospects.find-emails',
-          accountId,
-          userId: ctx.user.id,
-          error,
-        },
-        'Failed to queue email search',
-      );
-
-      throw new Error('prospects.actions.findEmailsFailed');
+      await throwRpcError({
+        scope: 'prospects.find-emails',
+        error,
+        hints: FIND_EMAILS_ERRORS,
+        fallback: 'prospects.actions.findEmailsFailed',
+        context: { accountId, userId: ctx.user.id },
+      });
     }
 
     revalidatePath('/home/[account]/prospects', 'page');

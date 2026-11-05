@@ -26,20 +26,30 @@ export const sendContactEmail = publicActionClient
   .action(async ({ parsedInput: data }) => {
     const mailer = await getMailer();
 
+    // Audit 5/11/2026 (B3) : champs échappés, pour ne jamais injecter de HTML (liens piégés, images
+    // espionnes) dans la boîte de l'équipe.
     await mailer.sendEmail({
       to: contactEmail,
       from: emailFrom,
-      subject: 'Contact Form Submission',
+      subject: `Prospectigo — message de ${data.name.slice(0, 80)}`,
       html: `
-        <p>
-          You have received a new contact form submission.
-        </p>
+        <p>Nouveau message depuis le formulaire de contact de prospectigo.com.</p>
 
-        <p>Name: ${data.name}</p>
-        <p>Email: ${data.email}</p>
-        <p>Message: ${data.message}</p>
+        <p>Nom : ${escapeHtml(data.name)}</p>
+        <p>E-mail : ${escapeHtml(data.email)}</p>
+        <p>Message :</p>
+        <p style="white-space: pre-wrap">${escapeHtml(data.message)}</p>
       `,
     });
 
     return {};
   });
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}

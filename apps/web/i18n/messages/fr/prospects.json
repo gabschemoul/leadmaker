@@ -104,7 +104,8 @@
     "deleteFailed": "La suppression a échoué. Réessayez dans un instant.",
     "findEmailsDone": "{count, plural, one {# recherche lancée} other {# recherches lancées}} : les adresses apparaîtront dans la colonne E-mail d'ici quelques minutes (rechargez la page).",
     "findEmailsNothing": "Rien à chercher : ces prospects ont déjà un e-mail, n'ont pas de site ou sont déjà en cours de recherche.",
-    "findEmailsFailed": "La recherche d'e-mails n'a pas pu démarrer. Réessayez dans un instant."
+    "findEmailsFailed": "La recherche d'e-mails n'a pas pu démarrer. Réessayez dans un instant.",
+    "noPlan": "Choisissez un forfait pour rechercher les e-mails des prospects."
   },
   "export": {
     "button": "Exporter en CSV",

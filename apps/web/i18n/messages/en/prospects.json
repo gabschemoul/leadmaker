@@ -104,7 +104,8 @@
     "deleteFailed": "Deletion failed. Please try again in a moment.",
     "findEmailsDone": "{count, plural, one {# search started} other {# searches started}}: addresses will show up in the Email column within a few minutes (reload the page).",
     "findEmailsNothing": "Nothing to search: these prospects already have an email, have no website, or are already being searched.",
-    "findEmailsFailed": "The email search could not start. Please try again in a moment."
+    "findEmailsFailed": "The email search could not start. Please try again in a moment.",
+    "noPlan": "Choose a plan to look up prospects' emails."
   },
   "export": {
     "button": "Export CSV",

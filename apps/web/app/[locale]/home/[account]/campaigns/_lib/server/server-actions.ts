@@ -8,6 +8,11 @@ import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { mentionsCompany, unknownVariables } from '~/lib/leadmaker/templates';
+import {
+  ESTIMATE_ERRORS,
+  PREPARE_ERRORS,
+  throwRpcError,
+} from '~/lib/server/leadmaker/rpc-errors';
 
 import {
   RequestEstimateSchema,
@@ -429,13 +434,17 @@ export const requestEstimateAction = authActionClient
         p_filters: filters,
       });
 
-      if (error || !data) {
-        const logger = await getLogger();
-        logger.error(
-          { name: 'leadmaker.campaigns.real-estimate', accountId, error },
-          'Real estimate request failed',
-        );
+      if (error) {
+        await throwRpcError({
+          scope: 'campaigns.real-estimate',
+          error,
+          hints: ESTIMATE_ERRORS,
+          fallback: 'campaigns.errors.estimateFailed',
+          context: { accountId },
+        });
+      }
 
+      if (!data) {
         throw new Error('campaigns.errors.estimateFailed');
       }
 
@@ -844,12 +853,6 @@ export const saveCampaignTemplatesAction = authActionClient
     return { success: true, count: filled.length };
   });
 
-const PREPARE_ERRORS: Record<string, string> = {
-  no_sender: 'outreach.forms.prepare.noSender',
-  no_messages: 'outreach.forms.prepare.noMessages',
-  cap_reached: 'outreach.forms.prepare.capReached',
-};
-
 /** Prépare les formulaires de tous les prospects d'une campagne pas encore traités. */
 export const prepareCampaignAction = authActionClient
   .inputSchema(CampaignIdSchema)
@@ -861,24 +864,13 @@ export const prepareCampaignAction = authActionClient
     });
 
     if (error) {
-      const known = error.hint ? PREPARE_ERRORS[error.hint] : undefined;
-
-      if (known) {
-        throw new Error(known);
-      }
-
-      const logger = await getLogger();
-      logger.error(
-        {
-          name: 'leadmaker.campaigns.prepare',
-          campaignId,
-          userId: ctx.user.id,
-          error,
-        },
-        'Failed to queue campaign form preparation',
-      );
-
-      throw new Error('outreach.forms.prepare.failed');
+      await throwRpcError({
+        scope: 'campaigns.prepare',
+        error,
+        hints: PREPARE_ERRORS,
+        fallback: 'outreach.forms.prepare.failed',
+        context: { campaignId, userId: ctx.user.id },
+      });
     }
 
     revalidatePath('/home/[account]/forms', 'page');

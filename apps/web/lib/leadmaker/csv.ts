@@ -105,7 +105,13 @@ export function escapeCsvValue(value: unknown) {
     return '';
   }
 
-  const text = String(value);
+  let text = String(value);
+
+  // Audit 5/11/2026 (B2) : un nom d'entreprise venu du web qui commence par = + - @ (ou une tabulation)
+  // serait exécuté comme formule par Excel / Google Sheets. Une apostrophe en tête le neutralise.
+  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(text)) {
+    text = `'${text}`;
+  }
 
   if (/[",;\r\n]/.test(text) || text !== text.trim()) {
     return `"${text.replace(/"/g, '""')}"`;

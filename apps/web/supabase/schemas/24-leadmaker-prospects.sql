@@ -32,7 +32,9 @@ create table if not exists public.lm_prospects (
   primary key (id),
   constraint lm_prospects_site_key_unique_per_space unique (space_id, site_key),
   constraint lm_prospects_site_key_not_blank check (length(trim(site_key)) > 0),
-  constraint lm_prospects_country_code_upper check (country_code is null or country_code = upper(country_code))
+  constraint lm_prospects_country_code_upper check (country_code is null or country_code = upper(country_code)),
+  -- audit A5 : les robots n'ouvrent que des sites web (jamais file://, javascript:, etc.)
+  constraint lm_prospects_website_http check (website is null or website ~* '^https?://[^/\s]+')
 );
 
 comment on table public.lm_prospects is 'Entreprises découvertes ou importées, uniques par site et par espace';
@@ -43,7 +45,9 @@ revoke all on public.lm_prospects from anon, authenticated, service_role;
 
 grant select, insert, update, delete on table public.lm_prospects to service_role;
 
-grant select, insert on table public.lm_prospects to authenticated;
+-- Lecture seule pour les clients : les prospects arrivent par les robots ou par lm_import_prospects (audit A1 :
+-- un INSERT direct permettait de rattacher un prospect à la campagne d'une autre organisation).
+grant select on table public.lm_prospects to authenticated;
 
 create trigger lm_prospects_set_timestamps
   before insert or update on public.lm_prospects
@@ -76,14 +80,48 @@ create index if not exists ix_lm_prospects_space_id_name on public.lm_prospects 
 create policy "lm_prospects_read" on public.lm_prospects for select
   to authenticated using (public.has_role_on_account(account_id));
 
-create policy "lm_prospects_insert" on public.lm_prospects for insert
-  to authenticated with check (
-    public.has_role_on_account(account_id)
-    and exists (select 1 from public.lm_spaces s where s.id = space_id and s.account_id = lm_prospects.account_id)
-  );
-
 create policy "restrict_mfa_lm_prospects" on public.lm_prospects
   as restrictive to authenticated using (public.is_mfa_compliant());
+
+-- Adresse de site nettoyée (import CSV, robots) : http(s) gardé, domaine nu complété en https://, le reste
+-- (file:, javascript:, texte libre…) devient null. Audit A5.
+create or replace function public.lm_clean_website(p_url text) returns text
+set search_path = ''
+language sql
+immutable
+as $$
+  select case
+           when v is null or v = '' then null
+           when v ~* '^https?://[^/\s]+' then left(v, 1000)
+           when v ~* '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:[0-9]+)?(/\S*)?$'
+             then left('https://' || v, 1000)
+         end
+    from (select trim(p_url) as v) x;
+$$;
+
+grant execute on function public.lm_clean_website(text) to authenticated, service_role;
+
+-- Un prospect ou une prise de contact ne peut être rattaché qu'à une campagne du même espace (audit A1).
+create or replace function public.lm_check_campaign_space() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  if new.campaign_id is not null and not exists (
+       select 1 from public.lm_campaigns c where c.id = new.campaign_id and c.space_id = new.space_id) then
+    raise exception 'campaign % is not in space %', new.campaign_id, new.space_id using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.lm_check_campaign_space() from public;
+
+create trigger lm_prospects_check_campaign_space
+  before insert or update of campaign_id, space_id on public.lm_prospects
+  for each row execute function public.lm_check_campaign_space();
 
 -- Villes et activités présentes dans un espace (pour les filtres de la page Prospects)
 create or replace function public.lm_prospect_facets(p_space_id uuid)
@@ -118,7 +156,7 @@ begin
   with target as (
     select p.id, p.account_id, p.space_id, p.site_key
       from public.lm_prospects p
-     where p.id = any (p_ids) and p.excluded_at is null and public.has_role_on_account(p.account_id)
+     where p.id = any (p_ids) and p.excluded_at is null and public.lm_member(p.account_id)
   ), upd as (
     update public.lm_prospects p set excluded_at = now()
       from target t where p.id = t.id
@@ -152,7 +190,7 @@ begin
   with target as (
     select p.id, p.space_id, p.site_key
       from public.lm_prospects p
-     where p.id = any (p_ids) and p.excluded_at is not null and public.has_role_on_account(p.account_id)
+     where p.id = any (p_ids) and p.excluded_at is not null and public.lm_member(p.account_id)
   ), upd as (
     update public.lm_prospects p set excluded_at = null
       from target t where p.id = t.id
@@ -246,6 +284,10 @@ create trigger lm_attempts_set_timestamps
 create trigger lm_attempts_set_user_tracking
   before insert or update on public.lm_attempts
   for each row execute function public.trigger_set_user_tracking();
+
+create trigger lm_attempts_check_campaign_space
+  before insert or update of campaign_id, space_id on public.lm_attempts
+  for each row execute function public.lm_check_campaign_space();
 
 create index if not exists ix_lm_attempts_campaign_id_status
   on public.lm_attempts (campaign_id, status);
@@ -358,8 +400,10 @@ create unique index if not exists ux_lm_suppressions_scope_site_key
 
 create index if not exists ix_lm_suppressions_site_key on public.lm_suppressions (site_key);
 
+-- La liste globale (account_id null : entreprises qui ont demandé à ne plus être contactées) n'est lisible
+-- par aucun client ; elle est appliquée côté serveur par lm_site_suppressed.
 create policy "lm_suppressions_read" on public.lm_suppressions for select
-  to authenticated using (account_id is null or public.has_role_on_account(account_id));
+  to authenticated using (account_id is not null and public.has_role_on_account(account_id));
 
 create policy "lm_suppressions_insert" on public.lm_suppressions for insert
   to authenticated with check (
@@ -374,6 +418,25 @@ create policy "lm_suppressions_delete" on public.lm_suppressions for delete
 
 create policy "restrict_mfa_lm_suppressions" on public.lm_suppressions
   as restrictive to authenticated using (public.is_mfa_compliant());
+
+-- Site en liste d'opposition (globale, de l'organisation ou de l'espace) ? Vérifié à l'import, à la préparation,
+-- par le pilote automatique et avant chaque envoi (audit A10 : avant, seulement à la découverte).
+create or replace function public.lm_site_suppressed(p_account_id uuid, p_space_id uuid, p_site_key text)
+returns boolean
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select exists (select 1 from public.lm_suppressions s
+                  where s.site_key = p_site_key
+                    and (s.account_id is null
+                         or (s.account_id = p_account_id and (s.space_id is null or s.space_id = p_space_id))));
+$$;
+
+revoke all on function public.lm_site_suppressed(uuid, uuid, text) from public;
+
+grant execute on function public.lm_site_suppressed(uuid, uuid, text) to service_role;
 
 -- Affichage en direct des prospects trouvés (Supabase Realtime, filtré par la RLS)
 alter publication supabase_realtime add table public.lm_prospects;

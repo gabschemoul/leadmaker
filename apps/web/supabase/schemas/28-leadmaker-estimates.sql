@@ -80,8 +80,10 @@ revoke all on public.lm_estimate_places from anon, authenticated, service_role;
 grant select, insert, update, delete on table public.lm_estimate_places to service_role;
 
 -- Demande d'estimation réelle : crée les recherches à lire (prioritaires sur les campagnes)
-create or replace function public.lm_request_estimate(p_account_id uuid, p_country_code text, p_targeting jsonb,
-                                                      p_filters jsonb) returns uuid
+-- Crée une estimation et ses recherches (robots « estimate », priorité 10). INTERNE : sans contrôle d'accès ni
+-- quota ; appelée par lm_request_estimate (appli), lm_start_campaign et lm_update_campaign (mesure du tarif).
+create or replace function public.lm_create_estimate(p_account_id uuid, p_country_code text, p_targeting jsonb,
+                                                     p_filters jsonb) returns uuid
 set search_path = ''
 language plpgsql
 security definer
@@ -94,10 +96,6 @@ declare
   v_mode text;
   v_sample integer := 30;
 begin
-  if not public.has_role_on_account(p_account_id) then
-    raise exception 'account not found' using errcode = 'P0002';
-  end if;
-
   -- Une seule estimation à la fois par organisation : la précédente est abandonnée, sauf celle qui fixera le
   -- tarif d'une campagne déjà lancée (price_pending, 4/11/2026)
   with dropped as (
@@ -122,7 +120,7 @@ begin
   v_mode := case when v_total <= v_sample then 'exact' else 'sample' end;
 
   insert into public.lm_estimates (account_id, country_code, targeting, filters, mode, total_searches, sample_searches)
-  values (p_account_id, upper(p_country_code), p_targeting, coalesce(p_filters, '{}'), v_mode, v_total,
+  values (p_account_id, upper(p_country_code), p_targeting, public.lm_normalize_filters(p_filters), v_mode, v_total,
           least(v_total, v_sample))
   returning id into v_id;
 
@@ -155,7 +153,50 @@ begin
 end;
 $$;
 
+revoke all on function public.lm_create_estimate(uuid, text, jsonb, jsonb) from public;
+
+grant execute on function public.lm_create_estimate(uuid, text, jsonb, jsonb) to service_role;
+
+-- Estimation demandée depuis l'appli (bouton « Estimer » du formulaire de campagne).
+-- Audit A3 : chaque estimation coûte jusqu'à 30 recherches de proxy, payées par Prospectigo. Quota par
+-- organisation sur 24 h : 40 avec un forfait, 3 sans (pour découvrir l'outil avant de payer).
+create or replace function public.lm_request_estimate(p_account_id uuid, p_country_code text, p_targeting jsonb,
+                                                      p_filters jsonb) returns uuid
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_recent integer;
+  v_quota integer;
+begin
+  if not public.lm_member(p_account_id) then
+    raise exception 'account not found' using errcode = 'P0002';
+  end if;
+
+  -- une demande à la fois par organisation (deux clics simultanés ne doublent pas le quota)
+  perform pg_advisory_xact_lock(hashtext('lm_request_estimate:' || p_account_id::text));
+
+  select count(*) into v_recent from public.lm_estimates
+   where account_id = p_account_id and created_at > now() - interval '24 hours';
+
+  v_quota := 3;
+
+  if public.lm_has_plan(p_account_id) then
+    v_quota := 40;
+  end if;
+
+  if v_recent >= v_quota then
+    raise exception 'estimate quota reached' using errcode = 'P0001', hint = 'estimate_quota';
+  end if;
+
+  return public.lm_create_estimate(p_account_id, p_country_code, p_targeting, p_filters);
+end;
+$$;
+
 revoke all on function public.lm_request_estimate(uuid, text, jsonb, jsonb) from public;
+
+grant execute on function public.lm_request_estimate(uuid, text, jsonb, jsonb) to authenticated, service_role;
 
 -- Résultat d'une recherche d'estimation (worker) ; calcule le total quand toutes les recherches sont lues
 create or replace function public.lm_record_estimate_search(p_estimate_id uuid, p_cards integer, p_place_ids text[],
@@ -262,8 +303,10 @@ as $$
      where e.account_id = c.account_id
        and case when c.launched then e.id = c.estimate_id
                 else e.country_code = c.country_code and e.targeting = c.targeting
-                     and e.filters = (c.filters - 'paused_reason') end
-     order by (e.status = 'done') desc, e.created_at desc
+                     and e.filters = (c.filters - 'paused_reason')
+                     -- même choix que lm_start_campaign : la plus chère des 7 derniers jours
+                     and (e.status <> 'done' or e.created_at > now() - interval '7 days') end
+     order by (e.status = 'done') desc, e.credits_per_prospect desc nulls last, e.created_at desc
      limit 1
   ), x as (
     select c.*, c.launched and c.price_pending and e.status = 'running' as measuring,
@@ -297,7 +340,7 @@ declare
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id;
 
-  if v_campaign.id is null or not public.has_role_on_account(v_campaign.account_id) then
+  if v_campaign.id is null or not public.lm_member(v_campaign.account_id) then
     raise exception 'campaign not found' using errcode = 'P0002';
   end if;
 

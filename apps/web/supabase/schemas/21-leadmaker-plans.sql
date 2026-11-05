@@ -75,6 +75,9 @@ create table if not exists public.lm_account_credits (
   -- Trafic proxy (octets) consommé par les recherches et estimations du compte depuis la dernière recharge
   -- (roadmap n°14) ; alimenté par lm_add_search_bytes, remis à zéro par lm_reset_credits
   proxy_bytes_period bigint not null default 0,
+  -- Forfaits annuels : prochaine recharge mensuelle des crédits (lm_refill_credits, tâche planifiée).
+  -- null pour les forfaits mensuels, rechargés par le webhook Stripe à chaque renouvellement.
+  next_refill_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (account_id),
@@ -139,6 +142,36 @@ create policy "lm_credit_ledger_read" on public.lm_credit_ledger for select
 create policy "restrict_mfa_lm_credit_ledger" on public.lm_credit_ledger
   as restrictive to authenticated using (public.is_mfa_compliant());
 
+-- Membre de l'organisation ET double authentification respectée (audit 5/11/2026, A6).
+-- À utiliser dans TOUTES les fonctions SECURITY DEFINER appelées par l'appli : elles contournent la RLS, donc
+-- les politiques restrictives « restrict_mfa_* » ne s'y appliquent pas. Faux pour le rôle service (robots).
+create or replace function public.lm_member(p_account_id uuid) returns boolean
+set search_path = ''
+language sql
+stable
+as $$
+  select public.has_role_on_account(p_account_id) and coalesce(public.is_mfa_compliant(), false);
+$$;
+
+grant execute on function public.lm_member(uuid) to authenticated, service_role;
+
+-- L'organisation a-t-elle un forfait (ou des crédits offerts) ? Exigé pour tout ce qui fait travailler les
+-- robots : estimation au-delà du quota d'essai, préparation de formulaires, recherche d'e-mails (audit A9).
+create or replace function public.lm_has_plan(p_account_id uuid) returns boolean
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select exists (select 1 from public.lm_account_credits c
+                  where c.account_id = p_account_id
+                    and (c.plan_id is not null or c.discovery_balance > 0 or c.outreach_balance > 0));
+$$;
+
+revoke all on function public.lm_has_plan(uuid) from public;
+
+grant execute on function public.lm_has_plan(uuid) to service_role;
+
 -- Débit atomique et idempotent. Renvoie false si solde insuffisant ou événement déjà débité.
 create or replace function public.lm_debit_credits(
   p_account_id uuid,
@@ -175,6 +208,15 @@ begin
     return false;
   end if;
 
+  -- Deux appels simultanés avec le même event_ref : le second bute sur l'unicité du journal ; on annule
+  -- alors son débit et on renvoie false, comme pour un événement déjà débité.
+  begin
+    insert into public.lm_credit_ledger (account_id, kind, delta, reason, campaign_id, event_ref)
+      values (p_account_id, p_kind, -p_quantity, p_reason, p_campaign_id, p_event_ref);
+  exception when unique_violation then
+    return false;
+  end;
+
   if p_kind = 'discovery' then
     update public.lm_account_credits set discovery_balance = discovery_balance - p_quantity
       where account_id = p_account_id;
@@ -182,9 +224,6 @@ begin
     update public.lm_account_credits set outreach_balance = outreach_balance - p_quantity
       where account_id = p_account_id;
   end if;
-
-  insert into public.lm_credit_ledger (account_id, kind, delta, reason, campaign_id, event_ref)
-    values (p_account_id, p_kind, -p_quantity, p_reason, p_campaign_id, p_event_ref);
 
   return true;
 end;
@@ -194,7 +233,14 @@ revoke all on function public.lm_debit_credits(uuid, public.lm_credit_kind, inte
 
 grant execute on function public.lm_debit_credits(uuid, public.lm_credit_kind, integer, text, text, uuid) to service_role;
 
--- Recharge au renouvellement : remet les soldes aux valeurs du forfait.
+-- Recharge depuis le webhook Stripe (createPlanCreditsService.syncFromSubscription), idempotente par event_ref
+-- (abonnement + début de période + forfait).
+--  * Nouvelle période (ou premier abonnement) : soldes remis aux quotas du forfait, compteur proxy à zéro.
+--  * Changement de forfait PENDANT la période (même fin de période) : on n'ajoute que la différence de quotas
+--    à la hausse, on plafonne à la baisse ; le compteur proxy n'est pas remis à zéro (audit A11 : sans ça,
+--    Growth → Business → Scale le même mois donnait 30 k + 80 k + 200 k crédits).
+--  * Période de plus de 35 jours = forfait annuel : les crédits sont mensuels, la recharge des mois suivants
+--    est faite par lm_refill_credits (audit A12).
 create or replace function public.lm_reset_credits(
   p_account_id uuid,
   p_plan_id text,
@@ -207,6 +253,11 @@ security definer
 as $$
 declare
   v_plan public.lm_plans%rowtype;
+  v_old public.lm_plans%rowtype;
+  v_current public.lm_account_credits%rowtype;
+  v_refill timestamptz;
+  v_discovery integer;
+  v_outreach integer;
 begin
   select * into v_plan from public.lm_plans where id = p_plan_id;
 
@@ -214,19 +265,49 @@ begin
     raise exception 'unknown plan %', p_plan_id;
   end if;
 
-  if exists (select 1 from public.lm_credit_ledger where event_ref = p_event_ref || ':discovery') then
+  -- (un changement de forfait sans mouvement de crédits ne laisse pas de trace : le rejouer ne change rien)
+  if exists (select 1 from public.lm_credit_ledger
+              where event_ref in (p_event_ref || ':discovery', p_event_ref || ':outreach')) then
+    return;
+  end if;
+
+  select * into v_current from public.lm_account_credits where account_id = p_account_id for update;
+
+  v_refill := case when p_period_ends_at > now() + interval '35 days' then now() + interval '1 month' end;
+
+  if v_current.plan_id is not null and v_current.plan_id <> p_plan_id
+     and v_current.period_ends_at is not distinct from p_period_ends_at then
+    -- Changement de forfait en cours de période
+    select * into v_old from public.lm_plans where id = v_current.plan_id;
+
+    v_discovery := greatest(0, least(v_current.discovery_balance + greatest(0, v_plan.discovery_credits - v_old.discovery_credits),
+                                     v_plan.discovery_credits));
+    v_outreach := greatest(0, least(v_current.outreach_balance + greatest(0, v_plan.outreach_credits - v_old.outreach_credits),
+                                    v_plan.outreach_credits));
+
+    update public.lm_account_credits
+       set plan_id = p_plan_id, discovery_balance = v_discovery, outreach_balance = v_outreach
+     where account_id = p_account_id;
+
+    insert into public.lm_credit_ledger (account_id, kind, delta, reason, event_ref)
+    select p_account_id, x.kind, x.delta, 'plan_change', p_event_ref || ':' || x.kind::text
+      from (values ('discovery'::public.lm_credit_kind, v_discovery - v_current.discovery_balance),
+                   ('outreach'::public.lm_credit_kind, v_outreach - v_current.outreach_balance)) as x(kind, delta)
+     where x.delta <> 0;
+
     return;
   end if;
 
   insert into public.lm_account_credits (account_id, plan_id, discovery_balance, outreach_balance, period_ends_at,
-                                         proxy_bytes_period)
-    values (p_account_id, p_plan_id, v_plan.discovery_credits, v_plan.outreach_credits, p_period_ends_at, 0)
+                                         proxy_bytes_period, next_refill_at)
+    values (p_account_id, p_plan_id, v_plan.discovery_credits, v_plan.outreach_credits, p_period_ends_at, 0, v_refill)
   on conflict (account_id) do update set
     plan_id = excluded.plan_id,
     discovery_balance = excluded.discovery_balance,
     outreach_balance = excluded.outreach_balance,
     period_ends_at = excluded.period_ends_at,
-    proxy_bytes_period = 0;
+    proxy_bytes_period = 0,
+    next_refill_at = excluded.next_refill_at;
 
   insert into public.lm_credit_ledger (account_id, kind, delta, reason, event_ref)
     values (p_account_id, 'discovery', v_plan.discovery_credits, 'renewal', p_event_ref || ':discovery'),
@@ -237,6 +318,48 @@ $$;
 revoke all on function public.lm_reset_credits(uuid, text, timestamptz, text) from public;
 
 grant execute on function public.lm_reset_credits(uuid, text, timestamptz, text) to service_role;
+
+-- Forfaits annuels : recharge mensuelle des crédits (audit A12). Appelée toutes les heures par pg_cron
+-- (tâche « lm-refill-credits », créée dans la migration 20261105 de l'audit). Idempotente par mois.
+create or replace function public.lm_refill_credits() returns integer
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  r record;
+  v_count integer := 0;
+begin
+  for r in
+    select c.account_id, c.next_refill_at, p.discovery_credits, p.outreach_credits
+      from public.lm_account_credits c
+      join public.lm_plans p on p.id = c.plan_id
+     where c.next_refill_at is not null and c.next_refill_at <= now()
+       and (c.period_ends_at is null or c.period_ends_at > now())
+     for update of c skip locked
+  loop
+    update public.lm_account_credits
+       set discovery_balance = r.discovery_credits, outreach_balance = r.outreach_credits, proxy_bytes_period = 0,
+           next_refill_at = r.next_refill_at + interval '1 month'
+     where account_id = r.account_id;
+
+    insert into public.lm_credit_ledger (account_id, kind, delta, reason, event_ref)
+    values (r.account_id, 'discovery', r.discovery_credits, 'monthly_refill',
+            'refill:' || r.account_id::text || ':' || r.next_refill_at::text || ':discovery'),
+           (r.account_id, 'outreach', r.outreach_credits, 'monthly_refill',
+            'refill:' || r.account_id::text || ':' || r.next_refill_at::text || ':outreach')
+    on conflict (event_ref) do nothing;
+
+    v_count := v_count + 1;
+  end loop;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.lm_refill_credits() from public;
+
+grant execute on function public.lm_refill_credits() to service_role;
 
 -- Budget de proxy du compte dépassé pour la période en cours (roadmap n°14) ? Faux sans forfait ou sans plafond.
 create or replace function public.lm_proxy_over_budget(p_account_id uuid) returns boolean
@@ -275,7 +398,9 @@ as $$
   limit 1;
 $$;
 
-grant execute on function public.lm_seat_limit(uuid) to authenticated, service_role;
+revoke all on function public.lm_seat_limit(uuid) from public;
+
+grant execute on function public.lm_seat_limit(uuid) to service_role;
 
 create or replace function public.lm_enforce_seat_quota() returns trigger
 set search_path = ''
@@ -308,7 +433,8 @@ security definer
 as $$
 begin
   update public.lm_account_credits
-     set plan_id = null, discovery_balance = 0, outreach_balance = 0, period_ends_at = null
+     set plan_id = null, discovery_balance = 0, outreach_balance = 0, period_ends_at = null, next_refill_at = null,
+         proxy_bytes_period = 0
    where account_id = old.account_id;
 
   return old;

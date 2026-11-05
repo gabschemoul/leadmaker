@@ -236,7 +236,8 @@
     "updateFailed": "Les modifications n'ont pas pu être enregistrées. Réessayez dans un instant.",
     "countryLocked": "Le pays ne peut plus changer une fois la campagne lancée.",
     "duplicateFailed": "La campagne n'a pas pu être dupliquée. Réessayez dans un instant.",
-    "tooManyCategories": "Une campagne peut contenir 1 000 activités au plus."
+    "tooManyCategories": "Une campagne peut contenir 1 000 activités au plus.",
+    "estimateQuota": "Vous avez atteint le nombre d'estimations possibles pour aujourd'hui. Réessayez demain, ou lancez directement la campagne : le tarif est mesuré automatiquement."
   },
   "duplicate": {
     "button": "Dupliquer",

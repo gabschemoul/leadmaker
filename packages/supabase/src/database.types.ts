@@ -161,14 +161,14 @@ isOneToOne: false
                   ]
                 },"lm_account_credits": {
                   Row: {
-                    "account_id": string,"created_at": string,"discovery_balance": number,"outreach_balance": number,"period_ends_at": string | null,"plan_id": string | null,"proxy_bytes_period": number,"updated_at": string
+                    "account_id": string,"created_at": string,"discovery_balance": number,"next_refill_at": string | null,"outreach_balance": number,"period_ends_at": string | null,"plan_id": string | null,"proxy_bytes_period": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"created_at"?: string,"discovery_balance"?: number,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"proxy_bytes_period"?: number,"updated_at"?: string
+                    "account_id": string,"created_at"?: string,"discovery_balance"?: number,"next_refill_at"?: string | null,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"proxy_bytes_period"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "account_id"?: string,"created_at"?: string,"discovery_balance"?: number,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"proxy_bytes_period"?: number,"updated_at"?: string
+                    "account_id"?: string,"created_at"?: string,"discovery_balance"?: number,"next_refill_at"?: string | null,"outreach_balance"?: number,"period_ends_at"?: string | null,"plan_id"?: string | null,"proxy_bytes_period"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -1464,11 +1464,17 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"lm_clean_website":
+{ Args: { "p_url": string }; Returns: string
+                           },
 "lm_complete_task":
 { Args: { "p_id": number,"p_result": Json }; Returns: undefined
                            },
 "lm_confirm_autopilot":
 { Args: { "p_autopilot_id": string }; Returns: number
+                           },
+"lm_create_estimate":
+{ Args: { "p_account_id": string,"p_country_code": string,"p_filters": Json,"p_targeting": Json }; Returns: string
                            },
 "lm_credits_for_rate":
 { Args: { "p_rate": number }; Returns: number
@@ -1513,6 +1519,9 @@ isOneToOne: false
 "lm_finish_send":
 { Args: { "p_attempt_id": string,"p_result": Json }; Returns: boolean
                            },
+"lm_has_plan":
+{ Args: { "p_account_id": string }; Returns: boolean
+                           },
 "lm_import_prospects":
 { Args: { "p_rows": Json,"p_space_id": string }; Returns: {
               "duplicates": number,"inserted": number
@@ -1526,6 +1535,12 @@ isOneToOne: false
                            },
 "lm_mark_place_seen":
 { Args: { "p_place_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
+                           },
+"lm_member":
+{ Args: { "p_account_id": string }; Returns: boolean
+                           },
+"lm_normalize_filters":
+{ Args: { "p_filters": Json }; Returns: Json
                            },
 "lm_outreach_reserved":
 { Args: { "p_account_id": string }; Returns: number
@@ -1569,6 +1584,9 @@ isOneToOne: false
 "lm_recount_in_flight":
 { Args: { "p_campaign_id": string }; Returns: number
                            },
+"lm_refill_credits":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "lm_release_search":
 { Args: { "p_campaign_id": string,"p_gcid": string }; Returns: undefined
                            },
@@ -1607,6 +1625,9 @@ isOneToOne: false
                            },
 "lm_site_known":
 { Args: { "p_site_key": string,"p_space_id": string }; Returns: boolean
+                           },
+"lm_site_suppressed":
+{ Args: { "p_account_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
                            },
 "lm_skip_attempts":
 { Args: { "p_ids": (string)[] }; Returns: number

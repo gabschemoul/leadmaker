@@ -22,6 +22,8 @@ create table if not exists public.lm_spaces (
   constraint lm_spaces_name_not_blank check (length(trim(name)) > 0),
   constraint lm_spaces_country_code_upper check (country_code = upper(country_code)),
   constraint lm_spaces_ready_forms_cap_positive check (ready_forms_cap > 0),
+  -- audit A9 : borne haute (le plafond n'est plus modifiable par les clients)
+  constraint lm_spaces_ready_forms_cap_max check (ready_forms_cap <= 500),
   constraint lm_spaces_name_unique_per_account unique (account_id, name)
 );
 
@@ -33,9 +35,12 @@ revoke all on public.lm_spaces from anon, authenticated, service_role;
 
 grant select, insert, update, delete on table public.lm_spaces to service_role;
 
-grant select, insert, delete on table public.lm_spaces to authenticated;
+grant select, delete on table public.lm_spaces to authenticated;
 
-grant update (name, country_code, language_code, ready_forms_cap) on table public.lm_spaces to authenticated;
+-- audit A9 : colonnes choisies par le client ; is_default et ready_forms_cap restent gérés par le serveur
+grant insert (account_id, name, country_code, language_code) on table public.lm_spaces to authenticated;
+
+grant update (name, country_code, language_code) on table public.lm_spaces to authenticated;
 
 create trigger lm_spaces_set_timestamps
   before insert or update on public.lm_spaces
@@ -111,7 +116,9 @@ as $$
   limit 1;
 $$;
 
-grant execute on function public.lm_space_limit(uuid) to authenticated, service_role;
+revoke all on function public.lm_space_limit(uuid) from public;
+
+grant execute on function public.lm_space_limit(uuid) to service_role;
 
 create or replace function public.lm_enforce_space_quota() returns trigger
 set search_path = ''

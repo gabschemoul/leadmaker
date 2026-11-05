@@ -15,8 +15,14 @@ create temp view ta as select a.id as account_id, s.id as space_id
   from public.accounts a join public.lm_spaces s on s.account_id = a.id and s.is_default where a.slug = 'em-a';
 grant select on ta to authenticated, service_role;
 
+-- Les robots exigent un forfait (audit 5/11/2026, A9)
+set local role service_role;
+select public.lm_reset_credits((select id from public.accounts where slug = 'em-a'), 'growth', now() + interval '30 days', 'test:em-a:plan');
+set local role postgres;
+
 select makerkit.authenticate_as('em_owner');
 
+set local role postgres;
 insert into public.lm_prospects (account_id, space_id, name, site_key, website, found_email, excluded_at)
 select t.account_id, t.space_id, x.name, x.key, x.site, x.email, x.excl
   from ta t,
@@ -24,6 +30,7 @@ select t.account_id, t.space_id, x.name, x.key, x.site, x.email, x.excl
                ('Deja', 'deja.fr', 'https://deja.fr', 'hello@deja.fr', null),
                ('SansSite', 'maps:0x1', null, null, null),
                ('Exclu', 'exclu.fr', 'https://exclu.fr', null, now())) as x(name, key, site, email, excl);
+select makerkit.authenticate_as('em_owner');
 
 -- Un seul prospect cherchable : site web, pas d'e-mail, pas exclu
 select is((select (queued, skipped)::text from public.lm_find_emails(array(select id from public.lm_prospects))),

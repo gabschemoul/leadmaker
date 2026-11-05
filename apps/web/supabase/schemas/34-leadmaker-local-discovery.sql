@@ -135,7 +135,7 @@ declare
 begin
   select account_id into v_account_id from public.lm_campaigns where id = p_campaign_id;
 
-  if v_account_id is null or not public.has_role_on_account(v_account_id) then
+  if v_account_id is null or not public.lm_member(v_account_id) then
     return null;
   end if;
 
@@ -171,7 +171,7 @@ declare
 begin
   select account_id into v_account_id from public.lm_campaigns where id = p_campaign_id;
 
-  if v_account_id is null or not public.has_role_on_account(v_account_id) then
+  if v_account_id is null or not public.lm_member(v_account_id) then
     raise exception 'campaign not found' using errcode = 'P0002';
   end if;
 

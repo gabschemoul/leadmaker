@@ -44,6 +44,7 @@ const config = {
     '/*': ['./content/**/*'],
   },
   redirects: getRedirects,
+  headers: getSecurityHeaders,
   turbopack: {
     resolveExtensions: ['.ts', '.tsx', '.js', '.jsx'],
     resolveAlias: getModulesAliases(),
@@ -177,4 +178,26 @@ function getModulesAliases() {
   }
 
   return aliases;
+}
+
+/**
+ * En-têtes de sécurité sur toutes les pages (audit 5/11/2026, B5) : la page ne peut pas être affichée dans
+ * un cadre d'un autre site (clic piégé sur « Lancer », « Valider »…), le navigateur ne devine pas les types
+ * de fichiers, et l'adresse complète des pages n'est pas transmise aux autres sites.
+ */
+async function getSecurityHeaders() {
+  return [
+    {
+      source: '/:path*',
+      headers: [
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        {
+          key: 'Permissions-Policy',
+          value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+        },
+      ],
+    },
+  ];
 }

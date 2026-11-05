@@ -124,7 +124,7 @@ select is((select count(*)::int from public.lm_estimates where account_id = (sel
 insert into public.lm_estimates (account_id, country_code, targeting, filters, mode, status, total_searches, sample_searches,
                                  done_searches, cards, matching, rate, credits_per_prospect, finished_at)
 select acc, 'ZY', '{"cities":{"mode":"list","geoname_ids":[990000602]},"categories":{"mode":"list","gcids":["gcid:lw_two"]}}',
-       '{}', 'exact', 'done', 1, 1, 1, 100, 5, 0.05, 2, now()
+       '{"website": "with"}', 'exact', 'done', 1, 1, 1, 100, 5, 0.05, 2, now()
   from t_lw;
 insert into public.lm_campaigns (id, account_id, space_id, name, country_code, targeting, filters)
 select 'a0000000-0000-4000-8000-0000000e0003', acc, space, 'Déjà mesurée', 'ZY',

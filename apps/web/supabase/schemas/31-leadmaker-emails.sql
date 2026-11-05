@@ -24,9 +24,14 @@ begin
   for r in
     select p.id, p.account_id, p.website, p.site_key, p.excluded_at, p.found_email
       from public.lm_prospects p
-     where p.id = any (p_ids) and public.has_role_on_account(p.account_id)
+     where p.id = any (p_ids) and public.lm_member(p.account_id)
      order by p.created_at
   loop
+    -- Robots réservés aux organisations avec un forfait (audit A9)
+    if not public.lm_has_plan(r.account_id) then
+      raise exception 'no plan for account %', r.account_id using errcode = 'P0001', hint = 'no_plan';
+    end if;
+
     if r.excluded_at is not null or r.website is null or r.site_key like 'maps:%' or r.site_key like 'tel:%'
        or r.found_email is not null
        or exists (select 1 from public.lm_tasks t

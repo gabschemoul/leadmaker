@@ -463,7 +463,7 @@ declare
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
 
-  if v_campaign.id is null or not public.has_role_on_account(v_campaign.account_id) then
+  if v_campaign.id is null or not public.lm_member(v_campaign.account_id) then
     raise exception 'campaign not found' using errcode = 'P0002';
   end if;
 
@@ -489,13 +489,16 @@ begin
   -- Premier lancement : on fige les villes, les catégories et le tarif (crédits par prospect)
   if not exists (select 1 from public.lm_campaign_zones where campaign_id = p_campaign_id) then
     -- Le tarif vient de l'estimation faite avec exactement ce ciblage et ces filtres (roadmap n°13).
+    -- Audit A7 : la PLUS CHÈRE des 7 derniers jours (sinon relancer l'estimation jusqu'à tomber sur un
+    -- échantillon favorable faisait baisser le tarif).
     select e.id, e.credits_per_prospect into v_estimate_id, v_credits
       from public.lm_estimates e
      where e.account_id = v_campaign.account_id and e.status = 'done'
+       and e.created_at > now() - interval '7 days'
        and e.country_code = v_campaign.country_code
        and e.targeting = v_campaign.targeting
        and e.filters = (v_campaign.filters - 'paused_reason')
-     order by e.created_at desc
+     order by e.credits_per_prospect desc nulls last, e.created_at desc
      limit 1;
 
     if v_estimate_id is not null then
@@ -517,8 +520,8 @@ begin
          for update;
 
       if v_estimate_id is null then
-        v_estimate_id := public.lm_request_estimate(v_campaign.account_id, v_campaign.country_code,
-                                                    v_campaign.targeting, v_campaign.filters - 'paused_reason');
+        v_estimate_id := public.lm_create_estimate(v_campaign.account_id, v_campaign.country_code,
+                                                   v_campaign.targeting, v_campaign.filters - 'paused_reason');
       end if;
 
       update public.lm_campaigns
@@ -575,7 +578,7 @@ begin
   select account_id into v_account_id from public.lm_campaigns where id = p_campaign_id;
 
   if v_account_id is null
-     or (auth.role() = 'authenticated' and not public.has_role_on_account(v_account_id)) then
+     or (auth.role() = 'authenticated' and not public.lm_member(v_account_id)) then
     raise exception 'campaign not found' using errcode = 'P0002';
   end if;
 
@@ -828,7 +831,7 @@ begin
                                    address, country_code, phone, website, site_key, maps_url, source, campaign_id, city)
   values (v_campaign.account_id, v_campaign.space_id, p_place ->> 'place_id', left(p_place ->> 'name', 500),
           left(p_place ->> 'category', 255), (p_place ->> 'rating')::numeric(2,1), (p_place ->> 'review_count')::integer,
-          p_place ->> 'address', v_campaign.country_code, left(p_place ->> 'phone', 50), left(p_place ->> 'website', 1000),
+          p_place ->> 'address', v_campaign.country_code, left(p_place ->> 'phone', 50), public.lm_clean_website(p_place ->> 'website'),
           p_place ->> 'site_key', left(p_place ->> 'maps_url', 1000), 'maps', p_campaign_id, left(p_place ->> 'city', 200))
   on conflict (space_id, site_key) do nothing
   returning id into v_id;
@@ -1054,10 +1057,12 @@ declare
   v_next_idx integer;
   v_next_pos integer;
   v_zone_count integer;
+  v_reprice boolean;
+  v_estimate_id uuid;
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
 
-  if v_campaign.id is null or not public.has_role_on_account(v_campaign.account_id) then
+  if v_campaign.id is null or not public.lm_member(v_campaign.account_id) then
     raise exception 'campaign not found' using errcode = 'P0002';
   end if;
 
@@ -1066,6 +1071,14 @@ begin
   if v_launched and upper(p_country_code) <> v_campaign.country_code then
     raise exception 'country cannot change after launch' using errcode = 'P0001', hint = 'country_locked';
   end if;
+
+  -- Audit A2 : après lancement, changer les filtres ou les activités change la difficulté, donc le tarif.
+  -- Une nouvelle mesure est lancée ; d'ici là le tarif actuel s'applique, puis le tarif mesuré
+  -- (lm_record_estimate_search). L'ancienne mesure éventuelle est abandonnée.
+  v_reprice := v_launched and (
+    (public.lm_normalize_filters(p_filters) - 'paused_reason') is distinct from (v_campaign.filters - 'paused_reason')
+    or array(select t.gcid from public.lm_target_categories(p_targeting) t order by 1)
+       is distinct from array(select t.gcid from public.lm_target_categories(v_campaign.targeting) t order by 1));
 
   update public.lm_campaigns
      set name = p_name,
@@ -1079,6 +1092,20 @@ begin
 
   if not v_launched then
     return v_campaign.status::text;
+  end if;
+
+  if v_reprice then
+    if v_campaign.price_pending and v_campaign.estimate_id is not null then
+      update public.lm_estimates set status = 'failed', finished_at = now()
+       where id = v_campaign.estimate_id and status = 'running';
+      update public.lm_tasks set status = 'cancelled', finished_at = now()
+       where kind = 'estimate' and status = 'queued' and payload ->> 'estimate_id' = v_campaign.estimate_id::text;
+    end if;
+
+    v_estimate_id := public.lm_create_estimate(v_campaign.account_id, v_campaign.country_code, p_targeting,
+                                               coalesce(p_filters, '{}') - 'paused_reason');
+
+    update public.lm_campaigns set estimate_id = v_estimate_id, price_pending = true where id = p_campaign_id;
   end if;
 
   -- Villes : celles qui sortent du ciblage sont sautées, celles qui y reviennent reprennent
@@ -1147,7 +1174,7 @@ declare
 begin
   select account_id, country_code into v_account_id, v_country from public.lm_spaces where id = p_space_id;
 
-  if v_account_id is null or not public.has_role_on_account(v_account_id) then
+  if v_account_id is null or not public.lm_member(v_account_id) then
     raise exception 'space not found' using errcode = 'P0002';
   end if;
 
@@ -1157,17 +1184,21 @@ begin
     raise exception 'too many rows' using errcode = 'P0001', hint = 'too_many_rows';
   end if;
 
+  -- Audit A5/A10/A16 : adresse de site nettoyée (http(s) seulement), clé de site normalisée (minuscules, sans
+  -- « / » final), sites en liste d'opposition importés mais exclus d'office (jamais contactés).
   with src as (
-    select distinct on (r ->> 'site_key') r
+    select distinct on (k.site_key) r, k.site_key
       from jsonb_array_elements(p_rows) r
-     where length(trim(coalesce(r ->> 'site_key', ''))) > 0 and length(trim(coalesce(r ->> 'name', ''))) > 0
+     cross join lateral (select rtrim(lower(trim(coalesce(r ->> 'site_key', ''))), '/') as site_key) k
+     where length(k.site_key) > 0 and length(trim(coalesce(r ->> 'name', ''))) > 0
   ), ins as (
     insert into public.lm_prospects (account_id, space_id, name, category, phone, website, site_key, found_email,
-                                     address, country_code, maps_url, source, city)
+                                     address, country_code, maps_url, source, city, excluded_at)
     select v_account_id, p_space_id, left(r ->> 'name', 500), left(r ->> 'category', 255), left(r ->> 'phone', 50),
-           left(r ->> 'website', 1000), lower(r ->> 'site_key'), left(r ->> 'email', 320), r ->> 'address',
-           coalesce(nullif(upper(r ->> 'country_code'), ''), v_country), left(r ->> 'maps_url', 1000), 'csv',
-           left(nullif(trim(r ->> 'city'), ''), 200)
+           public.lm_clean_website(r ->> 'website'), src.site_key, left(r ->> 'email', 320), left(r ->> 'address', 1000),
+           coalesce(nullif(upper(left(r ->> 'country_code', 2)), ''), v_country), left(r ->> 'maps_url', 1000), 'csv',
+           left(nullif(trim(r ->> 'city'), ''), 200),
+           case when public.lm_site_suppressed(v_account_id, p_space_id, src.site_key) then now() end
       from src
     on conflict (space_id, site_key) do nothing
     returning 1

@@ -262,7 +262,8 @@
       "noSender": "Renseignez d'abord le profil expéditeur (menu Expéditeur).",
       "noMessages": "Écrivez d'abord au moins un message dans la campagne (bouton Messages).",
       "capReached": "Vous avez déjà beaucoup de formulaires prêts à valider. Validez-les ou passez-les avant d'en préparer d'autres.",
-      "failed": "La préparation n'a pas pu être lancée. Réessayez dans un instant."
+      "failed": "La préparation n'a pas pu être lancée. Réessayez dans un instant.",
+      "noPlan": "Choisissez un forfait pour préparer des formulaires de contact."
     },
     "preparingBanner": "Prospectigo travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page.",
     "balance": "Crédits de prise de contact restants : {count, number}."

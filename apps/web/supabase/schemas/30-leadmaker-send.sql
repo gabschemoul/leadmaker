@@ -58,6 +58,14 @@ begin
          detail = 'envoi interrompu (robot arrêté) : vérifiez sur le site si le message est parti'
    where a.status = 'sending' and a.updated_at < now() - interval '20 minutes';
 
+  -- Site passé en liste d'opposition après la validation (ex. l'entreprise a demandé à ne plus être
+  -- contactée) : le formulaire ne part pas (audit A10)
+  update public.lm_attempts a
+     set status = 'excluded', detail = 'site en liste d''opposition'
+    from public.lm_prospects p
+   where a.status = 'validated' and p.id = a.prospect_id
+     and public.lm_site_suppressed(a.account_id, a.space_id, p.site_key);
+
   for r in
     select a.id, a.account_id, a.campaign_id, c.daily_limit, a.autopilot_id, ap.status as autopilot_status
       from public.lm_attempts a
@@ -163,8 +171,11 @@ begin
     return false;
   end if;
 
+  -- Audit A13 : une référence par envoi (et non par prise de contact), sinon un formulaire re-préparé puis
+  -- renvoyé ne coûtait rien la seconde fois. lm_finish_send ne passe qu'une fois par envoi (status = 'sending').
   if v_submitted then
-    perform public.lm_debit_credits(v_account, 'outreach', 1, 'send:' || p_attempt_id::text,
+    perform public.lm_debit_credits(v_account, 'outreach', 1,
+                                    'send:' || p_attempt_id::text || ':' || extract(epoch from clock_timestamp())::text,
                                     'form submitted', v_campaign);
   end if;
 
@@ -185,6 +196,7 @@ as $$
 declare
   v_count integer;
   v_status public.lm_attempt_status;
+  r record;
 begin
   if p_outcome = 'sent' then
     v_status := 'sent';
@@ -194,15 +206,29 @@ begin
     raise exception 'unknown outcome %', p_outcome using errcode = 'check_violation';
   end if;
 
-  with upd as (
+  v_count := 0;
+
+  for r in
     update public.lm_attempts a
        set status = v_status
      where a.id = any (p_ids)
-       and public.has_role_on_account(a.account_id)
+       and public.lm_member(a.account_id)
        and a.status = 'to_verify'
-    returning 1
-  )
-  select count(*) into v_count from upd;
+    returning a.id, a.account_id, a.campaign_id, a.validated_at
+  loop
+    v_count := v_count + 1;
+
+    -- Audit A13 : un envoi interrompu (robot arrêté) n'avait pas été débité ; confirmé « bien parti » à la main,
+    -- il l'est maintenant, sauf si cet envoi a déjà été débité par le robot.
+    if v_status = 'sent' and not exists (
+         select 1 from public.lm_credit_ledger l
+          where l.account_id = r.account_id and l.event_ref like 'send:' || r.id::text || '%'
+            and l.created_at >= coalesce(r.validated_at, '-infinity'::timestamptz)) then
+      perform public.lm_debit_credits(r.account_id, 'outreach', 1,
+                                      'send:' || r.id::text || ':manual:' || coalesce(r.validated_at::text, ''),
+                                      'form confirmed sent', r.campaign_id);
+    end if;
+  end loop;
 
   return v_count;
 end;

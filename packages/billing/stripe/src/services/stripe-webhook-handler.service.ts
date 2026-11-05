@@ -91,6 +91,22 @@ export class StripeWebhookHandlerService implements BillingWebhookHandlerService
       onEvent?(event: Stripe.Event): Promise<unknown>;
     },
   ) {
+    // Audit 5/11/2026 (B1) : un événement de test (carte 4242…) ne doit jamais créditer un compte servi par
+    // des clés réelles, ni l'inverse. Le mode attendu se lit sur la clé secrète (sk_live_/rk_live_ = réel).
+    const secretKey = process.env.STRIPE_SECRET_KEY ?? '';
+    const liveKey = /^(sk|rk)_live_/.test(secretKey);
+
+    if (event.livemode !== liveKey) {
+      const logger = await getLogger();
+
+      logger.warn(
+        { eventId: event.id, type: event.type, livemode: event.livemode },
+        'Stripe event mode does not match the configured key: ignored.',
+      );
+
+      return;
+    }
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const result = await this.handleCheckoutSessionCompleted(
@@ -213,7 +229,7 @@ export class StripeWebhookHandlerService implements BillingWebhookHandlerService
     // un paiement qui ne vient pas de l'app n'a pas d'organisation et n'est pas
     // pour nous. On l'ignore (réponse 200) au lieu d'échouer, sinon Stripe
     // relance l'événement puis finit par désactiver le webhook.
-    if (!session.client_reference_id) {
+    if (!session.client_reference_id || !isUuid(session.client_reference_id)) {
       const logger = await getLogger();
 
       logger.info(
@@ -339,7 +355,7 @@ export class StripeWebhookHandlerService implements BillingWebhookHandlerService
     const accountId = subscription.metadata?.accountId as string | undefined;
 
     // Abonnement d'une autre activité du même compte Stripe : pas pour nous.
-    if (!accountId) {
+    if (!accountId || !isUuid(accountId)) {
       const logger = await getLogger();
 
       logger.info(
@@ -458,7 +474,7 @@ export class StripeWebhookHandlerService implements BillingWebhookHandlerService
     const accountId = subscription.metadata?.accountId as string | undefined;
 
     // Facture d'une autre activité du même compte Stripe : pas pour nous.
-    if (!accountId) {
+    if (!accountId || !isUuid(accountId)) {
       logger.info(
         { subscriptionId, customerId },
         'Invoice subscription without accountId metadata: not ours, ignored.',
@@ -519,4 +535,11 @@ export class StripeWebhookHandlerService implements BillingWebhookHandlerService
 
     return this.stripe;
   }
+}
+
+/** Identifiant d'organisation Prospectigo : un uuid (sinon l'événement n'est pas pour nous). */
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }

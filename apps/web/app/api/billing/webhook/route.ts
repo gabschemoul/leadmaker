@@ -23,6 +23,18 @@ export const POST = enhanceRouteHandler(
 
     logger.info(ctx, `Received billing webhook. Processing...`);
 
+    // Audit 5/11/2026 (B1) : la pré-prod (staging.prospectigo.com) partage la base de données de la prod.
+    // Un paiement de test fait sur la pré-prod donnerait de vrais crédits : ses webhooks sont ignorés, sauf
+    // si BILLING_WEBHOOK_ENABLED=true est posé exprès sur Vercel (Preview) le temps d'un essai.
+    if (
+      process.env.VERCEL_ENV === 'preview' &&
+      process.env.BILLING_WEBHOOK_ENABLED !== 'true'
+    ) {
+      logger.warn(ctx, 'Billing webhook ignored on a preview deployment');
+
+      return new Response('Ignored on preview', { status: 200 });
+    }
+
     const supabaseClientProvider = () => getSupabaseServerAdminClient();
 
     const service = await getBillingEventHandlerService(

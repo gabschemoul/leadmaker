@@ -18,7 +18,7 @@ declare
 begin
   select * into v_source from public.lm_campaigns where id = p_campaign_id;
 
-  if v_source.id is null or not public.has_role_on_account(v_source.account_id) then
+  if v_source.id is null or not public.lm_member(v_source.account_id) then
     raise exception 'campaign not found' using errcode = 'P0002';
   end if;
 

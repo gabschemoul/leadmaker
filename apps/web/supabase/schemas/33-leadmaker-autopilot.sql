@@ -168,7 +168,7 @@ as $$
   select count(*)::integer
     from public.lm_prospects p
    where p.campaign_id = p_campaign_id
-     and public.has_role_on_account(p.account_id)
+     and public.lm_member(p.account_id)
      and p.excluded_at is null and p.website is not null
      and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
      and not exists (select 1 from public.lm_attempts a where a.space_id = p.space_id and a.prospect_id = p.id);
@@ -409,8 +409,11 @@ begin
         select pr.id, pr.account_id, pr.space_id, pr.created_at
           from public.lm_prospects pr
          where pr.campaign_id = ap.campaign_id
+           -- audit A1 : uniquement les prospects de l'espace du pilote (jamais ceux d'une autre organisation)
+           and pr.space_id = ap.space_id and pr.account_id = ap.account_id
            and pr.excluded_at is null and pr.website is not null
            and pr.site_key not like 'maps:%' and pr.site_key not like 'tel:%'
+           and not public.lm_site_suppressed(pr.account_id, pr.space_id, pr.site_key)
            and (pr.created_at, pr.id) > (coalesce(ap.cursor_created_at, '-infinity'::timestamptz),
                                          coalesce(ap.cursor_prospect_id, '00000000-0000-0000-0000-000000000000'::uuid))
            and not exists (select 1 from public.lm_attempts a where a.space_id = pr.space_id and a.prospect_id = pr.id)
@@ -457,6 +460,7 @@ begin
     if ap.status = 'running' and v_found = 0 and c.in_flight = 0
        and not exists (select 1 from public.lm_prospects pr
                         where pr.campaign_id = ap.campaign_id
+                          and pr.space_id = ap.space_id and pr.account_id = ap.account_id
                           and pr.excluded_at is null and pr.website is not null
                           and pr.site_key not like 'maps:%' and pr.site_key not like 'tel:%'
                           and (pr.created_at, pr.id) > (coalesce(v_cursor_at, '-infinity'::timestamptz),
@@ -489,7 +493,7 @@ declare
 begin
   select c.* into v_campaign
     from public.lm_campaigns c
-   where c.id = p_campaign_id and public.has_role_on_account(c.account_id);
+   where c.id = p_campaign_id and public.lm_member(c.account_id);
 
   if v_campaign.id is null then
     raise exception 'campaign not found' using errcode = 'P0001', hint = 'not_found';
@@ -612,7 +616,7 @@ declare
   ap public.lm_autopilots;
 begin
   select * into ap from public.lm_autopilots a
-   where a.id = p_autopilot_id and public.has_role_on_account(a.account_id)
+   where a.id = p_autopilot_id and public.lm_member(a.account_id)
      and a.status in ('preview', 'running', 'paused')
    for update;
 
@@ -886,7 +890,7 @@ declare
   c record;
 begin
   select * into v_campaign from public.lm_campaigns x
-   where x.id = p_campaign_id and public.has_role_on_account(x.account_id);
+   where x.id = p_campaign_id and public.lm_member(x.account_id);
 
   if v_campaign.id is null then
     return;

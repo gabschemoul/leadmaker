@@ -71,14 +71,19 @@ begin
     select p.id, p.account_id, p.space_id, p.website, p.site_key, p.excluded_at,
            coalesce(p.campaign_id, p_campaign_id) as campaign_id
       from public.lm_prospects p
-     where p.id = any (p_ids) and public.has_role_on_account(p.account_id)
+     where p.id = any (p_ids) and public.lm_member(p.account_id)
      order by p.created_at
   loop
     v_attempt_id := null;
 
-    -- Sans site web, exclu ou sans campagne : rien à préparer
+    -- Robots réservés aux organisations avec un forfait (audit A9)
+    if not public.lm_has_plan(r.account_id) then
+      raise exception 'no plan for account %', r.account_id using errcode = 'P0001', hint = 'no_plan';
+    end if;
+
+    -- Sans site web, exclu, en liste d'opposition ou sans campagne : rien à préparer
     if r.excluded_at is not null or r.website is null or r.site_key like 'maps:%' or r.site_key like 'tel:%'
-       or r.campaign_id is null then
+       or r.campaign_id is null or public.lm_site_suppressed(r.account_id, r.space_id, r.site_key) then
       v_skipped := v_skipped + 1;
       continue;
     end if;
@@ -146,7 +151,7 @@ begin
     from public.lm_prospects p
     left join public.lm_attempts a on a.space_id = p.space_id and a.prospect_id = p.id
    where p.campaign_id = p_campaign_id
-     and public.has_role_on_account(p.account_id)
+     and public.lm_member(p.account_id)
      and p.excluded_at is null and p.website is not null
      and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
      and (a.id is null or public.lm_attempt_repreparable(a.status));
@@ -294,7 +299,7 @@ begin
     update public.lm_attempts a
        set status = 'validated', validated_by = (select auth.uid()), validated_at = now(), autopilot_id = null
      where a.id = any (p_ids)
-       and public.has_role_on_account(a.account_id)
+       and public.lm_member(a.account_id)
        and a.status in ('ready', 'incomplete')
        and not exists (
          select 1 from jsonb_array_elements_text(a.missing) m
@@ -326,7 +331,7 @@ begin
     update public.lm_attempts a
        set status = 'skipped'
      where a.id = any (p_ids)
-       and public.has_role_on_account(a.account_id)
+       and public.lm_member(a.account_id)
        and a.status in ('pending', 'ready', 'incomplete', 'intervention_required', 'no_form', 'unreachable', 'failed', 'validated')
        and not exists (select 1 from public.lm_tasks t
                         where t.kind = 'send' and t.status = 'running' and t.payload ->> 'attempt_id' = a.id::text)
@@ -360,7 +365,7 @@ begin
     update public.lm_attempts a
        set status = 'excluded'
      where a.id = any (p_ids)
-       and public.has_role_on_account(a.account_id)
+       and public.lm_member(a.account_id)
        and a.status not in ('sending', 'sent', 'to_verify', 'excluded')
     returning a.prospect_id
   )
@@ -395,7 +400,7 @@ begin
     update public.lm_attempts a
        set subject = p_subject, body = p_body, extra = coalesce(p_extra, '{}'::jsonb)
      where a.id = p_id
-       and public.has_role_on_account(a.account_id)
+       and public.lm_member(a.account_id)
        and a.status in ('ready', 'incomplete')
     returning 1
   )

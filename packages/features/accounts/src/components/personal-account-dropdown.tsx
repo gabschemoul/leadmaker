@@ -172,7 +172,7 @@ export function PersonalAccountDropdown({
 
         <DropdownMenuItem
           render={
-            <Link className={'flex items-center gap-x-2'} href={'/docs'} />
+            <Link className={'flex items-center gap-x-2'} href={'/contact'} />
           }
         >
           <MessageCircleQuestion className={'h-4 w-4'} />

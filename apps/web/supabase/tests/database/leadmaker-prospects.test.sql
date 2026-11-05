@@ -17,11 +17,13 @@ set local role postgres;
 
 select makerkit.authenticate_as('pro_owner');
 
+set local role postgres;
 insert into public.lm_prospects (account_id, space_id, name, site_key, website, category, city)
 select a.id, s.id, x.name, x.key, 'https://' || x.key, 'Plumber', 'Lyon'
   from public.accounts a join public.lm_spaces s on s.account_id = a.id and s.is_default,
        (values ('Un', 'un.fr'), ('Deux', 'deux.fr'), ('Trois', 'maps:0xabc')) as x(name, key)
  where a.slug = 'pro-a';
+select makerkit.authenticate_as('pro_owner');
 
 select is((select (kind, value, total)::text from public.lm_prospect_facets((select s.id from public.lm_spaces s join public.accounts a on a.id = s.account_id where a.slug = 'pro-a' and s.is_default)) where kind = 'city'),
   '(city,Lyon,3)', 'Les filtres listent les villes présentes');

@@ -15,11 +15,18 @@ create temp view ta as select a.id as account_id, s.id as space_id
   from public.accounts a join public.lm_spaces s on s.account_id = a.id and s.is_default where a.slug = 'out-a';
 grant select on ta to authenticated, service_role;
 
+-- Les robots exigent un forfait (audit 5/11/2026, A9)
+-- (crédits offerts sans forfait : les robots tournent, la validation automatique reste réservée aux forfaits)
+insert into public.lm_account_credits (account_id, outreach_balance)
+values ((select id from public.accounts where slug = 'out-a'), 10)
+on conflict (account_id) do update set outreach_balance = 10;
+
 select makerkit.authenticate_as('out_owner');
 
 insert into public.lm_campaigns (account_id, space_id, name, country_code, templates)
 select account_id, space_id, 'Camp', 'FR', '{"messages":[{"name":"M1","subject":"Objet","body":"Bonjour {company}, ici {my_company}"}],"short":{"subject":"","body":""}}'::jsonb from ta;
 
+set local role postgres;
 insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_key, website, excluded_at)
 select t.account_id, t.space_id, c.id, x.name, x.key, x.site, x.excl
   from ta t, public.lm_campaigns c,
@@ -28,6 +35,7 @@ select t.account_id, t.space_id, c.id, x.name, x.key, x.site, x.excl
                ('SansSite', 'maps:0x1', null, null),
                ('Exclu', 'exclu.fr', 'https://exclu.fr', now())) as x(name, key, site, excl)
  where c.name = 'Camp';
+select makerkit.authenticate_as('out_owner');
 
 -- Sans profil expéditeur : refus clair
 select throws_ok(
@@ -90,9 +98,13 @@ select is(public.lm_exclude_attempts(array(select a.id from public.lm_attempts a
 select is((select count(*)::int from public.lm_suppressions where site_key = 'un.fr'), 1, 'Site en liste d''opposition');
 
 -- Plafond de l'espace
+set local role postgres;
 update public.lm_spaces set ready_forms_cap = 1 where id = (select space_id from ta);
+select makerkit.authenticate_as('out_owner');
+set local role postgres;
 insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_key, website)
 select t.account_id, t.space_id, c.id, 'Trois', 'trois.fr', 'https://trois.fr' from ta t, public.lm_campaigns c;
+select makerkit.authenticate_as('out_owner');
 set local role postgres;
 update public.lm_attempts set status = 'ready' where status = 'validated';
 select makerkit.authenticate_as('out_owner');
@@ -110,7 +122,9 @@ select throws_ok($$ select public.lm_finish_prepare('00000000-0000-0000-0000-000
 
 -- Validation automatique : option de campagne réservée aux forfaits qui l'incluent
 set local role postgres;
+set local role postgres;
 update public.lm_spaces set ready_forms_cap = 100 where id = (select space_id from ta);
+select makerkit.authenticate_as('out_owner');
 select makerkit.authenticate_as('out_owner');
 select throws_ok(
   $$ update public.lm_campaigns set auto_validation = true $$,
@@ -124,10 +138,12 @@ select makerkit.authenticate_as('out_owner');
 select is(public.lm_auto_validation_allowed((select account_id from ta)), true, 'Forfait Business : validation automatique incluse');
 select lives_ok($$ update public.lm_campaigns set auto_validation = true $$, 'Option activée avec le forfait');
 
+set local role postgres;
 insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_key, website)
 select t.account_id, t.space_id, c.id, x.name, x.key, x.site
   from ta t, public.lm_campaigns c, (values ('Cinq', 'cinq.fr', 'https://cinq.fr'), ('Six', 'six.fr', 'https://six.fr')) as x(name, key, site)
  where c.name = 'Camp';
+select makerkit.authenticate_as('out_owner');
 select is((select queued from public.lm_prepare_prospects(array(select id from public.lm_prospects where name in ('Cinq', 'Six')))), 2, 'Deux nouvelles préparations');
 
 set local role service_role;

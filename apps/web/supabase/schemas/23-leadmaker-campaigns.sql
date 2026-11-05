@@ -34,10 +34,38 @@ create table if not exists public.lm_campaigns (
   constraint lm_campaigns_name_not_blank check (length(trim(name)) > 0),
   constraint lm_campaigns_country_code_upper check (country_code = upper(country_code)),
   constraint lm_campaigns_daily_limit_positive check (daily_limit > 0),
+  constraint lm_campaigns_daily_limit_max check (daily_limit <= 100000),
   constraint lm_campaigns_credits_per_prospect check (credits_per_prospect between 1 and 10)
 );
 
 comment on table public.lm_campaigns is 'Campagnes de prospection d''un espace';
+
+-- Filtres complétés par leurs valeurs par défaut, identiques pour la campagne et son estimation (audit A8 :
+-- sans clé « website », l'estimation comptait tous les sites et la campagne seulement ceux qui en ont un,
+-- d'où un tarif trop bas).
+create or replace function public.lm_normalize_filters(p_filters jsonb) returns jsonb
+set search_path = ''
+language sql
+immutable
+as $$
+  select '{"website": "with"}'::jsonb || coalesce(p_filters, '{}'::jsonb);
+$$;
+
+grant execute on function public.lm_normalize_filters(jsonb) to authenticated, service_role;
+
+create or replace function public.lm_campaigns_normalize_filters() returns trigger
+set search_path = ''
+language plpgsql
+as $$
+begin
+  new.filters := public.lm_normalize_filters(new.filters);
+  return new;
+end;
+$$;
+
+create trigger lm_campaigns_normalize_filters
+  before insert or update of filters on public.lm_campaigns
+  for each row execute function public.lm_campaigns_normalize_filters();
 
 alter table public.lm_campaigns enable row level security;
 
@@ -45,10 +73,16 @@ revoke all on public.lm_campaigns from anon, authenticated, service_role;
 
 grant select, insert, update, delete on table public.lm_campaigns to service_role;
 
-grant select, insert, delete on table public.lm_campaigns to authenticated;
+grant select, delete on table public.lm_campaigns to authenticated;
 
--- status ne se change que par lm_start_campaign / lm_pause_campaign (quotas et préparation des zones)
-grant update (name, country_code, targeting, filters, templates, daily_limit, auto_validation, sender_id)
+-- Audit 5/11/2026 (A2, A3) : le client ne choisit à la création que ces colonnes. Le statut, le tarif
+-- (credits_per_prospect, price_pending, estimate_id) ne se changent que par les fonctions serveur.
+grant insert (id, account_id, space_id, name, country_code, targeting, filters, templates, daily_limit, sender_id)
+  on table public.lm_campaigns to authenticated;
+
+-- status ne se change que par lm_start_campaign / lm_pause_campaign (quotas et préparation des zones) ;
+-- ciblage, filtres et pays seulement par lm_update_campaign (qui refait mesurer le tarif après lancement)
+grant update (name, templates, daily_limit, auto_validation, sender_id)
   on table public.lm_campaigns to authenticated;
 
 create index if not exists ix_lm_campaigns_sender_id

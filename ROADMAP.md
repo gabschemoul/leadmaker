@@ -1,7 +1,7 @@
 # Prospectigo — Roadmap des améliorations
 
 Liste vivante des idées et améliorations. On ajoute au fil de l'eau, on coche quand c'est livré.
-Dernière mise à jour : 2 novembre 2026 (soir).
+Dernière mise à jour : 5 novembre 2026 (grand audit : `docs/prospectigo/AUDIT-2026-11-05.md`).
 
 **Comment on publie** (depuis le 1er novembre 2026) :
 1. Chaque développement part d'abord en pré-production, sur https://staging.prospectigo.com.
@@ -107,9 +107,9 @@ Pistes à discuter :
 - **Plus tard (Gabriel, 2/11 : « d'abord une plateforme clean »)** : rechargement automatique (interrupteur, pack choisi, seuil 10 %, 3 rechargements max par mois, gestion 3D Secure et carte refusée).
 - Dépend de Stripe en mode réel.
 
-### 6. Plusieurs profils d'expéditeur 🟡
-- **Aujourd'hui** : un seul expéditeur par dossier client (nom, société, e-mail, téléphone…).
-- **Demain** : plusieurs expéditeurs par dossier, par exemple un par commercial ou un par marque. On choisit l'expéditeur dans chaque campagne, et un expéditeur par défaut est proposé.
+### 6. Plusieurs profils d'expéditeur 🟡 — LIVRÉ (3/11, publié le 3/11 au soir)
+- **Avant** : un seul expéditeur par dossier client (nom, société, e-mail, téléphone…).
+- **Fait** : plusieurs expéditeurs par organisation, par exemple un par commercial ou un par marque. On choisit l'expéditeur dans chaque campagne, et un expéditeur par défaut est proposé.
 - **À trancher** : pouvoir alterner automatiquement entre plusieurs expéditeurs dans une même campagne, pour répartir les réponses.
 
 ### 7. Beaucoup plus de champs remplis dans les formulaires 🟡
@@ -169,7 +169,7 @@ Pistes à discuter :
 - **Testé le 2/11** en local avec une tâche bloquée artificielle : e-mail d’alerte puis e-mail de reprise reçus.
 - **Mise en ligne** (par Gabriel) : 1) `./workers/scripts/set-alert-email.sh` (dépose la clé Resend sur les deux serveurs et envoie un e-mail d’essai depuis chacun) ; 2) `./workers/scripts/deploy-robots.sh --all` (installe le surveillant avec le reste). Réglages possibles dans le `.env` des serveurs : `ALERT_EMAIL`, `WATCH_STALL_MINUTES` (20), `WATCH_REMIND_HOURS` (2).
 
-### 18. Étape « Contacter » : pilote automatique + mode Avancé 🟡 — CODÉ le 2/11 (soir), en pré-production
+### 18. Étape « Contacter » : pilote automatique + mode Avancé 🟡 — EN LIGNE (publié le 2/11 au soir)
 - **Fait le 2/11 (soir)** : écran « Pilote automatique » (par défaut) / « Avancé » (a/b/c), d'après la maquette validée par Gabriel et Nath. Nombre tapable avec −/+ et raccourcis, plafonné aux prospects jamais préparés et aux crédits restants ; 1 à 4 messages cochés (test A/B à parts égales, message choisi à l'avance pour chaque entreprise) ; Heures de bureau (lun-ven 9 h-18 h, fuseau de la plus grande ville ciblée) / Étalé sur 3-5-10-20 jours ouvrés (intervalle régulier) / En continu ; aperçu des 3 premiers formulaires (coché d'office si l'organisation n'a jamais envoyé) ; suivi en direct (envoyés / en cours / mis de côté, barre, Pause, Modifier le nombre, fil « En direct » de vrais événements) ; résumé dans le rail et le tableau de bord. Plus de « robot » dans les textes de l'app et du site.
 - **Comment ça marche** : table `lm_autopilots` (un passage par lancement), tout le pilotage en SQL (`lm_autopilot_tick`, appelé par `lm_queue_sends` que les robots d'envoi appellent déjà). Les envois hors créneau partent en file avec une heure de départ future (pas de fausse alerte du surveillant). Un formulaire du pilote validé à la main en mode Avancé quitte le pilote. Au passage : `lm_queue_sends` ne met plus en file deux fois le même formulaire ni plus d'envois que de crédits restants. Migration `20261102162654_leadmaker_autopilot.sql`, test `leadmaker-autopilot.test.sql` (65 ok), relecture indépendante faite et corrigée.
 - **Robots** : un seul changement (`outreach/runner.py` : le robot de préparation utilise le message choisi par le pilote), compatible avant et après la migration. Ordre de mise en ligne : robots (deploy-robots.sh, serveur principal) → migration en base → staging.
@@ -208,6 +208,17 @@ Pistes à discuter :
 12. **Base de données séparée pour la pré-production** (décidé le 1/11, à faire plus tard, quand de vrais clients seront en ligne). Aujourd'hui staging.prospectigo.com partage les données de prospectigo.com.
 
 ---
+
+## Livré depuis le 3 novembre
+
+- ~~Nouvelle page d'accueil « Apollo en bleu », titres en Season Mix~~ (3/11)
+- ~~Plusieurs expéditeurs, un au choix par campagne~~ (3/11)
+- ~~Recherche sur l'ordinateur dédié (Mac de l'équipe, sans proxy)~~ (3-4/11)
+- ~~Chaque ville cherchée par son nom d'abord, puis ses secteurs~~ (4/11)
+- ~~Lancer une campagne tout de suite, la difficulté est mesurée en parallèle~~ (4/11)
+- ~~Grand audit du 5/11~~ : sécurité de la base et des robots, pages légales, archivage des campagnes, historique
+  des crédits, sièges à l'invitation, statuts clairs, textes sans mots interdits, documentation pour les IA
+  (détail et état : `docs/prospectigo/AUDIT-2026-11-05.md`).
 
 ## Livré
 - ~~Mettre une campagne en pause arrête le robot entre deux fiches (plus de prospects qui arrivent pendant 5 min « en pause »)~~ (2/11, robots mis à jour 14h25)

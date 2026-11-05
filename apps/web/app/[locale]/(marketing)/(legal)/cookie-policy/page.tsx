@@ -16,8 +16,8 @@ async function CookiePolicyPage() {
   return (
     <div>
       <SitePageHeader
-        title={t(`marketing.cookiePolicy`)}
-        subtitle={t(`marketing.cookiePolicyDescription`)}
+        title={t(`cookiePolicy`)}
+        subtitle={t(`cookiePolicyDescription`)}
       />
 
       <div className={'container mx-auto py-8'}>

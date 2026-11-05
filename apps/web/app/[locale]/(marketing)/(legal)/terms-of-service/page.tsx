@@ -16,8 +16,8 @@ async function TermsOfServicePage() {
   return (
     <div>
       <SitePageHeader
-        title={t(`marketing.termsOfService`)}
-        subtitle={t(`marketing.termsOfServiceDescription`)}
+        title={t(`termsOfService`)}
+        subtitle={t(`termsOfServiceDescription`)}
       />
 
       <div className={'container mx-auto py-8'}>

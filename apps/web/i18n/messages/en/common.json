@@ -120,6 +120,11 @@
     "maxFiles": "You may upload only up to {count} files, please remove {files} files.",
     "dragAndDrop": "Drag and drop or",
     "select": "select files",
-    "toUpload": "to upload"
-  }
+    "toUpload": "to upload",
+    "errorMessage": "This file couldn't be added.",
+    "errorMaxFiles": "Too many files: you can only add {count}."
+  },
+  "repeatPassword": "Repeat password",
+  "error": "Error",
+  "themeDescription": "Choose how the app looks"
 }

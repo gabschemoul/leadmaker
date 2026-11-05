@@ -120,6 +120,11 @@
     "maxFiles": "Vous ne pouvez importer que {count} fichiers au maximum, veuillez en retirer {files}.",
     "dragAndDrop": "Glissez-déposez ou",
     "select": "sélectionnez des fichiers",
-    "toUpload": "à importer"
-  }
+    "toUpload": "à importer",
+    "errorMessage": "Ce fichier n'a pas pu être ajouté.",
+    "errorMaxFiles": "Trop de fichiers : vous ne pouvez en ajouter que {count}."
+  },
+  "repeatPassword": "Confirmez le mot de passe",
+  "error": "Erreur",
+  "themeDescription": "Choisissez l'apparence de l'application"
 }

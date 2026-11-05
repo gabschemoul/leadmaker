@@ -79,6 +79,11 @@ const HEADER_ALIASES: Record<Field, string[]> = {
     'lien maps',
     'maps',
     'fiche google',
+    'lien vers la fiche',
+    'lien fiche',
+    'fiche',
+    'listing link',
+    'listing',
   ],
   country_code: ['pays', 'country', 'country code', 'code pays'],
 };

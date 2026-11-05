@@ -191,5 +191,7 @@
   "policyRemediation": {
     "subscriptionRequired": "Veuillez passer à une offre supérieure ou activer votre abonnement",
     "paddleTrialRestriction": "Attendez la fin de la période d'essai ou passez à l'offre complète"
-  }
+  },
+  "deleteInvitationErrorTitle": "Invitation non supprimée",
+  "deleteInvitationErrorMessage": "L'invitation n'a pas pu être supprimée. Réessayez dans un instant."
 }

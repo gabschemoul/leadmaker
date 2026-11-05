@@ -191,5 +191,7 @@
   "policyRemediation": {
     "subscriptionRequired": "Please upgrade your plan or activate your subscription",
     "paddleTrialRestriction": "Wait until trial period ends or upgrade to full plan"
-  }
+  },
+  "deleteInvitationErrorTitle": "Invitation not deleted",
+  "deleteInvitationErrorMessage": "The invitation couldn't be deleted. Please try again in a moment."
 }

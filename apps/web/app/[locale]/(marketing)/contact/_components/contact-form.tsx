@@ -135,7 +135,7 @@ export function ContactForm() {
         />
 
         <Button
-          disabled={isPending}
+          loading={isPending}
           type={'submit'}
           size="lg"
           className={

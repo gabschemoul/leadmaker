@@ -5,6 +5,7 @@ import { useAction } from 'next-safe-action/hooks';
 
 import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
 import { toast } from '@kit/ui/sonner';
+import { Spinner } from '@kit/ui/spinner';
 
 import { senderLabel } from '../../sender/_lib/sender-label';
 import { setCampaignSenderAction } from '../_lib/server/campaign-outreach-actions';
@@ -46,7 +47,10 @@ export function CampaignSenderSelect(props: {
 
   return (
     <label className={'flex flex-col gap-1.5 text-sm'}>
-      <span className={'font-medium'}>{t('senderChoose')}</span>
+      <span className={'flex items-center gap-2 font-medium'}>
+        {t('senderChoose')}
+        {save.isPending ? <Spinner className={'size-3.5'} /> : null}
+      </span>
 
       <NativeSelect
         className={'w-full max-w-sm'}

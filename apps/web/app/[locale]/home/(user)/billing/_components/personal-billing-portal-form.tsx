@@ -7,7 +7,9 @@ import { BillingPortalCard } from '@kit/billing-gateway/components';
 import { createPersonalAccountBillingPortalSession } from '../_lib/server/server-actions';
 
 export function PersonalBillingPortalForm() {
-  const { execute } = useAction(createPersonalAccountBillingPortalSession);
+  const { execute, isPending } = useAction(
+    createPersonalAccountBillingPortalSession,
+  );
 
   return (
     <form
@@ -16,7 +18,8 @@ export function PersonalBillingPortalForm() {
         execute();
       }}
     >
-      <BillingPortalCard />
+      {/* roue sur le bouton pendant la création de la session du portail */}
+      <BillingPortalCard pending={isPending} />
     </form>
   );
 }

@@ -349,7 +349,7 @@ export function CampaignForm(props: {
             <Button
               type={'submit'}
               data-test={'campaign-save-button'}
-              disabled={disabled}
+              loading={disabled}
             >
               <Trans
                 i18nKey={

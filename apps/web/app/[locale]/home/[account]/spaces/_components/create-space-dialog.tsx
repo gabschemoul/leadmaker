@@ -156,7 +156,7 @@ function CreateSpaceForm(props: {
           <Button
             type={'submit'}
             data-test={'confirm-create-folder-button'}
-            disabled={disabled}
+            loading={disabled}
           >
             <Trans i18nKey={'campaigns.folders.createSubmit'} />
           </Button>

@@ -248,7 +248,7 @@ export function SenderProfileForm(props: {
           <Button
             type={'submit'}
             data-test={'sender-save-button'}
-            disabled={disabled}
+            loading={disabled}
           >
             <Trans
               i18nKey={

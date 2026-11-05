@@ -368,6 +368,7 @@ export function PlanPicker(
               type="submit"
               data-test="checkout-submit-button"
               disabled={props.pending ?? !form.formState.isValid}
+              loading={props.pending}
             >
               {props.pending ? (
                 t('redirectingToPayment')

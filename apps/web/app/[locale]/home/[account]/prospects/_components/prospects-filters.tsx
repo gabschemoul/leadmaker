@@ -6,8 +6,6 @@
  * Écritures : aucune.
  */
 
-import { useRouter } from 'next/navigation';
-
 import { Search, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -17,6 +15,7 @@ import { Input } from '@kit/ui/input';
 import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
 import { Trans } from '@kit/ui/trans';
 
+import { useProgressRouter } from '~/components/navigation-progress';
 import {
   type ProspectsFilters as Filters,
   type ProspectsListState,
@@ -50,7 +49,7 @@ export function ProspectsFilters(props: {
   cities: Facet[];
 }) {
   const t = useTranslations('prospects');
-  const router = useRouter();
+  const router = useProgressRouter();
   const { filters } = props.state;
   const space = props.folders.length > 1 ? props.spaceId : undefined;
 

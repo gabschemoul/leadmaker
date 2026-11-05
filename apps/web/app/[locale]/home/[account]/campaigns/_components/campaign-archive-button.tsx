@@ -54,7 +54,7 @@ export function CampaignArchiveButton(props: {
         variant={'outline'}
         size={'sm'}
         data-test={'campaign-unarchive-button'}
-        disabled={archive.isPending}
+        loading={archive.isPending}
         onClick={() =>
           archive.execute({ campaignId: props.campaignId, archived: false })
         }
@@ -105,7 +105,7 @@ export function CampaignArchiveButton(props: {
 
             <Button
               data-test={'campaign-archive-confirm'}
-              disabled={archive.isPending}
+              loading={archive.isPending}
               onClick={() =>
                 archive.execute({
                   campaignId: props.campaignId,

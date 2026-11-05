@@ -13,7 +13,7 @@ export function TeamBillingPortalForm({
   accountId: string;
   slug: string;
 }) {
-  const { execute } = useAction(createBillingPortalSession);
+  const { execute, isPending } = useAction(createBillingPortalSession);
 
   return (
     <form
@@ -22,7 +22,8 @@ export function TeamBillingPortalForm({
         execute({ accountId, slug });
       }}
     >
-      <BillingPortalCard />
+      {/* roue sur le bouton pendant la création de la session du portail */}
+      <BillingPortalCard pending={isPending} />
     </form>
   );
 }

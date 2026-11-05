@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
 import { toast } from '@kit/ui/sonner';
+import { Spinner } from '@kit/ui/spinner';
 import { Switch } from '@kit/ui/switch';
 import { Trans } from '@kit/ui/trans';
 
@@ -66,8 +67,9 @@ export function CampaignLocalDiscovery(props: {
       )}
 
       <div className={'flex flex-col gap-1'}>
-        <span className={'text-sm font-medium'}>
+        <span className={'flex items-center gap-2 text-sm font-medium'}>
           <Trans i18nKey={'campaigns.localDiscovery.title'} />
+          {toggle.isPending ? <Spinner className={'size-3.5'} /> : null}
         </span>
 
         <p className={'text-muted-foreground text-sm'}>

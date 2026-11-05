@@ -192,7 +192,7 @@ export function ProspectsBulkActions(props: {
           <Button
             size={'sm'}
             variant={'outline'}
-            disabled={findEmails.isPending}
+            loading={findEmails.isPending}
             data-test={'prospects-find-emails-button'}
             onClick={() =>
               findEmails.execute({
@@ -313,7 +313,7 @@ export function ProspectsBulkActions(props: {
 
             <Button
               variant={pending === 'delete' ? 'destructive' : 'default'}
-              disabled={isPending}
+              loading={isPending}
               data-test={'prospects-confirm-button'}
               onClick={confirm}
             >

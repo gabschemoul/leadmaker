@@ -559,11 +559,10 @@ function AutopilotSetup(props: {
             type={'submit'}
             size={'lg'}
             className={'h-12 rounded-xl px-6 text-base font-medium'}
-            disabled={pending || !props.ready}
+            disabled={!props.ready}
+            loading={pending}
             data-test={'autopilot-launch'}
           >
-            {pending ? <Loader2 className={'size-4 animate-spin'} /> : null}
-
             {props.editing
               ? t('update')
               : values.preview
@@ -807,13 +806,11 @@ function AutopilotPreview(props: {
           <Button
             size={'lg'}
             className={'h-12 rounded-xl px-6 font-medium'}
-            disabled={confirm.isPending || cancel.isPending}
+            disabled={cancel.isPending}
+            loading={confirm.isPending}
             data-test={'autopilot-confirm'}
             onClick={() => confirm.execute({ autopilotId })}
           >
-            {confirm.isPending ? (
-              <Loader2 className={'size-4 animate-spin'} />
-            ) : null}
             {t('confirm', { count: rows.length })}
           </Button>
         ) : null}
@@ -830,7 +827,8 @@ function AutopilotPreview(props: {
 
         <Button
           variant={'ghost'}
-          disabled={confirm.isPending || cancel.isPending}
+          disabled={confirm.isPending}
+          loading={cancel.isPending}
           data-test={'autopilot-cancel'}
           onClick={() => cancel.execute({ autopilotId })}
         >
@@ -937,7 +935,7 @@ function AutopilotRunning(props: {
             {done ? null : paused ? (
               <Button
                 variant={'outline'}
-                disabled={resume.isPending}
+                loading={resume.isPending}
                 data-test={'autopilot-resume'}
                 onClick={() => resume.execute({ autopilotId })}
               >
@@ -947,7 +945,7 @@ function AutopilotRunning(props: {
             ) : (
               <Button
                 variant={'outline'}
-                disabled={pause.isPending}
+                loading={pause.isPending}
                 data-test={'autopilot-pause'}
                 onClick={() => pause.execute({ autopilotId })}
               >

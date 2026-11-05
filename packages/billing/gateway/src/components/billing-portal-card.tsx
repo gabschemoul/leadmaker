@@ -12,7 +12,8 @@ import {
 } from '@kit/ui/card';
 import { Trans } from '@kit/ui/trans';
 
-export function BillingPortalCard() {
+/** `pending` : ouverture du portail de paiement en cours (roue sur le bouton). */
+export function BillingPortalCard(props: { pending?: boolean } = {}) {
   return (
     <Card>
       <CardHeader>
@@ -27,7 +28,11 @@ export function BillingPortalCard() {
 
       <CardContent className={'space-y-2'}>
         <div>
-          <Button type="submit" data-test={'manage-billing-redirect-button'}>
+          <Button
+            type="submit"
+            loading={props.pending}
+            data-test={'manage-billing-redirect-button'}
+          >
             <span>
               <Trans i18nKey="billing.billingPortalCardButton" />
             </span>

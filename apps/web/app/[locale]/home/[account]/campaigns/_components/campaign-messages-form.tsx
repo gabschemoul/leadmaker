@@ -448,7 +448,7 @@ export function CampaignMessagesForm(props: {
           <Button
             type={'submit'}
             data-test={'messages-save-button'}
-            disabled={disabled}
+            loading={disabled}
           >
             <Trans i18nKey={'outreach.messages.save'} />
           </Button>

@@ -102,6 +102,10 @@ export function SenderList(props: {
                   size={'sm'}
                   variant={'ghost'}
                   disabled={busy}
+                  loading={
+                    setDefault.isPending &&
+                    setDefault.input?.senderId === sender.id
+                  }
                   data-test={'sender-make-default'}
                   onClick={() => setDefault.execute({ senderId: sender.id })}
                 >
@@ -174,7 +178,7 @@ export function SenderList(props: {
             <Button
               type={'button'}
               variant={'destructive'}
-              disabled={remove.isPending}
+              loading={remove.isPending}
               data-test={'sender-delete-confirm'}
               onClick={() =>
                 deleting ? remove.execute({ senderId: deleting.id }) : null

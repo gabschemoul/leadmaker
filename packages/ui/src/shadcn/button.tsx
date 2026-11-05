@@ -2,6 +2,8 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from 'cn';
 
+import { Spinner } from './spinner';
+
 const buttonVariants = cva(
   "group/button focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-[0.8125rem] font-medium whitespace-nowrap transition-[background-color,color,box-shadow,border-color,transform] duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] outline-none select-none focus-visible:ring-3 active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-invalid:ring-3 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
@@ -39,18 +41,38 @@ const buttonVariants = cva(
   },
 );
 
+/**
+ * `loading` (Prospectigo, 5/11/2026) : l'action est en cours — le bouton se désactive, ses icônes sont
+ * remplacées par une roue qui tourne, devant le texte, et `aria-busy` est posé.
+ * Utilisation : `<Button loading={action.isPending}>…</Button>` sur tout bouton qui lance une action serveur.
+ */
 function Button({
   className,
   variant = 'default',
   size = 'default',
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & { loading?: boolean }) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      data-loading={loading ? '' : undefined}
+      aria-busy={loading || undefined}
+      disabled={disabled || loading}
+      className={cn(
+        buttonVariants({ variant, size, className }),
+        // pendant le chargement : la roue remplace les icônes du bouton
+        loading &&
+          'disabled:opacity-70 [&>svg:not([data-slot=spinner])]:hidden',
+      )}
       {...props}
-    />
+    >
+      {loading ? <Spinner /> : null}
+      {children}
+    </ButtonPrimitive>
   );
 }
 

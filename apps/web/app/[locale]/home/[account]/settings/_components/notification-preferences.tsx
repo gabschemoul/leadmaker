@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 import { toast } from '@kit/ui/sonner';
+import { Spinner } from '@kit/ui/spinner';
 import { Switch } from '@kit/ui/switch';
 
 import { saveNotificationPreferencesAction } from '../_lib/server/notification-actions';
@@ -38,7 +39,11 @@ export function NotificationPreferences(props: { disabledGroups: string[] }) {
     onError: () => toast.error(t('saveFailed')),
   });
 
+  // groupe en cours d'enregistrement : roue à côté de son libellé
+  const [saving, setSaving] = useState<Group | null>(null);
+
   const toggle = (group: Group, enabled: boolean) => {
+    setSaving(group);
     const next = enabled
       ? disabled.filter((item) => item !== group)
       : [...disabled, group];
@@ -69,8 +74,11 @@ export function NotificationPreferences(props: { disabledGroups: string[] }) {
               htmlFor={`notification-${group}`}
               className={'flex flex-col gap-1'}
             >
-              <span className={'text-sm font-medium'}>
+              <span className={'flex items-center gap-2 text-sm font-medium'}>
                 {t(`${group}.label`)}
+                {save.isPending && saving === group ? (
+                  <Spinner className={'size-3.5'} />
+                ) : null}
               </span>
               <span className={'text-muted-foreground text-sm'}>
                 {t(`${group}.hint`)}

@@ -32,7 +32,7 @@ export function CampaignHeaderActions(props: {
         variant={'outline'}
         size={'sm'}
         data-test={'campaign-duplicate-button'}
-        disabled={duplicate.isPending}
+        loading={duplicate.isPending}
         onClick={() =>
           duplicate.execute({
             campaignId: props.campaignId,

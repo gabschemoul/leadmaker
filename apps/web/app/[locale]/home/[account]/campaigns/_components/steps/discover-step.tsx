@@ -232,6 +232,7 @@ function CampaignActions(props: {
       <Button
         data-test={'campaign-start-button'}
         disabled={pending}
+        loading={start.isPending}
         onClick={() => start.execute({ campaignId: props.campaignId })}
       >
         <Play className={'w-4'} />
@@ -255,6 +256,7 @@ function CampaignActions(props: {
         variant={'secondary'}
         data-test={'campaign-pause-button'}
         disabled={pending}
+        loading={pause.isPending}
         onClick={() => pause.execute({ campaignId: props.campaignId })}
       >
         <Pause className={'w-4'} />

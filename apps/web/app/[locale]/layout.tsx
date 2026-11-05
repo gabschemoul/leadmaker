@@ -10,6 +10,7 @@ import { routing } from '@kit/i18n/routing';
 import { Toaster } from '@kit/ui/sonner';
 import { cn } from '@kit/ui/utils';
 
+import { NavigationProgress } from '~/components/navigation-progress';
 import { RootProviders } from '~/components/root-providers';
 import { getFontsClassName } from '~/lib/fonts';
 import { generateRootMetadata } from '~/lib/root-metadata';
@@ -57,6 +58,9 @@ export default async function LocaleLayout({
           {children}
 
           <Toaster richColors={true} position="top-center" />
+
+          {/* barre de chargement en haut de l'écran pendant un changement de page */}
+          <NavigationProgress />
         </RootProviders>
       </body>
     </html>

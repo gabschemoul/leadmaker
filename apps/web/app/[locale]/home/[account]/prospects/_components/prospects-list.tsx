@@ -1,7 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
+import { useProgressRouter } from '~/components/navigation-progress';
 import {
   type ProspectsListState,
   buildProspectsHref,
@@ -32,7 +31,7 @@ export function ProspectsList(props: {
   formsHref: string;
   spaceId: string;
 }) {
-  const router = useRouter();
+  const router = useProgressRouter();
 
   const sorting: SortingState = [
     { id: props.state.sort, desc: props.state.dir === 'desc' },

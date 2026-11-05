@@ -139,6 +139,7 @@ export function SpaceRowActions(props: {
                 variant={'destructive'}
                 data-test={'folder-delete-confirm'}
                 disabled={pending || value.trim() !== props.name.trim()}
+                loading={remove.isPending}
                 onClick={() =>
                   remove.execute({
                     accountId: props.accountId,
@@ -152,6 +153,7 @@ export function SpaceRowActions(props: {
               <Button
                 data-test={'folder-rename-confirm'}
                 disabled={pending || value.trim().length === 0}
+                loading={rename.isPending}
                 onClick={() =>
                   rename.execute({
                     accountId: props.accountId,

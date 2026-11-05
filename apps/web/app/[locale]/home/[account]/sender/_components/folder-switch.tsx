@@ -1,8 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
 import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
+
+import { useProgressRouter } from '~/components/navigation-progress';
 
 /**
  * Choix du dossier client (affiché seulement quand l'organisation en a
@@ -13,7 +13,7 @@ export function FolderSwitch(props: {
   folders: Array<{ id: string; label: string }>;
   value: string;
 }) {
-  const router = useRouter();
+  const router = useProgressRouter();
 
   return (
     <NativeSelect

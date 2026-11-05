@@ -151,7 +151,8 @@ export function CampaignSendingSettings(props: {
             </Button>
             <Button
               data-test={'sending-settings-save'}
-              disabled={save.isPending || !limitValid}
+              disabled={!limitValid}
+              loading={save.isPending}
               onClick={() =>
                 save.execute({
                   campaignId: props.campaignId,

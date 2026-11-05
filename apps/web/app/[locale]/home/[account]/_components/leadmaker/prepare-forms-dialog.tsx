@@ -144,7 +144,7 @@ export function PrepareFormsDialog(props: {
           <Button
             type={'button'}
             data-test={'prepare-submit'}
-            disabled={isPending}
+            loading={isPending}
             onClick={submit}
           >
             {t('submit')}

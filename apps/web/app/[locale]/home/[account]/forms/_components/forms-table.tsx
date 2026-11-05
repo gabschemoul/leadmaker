@@ -486,7 +486,7 @@ export function FormsTable(props: {
 
             <Button
               variant={pending === 'exclude' ? 'destructive' : 'default'}
-              disabled={isPending}
+              loading={isPending}
               data-test={'forms-confirm-button'}
               onClick={() => {
                 if (pending) run(pending);

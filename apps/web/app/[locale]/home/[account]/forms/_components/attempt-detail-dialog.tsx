@@ -95,7 +95,7 @@ function AttemptDetail(props: {
   const siteUrl = attempt.form_url ?? attempt.prospect.website;
   const siteHref = websiteHref(siteUrl);
 
-  const { execute, isPending } = useAction(updateAttemptAction, {
+  const { execute, isPending, input } = useAction(updateAttemptAction, {
     onSuccess: ({ data }) => {
       toast.success(
         data?.validated
@@ -228,6 +228,7 @@ function AttemptDetail(props: {
           <Button
             type={'button'}
             disabled={mark.isPending}
+            loading={mark.isPending && mark.input?.outcome === 'sent'}
             data-test={'attempt-mark-sent'}
             onClick={() =>
               mark.execute({
@@ -244,6 +245,7 @@ function AttemptDetail(props: {
             type={'button'}
             variant={'outline'}
             disabled={mark.isPending}
+            loading={mark.isPending && mark.input?.outcome === 'failed'}
             data-test={'attempt-mark-failed'}
             onClick={() =>
               mark.execute({
@@ -385,6 +387,7 @@ function AttemptDetail(props: {
                   variant={'secondary'}
                   data-test={'attempt-save'}
                   disabled={disabled}
+                  loading={isPending && !input?.validate}
                   onClick={() => submit(false)}
                 >
                   {t('detail.save')}
@@ -394,6 +397,7 @@ function AttemptDetail(props: {
                   type={'button'}
                   data-test={'attempt-save-validate'}
                   disabled={disabled}
+                  loading={isPending && Boolean(input?.validate)}
                   onClick={() => submit(true)}
                 >
                   {t('detail.saveAndValidate')}

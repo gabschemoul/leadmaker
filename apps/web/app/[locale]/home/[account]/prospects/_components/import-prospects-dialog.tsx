@@ -351,7 +351,7 @@ function ImportProspectsForm(props: {
           <Button
             type={'submit'}
             data-test={'confirm-import-button'}
-            disabled={busy}
+            loading={busy}
           >
             <Trans
               i18nKey={

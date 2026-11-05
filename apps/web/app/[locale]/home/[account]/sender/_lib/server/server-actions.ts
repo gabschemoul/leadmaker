@@ -8,6 +8,7 @@ import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import pathsConfig from '~/config/paths.config';
+import { throwRpcError } from '~/lib/server/leadmaker/rpc-errors';
 
 import {
   SaveSenderProfileSchema,
@@ -113,19 +114,13 @@ export const setDefaultSenderAction = authActionClient
         throw new Error('outreach.sender.notFound');
       }
 
-      const logger = await getLogger();
-
-      logger.error(
-        {
-          name: 'leadmaker.sender.default',
-          senderId,
-          userId: ctx.user.id,
-          error,
-        },
-        'Failed to set default sender',
-      );
-
-      throw new Error('outreach.sender.saveFailed');
+      await throwRpcError({
+        scope: 'sender.default',
+        error,
+        hints: {},
+        fallback: 'outreach.sender.saveFailed',
+        context: { senderId, userId: ctx.user.id },
+      });
     }
 
     revalidatePath('/home/[account]/sender', 'page');

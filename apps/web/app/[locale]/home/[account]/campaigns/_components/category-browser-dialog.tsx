@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : dialogue « Parcourir le catalogue » des activités, rangées par famille, avec coches par activité ou famille.
+ * Données : listCategoryFamiliesAction / listFamilyCategoriesAction (lm_categories).
+ * Écritures : aucune en base (renvoie la sélection au formulaire).
+ */
+
 import { useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
@@ -24,7 +30,7 @@ import type { CategoryRef } from '../_lib/schema/campaign.schema';
 import {
   listCategoryFamiliesAction,
   listFamilyCategoriesAction,
-} from '../_lib/server/server-actions';
+} from '../_lib/server/category-actions';
 
 /**
  * Catalogue des activités Google, rangé par famille (Restauration &

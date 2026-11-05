@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : tableau de prospects partagé (page Prospects, détail de campagne) : tri, colonnes au choix, sélection.
+ * Données : lignes ProspectRow passées par le parent ; temps réel sur lm_prospects (ProspectsLiveRefresh).
+ * Écritures : aucune ici (actions groupées dans prospects-bulk-actions.tsx).
+ */
+
 import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
@@ -14,6 +20,7 @@ import { DataTable } from '@kit/ui/enhanced-data-table';
 import { Trans } from '@kit/ui/trans';
 
 import { LocalDateTime } from '~/components/local-date-time';
+import { websiteHref, websiteLabel } from '~/lib/leadmaker/website';
 
 import {
   DEFAULT_PROSPECT_COLUMN_VISIBILITY,
@@ -47,14 +54,6 @@ export interface ProspectRow {
 }
 
 export type { SortingState };
-
-function websiteHref(website: string) {
-  return /^https?:\/\//i.test(website) ? website : `https://${website}`;
-}
-
-function websiteLabel(website: string) {
-  return website.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '');
-}
 
 const COLUMN_SIZES: Record<ProspectColumnId, number> = {
   name: 260,
@@ -229,16 +228,17 @@ function buildColumns(params: {
       header: t('columns.name'),
       cell: ({ row }) => {
         const prospect = row.original;
+        const href = websiteHref(prospect.website);
 
         return (
           <span
             className={'flex items-center gap-2 font-medium'}
             data-test={'prospect-name'}
           >
-            {prospect.website ? (
+            {href ? (
               <a
                 className={'truncate hover:underline'}
-                href={websiteHref(prospect.website)}
+                href={href}
                 target={'_blank'}
                 rel={'noopener noreferrer nofollow'}
               >
@@ -330,25 +330,36 @@ function buildColumns(params: {
       id: 'website',
       accessorKey: 'website',
       header: t('columns.website'),
-      cell: ({ row }) =>
-        row.original.website ? (
+      cell: ({ row }) => {
+        const { website } = row.original;
+
+        if (!website) {
+          return '–';
+        }
+
+        const href = websiteHref(website);
+        const label = websiteLabel(website, { keepPath: true });
+
+        // valeur qui n'est pas une adresse http(s) : texte simple, jamais un lien
+        if (!href) {
+          return <span className={'block truncate'}>{label}</span>;
+        }
+
+        return (
           <a
             className={
               'inline-flex max-w-full items-center gap-1 hover:underline'
             }
-            href={websiteHref(row.original.website)}
+            href={href}
             target={'_blank'}
             rel={'noopener noreferrer nofollow'}
           >
-            <span className={'truncate'}>
-              {websiteLabel(row.original.website)}
-            </span>
+            <span className={'truncate'}>{label}</span>
 
             <ExternalLink className={'size-3 shrink-0'} />
           </a>
-        ) : (
-          '–'
-        ),
+        );
+      },
     },
     email: {
       id: 'email',

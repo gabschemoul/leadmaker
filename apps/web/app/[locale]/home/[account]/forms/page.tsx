@@ -1,3 +1,9 @@
+/**
+ * Rôle : page « Formulaires » (mode avancé) : formulaires préparés par statut, à vérifier et valider.
+ * Données : loadAttempts / loadAttemptCounts (forms.loader), loadSpaces.
+ * Écritures : aucune ici (actions dans FormsTable et AttemptDetailDialog).
+ */
+
 import { Suspense } from 'react';
 
 import Link from 'next/link';

@@ -7,7 +7,7 @@ import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
 import { toast } from '@kit/ui/sonner';
 
 import { senderLabel } from '../../sender/_lib/sender-label';
-import { setCampaignSenderAction } from '../_lib/server/server-actions';
+import { setCampaignSenderAction } from '../_lib/server/campaign-outreach-actions';
 
 /**
  * Expéditeur de la campagne : celui par défaut de l'organisation, ou un autre

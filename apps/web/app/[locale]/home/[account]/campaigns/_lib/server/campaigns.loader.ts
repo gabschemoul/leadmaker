@@ -1,3 +1,9 @@
+/**
+ * Rôle : chargeurs serveur des pages campagnes (liste, détail, formulaire de modification, aperçu, réglages).
+ * Données : lm_campaigns, lm_geo_cities, lm_categories, lm_prospects ; RPC lm_local_discovery_state, lm_auto_validation_allowed.
+ * Écritures : aucune (lecture seule, client Supabase de l'utilisateur).
+ */
+
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 

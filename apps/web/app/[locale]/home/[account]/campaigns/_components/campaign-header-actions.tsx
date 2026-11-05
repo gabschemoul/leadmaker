@@ -8,7 +8,7 @@ import { Button } from '@kit/ui/button';
 import { toast } from '@kit/ui/sonner';
 import { Trans } from '@kit/ui/trans';
 
-import { duplicateCampaignAction } from '../_lib/server/server-actions';
+import { duplicateCampaignAction } from '../_lib/server/campaign-lifecycle-actions';
 import { CampaignArchiveButton } from './campaign-archive-button';
 
 /** Actions secondaires d'une campagne, dans l'en-tête : dupliquer, exporter, archiver. */

@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : étape Trouver d'une campagne : progression de la recherche en direct, lancement / pause, chiffres clés.
+ * Données : fetchCampaignLive (lm_campaigns, lm_campaign_progress, lm_campaign_pricing, lm_prospects) + temps réel sur lm_prospects et lm_campaign_categories.
+ * Écritures : startCampaignAction / pauseCampaignAction.
+ */
+
 import { useEffect } from 'react';
 
 import Link from 'next/link';
@@ -33,7 +39,7 @@ import { type CampaignLive, fetchCampaignLive } from '../../_lib/campaign-live';
 import {
   pauseCampaignAction,
   startCampaignAction,
-} from '../../_lib/server/server-actions';
+} from '../../_lib/server/campaign-lifecycle-actions';
 
 const REFRESH_INTERVAL = 10_000;
 

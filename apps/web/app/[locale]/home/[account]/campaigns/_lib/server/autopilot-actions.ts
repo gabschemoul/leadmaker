@@ -5,8 +5,12 @@ import { revalidatePath } from 'next/cache';
 import type { PostgrestError } from '@supabase/supabase-js';
 
 import { authActionClient } from '@kit/next/safe-action';
-import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import {
+  AUTOPILOT_ERRORS,
+  throwRpcError,
+} from '~/lib/server/leadmaker/rpc-errors';
 
 import {
   AutopilotIdSchema,
@@ -14,39 +18,19 @@ import {
   UpdateAutopilotSchema,
 } from '../schema/autopilot.schema';
 
-/** Erreurs connues des fonctions SQL du pilote (hint) → clé de traduction affichée. */
-const AUTOPILOT_ERRORS: Record<string, string> = {
-  not_found: 'campaigns.autopilot.errors.notFound',
-  no_sender: 'campaigns.autopilot.errors.noSender',
-  no_messages: 'campaigns.autopilot.errors.noMessages',
-  messages: 'campaigns.autopilot.errors.messages',
-  active: 'campaigns.autopilot.errors.active',
-  no_prospects: 'campaigns.autopilot.errors.noProspects',
-  no_credits: 'campaigns.autopilot.errors.noCredits',
-  target: 'campaigns.autopilot.errors.target',
-  schedule: 'campaigns.autopilot.errors.schedule',
-  not_active: 'campaigns.autopilot.errors.notActive',
-  archived: 'campaigns.errors.archived',
-};
-
-async function fail(
+/** Erreur SQL du pilote → message connu (AUTOPILOT_ERRORS) ou clé générique, journalisée. */
+function fail(
   action: string,
   error: PostgrestError,
   context: Record<string, unknown>,
 ): Promise<never> {
-  const known = error.hint ? AUTOPILOT_ERRORS[error.hint] : undefined;
-
-  if (known) {
-    throw new Error(known);
-  }
-
-  const logger = await getLogger();
-  logger.error(
-    { name: `leadmaker.autopilot.${action}`, ...context, error },
-    'Autopilot action failed',
-  );
-
-  throw new Error('campaigns.autopilot.errors.generic');
+  return throwRpcError({
+    scope: `autopilot.${action}`,
+    error,
+    hints: AUTOPILOT_ERRORS,
+    fallback: 'campaigns.autopilot.errors.generic',
+    context,
+  });
 }
 
 function refresh() {

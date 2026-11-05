@@ -1,3 +1,9 @@
+/**
+ * Rôle : page « Prospects » : liste paginée et filtrée des prospects d'un dossier client.
+ * Données : loadProspectsPage / loadProspectFacets (prospects.loader), loadSpaces ; filtres lus dans l'URL.
+ * Écritures : aucune ici (actions dans ProspectsTable / ProspectsBulkActions).
+ */
+
 import { Suspense } from 'react';
 
 import Link from 'next/link';

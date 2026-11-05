@@ -1,3 +1,9 @@
+/**
+ * Rôle : page d'une campagne, parcours en quatre étapes (Cibler, Trouver, Rédiger, Contacter) via `?etape=`.
+ * Données : campaigns.loader, forms.loader, sender.loader, leadmaker.loader (client Supabase de l'utilisateur).
+ * Écritures : aucune ici (actions serveur dans les composants d'étape).
+ */
+
 import { Suspense } from 'react';
 
 import { notFound } from 'next/navigation';

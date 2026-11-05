@@ -8,7 +8,7 @@ import { toast } from '@kit/ui/sonner';
 import { Switch } from '@kit/ui/switch';
 import { Trans } from '@kit/ui/trans';
 
-import { setLocalDiscoveryAction } from '../_lib/server/server-actions';
+import { setLocalDiscoveryAction } from '../_lib/server/campaign-lifecycle-actions';
 
 /**
  * Recherche Google Maps sur l'ordinateur dédié (sans proxy). L'interrupteur

@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : barre d'actions groupées sur les prospects cochés (export via /api/leadmaker/export, recherche d'e-mails, exclure, rétablir, supprimer).
+ * Données : lignes sélectionnées passées par ProspectsTable.
+ * Écritures : exclude/restore/delete/findEmails (prospects/_lib/server/server-actions).
+ */
+
 import { useState } from 'react';
 
 import {

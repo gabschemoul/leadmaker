@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : tableau des formulaires d'un groupe de statut, avec sélection et actions groupées.
+ * Données : lignes AttemptRow (forms.loader) ; temps réel sur lm_attempts (FormsLiveRefresh).
+ * Écritures : validate / skip / exclude / mark (forms/_lib/server/server-actions).
+ */
+
 import { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
@@ -48,6 +54,7 @@ import {
   hasAlert,
   missingLabels,
 } from '~/lib/leadmaker/attempts';
+import { websiteHref, websiteLabel } from '~/lib/leadmaker/website';
 
 import type { AttemptRow } from '../_lib/server/forms.loader';
 import {
@@ -77,10 +84,6 @@ const STATUS_STYLE: Record<string, string> = {
   preparing: badgeExtras.info,
   sending: badgeExtras.info,
 };
-
-function websiteLabel(website: string) {
-  return website.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/.*$/, '');
-}
 
 /**
  * Tableau des formulaires d'un groupe : cases à cocher, sélection « sans
@@ -360,18 +363,10 @@ export function FormsTable(props: {
                     </span>
 
                     {row.prospect.website ? (
-                      <a
-                        className={
-                          'text-muted-foreground inline-flex items-center gap-1 text-xs hover:underline'
-                        }
-                        href={row.form_url ?? row.prospect.website}
-                        target={'_blank'}
-                        rel={'noreferrer'}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        {websiteLabel(row.prospect.website)}
-                        <ExternalLink className={'h-3 w-3'} />
-                      </a>
+                      <ProspectSiteLink
+                        website={row.prospect.website}
+                        formUrl={row.form_url}
+                      />
                     ) : null}
                   </div>
                 </TableCell>
@@ -505,5 +500,33 @@ export function FormsTable(props: {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+/**
+ * Domaine du prospect, lien vers son formulaire (ou son site) ; texte simple
+ * si l'adresse n'est pas une URL http(s).
+ */
+function ProspectSiteLink(props: { website: string; formUrl: string | null }) {
+  const href = websiteHref(props.formUrl ?? props.website);
+  const label = websiteLabel(props.website);
+
+  if (!href) {
+    return <span className={'text-muted-foreground text-xs'}>{label}</span>;
+  }
+
+  return (
+    <a
+      className={
+        'text-muted-foreground inline-flex items-center gap-1 text-xs hover:underline'
+      }
+      href={href}
+      target={'_blank'}
+      rel={'noreferrer'}
+      onClick={(event) => event.stopPropagation()}
+    >
+      {label}
+      <ExternalLink className={'h-3 w-3'} />
+    </a>
   );
 }

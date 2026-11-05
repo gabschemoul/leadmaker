@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache';
 
 import { authActionClient } from '@kit/next/safe-action';
-import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { throwRpcError } from '~/lib/server/leadmaker/rpc-errors';
 
 import {
   AttemptIdsSchema,
@@ -38,18 +39,13 @@ async function runBulk(
   });
 
   if (error) {
-    const logger = await getLogger();
-    logger.error(
-      {
-        name: `leadmaker.forms.${operation}`,
-        accountId: params.accountId,
-        userId: params.userId,
-        error,
-      },
-      'Bulk attempt action failed',
-    );
-
-    throw new Error('outreach.forms.actions.failed');
+    await throwRpcError({
+      scope: `forms.${operation}`,
+      error,
+      hints: {},
+      fallback: 'outreach.forms.actions.failed',
+      context: { accountId: params.accountId, userId: params.userId },
+    });
   }
 
   revalidateForms();
@@ -97,20 +93,17 @@ export const updateAttemptAction = authActionClient
       p_extra: extra,
     });
 
-    if (update.error || !update.data) {
-      if (update.error) {
-        const logger = await getLogger();
-        logger.error(
-          {
-            name: 'leadmaker.forms.update',
-            accountId: parsedInput.accountId,
-            userId: ctx.user.id,
-            error: update.error,
-          },
-          'Attempt update failed',
-        );
-      }
+    if (update.error) {
+      await throwRpcError({
+        scope: 'forms.update',
+        error: update.error,
+        hints: {},
+        fallback: 'outreach.forms.actions.updateFailed',
+        context: { accountId: parsedInput.accountId, userId: ctx.user.id },
+      });
+    }
 
+    if (!update.data) {
       throw new Error('outreach.forms.actions.updateFailed');
     }
 
@@ -150,13 +143,13 @@ export const markAttemptsAction = authActionClient
     });
 
     if (error) {
-      const logger = await getLogger();
-      logger.error(
-        { name: 'leadmaker.forms.mark', accountId, userId: ctx.user.id, error },
-        'Marking attempts failed',
-      );
-
-      throw new Error('outreach.forms.actions.failed');
+      await throwRpcError({
+        scope: 'forms.mark',
+        error,
+        hints: {},
+        fallback: 'outreach.forms.actions.failed',
+        context: { accountId, userId: ctx.user.id },
+      });
     }
 
     revalidateForms();

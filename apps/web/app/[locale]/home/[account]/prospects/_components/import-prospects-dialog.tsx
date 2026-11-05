@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : dialogue d'import CSV de prospects dans un dossier client (lecture, aperçu, envoi par paquets).
+ * Données : fichier CSV lu dans le navigateur (~/lib/leadmaker/import-prospects).
+ * Écritures : importProspectsAction (lm_import_prospects, sans crédit).
+ */
+
 import { useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';

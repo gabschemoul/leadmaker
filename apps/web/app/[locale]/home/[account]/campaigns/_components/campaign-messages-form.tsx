@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : étape Rédiger — édition des 1 à 4 messages d'une campagne, aperçu sur de vrais prospects, réglages d'envoi.
+ * Données : modèles, expéditeur et prospects d'aperçu passés par la page ; variables dans ~/lib/leadmaker/templates.
+ * Écritures : saveCampaignTemplatesAction (lm_campaigns.templates, daily_limit, auto_validation).
+ */
+
 import { useRef, useState } from 'react';
 
 import Link from 'next/link';
@@ -52,7 +58,7 @@ import {
   CampaignTemplatesFormSchema,
   DAILY_LIMIT_MAX,
 } from '../_lib/schema/templates.schema';
-import { saveCampaignTemplatesAction } from '../_lib/server/server-actions';
+import { saveCampaignTemplatesAction } from '../_lib/server/campaign-outreach-actions';
 
 type PreviewProspect = TemplateContext['prospect'] & { id: string };
 

@@ -1,3 +1,9 @@
+/**
+ * Rôle : tableau de bord de l'organisation — chiffres clés et prochaine action de chaque campagne (composant serveur).
+ * Données : DashboardData (dashboard.loader) ; règles de « prochaine action » dans campaigns/_lib/next-action.
+ * Écritures : aucune.
+ */
+
 import Link from 'next/link';
 
 import { ArrowRight, Plus } from 'lucide-react';

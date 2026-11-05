@@ -19,7 +19,7 @@ import { Button } from '@kit/ui/button';
 import { toast } from '@kit/ui/sonner';
 import { Trans } from '@kit/ui/trans';
 
-import { archiveCampaignAction } from '../_lib/server/server-actions';
+import { archiveCampaignAction } from '../_lib/server/campaign-lifecycle-actions';
 
 /**
  * Archiver une campagne (avec confirmation) ou la ressortir des archives (audit E18).

@@ -1,3 +1,9 @@
+/**
+ * Rôle : page « Expéditeurs » : liste des expéditeurs de l'organisation et formulaire de l'expéditeur choisi.
+ * Données : loadSenders (sender.loader) et leadmaker.loader.
+ * Écritures : aucune ici (actions dans les composants).
+ */
+
 import { Suspense } from 'react';
 
 import { getTranslations } from 'next-intl/server';

@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : vue unitaire d'un formulaire préparé (mode avancé) : capture, champs, message modifiable, validation.
+ * Données : AttemptRow (forms.loader) passé par le tableau.
+ * Écritures : updateAttemptAction (lm_update_attempt, puis validation) et markAttemptsAction (« à vérifier »).
+ */
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ExternalLink } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -32,6 +38,7 @@ import {
   filledEntries,
   missingLabels,
 } from '~/lib/leadmaker/attempts';
+import { websiteHref } from '~/lib/leadmaker/website';
 
 import { AttemptEditFormSchema } from '../_lib/schema/forms-actions.schema';
 import type { AttemptRow } from '../_lib/server/forms.loader';
@@ -85,6 +92,8 @@ function AttemptDetail(props: {
   const editable = EDITABLE.has(attempt.status);
   const missing = missingLabels(attempt.missing);
   const extra = extraValues(attempt.extra);
+  const siteUrl = attempt.form_url ?? attempt.prospect.website;
+  const siteHref = websiteHref(siteUrl);
 
   const { execute, isPending } = useAction(updateAttemptAction, {
     onSuccess: ({ data }) => {
@@ -168,16 +177,19 @@ function AttemptDetail(props: {
             </span>
           ) : null}
 
-          {(attempt.form_url ?? attempt.prospect.website) ? (
+          {siteUrl && siteHref ? (
             <a
               className={'inline-flex items-center gap-1 underline'}
-              href={attempt.form_url ?? attempt.prospect.website ?? '#'}
+              href={siteHref}
               target={'_blank'}
               rel={'noreferrer'}
             >
               {attempt.form_url ? t('openForm') : t('openSite')}
               <ExternalLink className={'h-3 w-3'} />
             </a>
+          ) : siteUrl ? (
+            // adresse qui n'est pas une URL http(s) : affichée, jamais cliquable
+            <span className={'break-all'}>{siteUrl}</span>
           ) : null}
         </DialogDescription>
       </DialogHeader>

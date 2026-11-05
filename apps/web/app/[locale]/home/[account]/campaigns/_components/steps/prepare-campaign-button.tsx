@@ -9,7 +9,7 @@ import { useAction } from 'next-safe-action/hooks';
 import { Button } from '@kit/ui/button';
 import { toast } from '@kit/ui/sonner';
 
-import { prepareCampaignAction } from '../../_lib/server/server-actions';
+import { prepareCampaignAction } from '../../_lib/server/campaign-outreach-actions';
 
 /**
  * Met en préparation tous les prospects de la campagne pas encore traités,

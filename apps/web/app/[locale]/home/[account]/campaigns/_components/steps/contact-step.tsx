@@ -1,3 +1,9 @@
+/**
+ * Rôle : étape Contacter d'une campagne (composant serveur) : choisit entre pilote automatique et mode avancé.
+ * Données : props de la page campagne (compteurs de formulaires, expéditeur, pilote).
+ * Écritures : aucune ici (déléguées à ContactAutopilot, PrepareCampaignButton, CampaignFormsPanel).
+ */
+
 import Link from 'next/link';
 
 import {

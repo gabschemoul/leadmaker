@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : encart d'estimation du formulaire de campagne (calcul rapide, puis mesure réelle à la demande).
+ * Données : estimateCampaignAction (lm_estimate_campaign) et useRealEstimate (lm_request_estimate + suivi).
+ * Écritures : la mesure réelle crée une estimation et sa tâche robot (sans crédit).
+ */
+
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { TriangleAlert } from 'lucide-react';
 import { useFormatter } from 'next-intl';
@@ -19,7 +25,7 @@ import { Trans } from '@kit/ui/trans';
 
 import type { Targeting } from '../_lib/schema/campaign.schema';
 import type { EstimateFilters } from '../_lib/schema/campaign.schema';
-import { estimateCampaignAction } from '../_lib/server/server-actions';
+import { estimateCampaignAction } from '../_lib/server/estimate-actions';
 import { useDebouncedValue } from '../_lib/use-debounced-value';
 import {
   type RealEstimateFilters,

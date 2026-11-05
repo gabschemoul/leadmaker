@@ -1,3 +1,9 @@
+/**
+ * Rôle : page liste des campagnes de l'organisation (par dossier client).
+ * Données : loadCampaigns (campaigns.loader) et leadmaker.loader.
+ * Écritures : aucune.
+ */
+
 import { Suspense } from 'react';
 
 import Link from 'next/link';

@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : dialogue « une ville et ses alentours » : ville centre + rayon, communes proposées et ajoutées en un clic.
+ * Données : nearbyCitiesAction (lm_geo_cities).
+ * Écritures : aucune en base (renvoie les villes au formulaire).
+ */
+
 import { useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
@@ -24,7 +30,7 @@ import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
 
 import { type CityRef } from '../_lib/schema/campaign.schema';
-import { nearbyCitiesAction } from '../_lib/server/server-actions';
+import { nearbyCitiesAction } from '../_lib/server/geo-actions';
 import { useDebouncedValue } from '../_lib/use-debounced-value';
 import { SearchPicker } from './search-picker';
 

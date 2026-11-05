@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : barre de filtres de la page Prospects (dossier, campagne, recherche, activité, ville, note, avis, site web, statut, source).
+ * Données : filtres et facettes passés par la page ; l'état vit dans l'URL (router.push).
+ * Écritures : aucune.
+ */
+
 import { useRouter } from 'next/navigation';
 
 import { Search, X } from 'lucide-react';

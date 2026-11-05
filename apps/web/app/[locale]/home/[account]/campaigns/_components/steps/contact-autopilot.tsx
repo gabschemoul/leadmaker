@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : étape Contacter en mode pilote automatique : réglage, aperçu à valider, suivi en direct, pause / reprise.
+ * Données : lm_autopilots et tentatives lus côté client (~/lib/leadmaker/autopilot-query), rafraîchis toutes les 4 s.
+ * Écritures : start/update/pause/resume/confirm/cancel (autopilot-actions.ts).
+ */
+
 import { useRef, useState } from 'react';
 
 import Link from 'next/link';

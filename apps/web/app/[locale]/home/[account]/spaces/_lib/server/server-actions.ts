@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache';
 
 import { authActionClient } from '@kit/next/safe-action';
-import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+
+import { throwRpcError } from '~/lib/server/leadmaker/rpc-errors';
 
 import { CreateSpaceSchema } from '../schema/space.schema';
 
@@ -15,7 +16,6 @@ import { CreateSpaceSchema } from '../schema/space.schema';
 export const createSpaceAction = authActionClient
   .inputSchema(CreateSpaceSchema)
   .action(async ({ parsedInput: { accountId, name }, ctx }) => {
-    const logger = await getLogger();
     const client = getSupabaseServerClient();
 
     const { error } = await client.from('lm_spaces').insert({
@@ -32,17 +32,13 @@ export const createSpaceAction = authActionClient
         throw new Error('campaigns.folders.nameTaken');
       }
 
-      logger.error(
-        {
-          name: 'leadmaker.spaces.create',
-          accountId,
-          userId: ctx.user.id,
-          error,
-        },
-        'Failed to create space',
-      );
-
-      throw new Error('campaigns.folders.createError');
+      await throwRpcError({
+        scope: 'spaces.create',
+        error,
+        hints: {},
+        fallback: 'campaigns.folders.createError',
+        context: { accountId, userId: ctx.user.id },
+      });
     }
 
     revalidatePath('/home/[account]/spaces', 'page');

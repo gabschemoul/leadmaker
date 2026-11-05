@@ -33,6 +33,39 @@ export const FIND_EMAILS_ERRORS: RpcHintMap = {
   no_plan: 'prospects.actions.noPlan',
 };
 
+/** Lancement / reprise d'une campagne (lm_start_campaign). */
+export const START_ERRORS: RpcHintMap = {
+  no_credits: 'campaigns.errors.noCredits',
+  campaign_limit: 'campaigns.errors.campaignLimit',
+  no_cities: 'campaigns.errors.noCities',
+  archived: 'campaigns.errors.archived',
+};
+
+/** Modification d'une campagne (lm_update_campaign) : pays figé après lancement. */
+export const UPDATE_CAMPAIGN_ERRORS: RpcHintMap = {
+  country_locked: 'campaigns.errors.countryLocked',
+};
+
+/** Messages d'une campagne : validation automatique hors forfait (déclencheur SQL). */
+export const TEMPLATES_ERRORS: RpcHintMap = {
+  plan: 'outreach.messages.autoValidationPlan',
+};
+
+/** Pilote automatique (lm_start/update/pause/resume/confirm/cancel_autopilot). */
+export const AUTOPILOT_ERRORS: RpcHintMap = {
+  not_found: 'campaigns.autopilot.errors.notFound',
+  no_sender: 'campaigns.autopilot.errors.noSender',
+  no_messages: 'campaigns.autopilot.errors.noMessages',
+  messages: 'campaigns.autopilot.errors.messages',
+  active: 'campaigns.autopilot.errors.active',
+  no_prospects: 'campaigns.autopilot.errors.noProspects',
+  no_credits: 'campaigns.autopilot.errors.noCredits',
+  target: 'campaigns.autopilot.errors.target',
+  schedule: 'campaigns.autopilot.errors.schedule',
+  not_active: 'campaigns.autopilot.errors.notActive',
+  archived: 'campaigns.errors.archived',
+};
+
 /**
  * Transforme une erreur d'appel RPC en erreur affichable et l'interrompt.
  *

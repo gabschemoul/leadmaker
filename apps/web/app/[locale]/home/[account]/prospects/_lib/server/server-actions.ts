@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 
 import { authActionClient } from '@kit/next/safe-action';
-import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
@@ -38,18 +37,13 @@ export const importProspectsAction = authActionClient
         throw new Error('campaigns.import.folderNotFound');
       }
 
-      const logger = await getLogger();
-      logger.error(
-        {
-          name: 'leadmaker.prospects.import',
-          spaceId,
-          userId: ctx.user.id,
-          error,
-        },
-        'Prospect import failed',
-      );
-
-      throw new Error('campaigns.import.failed');
+      await throwRpcError({
+        scope: 'prospects.import',
+        error,
+        hints: {},
+        fallback: 'campaigns.import.failed',
+        context: { spaceId, userId: ctx.user.id },
+      });
     }
 
     revalidatePath('/home/[account]/prospects', 'page');

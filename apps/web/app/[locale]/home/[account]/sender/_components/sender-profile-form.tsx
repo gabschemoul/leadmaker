@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Rôle : formulaire d'un expéditeur (identité et coordonnées utilisées dans les formulaires de contact).
+ * Données : valeurs initiales passées par la page Expéditeurs.
+ * Écritures : saveSenderProfileAction (lm_sender_profiles).
+ */
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';

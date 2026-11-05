@@ -21,8 +21,21 @@
     "nameRequired": "Enter a name.",
     "nameTooLong": "The name must be 100 characters or fewer.",
     "nameTaken": "A client folder with this name already exists.",
-    "quotaReached": "This client folder could not be created right now. Try again in a moment.",
-    "createError": "The folder couldn't be created. Please try again in a moment."
+    "quotaReached": "Your plan doesn't allow another client folder. Upgrade your plan (Billing menu) or delete an unused folder.",
+    "createError": "The folder couldn't be created. Please try again in a moment.",
+    "renameButton": "Rename",
+    "renameTitle": "Rename “{name}”",
+    "renameSubmit": "Rename",
+    "renameDone": "Folder renamed.",
+    "renameError": "The folder couldn't be renamed. Please try again in a moment.",
+    "deleteButton": "Delete",
+    "deleteTitle": "Delete the “{name}” folder?",
+    "deleteDescription": "Its campaigns, prospects and forms will be permanently deleted. To confirm, type the folder name: {name}",
+    "deleteSubmit": "Delete permanently",
+    "deleteDone": "Folder deleted.",
+    "deleteRunning": "A campaign in this folder is running: pause it before deleting the folder.",
+    "deleteForbidden": "This folder can't be deleted (main folder, or only team admins can do it).",
+    "deleteError": "The folder couldn't be deleted. Please try again in a moment."
   },
   "list": {
     "pageTitle": "Campaigns",

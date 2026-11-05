@@ -21,8 +21,21 @@
     "nameRequired": "Indiquez un nom.",
     "nameTooLong": "Le nom ne doit pas dépasser 100 caractères.",
     "nameTaken": "Un dossier client porte déjà ce nom.",
-    "quotaReached": "Impossible de créer ce dossier client pour le moment. Réessayez dans un instant.",
-    "createError": "Le dossier n'a pas pu être créé. Réessayez dans un instant."
+    "quotaReached": "Votre forfait ne permet pas de dossier client supplémentaire. Passez à un forfait supérieur (menu Facturation) ou supprimez un dossier inutilisé.",
+    "createError": "Le dossier n'a pas pu être créé. Réessayez dans un instant.",
+    "renameButton": "Renommer",
+    "renameTitle": "Renommer « {name} »",
+    "renameSubmit": "Renommer",
+    "renameDone": "Dossier renommé.",
+    "renameError": "Le dossier n'a pas pu être renommé. Réessayez dans un instant.",
+    "deleteButton": "Supprimer",
+    "deleteTitle": "Supprimer le dossier « {name} » ?",
+    "deleteDescription": "Ses campagnes, ses prospects et ses formulaires seront supprimés définitivement. Pour confirmer, tapez le nom du dossier : {name}",
+    "deleteSubmit": "Supprimer définitivement",
+    "deleteDone": "Dossier supprimé.",
+    "deleteRunning": "Une campagne de ce dossier est en cours : mettez-la en pause avant de supprimer le dossier.",
+    "deleteForbidden": "Ce dossier ne peut pas être supprimé (dossier principal, ou seuls les responsables de l'équipe peuvent le faire).",
+    "deleteError": "Le dossier n'a pas pu être supprimé. Réessayez dans un instant."
   },
   "list": {
     "pageTitle": "Campagnes",

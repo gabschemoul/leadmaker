@@ -26,6 +26,7 @@ import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { CreateSpaceDialog } from './_components/create-space-dialog';
+import { SpaceRowActions } from './_components/space-row-actions';
 
 interface SpacesPageProps {
   params: Promise<{ account: string }>;
@@ -108,6 +109,8 @@ async function SpacesCard({ params }: { params: Params }) {
               <TableHead>
                 <Trans i18nKey={'campaigns.folders.createdAtColumn'} />
               </TableHead>
+
+              <TableHead />
             </TableRow>
           </TableHeader>
 
@@ -120,6 +123,15 @@ async function SpacesCard({ params }: { params: Params }) {
                   {format.dateTime(new Date(space.created_at), {
                     dateStyle: 'medium',
                   })}
+                </TableCell>
+
+                <TableCell>
+                  <SpaceRowActions
+                    accountId={account.id}
+                    spaceId={space.id}
+                    name={space.label}
+                    isDefault={space.is_default}
+                  />
                 </TableCell>
               </TableRow>
             ))}

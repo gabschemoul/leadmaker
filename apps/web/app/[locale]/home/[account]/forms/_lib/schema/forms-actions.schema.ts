@@ -11,15 +11,18 @@ export const AttemptIdsSchema = z.object({
 export const AttemptEditFormSchema = z.object({
   subject: z.string().trim().max(200, { message: 'outreach.messages.tooLong' }),
   body: z.string().max(5000, { message: 'outreach.messages.tooLong' }),
-  extraValues: z.array(
-    z.object({
-      label: z.string().max(200),
-      value: z
-        .string()
-        .trim()
-        .max(500, { message: 'outreach.messages.tooLong' }),
-    }),
-  ),
+  extraValues: z
+    .array(
+      z.object({
+        label: z.string().max(200),
+        value: z
+          .string()
+          .trim()
+          .max(500, { message: 'outreach.messages.tooLong' }),
+      }),
+    )
+    // un formulaire n'a jamais plus de quelques champs manquants (audit B10)
+    .max(50),
 });
 
 export type AttemptEditFormValues = z.infer<typeof AttemptEditFormSchema>;

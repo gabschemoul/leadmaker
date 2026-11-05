@@ -50,10 +50,10 @@ create index if not exists ix_lm_tasks_account_id_created_at
   on public.lm_tasks (account_id, created_at desc);
 
 create policy "lm_tasks_read" on public.lm_tasks for select
-  to authenticated using (public.has_role_on_account(account_id));
+  to authenticated using (account_id in (select public.lm_user_account_ids()));
 
 create policy "restrict_mfa_lm_tasks" on public.lm_tasks
-  as restrictive to authenticated using (public.is_mfa_compliant());
+  as restrictive to authenticated using ((select public.is_mfa_compliant()));
 
 -- Réserve une tâche prête pour un worker. Renvoie 0 ou 1 ligne.
 -- lm_claim_task (réservation d'une tâche par un robot des serveurs) : voir 34-leadmaker-local-discovery.sql

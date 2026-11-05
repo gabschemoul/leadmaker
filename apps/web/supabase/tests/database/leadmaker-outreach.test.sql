@@ -34,7 +34,7 @@ select t.account_id, t.space_id, c.id, x.name, x.key, x.site, x.excl
                ('Deux', 'deux.fr', 'https://deux.fr', null),
                ('SansSite', 'maps:0x1', null, null),
                ('Exclu', 'exclu.fr', 'https://exclu.fr', now())) as x(name, key, site, excl)
- where c.name = 'Camp';
+ where c.name = 'Camp' and c.space_id = t.space_id;
 select makerkit.authenticate_as('out_owner');
 
 -- Sans profil expéditeur : refus clair
@@ -103,7 +103,8 @@ update public.lm_spaces set ready_forms_cap = 1 where id = (select space_id from
 select makerkit.authenticate_as('out_owner');
 set local role postgres;
 insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_key, website)
-select t.account_id, t.space_id, c.id, 'Trois', 'trois.fr', 'https://trois.fr' from ta t, public.lm_campaigns c;
+select t.account_id, t.space_id, c.id, 'Trois', 'trois.fr', 'https://trois.fr' from ta t, public.lm_campaigns c
+ where c.space_id = t.space_id;
 select makerkit.authenticate_as('out_owner');
 set local role postgres;
 update public.lm_attempts set status = 'ready' where status = 'validated';
@@ -142,7 +143,7 @@ set local role postgres;
 insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_key, website)
 select t.account_id, t.space_id, c.id, x.name, x.key, x.site
   from ta t, public.lm_campaigns c, (values ('Cinq', 'cinq.fr', 'https://cinq.fr'), ('Six', 'six.fr', 'https://six.fr')) as x(name, key, site)
- where c.name = 'Camp';
+ where c.name = 'Camp' and c.space_id = t.space_id;
 select makerkit.authenticate_as('out_owner');
 select is((select queued from public.lm_prepare_prospects(array(select id from public.lm_prospects where name in ('Cinq', 'Six')))), 2, 'Deux nouvelles préparations');
 

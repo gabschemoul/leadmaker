@@ -227,7 +227,7 @@ create index if not exists ix_lm_searches_campaign_id_created_at
   on public.lm_searches (campaign_id, created_at desc);
 
 create policy "lm_searches_read" on public.lm_searches for select
-  to authenticated using (public.has_role_on_account(account_id));
+  to authenticated using (account_id in (select public.lm_user_account_ids()));
 
 create policy "restrict_mfa_lm_searches" on public.lm_searches
-  as restrictive to authenticated using (public.is_mfa_compliant());
+  as restrictive to authenticated using ((select public.is_mfa_compliant()));

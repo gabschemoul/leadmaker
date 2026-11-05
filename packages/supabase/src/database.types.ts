@@ -1682,6 +1682,9 @@ isOneToOne: false
 "lm_update_campaign":
 { Args: { "p_campaign_id": string,"p_country_code": string,"p_filters": Json,"p_name": string,"p_targeting": Json }; Returns: string
                            },
+"lm_user_account_ids":
+{ Args: Record<PropertyKey, never>; Returns: string[]
+                           },
 "lm_validate_attempts":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },

@@ -78,10 +78,10 @@ create index if not exists ix_lm_prospects_space_id_rating on public.lm_prospect
 create index if not exists ix_lm_prospects_space_id_name on public.lm_prospects (space_id, name);
 
 create policy "lm_prospects_read" on public.lm_prospects for select
-  to authenticated using (public.has_role_on_account(account_id));
+  to authenticated using (account_id in (select public.lm_user_account_ids()));
 
 create policy "restrict_mfa_lm_prospects" on public.lm_prospects
-  as restrictive to authenticated using (public.is_mfa_compliant());
+  as restrictive to authenticated using ((select public.is_mfa_compliant()));
 
 -- Adresse de site nettoyée (import CSV, robots) : http(s) gardé, domaine nu complété en https://, le reste
 -- (file:, javascript:, texte libre…) devient null. Audit A5.
@@ -306,10 +306,10 @@ create index if not exists ix_lm_attempts_account_id
   on public.lm_attempts (account_id);
 
 create policy "lm_attempts_read" on public.lm_attempts for select
-  to authenticated using (public.has_role_on_account(account_id));
+  to authenticated using (account_id in (select public.lm_user_account_ids()));
 
 create policy "restrict_mfa_lm_attempts" on public.lm_attempts
-  as restrictive to authenticated using (public.is_mfa_compliant());
+  as restrictive to authenticated using ((select public.is_mfa_compliant()));
 
 -- Réponse de l'entreprise, une par tentative
 create table if not exists public.lm_replies (

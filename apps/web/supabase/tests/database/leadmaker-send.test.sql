@@ -23,7 +23,8 @@ select account_id, space_id, 'Camp', 'FR', 2, '{"messages":[{"name":"M1","subjec
 set local role postgres;
 insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_key, website)
 select t.account_id, t.space_id, c.id, x.name, x.key, 'https://' || x.key
-  from ta t, public.lm_campaigns c, (values ('Un', 'un.fr'), ('Deux', 'deux.fr'), ('Trois', 'trois.fr')) as x(name, key);
+  from ta t, public.lm_campaigns c, (values ('Un', 'un.fr'), ('Deux', 'deux.fr'), ('Trois', 'trois.fr')) as x(name, key)
+ where c.space_id = t.space_id;
 select makerkit.authenticate_as('snd_owner');
 
 -- Trois tentatives validées (écrites comme le ferait la validation)

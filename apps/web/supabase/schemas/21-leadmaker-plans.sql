@@ -6,6 +6,24 @@
  * -------------------------------------------------------
  */
 
+-- Organisations dont l'utilisateur connecté est membre. Utilisée par la RLS des grosses tables (prospects,
+-- tentatives, journal des crédits, tâches, recherches) sous la forme `account_id in (select …)` : évaluée UNE
+-- fois par requête au lieu d'un appel à has_role_on_account par ligne (5/11/2026 : le tableau de bord d'une
+-- équipe à 120 000 prospects dépassait le délai de 8 s de la base).
+-- Appelant : politiques RLS (utilisateur connecté).
+create or replace function public.lm_user_account_ids() returns setof uuid
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select m.account_id from public.accounts_memberships m where m.user_id = (select auth.uid());
+$$;
+
+revoke all on function public.lm_user_account_ids() from public;
+
+grant execute on function public.lm_user_account_ids() to authenticated, service_role;
+
 -- Catalogue des forfaits
 create table if not exists public.lm_plans (
   id text not null,
@@ -137,10 +155,10 @@ create index if not exists ix_lm_credit_ledger_campaign_id
   on public.lm_credit_ledger (campaign_id) where campaign_id is not null;
 
 create policy "lm_credit_ledger_read" on public.lm_credit_ledger for select
-  to authenticated using (public.has_role_on_account(account_id));
+  to authenticated using (account_id in (select public.lm_user_account_ids()));
 
 create policy "restrict_mfa_lm_credit_ledger" on public.lm_credit_ledger
-  as restrictive to authenticated using (public.is_mfa_compliant());
+  as restrictive to authenticated using ((select public.is_mfa_compliant()));
 
 -- Membre de l'organisation ET double authentification respectée (audit 5/11/2026, A6).
 -- À utiliser dans TOUTES les fonctions SECURITY DEFINER appelées par l'appli : elles contournent la RLS, donc

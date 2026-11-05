@@ -1,56 +1,42 @@
-# LeadMaker
+# Prospectigo
 
-SaaS de prospection B2B : découverte d'entreprises locales sur Google Maps, préparation des formulaires de contact,
-validation humaine, envoi et suivi des réponses. Construit sur MakerKit (Next.js + Supabase, édition Turbo) avec des
-workers Python / Playwright pour les moteurs.
+SaaS de prospection B2B vendu dans le monde entier : l'appli trouve les entreprises locales qui correspondent à
+une zone et à des activités, puis dépose le message du client dans leur formulaire de contact (pilote automatique
+ou validation formulaire par formulaire).
 
-- **Cahier des charges de référence** : https://claude.ai/artifact/SqskF2RvHvw3vFRMLsCPyz
-- **Prototype interne de référence** : `legacy/` (lecture seule, logique à réutiliser)
-- **Base MakerKit** : documentation dans `docs/` et https://makerkit.dev/docs/next-supabase-turbo/introduction
+- **Documentation pour les développeurs et les IA : [`docs/prospectigo/ARCHITECTURE.md`](docs/prospectigo/ARCHITECTURE.md)**
+  (règles d'or, carte du dépôt, modèle de données, crédits, robots, livraison).
+- Feuille de route et décisions datées : [`ROADMAP.md`](ROADMAP.md).
+- Dernier audit (sécurité, ergonomie, propreté) : [`docs/prospectigo/AUDIT-2026-11-05.md`](docs/prospectigo/AUDIT-2026-11-05.md).
+- Robots : [`workers/README.md`](workers/README.md).
+- Base : kit MakerKit (Next.js + Supabase, édition Turbo) ; sa documentation générique est dans `docs/` et sur
+  https://makerkit.dev/docs/next-supabase-turbo/introduction.
+- `legacy/` : prototype interne d'origine (lecture seule).
 
-## Structure cible
+## En ligne
 
-```
-apps/web        application Next.js (MakerKit), interface FR + EN
-apps/web/supabase/schemas/2x-leadmaker-*.sql   modèle de données LeadMaker (forfaits, crédits, espaces, campagnes, prospects, tentatives, tâches, géographie)
-packages/       paquets MakerKit (comptes, facturation, UI…)
-workers/        workers Python : file de tâches Postgres, découverte et outreach (moteurs à brancher aux lots 1 et 2)
-legacy/         prototype interne et documents de cadrage
-```
+| Adresse | Branche | Rôle |
+|---|---|---|
+| https://prospectigo.com | `main` | site et appli des clients (mis à jour quand Gabriel dit « publie ») |
+| https://staging.prospectigo.com | `staging` | pré-production (même base de données que la prod) |
 
 ## Lancer en local
 
 ```bash
 pnpm install
-pnpm supabase:web:start          # base locale (Docker), migrations et données de référence
-pnpm --filter web dev            # application sur http://localhost:3001 (le port 3000 est pris par une autre app sur le Mac de Gabriel)
-# emails locaux (confirmation, invitations) : http://127.0.0.1:54324
-pnpm supabase:web:test           # tests de la base, dont l'isolation entre organisations
+pnpm supabase:web:start          # base locale (Docker)
+pnpm --filter web dev            # appli sur http://localhost:3001 (le port 3000 est pris sur le Mac de Gabriel)
+# e-mails locaux : http://127.0.0.1:54324
+pnpm supabase:web:test           # tests de la base (pgTAP)
 cd workers && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-./run-local.sh                   # worker de découverte en continu (journal : workers/logs/worker.log)
+./run-local.sh                   # robots sur la base locale (journaux : workers/logs/)
 ```
 
-## État
+Toujours utiliser `pnpm exec supabase` depuis `apps/web` (la CLI Supabase globale du Mac est trop ancienne).
 
-Lot 0 (fondations) démarré le 29/10/2026 :
+## Vérifications avant de livrer
 
-- [x] MakerKit renommé LeadMaker, comptes d'équipe uniquement, interface FR et EN
-- [x] Forfaits Growth / Business / Scale (prix Stripe à renseigner dans `.env`)
-- [x] Modèle de données de la section 5 avec isolation par organisation, testée
-- [x] Quotas d'espaces et de sièges par forfait, crédits découverte / outreach avec journal
-- [x] File de tâches et worker Python conteneurisé (tâche factice)
-- [x] GeoNames : 252 pays, ~198 000 villes
-- [x] Stripe en mode test : 3 offres créées (compte reviewcleaner, sandbox), crédits versés automatiquement à chaque paiement et retirés à la résiliation
-  - clés privées dans `apps/web/.env.local` (non versionné) ; relais des événements : conteneur Docker `leadmaker-stripe-listen`
-- [ ] Accès administrateur : une fois le compte créé, exécuter `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role": "super-admin"}' where email = '…'` puis activer la double authentification dans le profil ; le panneau est sur /admin
-- [ ] Calendrier réestimé
-
-Lot 1 (découverte) livré le 29/10/2026 :
-
-- [x] Espaces, campagnes (pays, villes : tout le pays / autour d'une ville / liste, catégories, filtres), estimation
-- [x] Scan Google Maps multi-pays par le worker, rendement lissé et abandon des catégories improductives (réglages en base)
-- [x] Un prospect par site et par espace, fiches déjà vues jamais rouvertes, chaînes repérées, exclusions administrations / banques
-- [x] Un crédit découverte par prospect retenu, pause automatique sans crédit, pause / reprise sans perte
-- [x] Avancement en direct, liste des prospects, import et export CSV
-- [x] Coût mesuré : environ 2,7 Mo par fiche ouverte, soit environ 2,7 $ pour 1 000 fiches avec un proxy résidentiel à 1 $/Go (DataImpulse)
-- [ ] Proxy résidentiel à brancher (`PROXY_URL`) avant de scanner depuis un serveur
+```bash
+pnpm typecheck && pnpm lint && pnpm format:fix
+pnpm supabase:web:test           # si la base a changé
+```

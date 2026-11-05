@@ -1,5 +1,19 @@
 # Supabase Database
 
+## Prospectigo : à savoir avant toute migration
+
+- **La pré-prod et la prod partagent cette base.** Une migration poussée touche les vrais clients tout de suite :
+  elle doit fonctionner avec le code actuellement sur `main` (ajouter d'abord, retirer dans une livraison
+  ultérieure). Gabriel pousse lui-même (`! pnpm exec supabase db push`).
+- Schémas Prospectigo : `schemas/20-34-leadmaker-*.sql` (source de vérité ; carte dans
+  `docs/prospectigo/ARCHITECTURE.md` §5). `db diff` n'écrit ni les `grant`/`revoke` de fonctions ni les droits par
+  colonne : les ajouter à la main en fin de migration, puis relancer `db diff` sans `-f` (doit dire « No schema
+  changes found »). Les tâches pg_cron (ex. `lm-refill-credits`) sont aussi écrites à la main dans la migration.
+- Fonctions appelées par l'appli : `public.lm_member(account_id)` sur chaque identifiant, refus métier avec
+  `hint`. Fonctions des robots : `revoke all from public` + `grant execute to service_role`.
+- En-tête de chaque fonction : rôle, appelant (appli / robot / déclencheur), sécurité.
+- Tout correctif de sécurité ou d'argent a son test pgTAP (voir `tests/database/leadmaker-audit-2026-11.test.sql`).
+
 ## Schema Organization
 
 Schemas in `schemas/` directory with numbered prefixes for dependency ordering.

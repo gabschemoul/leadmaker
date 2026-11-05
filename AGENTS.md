@@ -1,4 +1,24 @@
-# Makerkit SaaS Starter
+# Prospectigo (projet construit sur MakerKit)
+
+**Avant tout travail, lire `docs/prospectigo/ARCHITECTURE.md`** : ce que fait l'appli, carte du dépôt, modèle
+de données, crédits, file de tâches des robots, façon de livrer. Règles d'or, en bref :
+
+1. On travaille sur la branche `staging` (staging.prospectigo.com) ; `main` (prospectigo.com) seulement quand
+   Gabriel écrit « publie ».
+2. Pré-prod et prod partagent **la même base Supabase** : toute migration doit rester compatible avec le code de
+   `main`, et c'est Gabriel qui la pousse en ligne.
+3. Jamais « scraping », « Google Maps » ni « note Google » sur le site, l'appli ou les e-mails.
+4. Robots : un changement à la fois, `workers/scripts/deploy-robots.sh`, et jamais de relance de recherches /
+   robots en prod sans « oui » explicite de Gabriel.
+5. Fonctions SQL appelées par l'appli : contrôle d'accès avec `public.lm_member(account_id)` ; refus métier avec
+   un `hint` traduit par `throwRpcError` (`apps/web/lib/server/leadmaker/rpc-errors.ts`).
+6. Parler à Gabriel en français, simplement (il n'est pas développeur).
+
+Le reste de ce fichier décrit les conventions du kit MakerKit, toujours valables.
+
+---
+
+# Makerkit SaaS Starter (conventions du kit)
 
 ## Monorepo Structure
 
@@ -11,6 +31,7 @@
 | `packages/supabase` | Supabase clients              | See `packages/supabase/AGENTS.md` |
 | `packages/next`     | Next.js utilities             | See `packages/next/AGENTS.md`     |
 | `packages/features` | Feature packages              | See `packages/features/AGENTS.md` |
+| `workers`           | Robots Python (Prospectigo)   | See `workers/AGENTS.md`           |
 
 <!-- BEGIN:nextjs-agent-rules -->
 

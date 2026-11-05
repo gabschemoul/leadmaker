@@ -45,6 +45,7 @@ export function ContactForm() {
       name: '',
       email: '',
       message: '',
+      website: '',
     },
   });
 
@@ -62,6 +63,16 @@ export function ContactForm() {
         className={'flex flex-col space-y-4'}
         onSubmit={form.handleSubmit(execute)}
       >
+        {/* Piège à robots : hors écran, ignoré par les lecteurs d'écran et le remplissage automatique */}
+        <input
+          type={'text'}
+          tabIndex={-1}
+          autoComplete={'off'}
+          aria-hidden={'true'}
+          className={'absolute -left-[9999px] h-0 w-0 opacity-0'}
+          {...form.register('website')}
+        />
+
         <FormField
           name={'name'}
           render={({ field }) => {

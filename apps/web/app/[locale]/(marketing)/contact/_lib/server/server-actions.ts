@@ -24,6 +24,11 @@ const emailFrom = z
 export const sendContactEmail = publicActionClient
   .inputSchema(ContactEmailSchema)
   .action(async ({ parsedInput: data }) => {
+    // Piège à robots rempli : on fait comme si tout s'était bien passé, sans rien envoyer
+    if (data.website) {
+      return {};
+    }
+
     const mailer = await getMailer();
 
     // Audit 5/11/2026 (B3) : champs échappés, pour ne jamais injecter de HTML (liens piégés, images

@@ -14,6 +14,7 @@ import { MobileSidebarTrigger } from '~/components/mobile-sidebar-trigger';
 import { QueryHydration } from '~/components/query-hydration';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
 
+import { NoPlanBanner } from './_components/leadmaker/no-plan-banner';
 // local imports
 import { TeamAccountLayoutMobileNavigation } from './_components/team-account-layout-mobile-navigation';
 import { TeamAccountLayoutSidebar } from './_components/team-account-layout-sidebar';
@@ -91,7 +92,15 @@ async function HydratedWorkspace({
 }: React.PropsWithChildren<{ account: string }>) {
   const data = await loadTeamWorkspace(account);
 
-  return <QueryHydration user={data.user}>{children}</QueryHydration>;
+  return (
+    <QueryHydration user={data.user}>
+      <Suspense fallback={null}>
+        <NoPlanBanner accountId={data.account.id} slug={account} />
+      </Suspense>
+
+      {children}
+    </QueryHydration>
+  );
 }
 
 async function TeamAccountHeaderNavigation({ account }: { account: string }) {

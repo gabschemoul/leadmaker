@@ -551,5 +551,10 @@
     "enabledToast": "Les recherches passent sur l'ordinateur dédié.",
     "disabledToast": "Les recherches repassent sur les serveurs.",
     "failed": "Impossible de changer l'endroit où se font les recherches."
+  },
+  "noPlan": {
+    "title": "Choisissez un forfait pour démarrer",
+    "description": "Vous pouvez préparer vos campagnes dès maintenant ; il faut un forfait pour lancer la recherche et contacter les entreprises.",
+    "button": "Voir les forfaits"
   }
 }

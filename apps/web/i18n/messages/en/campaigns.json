@@ -551,5 +551,10 @@
     "enabledToast": "Searches now run on the dedicated computer.",
     "disabledToast": "Searches are back on the servers.",
     "failed": "Could not change where the searches run."
+  },
+  "noPlan": {
+    "title": "Choose a plan to get started",
+    "description": "You can set up your campaigns right away; a plan is needed to run the search and contact businesses.",
+    "button": "See plans"
   }
 }

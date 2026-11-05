@@ -611,6 +611,58 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"lm_notification_preferences": {
+                  Row: {
+                    "disabled_groups": (string)[],"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "disabled_groups"?: (string)[],"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "disabled_groups"?: (string)[],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"lm_notifications": {
+                  Row: {
+                    "account_id": string | null,"attempts": number,"campaign_id": string | null,"claimed_at": string | null,"created_at": string,"dedupe_key": string,"error": string | null,"id": number,"kind": string,"payload": NonNullable<Json>,"sent_at": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id"?: string | null,"attempts"?: number,"campaign_id"?: string | null,"claimed_at"?: string | null,"created_at"?: string,"dedupe_key": string,"error"?: string | null,"id"?: never,"kind": string,"payload"?: NonNullable<Json>,"sent_at"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "account_id"?: string | null,"attempts"?: number,"campaign_id"?: string | null,"claimed_at"?: string | null,"created_at"?: string,"dedupe_key"?: string,"error"?: string | null,"id"?: never,"kind"?: string,"payload"?: NonNullable<Json>,"sent_at"?: string | null,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_notifications_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_notifications_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_notifications_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_notifications_campaign_id_fkey"
+      columns: ["campaign_id"]
+isOneToOne: false
+      referencedRelation: "lm_campaigns"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"lm_place_sightings": {
                   Row: {
                     "created_at": string,"google_place_id": string,"kept": boolean,"site_key": string | null,"space_id": string
@@ -1438,6 +1490,11 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"lm_claim_notifications":
+{ Args: { "p_limit"?: number }; Returns: {
+              "account_id": string,"account_slug": string,"campaign_id": string,"campaign_name": string,"created_at": string,"id": number,"kind": string,"payload": Json,"recipients": Json
+            }[]
+                           },
 "lm_claim_task":
 { Args: { "p_kinds": (Database["public"]['Enums']["lm_task_kind"])[],"p_worker_id": string }; Returns: {
               "account_id": string,
@@ -1515,6 +1572,9 @@ isOneToOne: false
 "lm_finish_emails":
 { Args: { "p_email": string,"p_prospect_id": string }; Returns: boolean
                            },
+"lm_finish_notification":
+{ Args: { "p_error"?: string,"p_id": number,"p_ok": boolean }; Returns: undefined
+                           },
 "lm_finish_prepare":
 { Args: { "p_attempt_id": string,"p_result": Json }; Returns: boolean
                            },
@@ -1546,6 +1606,9 @@ isOneToOne: false
                            },
 "lm_normalize_filters":
 { Args: { "p_filters": Json }; Returns: Json
+                           },
+"lm_notify":
+{ Args: { "p_account_id": string,"p_campaign_id": string,"p_dedupe_key": string,"p_kind": string,"p_payload": Json }; Returns: undefined
                            },
 "lm_outreach_reserved":
 { Args: { "p_account_id": string }; Returns: number

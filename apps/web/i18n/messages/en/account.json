@@ -167,5 +167,23 @@
   "setEmailSuccessMessage": "We sent you an email to confirm your email address. Please check your inbox and click on the link to confirm your email address.",
   "setEmailLoading": "Setting your email...",
   "setEmailError": "Email not set. Please try again",
-  "emailNotChanged": "Your email address has not changed"
+  "emailNotChanged": "Your email address has not changed",
+  "notifications": {
+    "title": "Email notifications",
+    "description": "Choose which emails you receive for your teams.",
+    "autopilot": {
+      "label": "Autopilot",
+      "hint": "First forms ready to review, autopilot finished."
+    },
+    "search": {
+      "label": "Search",
+      "hint": "Search finished, search stopped for lack of credits."
+    },
+    "credits": {
+      "label": "Credits",
+      "hint": "Less than 20% of your credits left."
+    },
+    "saved": "Preferences saved.",
+    "saveFailed": "Your preferences couldn't be saved. Please try again in a moment."
+  }
 }

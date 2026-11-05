@@ -167,5 +167,23 @@
   "setEmailSuccessMessage": "Nous vous avons envoyé un e-mail pour confirmer votre adresse. Veuillez consulter votre boîte de réception et cliquer sur le lien pour confirmer votre adresse e-mail.",
   "setEmailLoading": "Définition de votre adresse e-mail...",
   "setEmailError": "Adresse e-mail non définie. Veuillez réessayer",
-  "emailNotChanged": "Votre adresse e-mail n'a pas changé"
+  "emailNotChanged": "Votre adresse e-mail n'a pas changé",
+  "notifications": {
+    "title": "Notifications par e-mail",
+    "description": "Choisissez les e-mails que vous recevez pour vos équipes.",
+    "autopilot": {
+      "label": "Pilote automatique",
+      "hint": "Premiers formulaires prêts à vérifier, pilote terminé."
+    },
+    "search": {
+      "label": "Recherche",
+      "hint": "Recherche terminée, recherche arrêtée faute de crédits."
+    },
+    "credits": {
+      "label": "Crédits",
+      "hint": "Moins de 20 % de vos crédits restants."
+    },
+    "saved": "Préférences enregistrées.",
+    "saveFailed": "Les préférences n'ont pas pu être enregistrées. Réessayez dans un instant."
+  }
 }

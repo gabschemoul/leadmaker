@@ -1,0 +1,70 @@
+{
+  "hello": "Hello,",
+  "footerSettings": "You are receiving this email because you are a member of this team on {productName}. To stop receiving this type of email: {settingsUrl}",
+  "autopilotPreviewReady": {
+    "subject": "Your first forms are ready to review",
+    "heading": "Your first forms are ready",
+    "body": "The autopilot of the “{campaign}” campaign has prepared its first {count} forms. Review them: nothing is sent until you confirm.",
+    "cta": "Review the forms"
+  },
+  "autopilotDoneTarget": {
+    "subject": "“{campaign}”: {sent} businesses contacted",
+    "heading": "Target reached",
+    "body": "The autopilot of the “{campaign}” campaign is done: {sent} businesses contacted out of {target} planned.",
+    "cta": "See the campaign"
+  },
+  "autopilotDoneEmpty": {
+    "subject": "“{campaign}”: no one left to contact",
+    "heading": "No businesses left to contact",
+    "body": "The autopilot of the “{campaign}” campaign stopped after {sent} contacts: every business found has been contacted. Widen the search to find more.",
+    "cta": "See the campaign"
+  },
+  "searchDone": {
+    "subject": "Search finished: {prospects} businesses found",
+    "heading": "Search finished",
+    "body": "The search of the “{campaign}” campaign is finished: {prospects} businesses found. You can now contact them.",
+    "cta": "Contact the businesses"
+  },
+  "searchNoCredits": {
+    "subject": "Search stopped: no prospecting credits left",
+    "heading": "Your search is paused",
+    "body": "The search of the “{campaign}” campaign stopped: you have no prospecting credits left ({prospects} businesses already found). Upgrade your plan to resume right away, or wait for the renewal.",
+    "cta": "See my plan"
+  },
+  "creditsLowDiscovery": {
+    "subject": "Less than 20% of your prospecting credits left",
+    "heading": "Prospecting credits running low",
+    "body": "You have {remaining} prospecting credits left out of {quota}. Next refill: {renewal}.",
+    "cta": "See my credits"
+  },
+  "creditsLowOutreach": {
+    "subject": "Less than 20% of your contact credits left",
+    "heading": "Contact credits running low",
+    "body": "You have {remaining} contact credits left out of {quota}. Next refill: {renewal}.",
+    "cta": "See my credits"
+  },
+  "adminSignup": {
+    "subject": "New sign-up: {email}",
+    "heading": "New sign-up on {productName}",
+    "body": "{name} ({email}) just created an account.",
+    "cta": "Open the admin"
+  },
+  "adminSubscriptionNew": {
+    "subject": "New subscription: {team}",
+    "heading": "New subscription",
+    "body": "The “{team}” team ({owner}) just subscribed (status: {status}).",
+    "cta": "Open the admin"
+  },
+  "adminSubscriptionCanceled": {
+    "subject": "Cancellation: {team}",
+    "heading": "Subscription cancelled",
+    "body": "The “{team}” team ({owner}) asked to cancel its subscription. It stays active until {endsAt}.",
+    "cta": "Open the admin"
+  },
+  "adminPaymentFailed": {
+    "subject": "Payment failed: {team}",
+    "heading": "Payment failed",
+    "body": "The payment of the “{team}” team ({owner}) failed (status: {status}).",
+    "cta": "Open the admin"
+  }
+}

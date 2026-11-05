@@ -3,12 +3,15 @@ import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 
 import { PersonalAccountSettingsContainer } from '@kit/accounts/personal-account-settings';
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 import authConfig from '~/config/auth.config';
 import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 import { requireUserInServerComponent } from '~/lib/server/require-user-in-server-component';
+
+import { NotificationPreferences } from '../_components/notification-preferences';
 
 const showEmailOption =
   authConfig.providers.password ||
@@ -72,12 +75,25 @@ async function ProfileSettings({ params }: TeamProfileSettingsPageProps) {
     callback: pathsConfig.auth.callback + `?next=${profilePath}`,
   };
 
+  // Notifications par e-mail coupées par l'utilisateur (aucune ligne = tout activé)
+  const { data: preferences } = await getSupabaseServerClient()
+    .from('lm_notification_preferences')
+    .select('disabled_groups')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
   return (
-    <PersonalAccountSettingsContainer
-      userId={user.id}
-      features={features}
-      paths={paths}
-      providers={providers}
-    />
+    <div className={'flex flex-col gap-6'}>
+      <NotificationPreferences
+        disabledGroups={preferences?.disabled_groups ?? []}
+      />
+
+      <PersonalAccountSettingsContainer
+        userId={user.id}
+        features={features}
+        paths={paths}
+        providers={providers}
+      />
+    </div>
   );
 }

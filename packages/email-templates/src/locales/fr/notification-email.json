@@ -1,0 +1,70 @@
+{
+  "hello": "Bonjour,",
+  "footerSettings": "Vous recevez cet e-mail parce que vous êtes membre de cette équipe sur {productName}. Pour ne plus recevoir ce type d'e-mail : {settingsUrl}",
+  "autopilotPreviewReady": {
+    "subject": "Vos premiers formulaires sont prêts à vérifier",
+    "heading": "Vos premiers formulaires sont prêts",
+    "body": "Le pilote automatique de la campagne « {campaign} » a préparé ses {count} premiers formulaires. Vérifiez-les : rien ne part tant que vous n'avez pas confirmé.",
+    "cta": "Vérifier les formulaires"
+  },
+  "autopilotDoneTarget": {
+    "subject": "Campagne « {campaign} » : {sent} entreprises contactées",
+    "heading": "Objectif atteint",
+    "body": "Le pilote automatique de la campagne « {campaign} » a terminé : {sent} entreprises contactées sur {target} prévues.",
+    "cta": "Voir la campagne"
+  },
+  "autopilotDoneEmpty": {
+    "subject": "Campagne « {campaign} » : plus personne à contacter",
+    "heading": "Plus aucune entreprise à contacter",
+    "body": "Le pilote automatique de la campagne « {campaign} » s'est arrêté après {sent} prises de contact : toutes les entreprises trouvées ont été contactées. Élargissez la recherche pour en trouver d'autres.",
+    "cta": "Voir la campagne"
+  },
+  "searchDone": {
+    "subject": "Recherche terminée : {prospects} entreprises trouvées",
+    "heading": "Recherche terminée",
+    "body": "La recherche de la campagne « {campaign} » est terminée : {prospects} entreprises trouvées. Vous pouvez maintenant les contacter.",
+    "cta": "Contacter les entreprises"
+  },
+  "searchNoCredits": {
+    "subject": "Recherche arrêtée : plus de crédits de prospection",
+    "heading": "Votre recherche est en pause",
+    "body": "La recherche de la campagne « {campaign} » s'est arrêtée : vous n'avez plus de crédits de prospection ({prospects} entreprises déjà trouvées). Changez de forfait pour la reprendre tout de suite, ou attendez le renouvellement.",
+    "cta": "Voir mon forfait"
+  },
+  "creditsLowDiscovery": {
+    "subject": "Il vous reste moins de 20 % de vos crédits de prospection",
+    "heading": "Crédits de prospection bientôt épuisés",
+    "body": "Il vous reste {remaining} crédits de prospection sur {quota}. Prochaine recharge : {renewal}.",
+    "cta": "Voir mes crédits"
+  },
+  "creditsLowOutreach": {
+    "subject": "Il vous reste moins de 20 % de vos crédits de prise de contact",
+    "heading": "Crédits de prise de contact bientôt épuisés",
+    "body": "Il vous reste {remaining} crédits de prise de contact sur {quota}. Prochaine recharge : {renewal}.",
+    "cta": "Voir mes crédits"
+  },
+  "adminSignup": {
+    "subject": "Nouvel inscrit : {email}",
+    "heading": "Nouvel inscrit sur {productName}",
+    "body": "{name} ({email}) vient de créer un compte.",
+    "cta": "Ouvrir l'administration"
+  },
+  "adminSubscriptionNew": {
+    "subject": "Nouvel abonnement : {team}",
+    "heading": "Nouvel abonnement",
+    "body": "L'équipe « {team} » ({owner}) vient de s'abonner (statut : {status}).",
+    "cta": "Ouvrir l'administration"
+  },
+  "adminSubscriptionCanceled": {
+    "subject": "Résiliation : {team}",
+    "heading": "Abonnement résilié",
+    "body": "L'équipe « {team} » ({owner}) a demandé la résiliation de son abonnement. Il reste actif jusqu'au {endsAt}.",
+    "cta": "Ouvrir l'administration"
+  },
+  "adminPaymentFailed": {
+    "subject": "Paiement échoué : {team}",
+    "heading": "Paiement échoué",
+    "body": "Le paiement de l'équipe « {team} » ({owner}) a échoué (statut : {status}).",
+    "cta": "Ouvrir l'administration"
+  }
+}

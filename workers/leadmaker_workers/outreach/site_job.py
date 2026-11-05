@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
 from ..discovery.scraper import USER_AGENT, proxy_from_env
+from . import netguard
 from .formfill import (CONTACT_PATHS, Sender, SiteDown, _check_alive, _contact_links, _dismiss_cookies, _same_site, best_email,
                        detect_protection, fill_form, harvest_emails, legal_links, open_contact_form, own_email, submit)
 
@@ -62,8 +63,7 @@ def prepare(job: dict) -> dict:
                                   viewport={"width": 1280, "height": 900},
                                   ignore_https_errors=True)  # certificats expirés : on visite quand même (choix de Gabriel)
         ctx.set_default_timeout(15000)
-        ctx.route("**/*", lambda route: route.abort() if route.request.resource_type in BLOCKED_RESOURCES
-                  else route.continue_())
+        netguard.install(ctx, BLOCKED_RESOURCES)
         page = ctx.new_page()
         _arm_watchdog()
         try:
@@ -127,6 +127,7 @@ def send(job: dict) -> dict:
                                   viewport={"width": 1280, "height": 900},
                                   ignore_https_errors=True)  # certificats expirés : on visite quand même (choix de Gabriel)
         ctx.set_default_timeout(15000)
+        netguard.install(ctx)
         page = ctx.new_page()
         try:
             frame = open_contact_form(page, job.get("form_url") or job["site"])
@@ -181,8 +182,7 @@ def find_emails(job: dict) -> dict:
         ctx = browser.new_context(user_agent=USER_AGENT, locale=job.get("locale", "en-US"),
                                   viewport={"width": 1280, "height": 900}, ignore_https_errors=True)
         ctx.set_default_timeout(15000)
-        ctx.route("**/*", lambda route: route.abort() if route.request.resource_type in ("image", "media", "font")
-                  else route.continue_())
+        netguard.install(ctx, ("image", "media", "font"))
         page = ctx.new_page()
         _arm_watchdog()
         try:
@@ -237,6 +237,15 @@ def main() -> None:
     job = json.loads(sys.stdin.read())
     if job.get("site") and "://" not in job["site"]:
         job["site"] = "http://" + job["site"]
+    # Garde réseau (audit C1) : jamais d'adresse interne ni de protocole autre que http(s)
+    if not netguard.url_allowed(job.get("site") or "") or (job.get("form_url") and not netguard.url_allowed(job["form_url"])):
+        refused = "adresse refusée : ce n'est pas un site web public"
+        result = {"send": {"status": "failed", "submitted": False, "filled": {}, "missing": [], "detail": refused},
+                  "emails": {"found_email": None, "emails": [], "visited": [], "detail": refused}}.get(
+            job.get("mode"), {"status": "unreachable", "filled": {}, "missing": [], "detail": refused})
+        sys.stdout.write("\n" + json.dumps(result, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+        return
     if job.get("mode") == "send":
         result = send(job)
     elif job.get("mode") == "prepare":

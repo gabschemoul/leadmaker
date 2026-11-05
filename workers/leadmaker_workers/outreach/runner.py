@@ -173,12 +173,14 @@ class PrepareRunner:
 
     def run(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
         attempt_id = task.payload["attempt_id"]
+        # Nouvel essai après un plantage du robot (navigateur tué, serveur redémarré) : la tentative est restée
+        # « preparing » ; on la reprend au lieu de la laisser bloquée pour toujours (audit 5/11/2026, A17).
         row = conn.execute(
             """update public.lm_attempts a set status = 'preparing'
-                where a.id = %s and a.status = 'pending'
+                where a.id = %s and (a.status = 'pending' or (a.status = 'preparing' and %s > 1))
             returning a.id, a.account_id, a.space_id, a.campaign_id, a.prospect_id, a.extra, a.template_name,
                       to_jsonb(a) ->> 'autopilot_id' as autopilot_id""",
-            (attempt_id,),
+            (attempt_id, task.attempts),
         ).fetchone()
         if not row:
             return {"skipped": "tentative plus en attente"}

@@ -8,6 +8,8 @@ export SUPABASE_URL=${SUPABASE_URL:-http://127.0.0.1:54321}
 # Clé de service du Supabase LOCAL (clé de démonstration publique de la CLI, sans valeur hors de ce Mac)
 export SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU}
 export WORKER_IDLE_SECONDS=2
+# Faux sites de test sur *.localhost : la garde réseau des robots (outreach/netguard.py) les laisse passer EN LOCAL
+export NETGUARD_ALLOW_PRIVATE=1
 for i in 1 2; do
   WORKER_KINDS=estimate WORKER_ID="estimate-$i" .venv/bin/python -m leadmaker_workers.main >> logs/worker-estimate-$i.log 2>&1 &
 done

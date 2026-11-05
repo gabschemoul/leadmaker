@@ -5,3 +5,4 @@ scripts/.cache/
 logs/
 .send-server-ip
 .stripe-prices.env
+data/test_contact_received.json

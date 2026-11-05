@@ -1,13 +1,15 @@
 """Remet à zéro la recherche Google Maps d'une campagne, pour la relancer depuis le début.
 
 Usage (depuis la racine du dépôt, base en ligne via workers/.env.cloud) :
-    workers/.venv/bin/python -I workers/scripts/reset_campaign_search.py "Restaurant à Lyon" namma-booster
+    workers/.venv/bin/python -I workers/scripts/reset_campaign_search.py "Nom de la campagne" slug-de-l-equipe
 
 - efface les recherches déjà faites de la campagne et remet ses activités au début (non abandonnées) ;
 - « oublie » les fiches Google vues pendant ces recherches et écartées (sinon le robot ne les rouvre pas) ;
   les fiches devenues prospects ne sont pas touchées ;
 - met la campagne en pause : cliquer ensuite sur « Reprendre » dans l'app.
 Les prospects déjà trouvés et les crédits ne bougent pas.
+
+⚠ Agit sur la PROD : à lancer seulement sur demande explicite de Gabriel.
 """
 from __future__ import annotations
 
@@ -54,20 +56,18 @@ def main() -> None:
                                        where p.space_id = ps.space_id and p.site_key = ps.site_key)""",
                 (space_id, window[0], window[1]),
             ).rowcount
+        # Pause par la fonction officielle : recherches en file annulées ET places (in_flight) libérées
+        if status == "running":
+            conn.execute("select public.lm_pause_campaign(%s, null)", (campaign_id,))
         searches = conn.execute("delete from public.lm_searches where campaign_id = %s", (campaign_id,)).rowcount
         conn.execute(
             """update public.lm_campaign_categories
-                  set next_zone_idx = 0, in_flight = 0, searches = 0, cards = 0, cards_new = 0, kept = 0,
-                      abandoned = false
+                  set next_zone_idx = 0, searches = 0, cards = 0, cards_new = 0, kept = 0, abandoned = false
                 where campaign_id = %s""",
             (campaign_id,),
         )
-        conn.execute(
-            "update public.lm_tasks set status = 'cancelled' where kind = 'discovery' and status = 'queued' "
-            "and payload ->> 'campaign_id' = %s",
-            (str(campaign_id),),
-        )
-        conn.execute("update public.lm_campaigns set status = 'paused' where id = %s", (campaign_id,))
+        # Les recherches encore en cours finissent ; les places repartent des vraies tâches (règle in_flight)
+        conn.execute("select public.lm_recount_in_flight(%s)", (campaign_id,))
         conn.commit()
     print(f"Campagne « {name} » remise à zéro : {searches} recherches effacées, {forgotten} fiches oubliées, "
           f"statut {status} → en pause. Cliquez sur « Reprendre » dans l'app.")

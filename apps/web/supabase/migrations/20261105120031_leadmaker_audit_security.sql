@@ -1,10 +1,16 @@
 -- Les robots tournent pendant la migration : on prend d'un coup, dans un ordre fixe, tous les verrous des tables
 -- modifiées, pour éviter l'interblocage rencontré au premier essai (5/11/2026). Les robots attendent quelques
 -- secondes ; au-delà de 30 s d'attente, la migration échoue proprement et peut être relancée.
-set local lock_timeout = '30s';
+-- (dans un bloc DO : la CLI exécute la migration comme une seule transaction implicite, où un LOCK TABLE
+-- isolé est refusé ; les verrous pris ici tiennent jusqu'à la fin de la migration)
+do $$
+begin
+  perform set_config('lock_timeout', '30s', true);
 
-lock table public.lm_account_credits, public.lm_spaces, public.lm_campaigns, public.lm_prospects,
-           public.lm_attempts, public.lm_suppressions in access exclusive mode;
+  lock table public.lm_account_credits, public.lm_spaces, public.lm_campaigns, public.lm_prospects,
+             public.lm_attempts, public.lm_suppressions in access exclusive mode;
+end;
+$$;
 
 drop policy "lm_prospects_insert" on "public"."lm_prospects";
 

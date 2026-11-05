@@ -123,5 +123,38 @@
       "heading": "Votre paiement a échoué",
       "description": "Votre paiement a échoué. Veuillez mettre à jour votre moyen de paiement."
     }
+  },
+  "plans": {
+    "badgePopular": "Populaire",
+    "growth": {
+      "description": "Pour une PME qui prospecte pour elle-même",
+      "features": {
+        "discovery": "30 000 crédits de prospection par mois",
+        "outreach": "15 000 prises de contact par mois",
+        "seats": "1 siège",
+        "campaigns": "1 campagne active",
+        "support": "Support et onboarding"
+      }
+    },
+    "business": {
+      "description": "L'offre principale pour les agences",
+      "features": {
+        "discovery": "80 000 crédits de prospection par mois",
+        "outreach": "40 000 prises de contact par mois",
+        "seats": "3 sièges",
+        "campaigns": "3 campagnes actives",
+        "support": "Support et onboarding"
+      }
+    },
+    "scale": {
+      "description": "Pour les agences et réseaux à fort volume",
+      "features": {
+        "discovery": "200 000 crédits de prospection par mois",
+        "outreach": "100 000 prises de contact par mois",
+        "seats": "6 sièges",
+        "campaigns": "10 campagnes actives",
+        "support": "Support prioritaire et onboarding"
+      }
+    }
   }
 }

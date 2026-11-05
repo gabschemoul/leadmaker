@@ -132,6 +132,14 @@ export async function createStripeCheckout(
     ...customerData,
     ...urls,
     ...paymentCollectionMethod,
+    // Prospectigo (audit 5/11/2026, E21) : clients professionnels → la facture porte le nom de la société,
+    // son adresse et son numéro de TVA (autoliquidation en Europe). Avec un client Stripe existant, Stripe
+    // exige de pouvoir mettre à jour son nom et son adresse depuis la page de paiement.
+    tax_id_collection: { enabled: true },
+    billing_address_collection: 'required',
+    ...(customer
+      ? { customer_update: { name: 'auto' as const, address: 'auto' as const } }
+      : {}),
   });
 }
 

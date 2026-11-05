@@ -4,6 +4,7 @@
  * mensuels ou annuels (annuel = 10 mois : deux mois offerts).
  * Volumes décidés le 2/11/2026 : 30 000 / 80 000 / 200 000 crédits de prospection
  * et 15 000 / 40 000 / 100 000 prises de contact par mois. Aucun plafond par jour.
+ * Les textes (description, avantages, badge) sont des clés de traduction : billing.json › plans (FR/EN).
  * Les identifiants de prix Stripe sont lus dans l'environnement : tant qu'ils ne sont
  * pas renseignés, des valeurs de substitution permettent de faire tourner l'application.
  */
@@ -22,11 +23,11 @@ export default createBillingSchema({
     {
       id: 'growth',
       name: 'Growth',
-      description: 'Pour une PME qui prospecte pour elle-même',
+      description: 'billing.plans.growth.description',
       currency: 'USD',
       plans: [
         {
-          name: 'Growth mensuel',
+          name: 'Growth',
           id: 'growth-monthly',
           paymentType: 'recurring',
           interval: 'month',
@@ -43,7 +44,7 @@ export default createBillingSchema({
           ],
         },
         {
-          name: 'Growth annuel',
+          name: 'Growth',
           id: 'growth-yearly',
           paymentType: 'recurring',
           interval: 'year',
@@ -61,23 +62,23 @@ export default createBillingSchema({
         },
       ],
       features: [
-        '30 000 crédits de prospection par mois',
-        '15 000 prises de contact par mois',
-        '1 siège',
-        '1 campagne active',
-        'Support et onboarding',
+        'billing.plans.growth.features.discovery',
+        'billing.plans.growth.features.outreach',
+        'billing.plans.growth.features.seats',
+        'billing.plans.growth.features.campaigns',
+        'billing.plans.growth.features.support',
       ],
     },
     {
       id: 'business',
       name: 'Business',
-      badge: 'Populaire',
+      badge: 'billing.plans.badgePopular',
       highlighted: true,
-      description: "L'offre principale pour les agences",
+      description: 'billing.plans.business.description',
       currency: 'USD',
       plans: [
         {
-          name: 'Business mensuel',
+          name: 'Business',
           id: 'business-monthly',
           paymentType: 'recurring',
           interval: 'month',
@@ -94,7 +95,7 @@ export default createBillingSchema({
           ],
         },
         {
-          name: 'Business annuel',
+          name: 'Business',
           id: 'business-yearly',
           paymentType: 'recurring',
           interval: 'year',
@@ -112,21 +113,21 @@ export default createBillingSchema({
         },
       ],
       features: [
-        '80 000 crédits de prospection par mois',
-        '40 000 prises de contact par mois',
-        '3 sièges',
-        '3 campagnes actives',
-        'Support et onboarding',
+        'billing.plans.business.features.discovery',
+        'billing.plans.business.features.outreach',
+        'billing.plans.business.features.seats',
+        'billing.plans.business.features.campaigns',
+        'billing.plans.business.features.support',
       ],
     },
     {
       id: 'scale',
       name: 'Scale',
-      description: 'Pour les agences et réseaux à fort volume',
+      description: 'billing.plans.scale.description',
       currency: 'USD',
       plans: [
         {
-          name: 'Scale mensuel',
+          name: 'Scale',
           id: 'scale-monthly',
           paymentType: 'recurring',
           interval: 'month',
@@ -143,7 +144,7 @@ export default createBillingSchema({
           ],
         },
         {
-          name: 'Scale annuel',
+          name: 'Scale',
           id: 'scale-yearly',
           paymentType: 'recurring',
           interval: 'year',
@@ -161,11 +162,11 @@ export default createBillingSchema({
         },
       ],
       features: [
-        '200 000 crédits de prospection par mois',
-        '100 000 prises de contact par mois',
-        '6 sièges',
-        '10 campagnes actives',
-        'Support prioritaire et onboarding',
+        'billing.plans.scale.features.discovery',
+        'billing.plans.scale.features.outreach',
+        'billing.plans.scale.features.seats',
+        'billing.plans.scale.features.campaigns',
+        'billing.plans.scale.features.support',
       ],
     },
   ],

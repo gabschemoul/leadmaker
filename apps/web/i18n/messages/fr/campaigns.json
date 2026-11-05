@@ -3,7 +3,7 @@
     "draft": "Brouillon",
     "running": "En cours",
     "paused": "En pause",
-    "completed": "Terminée",
+    "completed": "Recherche terminée",
     "archived": "Archivée"
   },
   "folders": {
@@ -421,6 +421,14 @@
     "autopilotPreview": {
       "text": "Vos premiers formulaires sont prêts : vérifiez-les avant l'envoi",
       "button": "Vérifier"
+    },
+    "noCredits": {
+      "text": "Recherche arrêtée : plus de crédits de prospection · {count, plural, one {# prospect} other {# prospects}}",
+      "button": "Voir mon forfait"
+    },
+    "contactMore": {
+      "text": "{sent, plural, one {# envoyé} other {# envoyés}} · {remaining, plural, one {# prospect pas encore contacté} other {# prospects pas encore contactés}}",
+      "button": "Contacter les suivants"
     }
   },
   "autopilot": {

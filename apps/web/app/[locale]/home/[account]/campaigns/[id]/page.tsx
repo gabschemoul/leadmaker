@@ -145,6 +145,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
 
   const facts: CampaignStepFacts = {
     status: live.status,
+    pausedReason: live.pausedReason,
     prospects: live.progress.prospects,
     messagesCount,
     hasSender: sender !== null,

@@ -3,7 +3,7 @@
     "draft": "Draft",
     "running": "Running",
     "paused": "Paused",
-    "completed": "Completed",
+    "completed": "Search finished",
     "archived": "Archived"
   },
   "folders": {
@@ -421,6 +421,14 @@
     "autopilotPreview": {
       "text": "Your first forms are ready: check them before sending",
       "button": "Check"
+    },
+    "noCredits": {
+      "text": "Search stopped: no prospecting credits left · {count, plural, one {# prospect} other {# prospects}}",
+      "button": "See my plan"
+    },
+    "contactMore": {
+      "text": "{sent, plural, one {# sent} other {# sent}} · {remaining, plural, one {# prospect not contacted yet} other {# prospects not contacted yet}}",
+      "button": "Contact the next ones"
     }
   },
   "autopilot": {

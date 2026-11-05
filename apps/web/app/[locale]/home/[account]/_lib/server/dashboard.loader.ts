@@ -36,7 +36,7 @@ export async function loadDashboard(client: Client, accountId: string) {
       client
         .from('lm_campaigns')
         .select(
-          'id, name, status, space_id, templates, created_at, prospects:lm_prospects(count)',
+          'id, name, status, space_id, templates, filters, created_at, prospects:lm_prospects(count)',
         )
         .eq('account_id', accountId)
         .neq('status', 'archived')
@@ -122,6 +122,7 @@ export async function loadDashboard(client: Client, accountId: string) {
       hasSender: spacesWithSender.has(campaign.space_id),
       attempts: countsByCampaign.get(campaign.id) ?? emptyCounts(),
       autopilot: autopilotByCampaign.get(campaign.id) ?? null,
+      pausedReason: pausedReasonOf(campaign.filters),
     };
 
     return { id: campaign.id, name: campaign.name, facts };
@@ -145,3 +146,13 @@ export async function loadDashboard(client: Client, accountId: string) {
 }
 
 export type DashboardData = Awaited<ReturnType<typeof loadDashboard>>;
+
+/** Raison de la pause rangée dans les filtres par lm_pause_campaign (ex. `no_credits`). */
+function pausedReasonOf(filters: unknown) {
+  const reason =
+    filters && typeof filters === 'object'
+      ? (filters as Record<string, unknown>).paused_reason
+      : null;
+
+  return typeof reason === 'string' ? reason : null;
+}

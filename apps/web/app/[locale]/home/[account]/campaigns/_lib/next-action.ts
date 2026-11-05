@@ -27,6 +27,16 @@ export function nextAction(facts: CampaignStepFacts): NextAction {
     return { kind: 'todo', key: 'launch', values: {}, step: 'trouver' };
   }
 
+  // Audit E13 : une recherche arrêtée faute de crédits n'est pas une pause comme une autre
+  if (facts.status === 'paused' && facts.pausedReason === 'no_credits') {
+    return {
+      kind: 'todo',
+      key: 'noCredits',
+      values: { count: facts.prospects },
+      step: 'trouver',
+    };
+  }
+
   if (!facts.hasSender) {
     return { kind: 'todo', key: 'sender', values: {}, step: 'rediger' };
   }
@@ -132,6 +142,18 @@ export function nextAction(facts: CampaignStepFacts): NextAction {
       kind: 'todo',
       key: 'prepare',
       values: { count: facts.prospects },
+      step: 'contacter',
+    };
+  }
+
+  // Audit E13 : « Terminée » seulement quand il ne reste plus personne à contacter
+  const remaining = Math.max(0, facts.prospects - total);
+
+  if (attempts.sent > 0 && remaining > 0) {
+    return {
+      kind: 'todo',
+      key: 'contactMore',
+      values: { sent: attempts.sent, remaining },
       step: 'contacter',
     };
   }

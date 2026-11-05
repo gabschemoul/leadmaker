@@ -33,6 +33,8 @@ export interface CampaignStepFacts {
     sent: number;
     target: number;
   } | null;
+  /** Raison de la pause (`filters.paused_reason`, ex. `no_credits`), si la campagne est en pause */
+  pausedReason?: string | null;
 }
 
 export function isCampaignStep(value: unknown): value is CampaignStep {

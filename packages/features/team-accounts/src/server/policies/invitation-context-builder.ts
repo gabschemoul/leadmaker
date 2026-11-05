@@ -48,9 +48,10 @@ class InvitationContextBuilder {
     accountId: string,
   ): Promise<FeaturePolicyInvitationContext> {
     // Fetch subscription and member count in parallel
-    const [subscription, memberCount] = await Promise.all([
+    const [subscription, memberCount, seatsAvailable] = await Promise.all([
       this.getSubscription(accountId),
       this.getMemberCount(accountId),
+      this.getSeatsAvailable(accountId),
     ]);
 
     return {
@@ -67,6 +68,7 @@ class InvitationContextBuilder {
       accountId,
       subscription,
       currentMemberCount: memberCount,
+      seatsAvailable,
       invitations: params.invitations,
       invitingUser: {
         id: user.id,
@@ -151,6 +153,15 @@ class InvitationContextBuilder {
    * @param accountId - The ID of the account to get the member count for
    * @returns
    */
+  /** Prospectigo : sièges libres selon le forfait (null = illimité ou inconnu). */
+  private async getSeatsAvailable(accountId: string) {
+    const { data, error } = await this.client.rpc('lm_seats_available', {
+      p_account_id: accountId,
+    });
+
+    return error ? null : (data ?? null);
+  }
+
   private async getMemberCount(accountId: string) {
     const { count } = await this.client
       .from('accounts_memberships')

@@ -402,6 +402,38 @@ revoke all on function public.lm_seat_limit(uuid) from public;
 
 grant execute on function public.lm_seat_limit(uuid) to service_role;
 
+-- Sièges encore libres pour inviter (audit E15) : limite du forfait − membres − invitations en attente.
+-- Appelant : appli (fenêtre « Inviter des membres », règle d'invitation prospectigo-seat-limit), membres seulement.
+-- null = pas de limite.
+create or replace function public.lm_seats_available(p_account_id uuid) returns integer
+set search_path = ''
+language plpgsql
+stable
+security definer
+as $$
+declare
+  v_limit integer;
+begin
+  if not public.lm_member(p_account_id) then
+    raise exception 'account not found' using errcode = 'P0002';
+  end if;
+
+  v_limit := public.lm_seat_limit(p_account_id);
+
+  if v_limit >= 2147483647 then
+    return null;
+  end if;
+
+  return greatest(0, v_limit
+    - (select count(*) from public.accounts_memberships m where m.account_id = p_account_id)::integer
+    - (select count(*) from public.invitations i where i.account_id = p_account_id and i.expires_at > now())::integer);
+end;
+$$;
+
+revoke all on function public.lm_seats_available(uuid) from public;
+
+grant execute on function public.lm_seats_available(uuid) to authenticated, service_role;
+
 create or replace function public.lm_enforce_seat_quota() returns trigger
 set search_path = ''
 language plpgsql

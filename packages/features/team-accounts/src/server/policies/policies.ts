@@ -68,3 +68,31 @@ export const paddleBillingInvitationsPolicy =
 // register policies below to apply them
 //
 //
+
+/**
+ * Prospectigo (audit 5/11/2026, E15) : on ne peut pas inviter plus de personnes que de sièges libres du
+ * forfait (Growth 1, Business 3, Scale 6). Sans cette règle, l'invitation partait et l'invité butait sur une
+ * erreur au moment d'accepter (déclencheur lm_enforce_seat_quota).
+ */
+export const prospectigoSeatLimitPolicy =
+  definePolicy<FeaturePolicyInvitationContext>({
+    id: 'prospectigo-seat-limit',
+    stages: ['preliminary', 'submission'],
+    evaluate: async ({ seatsAvailable, invitations }) => {
+      if (seatsAvailable === null) {
+        return allow();
+      }
+
+      if (seatsAvailable <= 0 || invitations.length > seatsAvailable) {
+        return deny({
+          code: 'SEAT_LIMIT',
+          message: 'teams.policyErrors.seatLimit',
+          remediation: 'teams.policyRemediation.seatLimit',
+        });
+      }
+
+      return allow();
+    },
+  });
+
+invitationPolicyRegistry.registerPolicy(prospectigoSeatLimitPolicy);

@@ -186,11 +186,13 @@
   "invitationsBlockedDefault": "Invitations are currently not allowed due to policy restrictions.",
   "policyErrors": {
     "subscriptionRequired": "An active subscription is required to invite team members.",
-    "paddleTrialRestriction": "Cannot invite members during trial period with per-seat billing on Paddle."
+    "paddleTrialRestriction": "Cannot invite members during trial period with per-seat billing on Paddle.",
+    "seatLimit": "Your plan has no free seat left for a new member (pending invitations count). Upgrade your plan (Billing menu) or remove a pending invitation."
   },
   "policyRemediation": {
     "subscriptionRequired": "Please upgrade your plan or activate your subscription",
-    "paddleTrialRestriction": "Wait until trial period ends or upgrade to full plan"
+    "paddleTrialRestriction": "Wait until trial period ends or upgrade to full plan",
+    "seatLimit": "Upgrade your plan (Billing menu) or remove a pending invitation."
   },
   "deleteInvitationErrorTitle": "Invitation not deleted",
   "deleteInvitationErrorMessage": "The invitation couldn't be deleted. Please try again in a moment."

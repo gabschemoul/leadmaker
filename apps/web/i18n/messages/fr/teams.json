@@ -186,11 +186,13 @@
   "invitationsBlockedDefault": "Les invitations ne sont pas autorisées actuellement en raison de restrictions de politique.",
   "policyErrors": {
     "subscriptionRequired": "Un abonnement actif est requis pour inviter des membres dans l'équipe.",
-    "paddleTrialRestriction": "Impossible d'inviter des membres pendant la période d'essai avec une facturation par siège via Paddle."
+    "paddleTrialRestriction": "Impossible d'inviter des membres pendant la période d'essai avec une facturation par siège via Paddle.",
+    "seatLimit": "Votre forfait n'a plus de siège libre pour un nouveau membre (les invitations en attente comptent). Passez à un forfait supérieur (menu Facturation) ou retirez une invitation en attente."
   },
   "policyRemediation": {
     "subscriptionRequired": "Veuillez passer à une offre supérieure ou activer votre abonnement",
-    "paddleTrialRestriction": "Attendez la fin de la période d'essai ou passez à l'offre complète"
+    "paddleTrialRestriction": "Attendez la fin de la période d'essai ou passez à l'offre complète",
+    "seatLimit": "Passez à un forfait supérieur (menu Facturation) ou retirez une invitation en attente."
   },
   "deleteInvitationErrorTitle": "Invitation non supprimée",
   "deleteInvitationErrorMessage": "L'invitation n'a pas pu être supprimée. Réessayez dans un instant."

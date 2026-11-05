@@ -1614,6 +1614,9 @@ isOneToOne: false
 "lm_seat_limit":
 { Args: { "p_account_id": string }; Returns: number
                            },
+"lm_seats_available":
+{ Args: { "p_account_id": string }; Returns: number
+                           },
 "lm_sends_today":
 { Args: { "p_campaign_id": string }; Returns: number
                            },

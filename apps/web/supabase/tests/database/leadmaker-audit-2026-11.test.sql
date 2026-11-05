@@ -208,6 +208,19 @@ select throws_ok($$ select public.lm_start_campaign('a0000000-0000-4000-8000-000
 select is(public.lm_set_campaign_archived('a0000000-0000-4000-8000-00000000a0a1', false), 'paused',
   'E18 : désarchivée, elle revient en pause');
 
+-- ── E15 : sièges libres pour inviter ────────────────────────────────────────────────────────────────────
+select makerkit.authenticate_as('au_a');
+select is(public.lm_seats_available((select acc_a from t_au)),
+  (select seats from public.lm_plans where id = 'business') - 1, 'E15 : sièges libres = forfait − membres');
+set local role postgres;
+insert into public.invitations (email, account_id, invited_by, role, invite_token)
+select 'new@audit.test', acc_a, tests.get_supabase_uid('au_a'), 'member', 'audit-invite-token' from t_au;
+select makerkit.authenticate_as('au_a');
+select is(public.lm_seats_available((select acc_a from t_au)),
+  (select seats from public.lm_plans where id = 'business') - 2, 'E15 : une invitation en attente occupe un siège');
+select throws_ok($$ select public.lm_seats_available((select acc_b from t_au)) $$,
+  'P0002', null, 'E15 : sièges d''une autre organisation illisibles');
+
 select * from finish();
 
 rollback;

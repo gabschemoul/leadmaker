@@ -32,6 +32,12 @@ export interface FeaturePolicyInvitationContext extends PolicyContext {
   /** Current number of members in the account */
   currentMemberCount: number;
 
+  /**
+   * Prospectigo : sièges encore libres (forfait − membres − invitations en attente), null = illimité.
+   * Lu par lm_seats_available ; utilisé par la règle prospectigo-seat-limit.
+   */
+  seatsAvailable: number | null;
+
   /** The invitations being attempted */
   invitations: Array<{
     email: string;

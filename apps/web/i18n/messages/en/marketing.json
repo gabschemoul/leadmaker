@@ -322,7 +322,7 @@
       "title": "Personalized messages, sent automatically",
       "text": "Create your sender, write your messages, choose when they go out. Prospectigo contacts each business for you, at scale.",
       "sender": "<b>Sender</b> in your name, or one per client",
-      "ab": "<b>A/B testing</b>: several versions of a message, and you see which one wins",
+      "ab": "<b>A/B testing</b>: several versions of a message, sent in turn",
       "schedule": "<b>Scheduling</b>: days, hours, volume per day",
       "cta": "Book a demo",
       "ui": {
@@ -345,9 +345,9 @@
       "senders": "Senders",
       "sendersText": "Your details on every message. A different sender per campaign if you prospect for several clients.",
       "ab": "A/B testing",
-      "abText": "Several versions of the same message, sent in turn, so you keep the one that works best.",
+      "abText": "Several versions of the same message, sent in turn in equal shares.",
       "results": "Results per message",
-      "resultsText": "How many messages sent, how many replies, for each version and each campaign.",
+      "resultsText": "How many messages sent, for each version and each campaign.",
       "bulk": "Automated bulk sending",
       "bulkText": "Choose your days, hours and volume: Prospectigo sends, you get the replies."
     },

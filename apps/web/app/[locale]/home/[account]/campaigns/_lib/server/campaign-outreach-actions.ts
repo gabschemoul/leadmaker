@@ -22,7 +22,10 @@ import {
   CampaignIdSchema,
   CampaignSenderSchema,
 } from '../schema/campaign.schema';
-import { SaveCampaignTemplatesSchema } from '../schema/templates.schema';
+import {
+  CampaignSendingSchema,
+  SaveCampaignTemplatesSchema,
+} from '../schema/templates.schema';
 import { isPowerUser } from './power-user';
 
 /**
@@ -179,4 +182,42 @@ export const prepareCampaignAction = authActionClient
     revalidatePath('/home/[account]/forms', 'page');
 
     return { queued: data?.[0]?.queued ?? 0, skipped: data?.[0]?.skipped ?? 0 };
+  });
+
+/**
+ * Réglages d'envoi du mode avancé : nombre maximal d'envois par jour et validation automatique des formulaires
+ * sans alerte (le pilote automatique a son propre rythme). Le déclencheur SQL refuse la validation automatique
+ * sans forfait (hint « plan »).
+ */
+export const saveCampaignSendingAction = authActionClient
+  .inputSchema(CampaignSendingSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { data, error } = await client
+      .from('lm_campaigns')
+      .update({
+        daily_limit: parsedInput.dailyLimit,
+        auto_validation: parsedInput.autoValidation,
+      })
+      .eq('id', parsedInput.campaignId)
+      .select('id');
+
+    if (error) {
+      await throwRpcError({
+        scope: 'campaigns.sending',
+        error,
+        hints: TEMPLATES_ERRORS,
+        fallback: 'outreach.messages.saveFailed',
+        context: { campaignId: parsedInput.campaignId, userId: ctx.user.id },
+      });
+    }
+
+    if (!data?.length) {
+      throw new Error('outreach.messages.campaignNotFound');
+    }
+
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    return { success: true };
   });

@@ -327,7 +327,7 @@
       "title": "Des messages personnalisés, envoyés en automatique",
       "text": "Créez votre expéditeur, écrivez vos messages, choisissez quand ils partent. Prospectigo contacte chaque entreprise à votre place, en masse.",
       "sender": "<b>Expéditeur</b> à votre nom, ou un par client",
-      "ab": "<b>A/B testing</b> : plusieurs versions d'un message, et la gagnante se voit",
+      "ab": "<b>A/B testing</b> : plusieurs versions d'un message, envoyées à tour de rôle",
       "schedule": "<b>Planification</b> des envois : jours, horaires, volume par jour",
       "cta": "Réserver une démo",
       "ui": {
@@ -350,9 +350,9 @@
       "senders": "Expéditeurs",
       "sendersText": "Vos coordonnées sur chaque message. Un expéditeur différent par campagne si vous prospectez pour plusieurs clients.",
       "ab": "A/B testing",
-      "abText": "Plusieurs versions du même message, envoyées en alternance, pour garder celle qui fonctionne le mieux.",
+      "abText": "Plusieurs versions du même message, envoyées à tour de rôle à parts égales.",
       "results": "Résultats par message",
-      "resultsText": "Combien de messages envoyés, combien de réponses, pour chaque version et chaque campagne.",
+      "resultsText": "Combien de messages envoyés, pour chaque version et chaque campagne.",
       "bulk": "Envoi en masse automatisé",
       "bulkText": "Choisissez vos jours, vos horaires et votre volume : Prospectigo envoie, vous recevez les réponses."
     },

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getFormatter, getTranslations } from 'next-intl/server';
 
+import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { Alert, AlertDescription } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
@@ -26,6 +27,7 @@ import type { AutopilotSummary } from '~/lib/leadmaker/autopilot-query';
 
 import { attemptsTotal } from '../../_lib/steps';
 import { CampaignFormsPanel } from './campaign-forms-panel';
+import { CampaignSendingSettings } from './campaign-sending-settings';
 import { type AutopilotMessage, ContactAutopilot } from './contact-autopilot';
 import { PrepareCampaignButton } from './prepare-campaign-button';
 
@@ -166,6 +168,11 @@ async function AdvancedContact(
   const canPrepare =
     props.prospects > 0 && props.messagesCount > 0 && props.hasSender;
 
+  const { data: autoValidationAllowed } = await getSupabaseServerClient().rpc(
+    'lm_auto_validation_allowed',
+    { p_account_id: props.accountId },
+  );
+
   return (
     <>
       <div className={'grid grid-cols-1 gap-3 md:grid-cols-3'}>
@@ -251,15 +258,12 @@ async function AdvancedContact(
               : t('sendAuto', { limit: props.dailyLimit })}
           </p>
 
-          <Button
-            variant={'outline'}
-            nativeButton={false}
-            className={'mt-auto'}
-            data-test={'contact-send-settings'}
-            render={<Link href={props.writeHref} />}
-          >
-            {t('sendSettings')}
-          </Button>
+          <CampaignSendingSettings
+            campaignId={props.campaignId}
+            dailyLimit={props.dailyLimit}
+            autoValidation={props.autoValidation}
+            autoValidationAllowed={Boolean(autoValidationAllowed)}
+          />
         </StepCard>
       </div>
 

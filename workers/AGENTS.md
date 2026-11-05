@@ -22,4 +22,4 @@ opérationnel : `workers/README.md`.
 ## Tester en local
 
 `./run-local.sh` (base Supabase locale, faux site de formulaire sur http://formulaire-test.localhost:8089/).
-`scripts/selftest.py` est le test de fumée lancé par `deploy-robots.sh` avant chaque bascule.
+`leadmaker_workers/selftest.py` est le test de fumée lancé par `deploy-robots.sh` avant chaque bascule.

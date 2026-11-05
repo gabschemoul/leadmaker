@@ -1,6 +1,6 @@
-# Robots LeadMaker sur le serveur (Hetzner). Variables dans un fichier `.env` à côté (voir .env.server.example).
+# Robots Prospectigo sur le serveur (Hetzner). Variables dans un fichier `.env` à côté (voir .env.server.example).
 #
-#   docker compose up -d --build          # 2 estimations, 1 découverte, 6 préparations / e-mails
+#   docker compose up -d --build          # 1 estimation, 6 recherches, 6 préparations / e-mails, surveillant
 #   docker compose --profile send up -d   # + le robot d'envoi (seulement quand Gabriel dit « Envoie »)
 #   docker compose logs -f prepare        # suivre un type de robot
 #   docker compose down                   # tout arrêter (chaque robot finit sa tâche en cours)

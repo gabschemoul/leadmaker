@@ -43,6 +43,7 @@ comment on table public.lm_campaigns is 'Campagnes de prospection d''un espace';
 -- Filtres complétés par leurs valeurs par défaut, identiques pour la campagne et son estimation (audit A8 :
 -- sans clé « website », l'estimation comptait tous les sites et la campagne seulement ceux qui en ont un,
 -- d'où un tarif trop bas).
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_normalize_filters(p_filters jsonb) returns jsonb
 set search_path = ''
 language sql
@@ -53,6 +54,8 @@ $$;
 
 grant execute on function public.lm_normalize_filters(jsonb) to authenticated, service_role;
 
+-- Applique lm_normalize_filters à chaque écriture des filtres d'une campagne.
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_campaigns_normalize_filters() returns trigger
 set search_path = ''
 language plpgsql
@@ -110,6 +113,7 @@ create index if not exists ix_lm_campaigns_sender_id
   on public.lm_campaigns (sender_id) where sender_id is not null;
 
 -- L'expéditeur d'une campagne appartient à son espace (donc à son organisation)
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_campaigns_check_sender() returns trigger
 set search_path = ''
 language plpgsql
@@ -134,6 +138,7 @@ create trigger lm_campaigns_check_sender
 
 -- Expéditeur d'une campagne : celui qu'elle a choisi, sinon celui par défaut de son espace.
 -- Invoker : les membres ne voient que les expéditeurs de leur organisation (RLS) ; les robots (service) tout.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_campaign_sender(p_campaign_id uuid)
 returns setof public.lm_sender_profiles
 set search_path = ''

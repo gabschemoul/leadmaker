@@ -59,6 +59,7 @@ create policy "restrict_mfa_lm_tasks" on public.lm_tasks
 -- lm_claim_task (réservation d'une tâche par un robot des serveurs) : voir 34-leadmaker-local-discovery.sql
 -- (elle laisse de côté les recherches des campagnes faites sur l'ordinateur dédié).
 
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_complete_task(p_id bigint, p_result jsonb) returns void
 set search_path = ''
 language sql
@@ -74,6 +75,7 @@ revoke all on function public.lm_complete_task(bigint, jsonb) from public;
 grant execute on function public.lm_complete_task(bigint, jsonb) to service_role;
 
 -- Échec : remise en file avec délai croissant tant qu'il reste des essais.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_fail_task(p_id bigint, p_error text) returns void
 set search_path = ''
 language sql
@@ -94,6 +96,7 @@ revoke all on function public.lm_fail_task(bigint, text) from public;
 grant execute on function public.lm_fail_task(bigint, text) to service_role;
 
 -- Tâche bloquée (worker mort) : remise en file après 15 minutes sans nouvelles.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_requeue_stale_tasks(p_stale interval default '15 minutes') returns integer
 set search_path = ''
 language plpgsql

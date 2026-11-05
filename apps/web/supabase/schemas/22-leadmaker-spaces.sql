@@ -74,6 +74,7 @@ create unique index if not exists ux_lm_spaces_default_per_account
   on public.lm_spaces (account_id) where is_default;
 
 -- Chaque organisation (compte d'équipe) reçoit son espace par défaut à la création
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_create_default_space() returns trigger
 set search_path = ''
 language plpgsql
@@ -100,6 +101,7 @@ create policy "restrict_mfa_lm_spaces" on public.lm_spaces
   as restrictive to authenticated using (public.is_mfa_compliant());
 
 -- Quota d'espaces : limite du forfait courant (1 espace sans forfait).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_space_limit(p_account_id uuid) returns integer
 set search_path = ''
 language sql
@@ -120,6 +122,8 @@ revoke all on function public.lm_space_limit(uuid) from public;
 
 grant execute on function public.lm_space_limit(uuid) to service_role;
 
+-- Refuse un nouveau dossier client au-delà du nombre d'espaces du forfait.
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_enforce_space_quota() returns trigger
 set search_path = ''
 language plpgsql
@@ -208,6 +212,7 @@ create unique index if not exists ux_lm_sender_profiles_default
   on public.lm_sender_profiles (space_id) where is_default;
 
 -- Le premier expéditeur d'un espace est celui par défaut ; les suivants non (quelle que soit la valeur envoyée)
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_sender_profiles_default_on_insert() returns trigger
 set search_path = ''
 language plpgsql
@@ -229,6 +234,7 @@ create trigger lm_sender_profiles_default_on_insert
   for each row execute function public.lm_sender_profiles_default_on_insert();
 
 -- Expéditeur par défaut supprimé : le plus ancien des autres prend le relais
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_sender_profiles_default_on_delete() returns trigger
 set search_path = ''
 language plpgsql
@@ -255,6 +261,7 @@ create trigger lm_sender_profiles_default_on_delete
   for each row execute function public.lm_sender_profiles_default_on_delete();
 
 -- Choisit l'expéditeur par défaut de son espace (membre de l'organisation, double authentification à jour)
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_set_default_sender(p_sender_id uuid) returns void
 set search_path = ''
 language plpgsql

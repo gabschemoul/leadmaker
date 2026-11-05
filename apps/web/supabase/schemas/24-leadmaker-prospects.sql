@@ -85,6 +85,7 @@ create policy "restrict_mfa_lm_prospects" on public.lm_prospects
 
 -- Adresse de site nettoyée (import CSV, robots) : http(s) gardé, domaine nu complété en https://, le reste
 -- (file:, javascript:, texte libre…) devient null. Audit A5.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_clean_website(p_url text) returns text
 set search_path = ''
 language sql
@@ -102,6 +103,7 @@ $$;
 grant execute on function public.lm_clean_website(text) to authenticated, service_role;
 
 -- Un prospect ou une prise de contact ne peut être rattaché qu'à une campagne du même espace (audit A1).
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_check_campaign_space() returns trigger
 set search_path = ''
 language plpgsql
@@ -124,6 +126,7 @@ create trigger lm_prospects_check_campaign_space
   for each row execute function public.lm_check_campaign_space();
 
 -- Villes et activités présentes dans un espace (pour les filtres de la page Prospects)
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_prospect_facets(p_space_id uuid)
 returns table (kind text, value text, total bigint)
 set search_path = ''
@@ -145,6 +148,7 @@ $$;
 grant execute on function public.lm_prospect_facets(uuid) to authenticated, service_role;
 
 -- Exclusion : les prospects ne seront jamais contactés et leur site rejoint la liste d'opposition de l'espace
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_exclude_prospects(p_ids uuid[]) returns integer
 set search_path = ''
 language plpgsql
@@ -179,6 +183,7 @@ revoke all on function public.lm_exclude_prospects(uuid[]) from public;
 grant execute on function public.lm_exclude_prospects(uuid[]) to authenticated, service_role;
 
 -- Retour en liste : exclusion annulée et site retiré de la liste d'opposition de l'espace
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_restore_prospects(p_ids uuid[]) returns integer
 set search_path = ''
 language plpgsql
@@ -212,6 +217,7 @@ revoke all on function public.lm_restore_prospects(uuid[]) from public;
 grant execute on function public.lm_restore_prospects(uuid[]) to authenticated, service_role;
 
 -- Suppression définitive (réservée aux membres qui gèrent les paramètres de l'organisation)
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_delete_prospects(p_ids uuid[]) returns integer
 set search_path = ''
 language plpgsql
@@ -224,6 +230,7 @@ begin
     delete from public.lm_prospects p
      where p.id = any (p_ids)
        and public.has_permission((select auth.uid()), p.account_id, 'settings.manage'::public.app_permissions)
+       and coalesce(public.is_mfa_compliant(), false)
     returning 1
   )
   select count(*) into v_count from del;
@@ -421,6 +428,7 @@ create policy "restrict_mfa_lm_suppressions" on public.lm_suppressions
 
 -- Site en liste d'opposition (globale, de l'organisation ou de l'espace) ? Vérifié à l'import, à la préparation,
 -- par le pilote automatique et avant chaque envoi (audit A10 : avant, seulement à la découverte).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_site_suppressed(p_account_id uuid, p_space_id uuid, p_site_key text)
 returns boolean
 set search_path = ''

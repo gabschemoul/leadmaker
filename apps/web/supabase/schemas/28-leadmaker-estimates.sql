@@ -82,6 +82,7 @@ grant select, insert, update, delete on table public.lm_estimate_places to servi
 -- Demande d'estimation réelle : crée les recherches à lire (prioritaires sur les campagnes)
 -- Crée une estimation et ses recherches (robots « estimate », priorité 10). INTERNE : sans contrôle d'accès ni
 -- quota ; appelée par lm_request_estimate (appli), lm_start_campaign et lm_update_campaign (mesure du tarif).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_create_estimate(p_account_id uuid, p_country_code text, p_targeting jsonb,
                                                      p_filters jsonb) returns uuid
 set search_path = ''
@@ -160,6 +161,7 @@ grant execute on function public.lm_create_estimate(uuid, text, jsonb, jsonb) to
 -- Estimation demandée depuis l'appli (bouton « Estimer » du formulaire de campagne).
 -- Audit A3 : chaque estimation coûte jusqu'à 30 recherches de proxy, payées par Prospectigo. Quota par
 -- organisation sur 24 h : 40 avec un forfait, 3 sans (pour découvrir l'outil avant de payer).
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_request_estimate(p_account_id uuid, p_country_code text, p_targeting jsonb,
                                                       p_filters jsonb) returns uuid
 set search_path = ''
@@ -199,6 +201,7 @@ revoke all on function public.lm_request_estimate(uuid, text, jsonb, jsonb) from
 grant execute on function public.lm_request_estimate(uuid, text, jsonb, jsonb) to authenticated, service_role;
 
 -- Résultat d'une recherche d'estimation (worker) ; calcule le total quand toutes les recherches sont lues
+-- Appelant : interne (appelée par d'autres fonctions SQL).
 create or replace function public.lm_record_estimate_search(p_estimate_id uuid, p_cards integer, p_place_ids text[],
                                                             p_is_grid boolean) returns void
 set search_path = ''
@@ -274,6 +277,7 @@ $$;
 revoke all on function public.lm_record_estimate_search(uuid, integer, text[], boolean) from public;
 
 -- Recherche d'estimation abandonnée (échecs répétés) : comptée comme lue sans résultat
+-- Appelant : interne (appelée par d'autres fonctions SQL).
 create or replace function public.lm_skip_estimate_search(p_estimate_id uuid) returns void
 set search_path = ''
 language sql
@@ -287,6 +291,7 @@ revoke all on function public.lm_skip_estimate_search(uuid) from public;
 -- Tarif d'une campagne, lisible par ses membres : figé si elle a déjà été lancée, sinon celui de la dernière
 -- estimation faite avec exactement son ciblage et ses filtres (terminée, en cours ou aucune).
 -- Lancée pendant la mesure (price_pending, 4/11/2026) : l'avancement de sa mesure tant qu'elle tourne.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_campaign_pricing(p_campaign_id uuid)
 returns table (frozen boolean, credits_per_prospect integer, rate numeric, estimate_id uuid, estimate_status text,
                done_searches integer, sample_searches integer)
@@ -330,6 +335,7 @@ $$;
 grant execute on function public.lm_campaign_pricing(uuid) to authenticated, service_role;
 
 -- Lance l'estimation d'une campagne avec exactement son ciblage et ses filtres (pour fixer son tarif).
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_request_campaign_estimate(p_campaign_id uuid) returns uuid
 set search_path = ''
 language plpgsql

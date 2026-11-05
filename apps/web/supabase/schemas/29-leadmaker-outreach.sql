@@ -21,6 +21,7 @@ create policy lm_screenshots_select on storage.objects for select
 
 -- Au moins un message utilisable (texte non vide) dans la colonne templates d'une campagne.
 -- Formats acceptés : tableau (lot 0) ou objet { messages: [...], short: {...} }.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_templates_usable(p_templates jsonb) returns boolean
 set search_path = ''
 language sql
@@ -39,6 +40,7 @@ $$;
 grant execute on function public.lm_templates_usable(jsonb) to authenticated, service_role;
 
 -- Statuts d'une tentative que la préparation peut reprendre (jamais une tentative validée, envoyée ou en cours)
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_attempt_repreparable(p_status public.lm_attempt_status) returns boolean
 set search_path = ''
 language sql
@@ -52,6 +54,7 @@ grant execute on function public.lm_attempt_repreparable(public.lm_attempt_statu
 -- Demande la préparation des formulaires de prospects (membre de l'organisation).
 -- p_campaign_id sert aux prospects importés sans campagne (les messages de cette campagne sont utilisés).
 -- Erreurs (hint) : no_sender, no_messages, cap_reached.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_prepare_prospects(p_ids uuid[], p_campaign_id uuid default null)
 returns table (queued integer, skipped integer)
 set search_path = ''
@@ -138,6 +141,7 @@ revoke all on function public.lm_prepare_prospects(uuid[], uuid) from public;
 grant execute on function public.lm_prepare_prospects(uuid[], uuid) to authenticated, service_role;
 
 -- Prépare tous les prospects d'une campagne qui ne l'ont pas encore été (dans la limite du plafond de l'espace).
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_prepare_campaign(p_campaign_id uuid)
 returns table (queued integer, skipped integer)
 set search_path = ''
@@ -169,10 +173,9 @@ revoke all on function public.lm_prepare_campaign(uuid) from public;
 
 grant execute on function public.lm_prepare_campaign(uuid) to authenticated, service_role;
 
--- Résultat de la préparation écrit par le worker (rôle service) : statut, message rendu, champs, capture.
--- Une tentative passée entre-temps (validée, exclue…) n'est pas écrasée.
 -- Validation automatique : réservée aux forfaits qui l'incluent (et à l'option activée sur la campagne).
 -- Depuis le 2/11/2026 (roadmap n°18) : ouverte à TOUS les forfaits, il suffit d'avoir un forfait.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_auto_validation_allowed(p_account_id uuid) returns boolean
 set search_path = ''
 language sql
@@ -186,6 +189,7 @@ revoke all on function public.lm_auto_validation_allowed(uuid) from public;
 grant execute on function public.lm_auto_validation_allowed(uuid) to authenticated, service_role;
 
 -- L'option ne peut être activée sur une campagne que si le forfait le permet
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_campaigns_check_auto_validation() returns trigger
 set search_path = ''
 language plpgsql
@@ -205,6 +209,10 @@ create or replace trigger lm_campaigns_auto_validation
   before insert or update of auto_validation on public.lm_campaigns
   for each row execute function public.lm_campaigns_check_auto_validation();
 
+-- Résultat de la préparation écrit par le robot : statut, message rendu, champs, capture.
+-- Une tentative passée entre-temps (validée, exclue…) n'est pas écrasée ; sans alerte et avec la validation
+-- automatique (ou le pilote), le formulaire est validé tout de suite.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_finish_prepare(p_attempt_id uuid, p_result jsonb) returns boolean
 set search_path = ''
 language plpgsql
@@ -273,6 +281,7 @@ revoke all on function public.lm_finish_prepare(uuid, jsonb) from public;
 grant execute on function public.lm_finish_prepare(uuid, jsonb) to service_role;
 
 -- Nombre de tentatives par statut dans un espace (pour les onglets de la page Formulaires)
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_attempt_counts(p_space_id uuid)
 returns table (status public.lm_attempt_status, total bigint)
 set search_path = ''
@@ -286,6 +295,7 @@ grant execute on function public.lm_attempt_counts(uuid) to authenticated, servi
 
 -- Validation : formulaires prêts ou à compléter (tous les champs manquants renseignés) → validés.
 -- Le validateur est enregistré. Renvoie le nombre de tentatives validées.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_validate_attempts(p_ids uuid[]) returns integer
 set search_path = ''
 language plpgsql
@@ -319,6 +329,7 @@ grant execute on function public.lm_validate_attempts(uuid[]) to authenticated, 
 
 -- Passer : la tentative est abandonnée sans envoi, même validée tant qu'elle n'est pas partie
 -- (le prospect reste contactable plus tard)
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_skip_attempts(p_ids uuid[]) returns integer
 set search_path = ''
 language plpgsql
@@ -352,6 +363,7 @@ revoke all on function public.lm_skip_attempts(uuid[]) from public;
 grant execute on function public.lm_skip_attempts(uuid[]) to authenticated, service_role;
 
 -- Ne jamais contacter : tentative exclue et prospect mis en liste d'opposition
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_exclude_attempts(p_ids uuid[]) returns integer
 set search_path = ''
 language plpgsql
@@ -384,6 +396,7 @@ revoke all on function public.lm_exclude_attempts(uuid[]) from public;
 grant execute on function public.lm_exclude_attempts(uuid[]) to authenticated, service_role;
 
 -- Modification avant validation : objet, message et valeurs saisies pour les champs manquants
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_update_attempt(p_id uuid, p_subject text, p_body text, p_extra jsonb) returns boolean
 set search_path = ''
 language plpgsql

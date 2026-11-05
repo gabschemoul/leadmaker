@@ -145,6 +145,7 @@ create policy "restrict_mfa_lm_credit_ledger" on public.lm_credit_ledger
 -- Membre de l'organisation ET double authentification respectée (audit 5/11/2026, A6).
 -- À utiliser dans TOUTES les fonctions SECURITY DEFINER appelées par l'appli : elles contournent la RLS, donc
 -- les politiques restrictives « restrict_mfa_* » ne s'y appliquent pas. Faux pour le rôle service (robots).
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_member(p_account_id uuid) returns boolean
 set search_path = ''
 language sql
@@ -157,6 +158,7 @@ grant execute on function public.lm_member(uuid) to authenticated, service_role;
 
 -- L'organisation a-t-elle un forfait (ou des crédits offerts) ? Exigé pour tout ce qui fait travailler les
 -- robots : estimation au-delà du quota d'essai, préparation de formulaires, recherche d'e-mails (audit A9).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_has_plan(p_account_id uuid) returns boolean
 set search_path = ''
 language sql
@@ -173,6 +175,7 @@ revoke all on function public.lm_has_plan(uuid) from public;
 grant execute on function public.lm_has_plan(uuid) to service_role;
 
 -- Débit atomique et idempotent. Renvoie false si solde insuffisant ou événement déjà débité.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_debit_credits(
   p_account_id uuid,
   p_kind public.lm_credit_kind,
@@ -241,6 +244,7 @@ grant execute on function public.lm_debit_credits(uuid, public.lm_credit_kind, i
 --    Growth → Business → Scale le même mois donnait 30 k + 80 k + 200 k crédits).
 --  * Période de plus de 35 jours = forfait annuel : les crédits sont mensuels, la recharge des mois suivants
 --    est faite par lm_refill_credits (audit A12).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_reset_credits(
   p_account_id uuid,
   p_plan_id text,
@@ -321,6 +325,7 @@ grant execute on function public.lm_reset_credits(uuid, text, timestamptz, text)
 
 -- Forfaits annuels : recharge mensuelle des crédits (audit A12). Appelée toutes les heures par pg_cron
 -- (tâche « lm-refill-credits », créée dans la migration 20261105 de l'audit). Idempotente par mois.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_refill_credits() returns integer
 set search_path = ''
 language plpgsql
@@ -362,6 +367,7 @@ revoke all on function public.lm_refill_credits() from public;
 grant execute on function public.lm_refill_credits() to service_role;
 
 -- Budget de proxy du compte dépassé pour la période en cours (roadmap n°14) ? Faux sans forfait ou sans plafond.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_proxy_over_budget(p_account_id uuid) returns boolean
 set search_path = ''
 language sql
@@ -381,6 +387,7 @@ revoke all on function public.lm_proxy_over_budget(uuid) from public;
 grant execute on function public.lm_proxy_over_budget(uuid) to service_role;
 
 -- Quota de sièges : limite du forfait courant (illimité sans forfait).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_seat_limit(p_account_id uuid) returns integer
 set search_path = ''
 language sql
@@ -434,6 +441,8 @@ revoke all on function public.lm_seats_available(uuid) from public;
 
 grant execute on function public.lm_seats_available(uuid) to authenticated, service_role;
 
+-- Refuse un nouveau membre au-delà des sièges du forfait (à l'acceptation d'une invitation).
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_enforce_seat_quota() returns trigger
 set search_path = ''
 language plpgsql
@@ -458,6 +467,7 @@ create trigger lm_accounts_memberships_seat_quota
   for each row execute function public.lm_enforce_seat_quota();
 
 -- Abonnement supprimé (résiliation effective) : l'organisation perd son forfait et ses crédits.
+-- Appelant : déclencheur (trigger).
 create or replace function public.lm_on_subscription_deleted() returns trigger
 set search_path = ''
 language plpgsql

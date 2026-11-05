@@ -10,6 +10,7 @@
  */
 
 -- Envois comptés dans la journée (UTC) d'une campagne : soumis ou en cours
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_sends_today(p_campaign_id uuid) returns integer
 set search_path = ''
 language sql
@@ -25,6 +26,7 @@ grant execute on function public.lm_sends_today(uuid) to authenticated, service_
 -- Planification (worker, rôle service) : met en file les tentatives validées dans la limite quotidienne
 -- de chaque campagne, tant qu'il reste des crédits outreach à l'organisation.
 -- Une tentative restée « en envoi » plus de 20 minutes (worker arrêté) passe « à vérifier », jamais renvoyée.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_queue_sends() returns integer
 set search_path = ''
 language plpgsql
@@ -143,6 +145,7 @@ grant execute on function public.lm_queue_sends() to service_role;
 
 -- Résultat d'un envoi (worker). submitted = le bouton d'envoi a été cliqué : un crédit outreach est débité
 -- quel que soit le résultat. Une tentative qui n'est plus « en envoi » n'est pas modifiée.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_finish_send(p_attempt_id uuid, p_result jsonb) returns boolean
 set search_path = ''
 language plpgsql
@@ -188,6 +191,7 @@ revoke all on function public.lm_finish_send(uuid, jsonb) from public;
 grant execute on function public.lm_finish_send(uuid, jsonb) to service_role;
 
 -- « À vérifier » tranché à la main : bien arrivé (envoyé) ou pas arrivé (échec)
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_mark_attempts(p_ids uuid[], p_outcome text) returns integer
 set search_path = ''
 language plpgsql

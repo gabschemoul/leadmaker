@@ -212,6 +212,7 @@ grant select, insert, update, delete on table public.lm_place_sightings to servi
 create index if not exists ix_lm_place_sightings_site_key on public.lm_place_sightings (space_id, site_key);
 
 -- Libellé de recherche d'une ville : « Lyon, France »
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_city_label(p_name text, p_country_name text) returns text
 set search_path = ''
 language sql
@@ -223,6 +224,7 @@ $$;
 grant execute on function public.lm_city_label(text, text) to authenticated, service_role;
 
 -- Villes ciblées par une configuration (même règle pour l'estimation et le lancement)
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_target_cities(p_country_code text, p_targeting jsonb)
 returns table (geoname_id integer, label text, population integer)
 set search_path = ''
@@ -286,6 +288,7 @@ grant execute on function public.lm_target_cities(text, jsonb) to authenticated,
 -- Google Maps n'affiche jamais plus de 120 fiches par recherche. Dans une grande ville, une seule recherche
 -- en manque la plupart : on la découpe en secteurs (points espacés de 2,5 km, vue zoom 15 ≈ 3,5 km de large)
 -- couvrant un disque dont le rayon croît avec la population (2 à 12 km).
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_city_grid(p_lat double precision, p_lng double precision, p_population integer)
 returns table (latitude double precision, longitude double precision)
 set search_path = ''
@@ -308,6 +311,7 @@ grant execute on function public.lm_city_grid(double precision, double precision
 
 -- Zones de recherche d'un ciblage : une recherche par nom pour chaque ville, plus un quadrillage pour les villes
 -- de 50 000 habitants et plus (Google n'affiche que 120 fiches par recherche)
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_target_zones(p_country_code text, p_targeting jsonb)
 returns table (geoname_id integer, label text, population integer, latitude double precision,
                longitude double precision, zoom smallint)
@@ -333,6 +337,7 @@ $$;
 grant execute on function public.lm_target_zones(text, jsonb) to authenticated, service_role;
 
 -- Catégories ciblées par une configuration
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_target_categories(p_targeting jsonb)
 returns table (gcid text, is_generic boolean)
 set search_path = ''
@@ -355,6 +360,7 @@ grant execute on function public.lm_target_categories(jsonb) to authenticated, s
 -- Répartition approximative des notes sur Google Maps (fiches notées) :
 --   <1 : 1 %, 1-2 : 2 %, 2-3 : 3 %, 3-3,5 : 4 %, 3,5-4 : 10 %, 4-4,5 : 25 %, 4,5-5 : 55 %.
 -- Environ 15 % des fiches n'ont pas de note ; elles ne comptent que si la note minimale est 0.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_rating_share(p_min numeric, p_max numeric) returns numeric
 set search_path = ''
 language sql
@@ -374,6 +380,7 @@ grant execute on function public.lm_rating_share(numeric, numeric) to authentica
 -- Estimation avant lancement : villes, recherches et prospects attendus selon la taille des villes et les filtres.
 -- Mesure du 29/10/2026 sur les plombiers de Lyon : 210 fiches sur 3 secteurs du centre, 7 % notées de 0,8 à 3,5,
 -- 75 % avec un site. 70 % de densité moyenne d'une activité, 10 % d'exclusions (chaînes, administrations).
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_estimate_campaign(p_country_code text, p_targeting jsonb, p_filters jsonb default '{}')
 returns table (cities integer, categories integer, searches bigint, expected_prospects bigint, rate numeric)
 set search_path = ''
@@ -415,6 +422,7 @@ grant execute on function public.lm_estimate_campaign(text, jsonb, jsonb) to aut
 -- Lancement : vérifie les droits et quotas, fige les zones et les catégories, passe la campagne en cours
 -- Remet in_flight de chaque activité au nombre réel de recherches en file ou en cours.
 -- Utilisé à la reprise d'une campagne et par les scripts d'entretien (compteurs désynchronisés).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_recount_in_flight(p_campaign_id uuid) returns integer
 set search_path = ''
 language plpgsql
@@ -448,6 +456,9 @@ revoke all on function public.lm_recount_in_flight(uuid) from public;
 
 grant execute on function public.lm_recount_in_flight(uuid) to service_role;
 
+-- Lance ou reprend une campagne : vérifie crédits et quota de campagnes actives ; au premier lancement, fige
+-- zones, activités et tarif (estimation des 7 derniers jours, sinon mesure en parallèle à 1 crédit).
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_start_campaign(p_campaign_id uuid) returns void
 set search_path = ''
 language plpgsql
@@ -571,6 +582,7 @@ revoke all on function public.lm_start_campaign(uuid) from public;
 grant execute on function public.lm_start_campaign(uuid) to authenticated, service_role;
 
 -- Pause : la campagne s'arrête, les recherches en attente sont annulées
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_pause_campaign(p_campaign_id uuid, p_reason text default null) returns void
 set search_path = ''
 language plpgsql
@@ -621,6 +633,7 @@ grant execute on function public.lm_pause_campaign(uuid, text) to authenticated,
 -- quand un régime n'a plus de candidate, l'autre prend la place.
 -- Abandon (lm_finish_search) : aucun prospect après ABANDON_ZERO_AFTER recherches,
 -- ou moins de MIN_RATE fiche par recherche après MIN_SEARCHES recherches.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_schedule_discovery() returns integer
 set search_path = ''
 language plpgsql
@@ -763,6 +776,7 @@ revoke all on function public.lm_schedule_discovery() from public;
 grant execute on function public.lm_schedule_discovery() to service_role;
 
 -- Fiche Google vue : renvoie false si elle l'avait déjà été dans l'espace (à ne pas rouvrir)
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_mark_place_seen(p_space_id uuid, p_place_id text, p_site_key text) returns boolean
 set search_path = ''
 language plpgsql
@@ -797,6 +811,7 @@ revoke all on function public.lm_mark_place_seen(uuid, text, text) from public;
 grant execute on function public.lm_mark_place_seen(uuid, text, text) to service_role;
 
 -- Site déjà présent dans l'espace, ou chaîne repérée
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_site_known(p_space_id uuid, p_site_key text) returns boolean
 set search_path = ''
 language sql
@@ -820,6 +835,7 @@ grant execute on function public.lm_site_known(uuid, text) to service_role;
 -- Enregistre un prospect découvert et débite les crédits de prospection de la campagne
 -- (credits_per_prospect, fixé au lancement selon la difficulté, roadmap n°13).
 -- Renvoie 'kept', 'duplicate' (site déjà présent) ou 'no_credits' (campagne mise en pause).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_record_prospect(p_campaign_id uuid, p_place jsonb) returns text
 set search_path = ''
 language plpgsql
@@ -865,6 +881,7 @@ grant execute on function public.lm_record_prospect(uuid, jsonb) to service_role
 -- Fin d'une recherche : journal, rendement de la catégorie, abandon éventuel
 -- (aucun prospect après ABANDON_ZERO_AFTER recherches, ou moins de MIN_RATE par recherche après MIN_SEARCHES).
 -- Une recherche échouée ne passe pas ici (lm_release_search) : elle ne compte pas.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_finish_search(
   p_campaign_id uuid, p_gcid text, p_zone_idx integer,
   p_cards integer, p_new integer, p_kept integer, p_duration_ms integer, p_error text default null
@@ -916,6 +933,7 @@ revoke all on function public.lm_finish_search(uuid, text, integer, integer, int
 grant execute on function public.lm_finish_search(uuid, text, integer, integer, integer, integer, integer, text) to service_role;
 
 -- Recherche abandonnée définitivement (échecs répétés) : on libère la place sans compter de rendement
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_release_search(p_campaign_id uuid, p_gcid text) returns void
 set search_path = ''
 language sql
@@ -932,6 +950,7 @@ grant execute on function public.lm_release_search(uuid, text) to service_role;
 -- Trafic réseau réel d'une recherche ou d'une estimation (mesuré par le robot sur la carte réseau, essais
 -- ratés compris) : ajouté au compteur de période du compte (budget proxy, roadmap n°14) et, pour une
 -- recherche de campagne, à son activité et à son journal (classement par prospects par Mo, roadmap n°13).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_add_search_bytes(p_task_id bigint, p_bytes bigint) returns void
 set search_path = ''
 language plpgsql
@@ -978,6 +997,7 @@ grant execute on function public.lm_add_search_bytes(bigint, bigint) to service_
 
 -- Crédits de prospection par prospect selon la part des entreprises qui passent les filtres (roadmap n°13).
 -- Paliers dans lm_discovery_settings.credit_tiers ; sans taux mesurable, le palier le plus facile.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_credits_for_rate(p_rate numeric) returns integer
 set search_path = ''
 language sql
@@ -999,6 +1019,7 @@ grant execute on function public.lm_credits_for_rate(numeric) to authenticated, 
 -- Avancement d'une campagne. SECURITY DEFINER : les droits sont vérifiés UNE fois (organisation + double
 -- authentification), au lieu du RLS ligne par ligne sur les quartiers et les crédits (3,7 s sur une campagne de
 -- 16 000 quartiers, délai de 8 s dépassé sous charge le 3/11/2026). Rôle service ou postgres : accès direct.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_campaign_progress(p_campaign_id uuid)
 returns table (zones integer, categories integer, searches_total bigint, searches_done bigint, in_flight bigint,
                abandoned integer, productive integer, prospects bigint, cards bigint, last_search_at timestamptz)
@@ -1048,6 +1069,7 @@ grant execute on function public.lm_campaign_progress(uuid) to authenticated, se
 -- celles retirées sont sautées (les recherches déjà faites et les prospects trouvés restent).
 -- Une campagne terminée qui reçoit de nouvelles villes repasse en pause, prête à reprendre.
 -- Renvoie le statut de la campagne après la mise à jour.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_update_campaign(
   p_campaign_id uuid, p_name text, p_country_code text, p_targeting jsonb, p_filters jsonb
 ) returns text
@@ -1165,6 +1187,7 @@ revoke all on function public.lm_update_campaign(uuid, text, text, jsonb, jsonb)
 grant execute on function public.lm_update_campaign(uuid, text, text, jsonb, jsonb) to authenticated;
 
 -- Import CSV : prospects ajoutés sans crédit, dédoublonnés par site dans l'espace
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_import_prospects(p_space_id uuid, p_rows jsonb) returns table (inserted integer, duplicates integer)
 set search_path = ''
 language plpgsql

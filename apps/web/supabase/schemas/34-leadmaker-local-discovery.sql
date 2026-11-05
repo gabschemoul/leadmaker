@@ -56,6 +56,7 @@ grant select, insert, update, delete on table public.lm_local_workers to service
 
 -- Réservation d'une tâche par un robot des serveurs. Remplace la version de 25-leadmaker-tasks.sql :
 -- identique, sauf que les recherches des campagnes de l'ordinateur dédié sont laissées de côté.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_claim_task(
   p_kinds public.lm_task_kind[],
   p_worker_id text
@@ -88,6 +89,7 @@ grant execute on function public.lm_claim_task(public.lm_task_kind[], text) to s
 
 -- Réservation d'une recherche par le robot de l'ordinateur dédié : uniquement les campagnes marquées.
 -- Note aussi son signe de vie (au plus une écriture toutes les 30 s).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_claim_local_task(p_worker_id text) returns setof public.lm_tasks
 set search_path = ''
 language plpgsql
@@ -123,6 +125,7 @@ grant execute on function public.lm_claim_local_task(text) to service_role;
 
 -- État affiché sur la page de la campagne : l'utilisateur peut-il basculer, la campagne est-elle sur
 -- l'ordinateur dédié, dernier signe de vie de ce robot (recherche en cours comprise).
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_local_discovery_state(p_campaign_id uuid) returns jsonb
 set search_path = ''
 language plpgsql
@@ -161,6 +164,7 @@ grant execute on function public.lm_local_discovery_state(uuid) to authenticated
 
 -- Bascule d'une campagne entre les serveurs et l'ordinateur dédié (utilisateurs autorisés seulement).
 -- Les recherches déjà en cours se terminent là où elles ont commencé ; celles en attente passent de l'autre côté.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_set_local_discovery(p_campaign_id uuid, p_enabled boolean) returns boolean
 set search_path = ''
 language plpgsql

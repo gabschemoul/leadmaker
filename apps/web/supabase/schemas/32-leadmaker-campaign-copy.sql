@@ -7,6 +7,7 @@
 
 -- Renvoie l'identifiant de la copie. La validation automatique n'est reprise
 -- que si le forfait l'inclut encore ; la raison de pause n'est pas copiée.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_duplicate_campaign(p_campaign_id uuid, p_name text) returns uuid
 set search_path = ''
 language plpgsql

@@ -118,6 +118,7 @@ create index if not exists ix_lm_tasks_account_send_open
 -- Crédits de prise de contact déjà promis d'une organisation : formulaires des pilotes actifs en préparation,
 -- validés ou en envoi, et formulaires validés à la main pas encore partis. Le pilote ne prépare jamais plus que
 -- le solde moins ces réservations (plusieurs pilotes ou validations manuelles en parallèle).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_outreach_reserved(p_account_id uuid) returns integer
 set search_path = ''
 language sql
@@ -138,6 +139,7 @@ grant execute on function public.lm_outreach_reserved(uuid) to service_role;
 
 -- Formulaire prêt sans aucun doute : ni alerte, ni protection, ni champ manquant. La seule remarque tolérée
 -- est l'emploi de la version courte du message (zone de texte limitée), qui n'a rien de douteux.
+-- Appelant : interne (appelée par d'autres fonctions SQL).
 create or replace function public.lm_attempt_is_clean(
   p_status public.lm_attempt_status,
   p_detail text,
@@ -159,6 +161,7 @@ grant execute on function public.lm_attempt_is_clean(public.lm_attempt_status, t
 
 -- Prospects d'une campagne que le pilote peut contacter : jamais préparés (aucune tentative dans le dossier),
 -- non exclus, avec un vrai site web. Même filtre que lm_prepare_campaign, sans les re-préparations.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_autopilot_contactable(p_campaign_id uuid) returns integer
 set search_path = ''
 language sql
@@ -180,6 +183,7 @@ grant execute on function public.lm_autopilot_contactable(uuid) to authenticated
 
 -- Fuseau horaire des entreprises d'une campagne : celui de la plus grande ville ciblée, sinon de la plus
 -- grande ville du pays, sinon UTC.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_campaign_timezone(p_campaign_id uuid) returns text
 set search_path = ''
 language sql
@@ -206,6 +210,7 @@ grant execute on function public.lm_campaign_timezone(uuid) to authenticated, se
 -- - spread : ceil(target / spread_days) envois par jour ouvré, à intervalle régulier (9 h / quota) entre 9 h et
 --   18 h : un envoi part au plus tôt un intervalle après le précédent du jour (pas de rafale au lancement ou
 --   après une pause). Les envois déjà partis et ceux déjà en file pour un jour comptent dans son quota.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_autopilot_slot(p_autopilot_id uuid) returns timestamptz
 set search_path = ''
 language plpgsql
@@ -285,6 +290,7 @@ grant execute on function public.lm_autopilot_slot(uuid) to service_role;
 
 -- Compteurs d'un passage du pilote : envoyés (partis), en cours (en préparation, validés en attente, en envoi),
 -- prêts pour l'aperçu, mis de côté (tout le reste : douteux, sans formulaire, inaccessible, passé…).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_autopilot_counts(p_autopilot_id uuid)
 returns table (sent integer, in_flight integer, preview_ready integer, aside integer, total integer)
 set search_path = ''
@@ -309,12 +315,15 @@ grant execute on function public.lm_autopilot_counts(uuid) to service_role;
 
 -- Nombre de formulaires préparés d'avance par pilote (le travail en file reste borné, quel que soit le nombre
 -- choisi) et nombre de formulaires montrés dans l'aperçu.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_autopilot_ahead() returns integer
 set search_path = ''
 language sql
 immutable
 as $$ select 12 $$;
 
+-- Nombre de formulaires montrés dans l'aperçu avant le premier envoi du pilote (3).
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_autopilot_preview_size() returns integer
 set search_path = ''
 language sql
@@ -330,6 +339,7 @@ grant execute on function public.lm_autopilot_preview_size() to authenticated, s
 -- trouvés (sans dépasser le nombre choisi ni les crédits), choisit le message de chacun (le moins utilisé
 -- du passage, pour un test A/B à parts égales) et termine le passage quand c'est fini.
 -- Un seul tour à la fois (verrou), les autres appels repartent aussitôt.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_autopilot_tick(p_only uuid default null) returns integer
 set search_path = ''
 language plpgsql
@@ -481,6 +491,7 @@ revoke all on function public.lm_autopilot_tick(uuid) from public;
 grant execute on function public.lm_autopilot_tick(uuid) to service_role;
 
 -- Contrôles communs au lancement et à la modification. Erreurs (hint) : no_sender, no_messages, messages.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_autopilot_check(p_campaign_id uuid, p_messages text[]) returns public.lm_campaigns
 set search_path = ''
 language plpgsql
@@ -536,6 +547,7 @@ grant execute on function public.lm_autopilot_check(uuid, text[]) to service_rol
 -- Lance le pilote sur une campagne (membre de l'organisation, tous les forfaits).
 -- Le nombre est ramené aux prospects pas encore contactés et aux crédits de prise de contact disponibles.
 -- Erreurs (hint) : not_found, no_sender, no_messages, messages, active, no_prospects, no_credits, schedule.
+-- Appelant : interne (appelée par d'autres fonctions SQL).
 create or replace function public.lm_start_autopilot(
   p_campaign_id uuid,
   p_target integer,
@@ -611,6 +623,7 @@ grant execute on function public.lm_start_autopilot(uuid, integer, text[], publi
   to authenticated, service_role;
 
 -- Pilote actif d'une campagne, verrouillé, après contrôle d'appartenance (null si aucun)
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_autopilot_active(p_autopilot_id uuid) returns public.lm_autopilots
 set search_path = ''
 language plpgsql
@@ -639,6 +652,7 @@ grant execute on function public.lm_autopilot_active(uuid) to service_role;
 -- Annule les tâches en file d'un passage : préparations (les tentatives restent « en attente » et repartent à la
 -- reprise) et envois (les formulaires validés repassent « prêts », revalidés à la reprise : rien n'attend
 -- « validé » pendant une pause, donc pas de fausse alerte du surveillant).
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_autopilot_hold(p_autopilot_id uuid, p_sends_only boolean) returns void
 set search_path = ''
 language plpgsql
@@ -663,6 +677,7 @@ revoke all on function public.lm_autopilot_hold(uuid, boolean) from public;
 grant execute on function public.lm_autopilot_hold(uuid, boolean) to service_role;
 
 -- Revalide les formulaires prêts sans doute d'un passage (confirmation de l'aperçu, reprise après pause)
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_autopilot_validate_clean(p_autopilot_id uuid) returns integer
 set search_path = ''
 language plpgsql
@@ -690,6 +705,7 @@ grant execute on function public.lm_autopilot_validate_clean(uuid) to service_ro
 
 -- Modifie un pilote actif : nombre, messages, moment d'envoi. Le nombre ne descend jamais sous ce qui est déjà
 -- parti ou en cours, et ne dépasse pas ce qu'il reste de prospects et de crédits.
+-- Appelant : interne (appelée par d'autres fonctions SQL).
 create or replace function public.lm_update_autopilot(
   p_autopilot_id uuid,
   p_target integer,
@@ -752,6 +768,7 @@ grant execute on function public.lm_update_autopilot(uuid, integer, text[], publ
   to authenticated, service_role;
 
 -- Pause / reprise / confirmation de l'aperçu / annulation de l'aperçu (membre de l'organisation)
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_pause_autopilot(p_autopilot_id uuid) returns boolean
 set search_path = ''
 language plpgsql
@@ -777,6 +794,8 @@ revoke all on function public.lm_pause_autopilot(uuid) from public;
 
 grant execute on function public.lm_pause_autopilot(uuid) to authenticated, service_role;
 
+-- Reprend un pilote en pause : les formulaires prêts et sans alerte repartent en validation.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_resume_autopilot(p_autopilot_id uuid) returns boolean
 set search_path = ''
 language plpgsql
@@ -803,6 +822,8 @@ revoke all on function public.lm_resume_autopilot(uuid) from public;
 
 grant execute on function public.lm_resume_autopilot(uuid) to authenticated, service_role;
 
+-- Confirme l'aperçu : les premiers formulaires partent et le pilote passe en marche.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_confirm_autopilot(p_autopilot_id uuid) returns integer
 set search_path = ''
 language plpgsql
@@ -832,6 +853,7 @@ grant execute on function public.lm_confirm_autopilot(uuid) to authenticated, se
 
 -- Annuler l'aperçu : rien n'est parti. Les préparations pas encore commencées sont retirées (les prospects
 -- redeviennent contactables), les formulaires déjà préparés restent visibles dans le mode Avancé.
+-- Appelant : appli (utilisateur connecté).
 create or replace function public.lm_cancel_autopilot(p_autopilot_id uuid) returns boolean
 set search_path = ''
 language plpgsql
@@ -863,6 +885,7 @@ grant execute on function public.lm_cancel_autopilot(uuid) to authenticated, ser
 -- Tout ce que l'écran « Contacter » affiche, en une ligne : le dernier passage du pilote de la campagne
 -- (colonnes vides s'il n'y en a jamais eu), ses compteurs, ce qu'il reste à contacter, les crédits, et si
 -- l'organisation a déjà envoyé un message (sinon l'aperçu des 3 premiers formulaires est proposé coché).
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_autopilot_summary(p_campaign_id uuid)
 returns table (
   autopilot_id uuid,

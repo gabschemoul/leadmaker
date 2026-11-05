@@ -9,6 +9,7 @@
 
 -- Met en file une recherche d'e-mail pour chaque prospect sélectionné qui a un site et pas encore d'adresse.
 -- Renvoie (lancées, passées). Les prospects d'une autre organisation sont ignorés.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_find_emails(p_ids uuid[])
 returns table (queued integer, skipped integer)
 set search_path = ''
@@ -56,6 +57,7 @@ revoke all on function public.lm_find_emails(uuid[]) from public;
 grant execute on function public.lm_find_emails(uuid[]) to authenticated, service_role;
 
 -- Résultat du worker : adresse trouvée (ou null) ; la date de recherche est posée dans tous les cas.
+-- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_finish_emails(p_prospect_id uuid, p_email text) returns boolean
 set search_path = ''
 language plpgsql

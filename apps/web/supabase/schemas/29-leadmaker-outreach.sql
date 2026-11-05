@@ -140,7 +140,10 @@ revoke all on function public.lm_prepare_prospects(uuid[], uuid) from public;
 
 grant execute on function public.lm_prepare_prospects(uuid[], uuid) to authenticated, service_role;
 
--- Prépare tous les prospects d'une campagne qui ne l'ont pas encore été (dans la limite du plafond de l'espace).
+-- Prépare les prospects d'une campagne qui ne l'ont pas encore été, dans la limite de la place restante sous le
+-- plafond de l'espace (ready_forms_cap, 500 max) : les plus anciens d'abord, un nouveau clic prend les suivants.
+-- 5/11/2026 : avant, toute la campagne partait d'un coup (46 000 prospects) → délai dépassé, ou plafond atteint en
+-- cours de route et tout annulé. Erreur (hint) cap_reached si le plafond est déjà plein.
 -- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_prepare_campaign(p_campaign_id uuid)
 returns table (queued integer, skipped integer)
@@ -150,20 +153,40 @@ security definer
 as $$
 declare
   v_ids uuid[];
+  v_space_id uuid;
+  v_room integer;
 begin
   -- accès vérifié une fois, pas ligne à ligne (grosses campagnes)
-  if not exists (select 1 from public.lm_campaigns c where c.id = p_campaign_id and public.lm_member(c.account_id)) then
+  select c.space_id into v_space_id
+    from public.lm_campaigns c
+   where c.id = p_campaign_id and public.lm_member(c.account_id);
+
+  if v_space_id is null then
     return query select 0, 0;
     return;
   end if;
 
-  select array_agg(p.id order by p.created_at) into v_ids
-    from public.lm_prospects p
-    left join public.lm_attempts a on a.space_id = p.space_id and a.prospect_id = p.id
-   where p.campaign_id = p_campaign_id
-     and p.excluded_at is null and p.website is not null
-     and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
-     and (a.id is null or public.lm_attempt_repreparable(a.status));
+  -- place restante sous le plafond (même calcul que lm_prepare_prospects)
+  select s.ready_forms_cap - (select count(*)::integer from public.lm_attempts a
+                               where a.space_id = s.id and a.status in ('pending', 'preparing', 'ready', 'incomplete'))
+    into v_room
+    from public.lm_spaces s
+   where s.id = v_space_id;
+
+  if coalesce(v_room, 0) <= 0 then
+    raise exception 'ready forms cap reached for space %', v_space_id using errcode = 'P0001', hint = 'cap_reached';
+  end if;
+
+  select array_agg(x.id order by x.created_at) into v_ids
+    from (select p.id, p.created_at
+            from public.lm_prospects p
+            left join public.lm_attempts a on a.space_id = p.space_id and a.prospect_id = p.id
+           where p.campaign_id = p_campaign_id
+             and p.excluded_at is null and p.website is not null
+             and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
+             and (a.id is null or public.lm_attempt_repreparable(a.status))
+           order by p.created_at
+           limit v_room) x;
 
   if v_ids is null then
     return query select 0, 0;

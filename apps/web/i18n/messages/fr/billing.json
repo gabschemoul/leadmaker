@@ -156,5 +156,20 @@
         "support": "Support prioritaire et onboarding"
       }
     }
+  },
+  "usage": {
+    "title": "Vos crédits",
+    "renewal": "Prochaine recharge le {date}. Les crédits non utilisés ne sont pas reportés.",
+    "noRenewal": "Aucun forfait en cours.",
+    "discovery": "Crédits de prospection",
+    "outreach": "Crédits de prise de contact",
+    "of": "sur",
+    "empty": "Aucun mouvement ces 30 derniers jours.",
+    "dateColumn": "Date",
+    "campaignColumn": "Campagne",
+    "discoveryColumn": "Prospection",
+    "outreachColumn": "Prise de contact",
+    "refill": "Recharge du forfait",
+    "other": "Autre"
   }
 }

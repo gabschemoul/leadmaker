@@ -27,6 +27,7 @@ import billingConfig from '~/config/billing.config';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadTeamAccountBillingPage } from '../_lib/server/team-account-billing-page.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
+import { CreditUsageCard } from './_components/credit-usage-card';
 import { TeamAccountCheckoutForm } from './_components/team-account-checkout-form';
 import { TeamBillingPortalForm } from './_components/team-billing-portal-form';
 
@@ -154,6 +155,10 @@ async function TeamAccountBillingContent({
         {shouldShowBillingPortal ? (
           <TeamBillingPortalForm accountId={accountId} slug={account} />
         ) : null}
+
+        <Suspense fallback={null}>
+          <CreditUsageCard accountId={accountId} />
+        </Suspense>
       </div>
     </>
   );

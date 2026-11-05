@@ -85,6 +85,27 @@ grant insert (id, account_id, space_id, name, country_code, targeting, filters, 
 grant update (name, templates, daily_limit, auto_validation, sender_id)
   on table public.lm_campaigns to authenticated;
 
+-- Consommation des crédits par jour et par campagne (page Facturation, audit E23). Appelant : appli.
+-- security invoker : la RLS du journal et des campagnes s'applique (membres de l'organisation seulement).
+create or replace function public.lm_credit_usage(p_account_id uuid, p_days integer default 30)
+returns table (day date, campaign_id uuid, campaign_name text, kind public.lm_credit_kind, used integer, added integer)
+set search_path = ''
+language sql
+stable
+as $$
+  select (l.created_at at time zone 'UTC')::date, l.campaign_id, c.name::text, l.kind,
+         coalesce(sum(-l.delta) filter (where l.delta < 0), 0)::integer,
+         coalesce(sum(l.delta) filter (where l.delta > 0), 0)::integer
+    from public.lm_credit_ledger l
+    left join public.lm_campaigns c on c.id = l.campaign_id
+   where l.account_id = p_account_id
+     and l.created_at > now() - make_interval(days => least(greatest(coalesce(p_days, 30), 1), 365))
+   group by 1, 2, 3, 4
+   order by 1 desc, 3 nulls first, 4;
+$$;
+
+grant execute on function public.lm_credit_usage(uuid, integer) to authenticated, service_role;
+
 create index if not exists ix_lm_campaigns_sender_id
   on public.lm_campaigns (sender_id) where sender_id is not null;
 

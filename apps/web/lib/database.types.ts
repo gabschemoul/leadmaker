@@ -1476,6 +1476,11 @@ isOneToOne: false
 "lm_create_estimate":
 { Args: { "p_account_id": string,"p_country_code": string,"p_filters": Json,"p_targeting": Json }; Returns: string
                            },
+"lm_credit_usage":
+{ Args: { "p_account_id": string,"p_days"?: number }; Returns: {
+              "added": number,"campaign_id": string,"campaign_name": string,"day": string,"kind": Database["public"]['Enums']["lm_credit_kind"],"used": number
+            }[]
+                           },
 "lm_credits_for_rate":
 { Args: { "p_rate": number }; Returns: number
                            },

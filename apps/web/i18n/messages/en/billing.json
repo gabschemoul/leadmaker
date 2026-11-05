@@ -156,5 +156,20 @@
         "support": "Priority support and onboarding"
       }
     }
+  },
+  "usage": {
+    "title": "Your credits",
+    "renewal": "Next refill on {date}. Unused credits do not roll over.",
+    "noRenewal": "No active plan.",
+    "discovery": "Prospecting credits",
+    "outreach": "Contact credits",
+    "of": "of",
+    "empty": "No activity in the last 30 days.",
+    "dateColumn": "Date",
+    "campaignColumn": "Campaign",
+    "discoveryColumn": "Prospecting",
+    "outreachColumn": "Contact",
+    "refill": "Plan refill",
+    "other": "Other"
   }
 }

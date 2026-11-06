@@ -48,11 +48,11 @@ CIV_M = re.compile(r"^\W*(monsieur|m\.|mr\.?|herr|sr\.?|senor|señor|signor|mene
 FIELD_RULES = [
     ("civility", CIVILITY),
     ("email", r"e-?mail|courriel|\bmail\b|correo"),
-    ("phone", r"t[eé]l|phone|portable|mobile|gsm|joindre|telefon|handy|mobil|cellulare|telemovel|celular"),
+    ("phone", r"\bt[eé]l|phone|portable|mobile|gsm|joindre|telefon|handy|mobil|cellulare|telemovel|celular"),
     ("phone", r"^(?!.*(siret|siren|tva|commande|order|dossier|serie|suivi|contrat|client|facture|locataire|adherent|membre"
               r"|rue|voie|voirie|maison|street|departement|immat|reservation|carte|adeli|rpps|\brg\b|redevable"
               r"|appartement|ligne|licence|permis|securite sociale|kunden|rechnung|bestell|pedido|ordine)).*(\bnumero\b|\bn°|\bnumber\b|\bnummer\b)"),
-    ("full_name", r"nom (et|&|/) ?pr[eé]nom|pr[eé]nom (et|&|/) ?nom|nom complet|full ?name|vor- und nachname|nombre completo|nome completo"),
+    ("full_name", r"nom ?(et|&|/|,) ?pr[eé]nom|pr[eé]nom ?(et|&|/|,) ?nom|vos nom et|nom complet|full ?name|vor- und nachname|nombre completo|nome completo"),
     ("first_name", r"pr[eé]nom|first|given|fname|vorname|voornaam"),
     ("company", r"soci[eé]t[eé]|entreprise|company|organi[sz]ation|raison sociale|structure|etablissement|business|firma"
                 r"|unternehmen|empresa|azienda|bedrijf"),
@@ -146,7 +146,9 @@ QUOTE_URL = re.compile(r"(^|[/_.-])(devis|demande-de-devis|quote|get-a-quote|req
 #    même mixte (« Devis / Contact ») : l'entreprise lit la demande comme celle d'un client
 QUOTE_TITLE = re.compile(r"devis|estimation|chiffrage|rendez-?vous|\brdv\b|reserv(er|ez|ation)|\bbook(ing)?\b"
                          r"|\bcommande[rz]?\b|\bquote\b|estimate|appointment|angebot|kostenvoranschlag|terminvereinbarung"
-                         r"|presupuesto|\bcita\b|preventivo|prenota|orcamento|offerte", re.I)
+                         r"|presupuesto|\bcita\b|preventivo|prenota|orcamento|offerte"
+                         r"|demande d'intervention|demander une intervention|request an? (\w+ )?(locksmith|technician|plumber"
+                         r"|electrician|service|callback|call back|visit)|schedule (a |an )?(service|visit|call)|\bbook (a|an|now|your)\b", re.I)
 # 3) champs typiques d'un projet de client
 QUOTE_FIELD = re.compile(
     r"type (de |d'|du |des )?(travaux|prestation|projet|chantier|bien|batiment|logement|intervention|toiture|produit)"
@@ -158,6 +160,8 @@ QUOTE_FIELD = re.compile(
     r"|decrivez votre (panne|probleme)|quand (vous|souhaitez-vous etre|pouvons-nous vous) rappel|creneau|quel jour"
     r"|date (souhaitee|de votre projet|du projet|d'intervention|de debut|des travaux|de l'evenement|de livraison|d'arrivee"
     r"|de reservation)|niveau d'urgence|delai (souhaite|de realisation)|nombre de (personnes|couverts|invites|participants|nuits)"
+    r"|(parlez|decri|details?|dites)[^.?!]{0,25}(evenement|mariage|soiree|fete|reception)|votre evenement"
+    r"|scope of work|service (needed|required|requested)|tell us about your (event|project)|event (date|type)"
     r"|devis|estimation (gratuite|de votre projet|du projet)|project type|type of (work|project|service)|square (feet|footage|meters)|your budget"
     r"|project (address|description|details)|describe your project|preferred (date|time)|best time to call", re.I)
 QUOTE_DETAIL = "formulaire de devis, pas de formulaire de contact"
@@ -465,6 +469,11 @@ def classify(f: dict) -> str | None:
     # un libellé visible qui ne correspond à rien de connu (« Dimensions de tapis ») : jamais rempli au hasard, même si
     # le site a mis autocomplete="name" ou name="nom" sur le champ (6/11/2026 tapisdecovincennes.com)
     label = _norm(f["label"] or "")
+    # libellé qui est en fait la phrase de consentement voisine (« J'autorise l'Atelier… ») : ignoré, le texte d'aide du
+    # champ (« Vos nom et prénom ») fait foi (6/11/2026 latelierdespotiersheureux.fr : le téléphone écrit dans le nom)
+    if len(label) > 40 and (CONSENT.search(label) or re.search(r"autoris|coordonnees|recevoir|newsletter|informations? (commerciales|par)", label)):
+        f = {**f, "label": ""}
+        label = ""
     if len(re.sub(r"[^a-z]", "", label)) >= 3 and not any(re.search(p, label) for _, p in FIELD_RULES):
         return "unknown"
     ac = f.get("autocomplete", "")

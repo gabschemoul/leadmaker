@@ -138,24 +138,22 @@ SITE_BUDGET = 55.0
 # Formulaires de DEVIS / réservation / rendez-vous / commande : jamais remplis (6/11/2026 : 73 sur 314 envoyés,
 # les entreprises rappelaient en croyant à un client). Le robot cherche un vrai formulaire de contact ailleurs.
 # Textes comparés sans accents et en minuscules ; motifs écrits pour Python ET JavaScript.
-# 1) adresse de la page (/devis, /demande-de-devis, /rendez-vous…), sauf si elle parle aussi de contact
+# 1) adresse de la page (/devis, /demande-de-devis, /rendez-vous…), même « /devis-contact »
 QUOTE_URL = re.compile(r"(^|[/_.-])(devis|demande-de-devis|quote|get-a-quote|request-a-quote|free-quote|estimate|estimation"
                        r"|rendez-vous|rdv|prise-de-rendez-vous|reservation|reserver|booking|book-online|appointment"
                        r"|commande|commander|order|angebot|presupuesto|preventivo|orcamento|offerte)([/_.-]|$)", re.I)
-QUOTE_URL_OK = re.compile(r"contact|kontakt|contatt|contato", re.I)
 # 2) titre du formulaire, titre juste au-dessus ou bouton d'envoi (« Devis gratuit », « Prendre rendez-vous »…) ;
-#    un titre mixte (« Contact & devis », « Une question ? Un devis ? ») reste accepté
+#    même mixte (« Devis / Contact ») : l'entreprise lit la demande comme celle d'un client
 QUOTE_TITLE = re.compile(r"devis|estimation|chiffrage|rendez-?vous|\brdv\b|reserv(er|ez|ation)|\bbook(ing)?\b"
                          r"|\bcommande[rz]?\b|\bquote\b|estimate|appointment|angebot|kostenvoranschlag|terminvereinbarung"
                          r"|presupuesto|\bcita\b|preventivo|prenota|orcamento|offerte", re.I)
-QUOTE_MIXED = re.compile(r"contact|question|information|renseignement|nous ecrire|ecrivez|get in touch|inquir|kontakt"
-                         r"|contatt|contato|contacto", re.I)
 # 3) champs typiques d'un projet de client
 QUOTE_FIELD = re.compile(
     r"type (de |d'|du |des )?(travaux|prestation|projet|chantier|bien|batiment|logement|intervention|toiture|produit)"
     r"|nature (des|du) (travaux|projet|chantier)|travaux (a realiser|souhaites?|demandes?|envisages?)"
     r"|prestations? (souhaitees?|demandees?)|\bsurface\b|superficie|\bm2\b|\bbudget\b"
-    r"|(adresse|ville|commune|lieu|code postal|localisation)[^,;:*]{0,12}(du|des|de votre|de l'|de la) ?(chantier|travaux|intervention)"
+    r"|(adresse|ville|commune|lieu|code postal|localisation)[^,;:*]{0,12}(du|des|de votre|de l'|de la|d') ?(chantier|travaux|intervention)"
+    r"|\bdimensions?\b|\bvos mesures\b|\bmesures (de|du|des)\b|deplacement|quantite|\bservices? (souhaites?|demandes?)"
     r"|(decri|description|details?|parlez|dites)[^.?!]{0,25}projet|votre projet en quelques mots|quel est votre projet"
     r"|decrivez votre (panne|probleme)|quand (vous|souhaitez-vous etre|pouvons-nous vous) rappel|creneau|quel jour"
     r"|date (souhaitee|de votre projet|du projet|d'intervention|de debut|des travaux|de l'evenement|de livraison|d'arrivee"
@@ -255,7 +253,7 @@ FIND_FORM_JS = r"""
   // --- formulaire de devis / réservation ? (textes sans accents, minuscules)
   const N = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[_\[\]]+/g, ' ')
     .replace(/\s+/g, ' ').toLowerCase().trim();
-  const TITLE = new RegExp(rx.title, 'i'), MIXED = new RegExp(rx.mixed, 'i'), QFIELD = new RegExp(rx.field, 'i');
+  const TITLE = new RegExp(rx.title, 'i'), QFIELD = new RegExp(rx.field, 'i');
   // libellé d'un champ, sans le texte des choix d'une liste (« Votre demande : Devis / Question » n'est pas un devis)
   const fieldLabel = e => {
     let t = [e.name, e.id, e.placeholder, e.getAttribute('aria-label'), (labelFor(e) || {}).innerText].join(' ');
@@ -273,7 +271,17 @@ FIND_FORM_JS = r"""
     return N(t);
   };
   const HSEL = 'h1,h2,h3,h4,h5,h6,legend,[role=heading],[class*="title" i],[class*="heading" i]';
-  const isTitle = h => { const t = N(h.innerText || h.value || ''); return t && t.length < 120 && TITLE.test(t) && !MIXED.test(t) ? t : ''; };
+  // un titre mixte (« Devis / Contact ») est un devis : l'entreprise lit la demande comme celle d'un client
+  const isTitle = h => { const t = N(h.innerText || h.value || ''); return t && t.length < 120 && TITLE.test(t) ? t : ''; };
+  // titres de la page, dans l'ordre du document : le dernier placé avant le formulaire est son titre de section,
+  // même loin au-dessus (« Obtenir un devis » puis le formulaire, couvreur-marseille.com)
+  const HEADS = qsa(document, 'h1,h2,h3,h4,h5,h6,[role=heading]').filter(h => N(h.innerText).length > 1);
+  const headBefore = f => { let last = null;
+    for (const h of HEADS) { if (f.contains(h)) continue;
+      const pos = h.compareDocumentPosition(f);
+      if (pos & Node.DOCUMENT_POSITION_DISCONNECTED) continue;
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) last = h; else break; }
+    return last; };
   const quoteOf = (f, fields) => {
     for (const e of fields) { const t = fieldLabel(e); const m = t.match(QFIELD); if (m) return `champ « ${t.slice(0, 50)} »`; }
     for (const h of qsa(f, HSEL)) { const t = isTitle(h); if (t) return `titre « ${t.slice(0, 50)} »`; }
@@ -284,7 +292,9 @@ FIND_FORM_JS = r"""
     const seen = new Set();
     for (let node = walker.nextNode(), k = 0; node && k < 200; node = walker.nextNode(), k++) {
       const p = node.parentElement;
-      if (!p || seen.has(p) || !node.textContent.trim() || p.closest('label,select,option,button,textarea,a,script,style,noscript')) continue;
+      if (!p || seen.has(p) || !node.textContent.trim() || p.closest('label,select,option,button,textarea,a,script,style,noscript,li,[role=option],[role=listbox]')) continue;
+      // un bloc qui contient un champ ou une liste maison (« Objet : Prise de rendez-vous / Information… ») n'est pas un titre
+      if (p.querySelector('input,select,textarea,li,[role=option]')) continue;
       seen.add(p);
       const t = isTitle(p); if (t) return `titre « ${t.slice(0, 50)} »`;
     }
@@ -295,9 +305,11 @@ FIND_FORM_JS = r"""
       const s = n.previousElementSibling;
       if (!s) continue;
       const h = s.matches(HSEL) ? s : [...s.querySelectorAll(HSEL)].pop();
-      if (h && N(h.innerText)) { const t = isTitle(h); return t ? `titre « ${t.slice(0, 50)} »` : null; }
+      if (h && N(h.innerText)) { const t = isTitle(h); if (t) return `titre « ${t.slice(0, 50)} »`; break; }
       if (N(s.innerText)) break;
     }
+    const hb = headBefore(f);
+    if (hb) { const t = isTitle(hb); if (t) return `titre de la section « ${t.slice(0, 50)} »`; }
     return null;
   };
   let best = -1, bestScore = 0, quote = null;
@@ -324,7 +336,10 @@ FIND_FORM_JS = r"""
     if (score > bestScore) { best = i; bestScore = score; }
   });
   containers.forEach(f => f.removeAttribute('data-ff-form'));
-  if (best < 0) return quote ? {score: 0, quote} : null;
+  // une page qui porte un formulaire de devis : aucun de ses formulaires n'est rempli (le second est souvent le même
+  // devis en bas de page, alainrenovation.com) ; le robot cherche une vraie page contact ailleurs
+  if (quote) return {score: 0, quote};
+  if (best < 0) return null;
   containers[best].setAttribute('data-ff-form', '1');
   return {score: bestScore, quote};
 }
@@ -391,7 +406,7 @@ VALIDATE_JS = r"""
   const N = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const avoid = new RegExp(prefs.avoid, 'i'), order = (prefs.order || []).map(p => new RegExp(p, 'i'));
   const choose = items => { const ok = items.filter(x => !avoid.test(N(x.text)));
-    for (const p of order) { const x = ok.find(x => p.test(N(x.text))); if (x) return x; } return ok[0]; };
+    for (const p of order) { const x = ok.find(x => p.test(N(x.text))); if (x) return x; } return null; };
   const radioText = r => { const l = labelFor(r) || r.closest('label'); return (l && l.innerText) || r.value || ''; };
   for (const el of els) {
     if (el.checkValidity()) continue;
@@ -447,6 +462,11 @@ def classify(f: dict) -> str | None:
         return f["type"]
     if f["tag"] == "select":
         return "select"
+    # un libellé visible qui ne correspond à rien de connu (« Dimensions de tapis ») : jamais rempli au hasard, même si
+    # le site a mis autocomplete="name" ou name="nom" sur le champ (6/11/2026 tapisdecovincennes.com)
+    label = _norm(f["label"] or "")
+    if len(re.sub(r"[^a-z]", "", label)) >= 3 and not any(re.search(p, label) for _, p in FIELD_RULES):
+        return "unknown"
     ac = f.get("autocomplete", "")
     ac_map = {"given-name": "first_name", "family-name": "last_name", "name": "full_name", "email": "email",
               "tel": "phone", "organization": "company", "postal-code": "zip", "address-level2": "city",
@@ -530,12 +550,12 @@ def _find_form_after_click(page: Page, visited: list[str], quotes: list | None =
 
 
 def quote_url(url: str) -> str | None:
-    """Chemin de la page s'il désigne une page de devis / réservation / rendez-vous (et pas une page contact)."""
+    """Chemin de la page s'il désigne une page de devis / réservation / rendez-vous (même « /contact-devis »)."""
     path = _norm(unquote(urlparse(url or "").path))
-    return path if QUOTE_URL.search(path) and not QUOTE_URL_OK.search(path) else None
+    return path if QUOTE_URL.search(path) else None
 
 
-QUOTE_ARGS = {"title": QUOTE_TITLE.pattern, "mixed": QUOTE_MIXED.pattern, "field": QUOTE_FIELD.pattern}
+QUOTE_ARGS = {"title": QUOTE_TITLE.pattern, "field": QUOTE_FIELD.pattern}
 
 
 def _find_form(page: Page, quotes: list | None = None) -> Frame | None:
@@ -905,13 +925,14 @@ def _check(loc):
 def pick_option(opts: list[str]) -> str | None:
     """Choix d'une liste ou d'un groupe de boutons radio : jamais devis, tarif, rendez-vous, commande, SAV, candidature,
     particulier… ; parmi les autres, partenariat > prospection > commercial > information > contact > autre >
-    professionnel, sinon le premier. None si tous les choix sont interdits."""
+    professionnel. None si aucun choix ne convient (jamais un choix au hasard comme « Installation » ou
+    « Déplacement : oui ») : la liste est laissée telle quelle, et si elle est obligatoire le formulaire est à compléter."""
     allowed = [o for o in opts if not OPTION_AVOID.search(_norm(o))]
     for pref in OPTION_PREFS:
         for o in allowed:
             if pref.search(_norm(o)):
                 return o
-    return allowed[0] if allowed else None
+    return None
 
 
 def _pick_country(opts: list[str], sender: Sender) -> str | None:

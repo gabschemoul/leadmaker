@@ -19,8 +19,11 @@ Points communs :
 - **seuls les formulaires de contact** sont remplis : un formulaire de devis / réservation / rendez-vous (adresse
   `/devis`…, titre « Devis gratuit », bouton « Recevoir mon devis », champs « type de travaux », « budget »,
   « adresse du chantier »…) ou sans zone de message (demande de rappel) est écarté, et le robot cherche ailleurs ;
-  sinon « pas de formulaire » (« formulaire de devis, pas de formulaire de contact »). Même règle à l'envoi. Listes
-  et boutons radio : jamais devis, tarif, rendez-vous, commande, SAV, candidature, particulier (`pick_option`) ;
+  même un titre mixte (« Devis / Contact ») ou le titre de la section au-dessus (« Obtenir un devis ») ; une page qui
+  porte un formulaire de devis est écartée en entier ; sinon « pas de formulaire » (« formulaire de devis, pas de
+  formulaire de contact »). Même règle à l'envoi. Un champ au libellé inconnu n'est jamais rempli. Listes et boutons
+  radio : jamais devis, tarif, rendez-vous, commande, SAV, candidature, particulier, et jamais un choix au hasard
+  (seulement partenariat, prospection, commercial, information, contact, autre, professionnel : `pick_option`) ;
 - captcha de la recherche : le robot attend 30, puis 60, 120, 240 min (`BLOCK_BACKOFF_MINUTES`) ;
 - proxy : seule la recherche (`estimate`, `discovery`) passe par `PROXY_URL` ; plafond quotidien
   `PROXY_DAILY_BUDGET_GB` (heure de Paris), réglé par `scripts/set-proxy-budget.sh <Go>` ; consommation :

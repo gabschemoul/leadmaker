@@ -280,8 +280,11 @@ FIND_FORM_JS = r"""
   // titres de la page, dans l'ordre du document : le dernier placé avant le formulaire est son titre de section,
   // même loin au-dessus (« Obtenir un devis » puis le formulaire, couvreur-marseille.com)
   const HEADS = qsa(document, 'h1,h2,h3,h4,h5,h6,[role=heading]').filter(h => N(h.innerText).length > 1);
+  // petits titres de coordonnées (« Téléphone : », « Adresse : ») placés entre le titre de section et le formulaire :
+  // ignorés (jardiforage.fr : « DEMANDE DE DEVIS » puis « Téléphone : », « Adresse : », puis le formulaire)
+  const INFO = /^(t[eé]l[eé]?(phone)?|tel|adresse|address|e-?mail|courriel|horaires?|fax|mobile|portable|nous trouver|coordonn[eé]es|siege|acces)\b|:\s*$/i;
   const headBefore = f => { let last = null;
-    for (const h of HEADS) { if (f.contains(h)) continue;
+    for (const h of HEADS) { if (f.contains(h) || INFO.test(N(h.innerText))) continue;
       const pos = h.compareDocumentPosition(f);
       if (pos & Node.DOCUMENT_POSITION_DISCONNECTED) continue;
       if (pos & Node.DOCUMENT_POSITION_FOLLOWING) last = h; else break; }
@@ -383,7 +386,7 @@ DESCRIBE_JS = r"""
     return { i, tag: el.tagName.toLowerCase(), type: (el.type || '').toLowerCase(), name: el.name || '', id: el.id || '',
       placeholder: el.placeholder || '', label: labelOf(el), required: el.required || el.getAttribute('aria-required') === 'true'
         || /\*/.test(labelOf(el)), visible: vis(el) || (box && (labelVis(el) || (up(el) && vis(up(el))))), autocomplete: el.autocomplete || '',
-      captchaImg,
+      captchaImg, checked: !!el.checked,
       options: el.tagName === 'SELECT' ? [...el.options].map(o => o.text.trim()) : [] };
   });
 }
@@ -1061,7 +1064,10 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
     radio_pick: dict[str, int] = {}
     radio_none: set[str] = set()
     for name, radios in groups.items():
-        if not any(r["required"] for r in radios):
+        # groupe facultatif : on n'y touche pas, sauf si le site a coché d'avance un choix interdit (« Particulier »,
+        # balzarotti.net) : on le remplace par un bon choix, ou le formulaire est à compléter
+        pre = next((r for r in radios if r.get("checked")), None)
+        if not any(r["required"] for r in radios) and not (pre and OPTION_AVOID.search(_norm(pre["label"] or pre["id"] or ""))):
             continue
         choice = pick_option([r["label"] or r["id"] or "" for r in radios])
         if choice is None:

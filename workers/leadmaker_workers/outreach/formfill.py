@@ -11,7 +11,7 @@ import re
 import time
 import unicodedata
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from playwright.sync_api import Frame, Page, TimeoutError as PWTimeout
 
@@ -90,8 +90,22 @@ MATH_TEXT = re.compile(r"combien font|resultat de l'operation|what is \d+|math q
 CONTACT_PATHS = ["/contact", "/contact-us", "/contact/", "/contact-us/", "/contactus", "/contact.html", "/contact-us.html",
                  "/contact.php", "/nous-contacter", "/kontakt", "/kontakt/", "/contacto", "/contacto/", "/contatti",
                  "/contatti/", "/contato", "/get-in-touch"]
-SELECT_PREF = re.compile(r"autre|other|information|renseignement|partenariat|commercial|demande|general|contact|sonstige"
-                         r"|otro|altro|anders|outro", re.I)
+# Listes déroulantes et boutons radio (6/11/2026 : « Demande de devis / tarifs » choisi sur ~70 formulaires, les
+# entreprises croyaient recevoir une demande de client). Jamais ces choix-là ; parmi les autres, l'ordre de préférence.
+OPTION_AVOID = re.compile(r"devis|tarif|\bprix\b|price|pricing|quote|estimation|chiffrage|rendez|\brdv\b|appointment"
+                          r"|commande|\border\b|reserv|booking|\bsav\b|apres[- ]?vente|after[- ]?sales|reclamation|complaint"
+                          r"|litige|candidature|emploi|recrutement|\bjob\b|career|carriere|particulier|\bprive\b|private"
+                          r"|individual|urgence|urgent|depannage|remboursement|\bachat\b|acheter|\bbuy\b"
+                          r"|angebot|presupuesto|preventivo|orcamento|offerte|\bcita\b|termin\b", re.I)
+OPTION_PREFS = [re.compile(p, re.I) for p in (
+    r"partenariat|partnership|partner|kooperation|colaboracion|collaborazione",
+    r"prospection|fournisseur|supplier|prestataire|vendor",
+    r"commercial|business|sales",
+    r"information|renseignement|\binfos?\b|question|inquiry|enquiry",
+    r"contact|general",
+    r"autre|other|divers|sonstige|otro|altro|anders|outro",
+    r"professionnel|professional|entreprise|company|societe|\bpro\b|\bb2b\b",
+)]
 SUBMIT = re.compile(r"envoy|send|valider|soumettre|submit|contact|transmettre|demander|go\b|ok\b|senden|absenden|enviar"
                     r"|invia|verstuur|verzend", re.I)
 EMAIL = re.compile(r"[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}", re.I)
@@ -121,6 +135,34 @@ FORM_SERVICES = re.compile(r"typeform\.com|jotform\.com|docs\.google\.com/forms|
 HONEYPOT = re.compile(r"^(hp|honeypot|honey|bot-?field|_gotcha|url_hp|website_hp|fax|trap|leave-?blank|do-?not-?fill)$|honeypot|gotcha", re.I)
 # Budget de temps par site pour la recherche du formulaire (le dépassement arrête les pages suivantes)
 SITE_BUDGET = 55.0
+# Formulaires de DEVIS / réservation / rendez-vous / commande : jamais remplis (6/11/2026 : 73 sur 314 envoyés,
+# les entreprises rappelaient en croyant à un client). Le robot cherche un vrai formulaire de contact ailleurs.
+# Textes comparés sans accents et en minuscules ; motifs écrits pour Python ET JavaScript.
+# 1) adresse de la page (/devis, /demande-de-devis, /rendez-vous…), sauf si elle parle aussi de contact
+QUOTE_URL = re.compile(r"(^|[/_.-])(devis|demande-de-devis|quote|get-a-quote|request-a-quote|free-quote|estimate|estimation"
+                       r"|rendez-vous|rdv|prise-de-rendez-vous|reservation|reserver|booking|book-online|appointment"
+                       r"|commande|commander|order|angebot|presupuesto|preventivo|orcamento|offerte)([/_.-]|$)", re.I)
+QUOTE_URL_OK = re.compile(r"contact|kontakt|contatt|contato", re.I)
+# 2) titre du formulaire, titre juste au-dessus ou bouton d'envoi (« Devis gratuit », « Prendre rendez-vous »…) ;
+#    un titre mixte (« Contact & devis », « Une question ? Un devis ? ») reste accepté
+QUOTE_TITLE = re.compile(r"devis|estimation|chiffrage|rendez-?vous|\brdv\b|reserv(er|ez|ation)|\bbook(ing)?\b"
+                         r"|\bcommande[rz]?\b|\bquote\b|estimate|appointment|angebot|kostenvoranschlag|terminvereinbarung"
+                         r"|presupuesto|\bcita\b|preventivo|prenota|orcamento|offerte", re.I)
+QUOTE_MIXED = re.compile(r"contact|question|information|renseignement|nous ecrire|ecrivez|get in touch|inquir|kontakt"
+                         r"|contatt|contato|contacto", re.I)
+# 3) champs typiques d'un projet de client
+QUOTE_FIELD = re.compile(
+    r"type (de |d'|du |des )?(travaux|prestation|projet|chantier|bien|batiment|logement|intervention|toiture|produit)"
+    r"|nature (des|du) (travaux|projet|chantier)|travaux (a realiser|souhaites?|demandes?|envisages?)"
+    r"|prestations? (souhaitees?|demandees?)|\bsurface\b|superficie|\bm2\b|\bbudget\b"
+    r"|(adresse|ville|commune|lieu|code postal|localisation)[^,;:*]{0,12}(du|des|de votre|de l'|de la) ?(chantier|travaux|intervention)"
+    r"|(decri|description|details?|parlez|dites)[^.?!]{0,25}projet|votre projet en quelques mots|quel est votre projet"
+    r"|decrivez votre (panne|probleme)|quand (vous|souhaitez-vous etre|pouvons-nous vous) rappel|creneau|quel jour"
+    r"|date (souhaitee|de votre projet|du projet|d'intervention|de debut|des travaux|de l'evenement|de livraison|d'arrivee"
+    r"|de reservation)|niveau d'urgence|delai (souhaite|de realisation)|nombre de (personnes|couverts|invites|participants|nuits)"
+    r"|devis|estimation (gratuite|de votre projet|du projet)|project type|type of (work|project|service)|square (feet|footage|meters)|your budget"
+    r"|project (address|description|details)|describe your project|preferred (date|time)|best time to call", re.I)
+QUOTE_DETAIL = "formulaire de devis, pas de formulaire de contact"
 NEXT_BUTTON = re.compile(r"suivant|next|continuer|continue|etape suivante|weiter|siguiente|avanti|volgende|commencer|demarrer"
                          r"|start|c'est parti|valider (l'|cette )?etape", re.I)
 
@@ -184,8 +226,11 @@ def _same_site(url: str, base: str) -> bool:
 # détection ; seuls les champs visibles sont remplis ensuite. Recherche, newsletter, connexion, chat IA,
 # éditeurs et formulaires mailto: sont ignorés. Les formulaires sans balise <form> (React, Wix, tunnels) sont
 # retrouvés à partir de leurs champs.
+#
+# Les formulaires de devis / réservation (titre, bouton d'envoi ou champs « projet », motifs QUOTE_*) ne sont jamais
+# retenus : la raison du refus est renvoyée dans `quote`. Résultat : {score, quote} (score 0 = rien de retenu).
 FIND_FORM_JS = r"""
-() => {
+(rx) => {
   const qsa = (root, sel) => { const out = [...root.querySelectorAll(sel)];
     root.querySelectorAll('*').forEach(e => { if (e.shadowRoot) out.push(...qsa(e.shadowRoot, sel)); }); return out; };
   const up = e => e.parentElement || (e.getRootNode() instanceof ShadowRoot ? e.getRootNode().host : null);
@@ -207,7 +252,55 @@ FIND_FORM_JS = r"""
   });
   const text = e => [e.type, e.name, e.id, e.placeholder, e.getAttribute('aria-label'),
     (labelFor(e) || {}).innerText, e.closest('label') && e.closest('label').innerText].join(' ');
-  let best = -1, bestScore = 0;
+  // --- formulaire de devis / réservation ? (textes sans accents, minuscules)
+  const N = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[_\[\]]+/g, ' ')
+    .replace(/\s+/g, ' ').toLowerCase().trim();
+  const TITLE = new RegExp(rx.title, 'i'), MIXED = new RegExp(rx.mixed, 'i'), QFIELD = new RegExp(rx.field, 'i');
+  // libellé d'un champ, sans le texte des choix d'une liste (« Votre demande : Devis / Question » n'est pas un devis)
+  const fieldLabel = e => {
+    let t = [e.name, e.id, e.placeholder, e.getAttribute('aria-label'), (labelFor(e) || {}).innerText].join(' ');
+    const l = e.closest('label');
+    if (l) { let lt = l.innerText || ''; if (e.tagName === 'SELECT') [...e.options].forEach(o => { lt = lt.replace(o.text, ' '); }); t += ' ' + lt; }
+    // libellé non relié au champ : texte voisin (2 niveaux au-dessus), comme DESCRIBE_JS
+    if (!labelFor(e) && !l && !e.getAttribute('aria-label')) {
+      let p = up(e);
+      for (let i = 0; i < 2 && p; i++, p = up(p)) {
+        const txt = [...p.childNodes].filter(n => n.nodeType === 3 || ['LABEL', 'SPAN', 'P', 'DIV', 'LEGEND', 'STRONG', 'B'].includes(n.tagName))
+          .filter(n => !(n.querySelector && n.querySelector('input,textarea,select'))).map(n => n.textContent || '').join(' ').trim();
+        if (txt && txt.length < 120) { t += ' ' + txt; break; }
+      }
+    }
+    return N(t);
+  };
+  const HSEL = 'h1,h2,h3,h4,h5,h6,legend,[role=heading],[class*="title" i],[class*="heading" i]';
+  const isTitle = h => { const t = N(h.innerText || h.value || ''); return t && t.length < 120 && TITLE.test(t) && !MIXED.test(t) ? t : ''; };
+  const quoteOf = (f, fields) => {
+    for (const e of fields) { const t = fieldLabel(e); const m = t.match(QFIELD); if (m) return `champ « ${t.slice(0, 50)} »`; }
+    for (const h of qsa(f, HSEL)) { const t = isTitle(h); if (t) return `titre « ${t.slice(0, 50)} »`; }
+    for (const b of qsa(f, 'button, input[type=submit], [role=button]')) { const t = isTitle(b); if (t) return `bouton « ${t.slice(0, 50)} »`; }
+    // petits textes d'en-tête écrits dans le formulaire (« DEVIS GRATUIT », <p>Demandez votre devis</p>), hors
+    // libellés, listes, boutons et liens
+    const walker = document.createTreeWalker(f, NodeFilter.SHOW_TEXT);
+    const seen = new Set();
+    for (let node = walker.nextNode(), k = 0; node && k < 200; node = walker.nextNode(), k++) {
+      const p = node.parentElement;
+      if (!p || seen.has(p) || !node.textContent.trim() || p.closest('label,select,option,button,textarea,a,script,style,noscript')) continue;
+      seen.add(p);
+      const t = isTitle(p); if (t) return `titre « ${t.slice(0, 50)} »`;
+    }
+    // titre placé juste au-dessus du formulaire (l'élément précédent, sur 3 niveaux ; plus loin, c'est souvent
+    // un autre bloc de la page : silvera.fr, onglets « Nous contacter / Demander un devis »)
+    let n = f;
+    for (let lvl = 0; lvl < 3 && n && !isRoot(n); lvl++, n = up(n)) {
+      const s = n.previousElementSibling;
+      if (!s) continue;
+      const h = s.matches(HSEL) ? s : [...s.querySelectorAll(HSEL)].pop();
+      if (h && N(h.innerText)) { const t = isTitle(h); return t ? `titre « ${t.slice(0, 50)} »` : null; }
+      if (N(s.innerText)) break;
+    }
+    return null;
+  };
+  let best = -1, bestScore = 0, quote = null;
   containers.forEach((f, i) => {
     const fields = qsa(f, FIELD).filter(e => !['submit', 'button', 'image', 'reset'].includes(e.type));
     if (fields.length < 2) return;
@@ -222,13 +315,18 @@ FIND_FORM_JS = r"""
     if (pwd || search >= fields.length / 2) return;
     // sans champ de réponse (email/téléphone), seul un formulaire « nom + message » est accepté
     if (!reply && !(ta && named)) return;
+    // sans zone de message : demande de rappel (nom + téléphone, l'entreprise rappellerait en croyant à un client,
+    // 6/11/2026 tapissier-75.fr…) ou lettre d'info. Jamais retenu.
+    if (!msg) return;
+    const q = quoteOf(f, fields);
+    if (q) { quote = quote || q; return; }
     const score = (ta ? 5 : 0) + (msg ? 3 : 0) + (reply ? 3 : 0) + Math.min(fields.length, 8) + (visible ? 2 : 0) - (f.tagName === 'FORM' ? 0 : 2);
     if (score > bestScore) { best = i; bestScore = score; }
   });
-  if (best < 0) return null;
   containers.forEach(f => f.removeAttribute('data-ff-form'));
+  if (best < 0) return quote ? {score: 0, quote} : null;
   containers[best].setAttribute('data-ff-form', '1');
-  return bestScore;
+  return {score: bestScore, quote};
 }
 """
 
@@ -289,16 +387,23 @@ VALIDATE_JS = r"""
   const fire = el => ['input', 'change'].forEach(t => el.dispatchEvent(new Event(t, {bubbles: true})));
   const countries = (prefs.countries || []).map(c => c.toLowerCase());
   const civ = prefs.civility ? new RegExp(prefs.civility, 'i') : null;
+  // même règle que pick_option (Python) : jamais devis, rendez-vous, particulier… ; ordre de préférence ensuite
+  const N = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const avoid = new RegExp(prefs.avoid, 'i'), order = (prefs.order || []).map(p => new RegExp(p, 'i'));
+  const choose = items => { const ok = items.filter(x => !avoid.test(N(x.text)));
+    for (const p of order) { const x = ok.find(x => p.test(N(x.text))); if (x) return x; } return ok[0]; };
+  const radioText = r => { const l = labelFor(r) || r.closest('label'); return (l && l.innerText) || r.value || ''; };
   for (const el of els) {
     if (el.checkValidity()) continue;
     if (el.tagName === 'SELECT') {
       const ok = [...el.options].filter(o => o.value && !o.disabled);
       const o = ok.find(o => countries.includes(o.text.trim().toLowerCase()))
-        || (civ && ok.find(o => civ.test(o.text))) || ok[0];
+        || (civ && ok.find(o => civ.test(o.text))) || (choose(ok.map(o => ({o, text: o.text}))) || {}).o;
       if (o) { el.value = o.value; fire(el); }
     } else if (el.type === 'radio' && el.name) {
-      const first = qsa(form, `input[type=radio][name="${CSS.escape(el.name)}"]`)[0];
-      if (first) { first.checked = true; fire(first); }
+      const group = qsa(form, `input[type=radio][name="${CSS.escape(el.name)}"]`);
+      const r = (civ && group.find(r => civ.test(radioText(r).trim()))) || (choose(group.map(r => ({r, text: radioText(r)}))) || {}).r;
+      if (r) { r.checked = true; fire(r); }
     }
   }
   const ta = qsa(form, 'textarea').find(t => t.maxLength > 0 && t.value.length >= t.maxLength);
@@ -380,15 +485,17 @@ SKIP_FRAME = re.compile(r"google\.com/maps|maps\.google|openstreetmap|youtube|yo
                         r"|crisp\.chat|intercom|zendesk|livechat|calendly", re.I)
 
 
-REVEAL_BUTTON = re.compile(r"particulier|contact|devis|message|ecrire|rendez|demande|quote|get in touch|inquir|kontakt|anfrage"
-                           r"|contacto|presupuesto|contatt|preventivo|choisir", re.I)
+# Jamais « Particulier », « Devis », « Rendez-vous » : ces boutons ouvrent des demandes de client (6/11/2026)
+REVEAL_BUTTON = re.compile(r"contact|message|ecrire|get in touch|inquir|kontakt|anfrage|contacto|contatt|choisir", re.I)
+REVEAL_AVOID = NOT_CONTACT.pattern + "|" + QUOTE_TITLE.pattern + "|particulier"
 REVEAL_JS = "(args) => {" + QSA_JS + r"""
   const [pattern, notPattern] = args; const rx = new RegExp(pattern, 'i'), bad = new RegExp(notPattern, 'i');
   const cands = qsa(document, 'button, [role=button], a[href="#"], a[href^="#"], a[href^="javascript"], a:not([href]), [data-toggle], [data-popup], [data-elementor-open-popup], .elementor-button')
     .filter(el => vis(el) && !/^(tel:|mailto:)/i.test(el.getAttribute('href') || ''));
   for (const el of cands) {
     const t = (el.innerText || el.getAttribute('aria-label') || el.title || '').trim();
-    if (t && t.length < 50 && rx.test(t) && !bad.test(t)) { el.scrollIntoView({block: 'center'}); el.click(); return t; }
+    const n = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (t && t.length < 50 && rx.test(n) && !bad.test(n)) { el.scrollIntoView({block: 'center'}); el.click(); return t; }
   }
   return null;
 }
@@ -398,43 +505,67 @@ REVEAL_JS = "(args) => {" + QSA_JS + r"""
 def _click_reveal(page: Page) -> str | None:
     """Clique sur un bouton qui semble ouvrir le formulaire (fenêtre, assistant « particulier / professionnel »)."""
     try:
-        return page.main_frame.evaluate(REVEAL_JS, [REVEAL_BUTTON.pattern, NOT_CONTACT.pattern])
+        return page.main_frame.evaluate(REVEAL_JS, [REVEAL_BUTTON.pattern, REVEAL_AVOID])
     except Exception:
         return None
 
 
-def _find_form_after_click(page: Page, visited: list[str]) -> Frame | None:
-    """Sans formulaire visible : un clic sur un bouton « contact / devis / particulier » peut l'afficher."""
+def _find_form_after_click(page: Page, visited: list[str], quotes: list | None = None) -> Frame | None:
+    """Sans formulaire visible : un clic sur un bouton « contact / écrire » peut l'afficher."""
     label = _click_reveal(page)
     if not label:
         return None
     page.wait_for_timeout(1500)
     visited.append(f"clic « {label[:30]} »")
-    frame = _find_form(page)
+    frame = _find_form(page, quotes)
     if frame:
         return frame
-    # assistant en deux temps (« Particulier » puis « Demander un devis »)
+    # assistant en deux temps
     label = _click_reveal(page)
     if label:
         page.wait_for_timeout(1500)
         visited.append(f"clic « {label[:30]} »")
-        return _find_form(page)
+        return _find_form(page, quotes)
     return None
 
 
-def _find_form(page: Page) -> Frame | None:
+def quote_url(url: str) -> str | None:
+    """Chemin de la page s'il désigne une page de devis / réservation / rendez-vous (et pas une page contact)."""
+    path = _norm(unquote(urlparse(url or "").path))
+    return path if QUOTE_URL.search(path) and not QUOTE_URL_OK.search(path) else None
+
+
+QUOTE_ARGS = {"title": QUOTE_TITLE.pattern, "mixed": QUOTE_MIXED.pattern, "field": QUOTE_FIELD.pattern}
+
+
+def _find_form(page: Page, quotes: list | None = None) -> Frame | None:
+    """Cadre qui contient un formulaire de contact, ou None. Les formulaires de devis vus en chemin sont notés dans
+    `quotes` (adresse de la page, raison)."""
+    quotes = quotes if quotes is not None else []
+    page_quote = quote_url(page.url)
     # cadres sans adresse : jamais chargés (ou détachés), ils ne répondent pas aux appels
     frames = [page.main_frame] + [f for f in page.frames if f != page.main_frame and f.url and not SKIP_FRAME.search(f.url)]
     for frame in frames[:12]:
         try:
-            if frame.evaluate(FIND_FORM_JS):
-                return frame
+            r = frame.evaluate(FIND_FORM_JS, QUOTE_ARGS)
         except Exception:
             continue
+        if not r:
+            continue
+        if r.get("quote"):
+            quotes.append((page.url, r["quote"]))
+        if r.get("score"):
+            fq = page_quote or (quote_url(frame.url) if frame != page.main_frame else None)
+            if fq:
+                quotes.append((page.url, f"page « {fq} »"))
+                continue
+            return frame
     return None
 
 
-def _contact_links(page: Page, base: str) -> list[str]:
+def _contact_links(page: Page, base: str, skipped: list | None = None) -> list[str]:
+    """Liens « contact » du site, les meilleurs d'abord. Les liens vers une page de devis sont écartés (notés dans
+    `skipped`)."""
     # liens <a> dans un dessin SVG : a.href n'y est pas un texte (objet SVGAnimatedString) → adresse relue à la main
     # (5/11/2026 : kimonoya.fr classé « site inaccessible » à cause de ça)
     links = page.evaluate("""() => [...document.querySelectorAll('a[href]')].map(a => {
@@ -451,8 +582,13 @@ def _contact_links(page: Page, base: str) -> list[str]:
                 scored.append((0, href))
             continue
         t = _norm(f"{text} {urlparse(href).path}")
+        if quote_url(href):  # page de devis / rendez-vous : son formulaire serait refusé, inutile d'y aller
+            if skipped is not None and CONTACT_LINK.search(t):
+                skipped.append(href)
+            continue
         if CONTACT_LINK.search(t) and not NOT_CONTACT.search(t):
-            score = 2 if re.search(r"contact|kontakt|contatt|contato", t) else 1
+            # « Devis gratuit » qui mène à /contact : essayé, mais après les vrais liens « contact »
+            score = 2 if re.search(r"contact|kontakt|contatt|contato", t) else 0.5 if QUOTE_TITLE.search(t) else 1
             scored.append((score, href.split("#")[0]))
     seen, out = set(), []
     for _, h in sorted(scored, key=lambda x: -x[0]):
@@ -476,10 +612,10 @@ def _load(page: Page, url: str, timeout: int):
     page.wait_for_timeout(500)
 
 
-def _find_form_late(page: Page) -> Frame | None:
+def _find_form_late(page: Page, quotes: list | None = None) -> Frame | None:
     """Formulaires chargés après coup (Jotform, HubSpot, composants web…) : 2 s de plus."""
     page.wait_for_timeout(2000)
-    return _find_form(page)
+    return _find_form(page, quotes)
 
 
 def harvest_emails(page: Page, site: str, found, where: str = "other") -> None:
@@ -622,25 +758,28 @@ def _check_alive(page: Page, final: bool = False) -> None:
 
 
 def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[str] | None = None,
-                      visited: list[str] | None = None) -> Frame | None:
+                      visited: list[str] | None = None, quotes: list | None = None) -> Frame | None:
     """Ouvre le site et renvoie le cadre contenant le formulaire de contact (ou None).
-    `visited` reçoit les pages explorées (pour expliquer un échec)."""
+    `visited` reçoit les pages explorées (pour expliquer un échec), `quotes` les formulaires de devis écartés
+    (adresse de la page, raison)."""
     emails = emails if emails is not None else set()
     visited = visited if visited is not None else []
+    quotes = quotes if quotes is not None else []
     started = time.monotonic()
     _load(page, site, timeout)
     _check_alive(page)
     visited.append("accueil")
     harvest_emails(page, site, emails)
-    frame = _find_form(page) or _find_form_late(page)
+    frame = _find_form(page, quotes) or _find_form_late(page, quotes)
     if frame:
         return frame
     _check_alive(page, final=True)
     home = page.url
-    frame = _find_form_after_click(page, visited)
+    frame = _find_form_after_click(page, visited, quotes)
     if frame:
         return frame
-    candidates = _contact_links(page, home)
+    skipped: list[str] = []  # liens vers des pages de devis, jamais ouverts
+    candidates = _contact_links(page, home, skipped)
     external = [c for c in candidates if not _same_site(c, home)]
     root = f"{urlparse(home).scheme}://{urlparse(home).netloc}"
     for p in CONTACT_PATHS:  # adresses classiques en complément des liens trouvés
@@ -661,13 +800,13 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
             _dismiss_cookies(page)
             _scroll(page)
             harvest_emails(page, site, emails)
-            frame = _find_form(page) or _find_form_late(page) or (
-                _find_form_after_click(page, visited) if _same_site(link, home) else None)
+            frame = _find_form(page, quotes) or _find_form_late(page, quotes) or (
+                _find_form_after_click(page, visited, quotes) if _same_site(link, home) else None)
             if frame:
                 return frame
             # liens « contact » découverts sur cette page (ex. « Contactez-nous par mail ») : en priorité
             if _same_site(link, home):
-                for extra in _contact_links(page, home):
+                for extra in _contact_links(page, home, skipped):
                     if extra not in tried and extra not in candidates:
                         candidates.insert(0, extra)
                         if not _same_site(extra, home):
@@ -676,6 +815,8 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
             continue
     if external:
         visited.append(f"formulaire externe non exploitable : {external[0][:80]}")
+    if skipped and not quotes:
+        quotes.append((skipped[0], f"lien vers la page de devis « {quote_url(skipped[0])} »"))
     return None
 
 
@@ -761,6 +902,18 @@ def _check(loc):
             el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true})); } }""")
 
 
+def pick_option(opts: list[str]) -> str | None:
+    """Choix d'une liste ou d'un groupe de boutons radio : jamais devis, tarif, rendez-vous, commande, SAV, candidature,
+    particulier… ; parmi les autres, partenariat > prospection > commercial > information > contact > autre >
+    professionnel, sinon le premier. None si tous les choix sont interdits."""
+    allowed = [o for o in opts if not OPTION_AVOID.search(_norm(o))]
+    for pref in OPTION_PREFS:
+        for o in allowed:
+            if pref.search(_norm(o)):
+                return o
+    return allowed[0] if allowed else None
+
+
 def _pick_country(opts: list[str], sender: Sender) -> str | None:
     names = [_norm(n).strip() for n in sender.country_names if n]
     for o in opts:
@@ -832,7 +985,8 @@ def _finish(frame: Frame, fields: list[dict], sender: Sender, res: FillResult) -
     civ_rx = _civ_regex(sender)
     try:
         check = frame.evaluate(VALIDATE_JS, {"countries": sender.country_names,
-                                             "civility": civ_rx.pattern if civ_rx else None})
+                                             "civility": civ_rx.pattern if civ_rx else None,
+                                             "avoid": OPTION_AVOID.pattern, "order": [p.pattern for p in OPTION_PREFS]})
     except Exception:
         check = {"invalid": [], "truncated": 0}
     by_i = {f["i"]: f for f in fields}
@@ -869,7 +1023,22 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
     radios_done: set[str] = set()
     civ_radio = {f["name"]: f["i"] for f in fields if f["type"] == "radio" and f["name"] and civ_rx and civ_rx.search(f["label"] or "")}
     kinds = {f["i"]: classify(f) for f in fresh}
-    lone_name = "last_name" in kinds.values() and "first_name" not in kinds.values()
+    # boutons radio obligatoires (hors civilité) : le meilleur choix du groupe, jamais « particulier », « devis »…
+    groups: dict[str, list[dict]] = {}
+    for f in fresh:
+        if f["type"] == "radio" and f["name"] and f["name"] not in civ_radio:
+            groups.setdefault(f["name"], []).append(f)
+    radio_pick: dict[str, int] = {}
+    radio_none: set[str] = set()
+    for name, radios in groups.items():
+        if not any(r["required"] for r in radios):
+            continue
+        choice = pick_option([r["label"] or r["id"] or "" for r in radios])
+        if choice is None:
+            radio_none.add(name)
+        else:
+            radio_pick[name] = next(r["i"] for r in radios if (r["label"] or r["id"] or "") == choice)
+    lone_name ="last_name" in kinds.values() and "first_name" not in kinds.values()
     # Un seul champ texte libre sans zone de message : il reçoit le message (formulaires « rappel »)
     for f in fresh:
         kind = kinds[f["i"]]
@@ -894,7 +1063,7 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                 if CONSENT.search(text) and not NEWSLETTER.search(text):
                     _check(loc)
                     res.filled["consentement"] = label
-                elif f["required"] and not NEWSLETTER_STRICT.search(text):
+                elif f["required"] and not NEWSLETTER_STRICT.search(text) and not OPTION_AVOID.search(text):
                     _check(loc)
                     res.filled[f"case obligatoire {f['i']}"] = label
             elif kind == "radio" and f["name"] in civ_radio:
@@ -903,12 +1072,17 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                     radios_done.add(f["name"])
                     res.filled["civilité"] = f"{label}"
             elif kind == "radio":
-                if f["name"] not in radios_done and f["required"]:
+                if f["name"] not in radios_done and radio_pick.get(f["name"]) == f["i"]:
                     _check(loc)
                     radios_done.add(f["name"])
+                    res.filled[f"choix {f['i']}"] = label
+                elif f["name"] in radio_none and f["name"] not in radios_done:
+                    radios_done.add(f["name"])
+                    res.warnings.append(f"choix obligatoire sans réponse possible (devis, rendez-vous…) : {label}")
+                    res.missing.append(label)
             elif kind == "select":
                 opts = [o for o in f["options"] if o and not re.search(r"^(--|choisi|select|s[eé]lection|veuillez|bitte|elige|seleccion|scegli|kies)", _norm(o))]
-                pick = next((o for o in opts if SELECT_PREF.search(_norm(o))), opts[0] if opts else None)
+                pick = pick_option(opts)
                 country = _pick_country(opts, sender)
                 if country and (re.search(COUNTRY, _norm(f"{label} {f['name']}")) or len(opts) > 20):
                     pick = country
@@ -917,6 +1091,9 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                 if pick:
                     _select(loc, pick)
                     res.filled[f"liste {f['i']}"] = f"{label} = {pick}"
+                elif opts and f["required"]:
+                    res.warnings.append(f"liste obligatoire sans choix possible (devis, rendez-vous…) : {label}")
+                    res.missing.append(label)
             elif kind == "unknown":
                 if CAPTCHA_TEXT.search(_norm(label)):
                     continue

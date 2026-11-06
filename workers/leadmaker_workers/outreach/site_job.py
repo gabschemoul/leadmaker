@@ -20,8 +20,9 @@ from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
 from ..discovery.scraper import USER_AGENT, proxy_from_env
 from . import netguard
-from .formfill import (CONTACT_PATHS, Sender, SiteDown, _check_alive, _contact_links, _dismiss_cookies, _same_site, best_email,
-                       detect_protection, fill_form, harvest_emails, legal_links, open_contact_form, own_email, submit)
+from .formfill import (CONTACT_PATHS, QUOTE_DETAIL, Sender, SiteDown, _check_alive, _contact_links, _dismiss_cookies,
+                       _same_site, best_email, detect_protection, fill_form, harvest_emails, legal_links, open_contact_form,
+                       own_email, submit)
 
 BLOCKED_RESOURCES = ("media", "font")  # les images restent : elles comptent dans la capture
 # Garde-fou : une page qui ne répond plus (script bloqué, iframe muette) interrompt le travail au bout de ce délai,
@@ -52,10 +53,32 @@ def _screenshot(page, frame) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
+def _quote_reason(quotes: list) -> str:
+    """« page /devis : champ « type de travaux » » : le premier formulaire de devis écarté, pour l'explication."""
+    url, why = quotes[0]
+    return why if why.startswith("lien") else f"{urlparse(url).path or '/'} : {why}"
+
+
+# Formulaire caché (fenêtre qui s'ouvre au clic) ou sans e-mail ni téléphone : rien d'utile n'a pu être écrit, il
+# n'est jamais « prêt » ni envoyé (6/11/2026 : 37 formulaires « prêts » vides).
+UNUSABLE = "formulaire inutilisable : ni e-mail ni téléphone n'ont pu être remplis (formulaire caché ou incomplet)"
+
+
+def _can_reply(filled: dict) -> bool:
+    return "email" in filled or "phone" in filled or any(k.startswith("saisi") for k in filled)
+
+
+def _same_page(a: str, b: str) -> bool:
+    pa, pb = urlparse(a or ""), urlparse(b or "")
+    return ((pa.hostname or "").removeprefix("www.") == (pb.hostname or "").removeprefix("www.")
+            and (pa.path or "/").rstrip("/") == (pb.path or "/").rstrip("/"))
+
+
 def prepare(job: dict) -> dict:
     sender = Sender(**job["sender"])
     emails: set[str] = set()
     visited: list[str] = []
+    quotes: list = []
     out: dict = {"status": "unreachable", "filled": {}, "missing": [], "detail": ""}
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=job.get("headless", True), proxy=proxy_from_env("OUTREACH_PROXY_URL"))
@@ -67,8 +90,11 @@ def prepare(job: dict) -> dict:
         page = ctx.new_page()
         _arm_watchdog()
         try:
-            frame = open_contact_form(page, job["site"], emails=emails, visited=visited)
-            if not frame:
+            frame = open_contact_form(page, job["site"], emails=emails, visited=visited, quotes=quotes)
+            if not frame and quotes:  # seulement des formulaires de devis / rendez-vous : jamais remplis
+                out.update(status="no_form", detail=f"{QUOTE_DETAIL} ({_quote_reason(quotes)} ; pages vues : "
+                           + ", ".join(dict.fromkeys(visited)) + ")")
+            elif not frame:
                 out.update(status="no_form", detail="aucun formulaire de contact trouvé (pages vues : "
                            + ", ".join(dict.fromkeys(visited)) + ")")
             else:
@@ -79,6 +105,9 @@ def prepare(job: dict) -> dict:
                     status = "intervention_required"
                 elif r.status == "error":
                     status = "failed"
+                elif not _can_reply(r.filled):
+                    status = "no_form"
+                    r.warnings.insert(0, UNUSABLE)
                 elif r.missing:
                     status = "incomplete"
                 else:
@@ -129,11 +158,16 @@ def send(job: dict) -> dict:
         ctx.set_default_timeout(15000)
         netguard.install(ctx)
         page = ctx.new_page()
+        quotes: list = []
         try:
-            frame = open_contact_form(page, job.get("form_url") or job["site"])
-            if not frame and job.get("form_url"):
-                frame = open_contact_form(page, job["site"])
-            if not frame:
+            frame = open_contact_form(page, job.get("form_url") or job["site"], quotes=quotes)
+            if not frame and job.get("form_url") and not quotes:
+                frame = open_contact_form(page, job["site"], quotes=quotes)
+            # Formulaire de devis : jamais envoyé. Ni celui validé, ni un autre trouvé à sa place sur une autre page
+            # (il n'aurait pas été relu).
+            if quotes and (not frame or (job.get("form_url") and not _same_page(frame.page.url, job["form_url"]))):
+                out.update(status="no_form", detail=f"{QUOTE_DETAIL} : rien n'a été envoyé ({_quote_reason(quotes)})")
+            elif not frame:
                 out.update(status="failed", detail="formulaire introuvable au moment de l'envoi")
             else:
                 r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
@@ -145,6 +179,8 @@ def send(job: dict) -> dict:
                                screenshot_b64=_screenshot(page, frame))
                 elif r.status == "error":
                     out.update(status="failed", detail=r.detail or "formulaire non rempli")
+                elif not _can_reply(r.filled):
+                    out.update(status="no_form", detail=f"{UNUSABLE} : rien n'a été envoyé")
                 elif r.missing:  # le site refuserait l'envoi : retour « à compléter »
                     out.update(status="incomplete", missing=r.missing,
                                detail="; ".join(["champs à renseigner avant envoi"] + r.warnings))

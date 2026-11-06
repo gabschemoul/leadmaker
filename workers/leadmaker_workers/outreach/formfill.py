@@ -148,7 +148,11 @@ QUOTE_TITLE = re.compile(r"devis|estimation|chiffrage|rendez-?vous|\brdv\b|reser
                          r"|\bcommande[rz]?\b|\bquote\b|estimate|appointment|angebot|kostenvoranschlag|terminvereinbarung"
                          r"|presupuesto|\bcita\b|preventivo|prenota|orcamento|offerte"
                          r"|demande d'intervention|demander une intervention|request an? (\w+ )?(locksmith|technician|plumber"
-                         r"|electrician|service|callback|call back|visit)|schedule (a |an )?(service|visit|call)|\bbook (a|an|now|your)\b", re.I)
+                         r"|electrician|service|callback|call back|visit)|schedule (a |an )?(service|visit|call)|\bbook (a|an|now|your)\b"
+                         # promesse de rappel (attila-home.fr : « Nous vous rappelons en moins d'1h ») et demande de projet
+                         # (neverstopparlour.com : « Parlons projet »)
+                         r"|nous vous rappel|on vous rappel|(etre|soyez|faites-vous) rappele|demande de rappel|rappel gratuit"
+                         r"|parlons (de )?(votre |ton )?projet", re.I)
 # 3) champs typiques d'un projet de client
 QUOTE_FIELD = re.compile(
     r"type (de |d'|du |des )?(travaux|prestation|projet|chantier|bien|batiment|logement|intervention|toiture|produit)"
@@ -156,7 +160,7 @@ QUOTE_FIELD = re.compile(
     r"|prestations? (souhaitees?|demandees?)|\bsurface\b|superficie|\bm2\b|\bbudget\b"
     r"|(adresse|ville|commune|lieu|code postal|localisation)[^,;:*]{0,12}(du|des|de votre|de l'|de la|d') ?(chantier|travaux|intervention)"
     r"|\bdimensions?\b|\bvos mesures\b|\bmesures (de|du|des)\b|deplacement|quantite|\bservices? (souhaites?|demandes?)"
-    r"|(decri|description|details?|parlez|dites)[^.?!]{0,25}projet|votre projet en quelques mots|quel est votre projet"
+    r"|(decri|description|details?|parlez|dites)[^.?!]{0,25}projet|\bvotre projet\b|quel est votre projet"
     r"|decrivez votre (panne|probleme)|quand (vous|souhaitez-vous etre|pouvons-nous vous) rappel|creneau|quel jour"
     r"|date (souhaitee|de votre projet|du projet|d'intervention|de debut|des travaux|de l'evenement|de livraison|d'arrivee"
     r"|de reservation)|niveau d'urgence|delai (souhaite|de realisation)|nombre de (personnes|couverts|invites|participants|nuits)"
@@ -280,15 +284,29 @@ FIND_FORM_JS = r"""
   // titres de la page, dans l'ordre du document : le dernier placé avant le formulaire est son titre de section,
   // même loin au-dessus (« Obtenir un devis » puis le formulaire, couvreur-marseille.com)
   const HEADS = qsa(document, 'h1,h2,h3,h4,h5,h6,[role=heading]').filter(h => N(h.innerText).length > 1);
+  // texte court écrit en très gros (24 px ou plus) hors menus : un titre pour le lecteur, même sans balise de titre
+  // (schoutentoit45.fr : <p><strong>CONTACT<br>DEMANDE DE DEVIS</strong></p> en 45 px au-dessus du formulaire)
+  qsa(document, 'p,strong,b,span,div,font').forEach(e => {
+    const raw = (e.textContent || '').trim();
+    if (raw.length < 3 || raw.length > 80 || !/[a-z]{3}/i.test(raw)) return;
+    if (e.closest('a,button,nav,header,footer,li,label,form,select,option,h1,h2,h3,h4,h5,h6,[role=heading]')) return;
+    if (e.querySelector('input,textarea,select,img,svg,a,button,h1,h2,h3,h4,h5,h6')) return;
+    if (parseFloat(getComputedStyle(e).fontSize) >= 24) HEADS.push(e);
+  });
+  HEADS.sort((a, b) => { const p = a.compareDocumentPosition(b);
+    return p & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : p & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0; });
   // petits titres de coordonnées (« Téléphone : », « Adresse : ») placés entre le titre de section et le formulaire :
   // ignorés (jardiforage.fr : « DEMANDE DE DEVIS » puis « Téléphone : », « Adresse : », puis le formulaire)
   const INFO = /^(t[eé]l[eé]?(phone)?|tel|adresse|address|e-?mail|courriel|horaires?|fax|mobile|portable|nous trouver|coordonn[eé]es|siege|acces)\b|:\s*$/i;
-  const headBefore = f => { let last = null;
+  const headsBefore = f => { const out = [];
     for (const h of HEADS) { if (f.contains(h) || INFO.test(N(h.innerText))) continue;
       const pos = h.compareDocumentPosition(f);
       if (pos & Node.DOCUMENT_POSITION_DISCONNECTED) continue;
-      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) last = h; else break; }
-    return last; };
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) out.push(h); else break; }
+    return out.slice(-3).reverse(); };
+  // texte écrit entre un titre et le formulaire (pour savoir si le titre d'avant fait encore partie de la section)
+  const gap = (h, f) => { try { const r = document.createRange(); r.setStartAfter(h); r.setEndBefore(f); return N(r.toString()).length; }
+    catch (e) { return 1e9; } };
   const quoteOf = (f, fields) => {
     for (const e of fields) { const t = fieldLabel(e); const m = t.match(QFIELD); if (m) return `champ « ${t.slice(0, 50)} »`; }
     for (const h of qsa(f, HSEL)) { const t = isTitle(h); if (t) return `titre « ${t.slice(0, 50)} »`; }
@@ -315,8 +333,13 @@ FIND_FORM_JS = r"""
       if (h && N(h.innerText)) { const t = isTitle(h); if (t) return `titre « ${t.slice(0, 50)} »`; break; }
       if (N(s.innerText)) break;
     }
-    const hb = headBefore(f);
-    if (hb) { const t = isTitle(hb); if (t) return `titre de la section « ${t.slice(0, 50)} »`; }
+    // dernier titre avant le formulaire ; les 2 d'avant aussi s'ils sont tout près (moins de 400 lettres entre eux et
+    // le formulaire) : « CONTACT / DEMANDE DE DEVIS » puis « SCHOUTENTOIT 45 », l'adresse, puis le formulaire
+    const hb = headsBefore(f);
+    for (let k = 0; k < hb.length; k++) {
+      if (k > 0 && gap(hb[k], f) > 400) break;
+      const t = isTitle(hb[k]); if (t) return `titre de la section « ${t.slice(0, 50)} »`;
+    }
     return null;
   };
   let best = -1, bestScore = 0, quote = null;

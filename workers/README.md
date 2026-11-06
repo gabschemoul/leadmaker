@@ -19,7 +19,9 @@ Points communs :
 - **seuls les formulaires de contact** sont remplis : un formulaire de devis / réservation / rendez-vous (adresse
   `/devis`…, titre « Devis gratuit », bouton « Recevoir mon devis », champs « type de travaux », « budget »,
   « adresse du chantier »…) ou sans zone de message (demande de rappel) est écarté, et le robot cherche ailleurs ;
-  même un titre mixte (« Devis / Contact ») ou le titre de la section au-dessus (« Obtenir un devis ») ; une page qui
+  même un titre mixte (« Devis / Contact ») ou le titre de la section au-dessus (« Obtenir un devis », y compris
+  les 2 titres d'avant s'ils sont tout près, et un texte écrit en très gros sans balise de titre), une promesse de
+  rappel (« Nous vous rappelons ») ou une demande de projet (« Parlons projet », champ « Votre projet ») ; une page qui
   porte un formulaire de devis est écartée en entier ; sinon « pas de formulaire » (« formulaire de devis, pas de
   formulaire de contact »). Même règle à l'envoi. Un champ au libellé inconnu n'est jamais rempli. Listes et boutons
   radio : jamais devis, tarif, rendez-vous, commande, SAV, candidature, particulier, et jamais un choix au hasard

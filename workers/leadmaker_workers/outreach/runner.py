@@ -17,6 +17,7 @@ from psycopg.types.json import Jsonb
 
 from ..queue import Task
 from ..storage import upload_png
+from . import ai_check
 from .templates import parse_templates, pick_balanced, render, short_version
 
 log = logging.getLogger("leadmaker.outreach")
@@ -152,6 +153,13 @@ class PrepareRunner:
         if result is None:
             result = {"status": "to_verify", "submitted": True,
                       "detail": f"envoi bloqué plus de {_timeout()} s : vérifiez sur le site si le message est parti"}
+        # contrôle IA avant « prêt » (ai_check.py) : un doute → alerte, jamais validé automatiquement
+        if result["status"] == "ready" and ai_check.enabled():
+            alert = ai_check.review(result.get("form_url") or "", result.get("filled") or {}, result.get("context"),
+                                    result.get("screenshot_b64") or "")
+            if alert:
+                result["detail"] = "; ".join(filter(None, [alert, result.get("detail", "")]))
+
         shot = None
         if result.get("screenshot_b64"):
             try:

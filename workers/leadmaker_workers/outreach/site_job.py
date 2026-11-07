@@ -53,6 +53,33 @@ def _screenshot(page, frame) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
+# contexte du formulaire choisi pour le contrôle IA (ai_check.py) : titre de la page, 3 derniers titres au-dessus
+# (balises de titre ou texte écrit en gros), texte du formulaire (libellés, choix des listes)
+CONTEXT_JS = r"""() => {
+  const f = document.querySelector('[data-ff-form]'); const N = s => (s || '').replace(/\s+/g, ' ').trim();
+  if (!f) return {title: document.title, before: [], form: ''};
+  const heads = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,[role=heading],p,strong,b,span,div')].filter(e => {
+    if (f.contains(e) || !(e.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING)) return false;
+    const t = N(e.textContent); if (t.length < 3 || t.length > 100) return false;
+    if (/^H[1-6]$/.test(e.tagName) || e.getAttribute('role') === 'heading') return true;
+    if (e.closest('a,button,nav,header,footer,li,label,form,h1,h2,h3,h4,h5,h6') || e.querySelector('input,textarea,select,a,button')) return false;
+    return parseFloat(getComputedStyle(e).fontSize) >= 24;
+  });
+  return {title: document.title, before: [...new Set(heads.slice(-3).map(e => N(e.innerText || e.textContent).slice(0, 100)))],
+          form: N(f.innerText).slice(0, 1500)};
+}"""
+
+
+def _context(page, frame) -> dict:
+    try:
+        c = frame.evaluate(CONTEXT_JS)
+        if frame is not page:
+            c["title"] = page.title()
+        return c
+    except Exception:
+        return {}
+
+
 def _quote_reason(quotes: list) -> str:
     """« page /devis : champ « type de travaux » » : le premier formulaire de devis écarté, pour l'explication."""
     url, why = quotes[0]
@@ -117,6 +144,8 @@ def prepare(job: dict) -> dict:
                     detail = "; ".join(filter(None, [f"protection anti-robot : {protection}", detail]))
                 out.update(status=status, form_url=r.form_url, filled=r.filled, missing=r.missing, detail=detail,
                            protection_type=protection, short=r.short, screenshot_b64=_screenshot(page, frame))
+                if status == "ready":
+                    out["context"] = _context(page, frame)
         except SiteDown as e:
             out.update(status="unreachable", detail=f"site hors ligne ou en construction (« {e} »)")
         except SiteHang as e:

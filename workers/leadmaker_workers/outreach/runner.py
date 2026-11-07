@@ -153,13 +153,6 @@ class PrepareRunner:
         if result is None:
             result = {"status": "to_verify", "submitted": True,
                       "detail": f"envoi bloqué plus de {_timeout()} s : vérifiez sur le site si le message est parti"}
-        # contrôle IA avant « prêt » (ai_check.py) : un doute → alerte, jamais validé automatiquement
-        if result["status"] == "ready" and ai_check.enabled():
-            alert = ai_check.review(result.get("form_url") or "", result.get("filled") or {}, result.get("context"),
-                                    result.get("screenshot_b64") or "")
-            if alert:
-                result["detail"] = "; ".join(filter(None, [alert, result.get("detail", "")]))
-
         shot = None
         if result.get("screenshot_b64"):
             try:
@@ -267,6 +260,13 @@ class PrepareRunner:
             result["detail"] = "; ".join(filter(None, [result.get("detail", ""), "version courte utilisée (zone de message limitée)"]))
         else:
             template_used = template["name"]
+
+        # contrôle IA avant « prêt » (ai_check.py) : un doute → alerte, jamais validé automatiquement
+        if result["status"] == "ready" and ai_check.enabled():
+            alert = ai_check.review(result.get("form_url") or "", result.get("filled") or {}, result.get("context"),
+                                    result.get("screenshot_b64") or "")
+            if alert:
+                result["detail"] = "; ".join(filter(None, [alert, result.get("detail", "")]))
 
         shot = None
         if result.get("screenshot_b64"):

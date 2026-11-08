@@ -74,7 +74,7 @@ export function AppBreadcrumbs(props: {
 
           return (
             <Fragment key={index}>
-              <BreadcrumbItem className={'capitalize lg:text-xs'}>
+              <BreadcrumbItem className={'text-sm font-medium capitalize'}>
                 <If
                   condition={index < visiblePaths.length - 1}
                   fallback={label}

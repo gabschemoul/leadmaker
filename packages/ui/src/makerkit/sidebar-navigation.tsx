@@ -145,7 +145,7 @@ function SidebarNavigationRouteGroupLabel({
 }) {
   // Prospectigo (8/11/2026) : titres de groupe discrets, en petites capitales espacées
   const className = cn(
-    'text-sidebar-foreground/50 mt-2 h-7 px-2 text-xs font-medium',
+    'text-sidebar-foreground/55 mt-2 h-8 px-2 text-sm font-medium',
     { hidden: !open },
   );
 
@@ -261,7 +261,7 @@ function SidebarNavigationRouteChildItem({
         <SidebarMenuButton
           tooltip={tooltip}
           className={
-            'hover:bg-muted hover:text-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&_svg]:data-active:text-sidebar-accent-foreground text-[13px]'
+            'text-sidebar-foreground/65 hover:bg-muted hover:text-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&_svg]:data-active:text-sidebar-accent-foreground h-9 text-sm font-medium'
           }
         >
           <span
@@ -307,7 +307,7 @@ function SidebarNavigationRouteChildItem({
           isActive={isActive}
           tooltip={tooltip}
           className={
-            'hover:bg-muted hover:text-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&_svg]:data-active:text-sidebar-accent-foreground text-[13px]'
+            'text-sidebar-foreground/65 hover:bg-muted hover:text-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&_svg]:data-active:text-sidebar-accent-foreground h-9 text-sm font-medium'
           }
           render={
             <Link

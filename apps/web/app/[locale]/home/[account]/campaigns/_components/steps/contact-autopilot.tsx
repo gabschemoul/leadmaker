@@ -409,7 +409,7 @@ function AutopilotSetup(props: {
                 className={cn(
                   'rounded-xl border p-3 text-left transition-colors',
                   values.schedule === schedule
-                    ? 'border-primary bg-primary/5 ring-primary ring-1'
+                    ? 'border-brand bg-brand-pale/60 ring-brand ring-1'
                     : 'hover:bg-muted/50',
                 )}
               >
@@ -446,7 +446,7 @@ function AutopilotSetup(props: {
 
           <p
             className={
-              'bg-primary/10 text-foreground rounded-lg px-3 py-2.5 text-sm'
+              'bg-brand-pale text-foreground rounded-lg px-3 py-2.5 text-sm'
             }
             data-test={'autopilot-pace-text'}
           >
@@ -472,7 +472,7 @@ function AutopilotSetup(props: {
                   key={message.name}
                   className={cn(
                     'flex cursor-pointer items-start gap-2.5 rounded-xl border p-3',
-                    checked ? 'border-primary bg-primary/5' : 'bg-card',
+                    checked ? 'border-brand bg-brand-pale/60' : 'bg-card',
                   )}
                 >
                   <input
@@ -518,7 +518,7 @@ function AutopilotSetup(props: {
           <p
             className={cn(
               'rounded-lg px-3 py-2.5 text-sm',
-              abCount >= 2 ? 'bg-primary/10' : 'bg-muted text-muted-foreground',
+              abCount >= 2 ? 'bg-brand-pale' : 'bg-muted text-muted-foreground',
             )}
           >
             {abCount >= 2
@@ -916,7 +916,7 @@ function AutopilotRunning(props: {
               className={cn(
                 'size-3 rounded-full',
                 done
-                  ? 'bg-primary'
+                  ? 'bg-ok'
                   : paused
                     ? 'bg-muted-foreground/50'
                     : 'bg-brand animate-pulse',

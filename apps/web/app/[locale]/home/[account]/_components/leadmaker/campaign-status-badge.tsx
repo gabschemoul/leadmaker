@@ -6,14 +6,18 @@ import type { Database } from '~/lib/database.types';
 
 type CampaignStatus = Database['public']['Enums']['lm_campaign_status'];
 
+/**
+ * Une seule famille de pastilles (relooking du 8/11/2026) : gris = brouillon, bleu Klein = en cours,
+ * ambre = en pause, noir = recherche terminée, contour = archivée.
+ */
 const STATUS_STYLES: Record<
   CampaignStatus,
   { variant: 'secondary' | 'outline' | 'default'; className?: string }
 > = {
   draft: { variant: 'secondary' },
-  running: { variant: 'default', className: badgeExtras.success },
-  paused: { variant: 'outline', className: badgeExtras.warning },
-  completed: { variant: 'default', className: badgeExtras.info },
+  running: { variant: 'secondary', className: badgeExtras.brand },
+  paused: { variant: 'secondary', className: badgeExtras.warning },
+  completed: { variant: 'default' },
   archived: { variant: 'outline' },
 };
 

@@ -52,6 +52,10 @@
      l'orange #ff4704 (gardé seulement dans /archives/accueil-v1) */
   --brand: #3d3dff;
   --brand-foreground: #ffffff;
+  /* socle appli (relooking du 8/11/2026, « structure ElevenLabs, tableaux Apollo ») :
+     survol du bouton bleu, fond bleu pâle des états vides / étapes en cours */
+  --brand-hover: #2626d6;
+  --brand-pale: #e9e9ff;
   --background: #fdfcfc;
   --foreground: #000000;
   --card: #ffffff;
@@ -68,8 +72,9 @@
   --accent: #f5f3f1;
   --accent-foreground: #000000;
   --destructive: oklch(0.58 0.22 27);
-  --border: #e7e4e0;
-  --input: #e1ddd8;
+  /* filets à ~8 % (Apollo / ElevenLabs), champs à ~10 % */
+  --border: #e9e6e2;
+  --input: #dedad5;
   --ring: #2b7fff;
   --chart-1: #2b7fff;
   --chart-2: #ff4704;
@@ -77,7 +82,8 @@
   --chart-4: #44403b;
   --chart-5: #d7d2cc;
   --radius: 0.5rem;
-  --sidebar: #ffffff;
+  /* barre latérale gris pierre 50 séparée par un filet, comme ElevenLabs */
+  --sidebar: #faf8f8;
   --sidebar-foreground: #000000;
   --sidebar-primary: #000000;
   --sidebar-primary-foreground: #ffffff;
@@ -93,6 +99,8 @@
 
   --brand: #6b6bff;
   --brand-foreground: #ffffff;
+  --brand-hover: #8585ff;
+  --brand-pale: #1e1e4a;
   --background: #0c0a09;
   --foreground: #faf8f8;
   --card: #1c1917;
@@ -117,7 +125,7 @@
   --chart-3: #a59f97;
   --chart-4: #d7d2cc;
   --chart-5: #59544f;
-  --sidebar: #0c0a09;
+  --sidebar: #110f0e;
   --sidebar-foreground: #faf8f8;
   --sidebar-primary: #ffffff;
   --sidebar-primary-foreground: #000000;

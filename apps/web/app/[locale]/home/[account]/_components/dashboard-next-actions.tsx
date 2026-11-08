@@ -213,7 +213,7 @@ function Kpi(props: {
       </span>
       <span
         className={cn(
-          'font-heading text-2xl leading-tight font-medium tracking-[-0.02em] tabular-nums',
+          'font-display text-[1.75rem] leading-tight font-medium tracking-[-0.01em] tabular-nums',
           props.highlight && 'text-brand',
         )}
       >

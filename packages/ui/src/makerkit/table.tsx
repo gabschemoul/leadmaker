@@ -1,6 +1,7 @@
 /**
- * Prospectigo (8/11/2026) — tableaux façon Apollo : en-tête gris pierre avec étiquettes en
- * capitales (11 px, chasse fixe), lignes de 48 px en 13 px, filets fins.
+ * Prospectigo (8/11/2026) — tableaux dans la charte du site (fenêtre d'appli de la page
+ * d'accueil) : en-tête en petites capitales à chasse fixe, gris ; lignes de 48 px en 14 px ;
+ * filets fins ; le cadre blanc arrondi vient du panneau qui contient le tableau.
  * Enveloppe la primitive shadcn (laissée intacte) ; `cn()` fait gagner le `className` du point d'appel.
  */
 import * as React from 'react';
@@ -21,7 +22,7 @@ function Table({
   className,
   ...props
 }: React.ComponentProps<typeof ShadcnTable>) {
-  return <ShadcnTable className={cn('text-[13px]', className)} {...props} />;
+  return <ShadcnTable className={cn('text-sm', className)} {...props} />;
 }
 
 function TableHeader({
@@ -30,10 +31,7 @@ function TableHeader({
 }: React.ComponentProps<typeof ShadcnTableHeader>) {
   return (
     <ShadcnTableHeader
-      className={cn(
-        'bg-stone-50 dark:bg-stone-900 [&_tr]:hover:bg-transparent',
-        className,
-      )}
+      className={cn('[&_tr]:hover:bg-transparent', className)}
       {...props}
     />
   );

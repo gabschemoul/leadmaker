@@ -65,16 +65,16 @@
   --primary: #000000;
   --primary-foreground: #ffffff;
   --primary-hover: #44403b;
-  --secondary: #f5f3f1;
+  --secondary: #f7f5f2;
   --secondary-foreground: #000000;
-  --muted: #f5f3f1;
-  --muted-foreground: #777169;
-  --accent: #f5f3f1;
+  --muted: #f7f5f2;
+  --muted-foreground: #736f6c;
+  --accent: #f7f5f2;
   --accent-foreground: #000000;
   --destructive: oklch(0.58 0.22 27);
   /* filets à ~8 % (Apollo / ElevenLabs), champs à ~10 % */
-  --border: #e9e6e2;
-  --input: #dedad5;
+  --border: #e6e2dc;
+  --input: #dcd8d2;
   --ring: #2b7fff;
   --chart-1: #2b7fff;
   --chart-2: #ff4704;
@@ -83,12 +83,12 @@
   --chart-5: #d7d2cc;
   --radius: 0.5rem;
   /* barre latérale gris pierre 50 séparée par un filet, comme ElevenLabs */
-  --sidebar: #f7f5f3;
+  --sidebar: #ffffff;
   --sidebar-foreground: #000000;
   --sidebar-primary: #000000;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f5f3f1;
-  --sidebar-accent-foreground: #000000;
+  --sidebar-accent: #e9e9ff;
+  --sidebar-accent-foreground: #2626d6;
   --sidebar-border: #e9e6e2;
   --sidebar-ring: #2b7fff;
 }
@@ -129,8 +129,8 @@
   --sidebar-foreground: #faf8f8;
   --sidebar-primary: #ffffff;
   --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #1c1917;
-  --sidebar-accent-foreground: #ffffff;
+  --sidebar-accent: #1e1e4a;
+  --sidebar-accent-foreground: #9d9dff;
   --sidebar-border: #292524;
   --sidebar-ring: #2b7fff;
 }

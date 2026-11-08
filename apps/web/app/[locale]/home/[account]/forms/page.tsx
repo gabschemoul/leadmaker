@@ -6,8 +6,6 @@
 
 import { Suspense } from 'react';
 
-import Link from 'next/link';
-
 import { Loader2 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
@@ -17,7 +15,6 @@ import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
-import { cn } from '@kit/ui/utils';
 
 import {
   Delayed,
@@ -32,6 +29,7 @@ import {
   isAttemptGroup,
 } from '~/lib/leadmaker/attempts';
 
+import { FilterChip } from '../_components/leadmaker/filter-chip';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
@@ -181,38 +179,16 @@ async function FormsContent(props: FormsPageProps) {
           </div>
         ) : null}
 
-        <nav
-          className={
-            'flex [scrollbar-width:none] items-end gap-1 overflow-x-auto border-b'
-          }
-          data-test={'forms-groups'}
-        >
+        <nav className={'flex flex-wrap gap-2'} data-test={'forms-groups'}>
           {visibleGroups.map((item) => (
-            <Link
+            <FilterChip
               key={item}
               href={href(item)}
-              aria-current={item === group ? 'page' : undefined}
-              data-test={`forms-group-${item}`}
-              className={cn(
-                '-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium whitespace-nowrap transition-colors',
-                item === group
-                  ? 'border-foreground text-foreground'
-                  : 'text-muted-foreground hover:text-foreground border-transparent',
-              )}
-            >
-              <Trans i18nKey={`outreach.forms.groups.${item}`} />
-
-              <span
-                className={cn(
-                  'rounded-full px-1.5 text-[11px] tabular-nums',
-                  item === group
-                    ? 'bg-foreground text-background'
-                    : 'bg-muted text-muted-foreground',
-                )}
-              >
-                {counts[item]}
-              </span>
-            </Link>
+              active={item === group}
+              count={counts[item]}
+              testId={`forms-group-${item}`}
+              label={<Trans i18nKey={`outreach.forms.groups.${item}`} />}
+            />
           ))}
         </nav>
 

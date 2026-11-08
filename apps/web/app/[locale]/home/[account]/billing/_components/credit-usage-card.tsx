@@ -198,7 +198,7 @@ function Balance(props: {
         {props.label}
       </p>
 
-      <p className={'font-heading text-2xl tracking-tight tabular-nums'}>
+      <p className={'font-display text-[1.75rem] tracking-tight tabular-nums'}>
         {props.format.number(props.value)}
         {props.max ? (
           <span className={'text-muted-foreground text-sm font-normal'}>

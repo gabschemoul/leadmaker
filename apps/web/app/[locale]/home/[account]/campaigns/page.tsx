@@ -1,7 +1,7 @@
 /**
- * Rôle : page liste des campagnes de l'organisation (par dossier client) — tableau façon Apollo
- * (relooking du 8/11/2026) : barre d'outils avec recherche et filtres par statut, lignes denses,
- * action dans la ligne, état vide qui explique la fonction.
+ * Rôle : page liste des campagnes de l'organisation (par dossier client), dans la charte du site
+ * (relooking du 8/11/2026) : pastilles de statut, recherche en pilule, tableau dans un panneau blanc
+ * avec en-têtes en petites capitales, lignes avec titre et sous-titre, flèche discrète à droite.
  * Données : loadCampaigns (campaigns.loader) et leadmaker.loader. Filtres : ?q= (texte) et ?statut=.
  * Écritures : aucune.
  */
@@ -14,7 +14,6 @@ import { ArrowRight, Plus, Radar, Search, Send, Target } from 'lucide-react';
 import { getFormatter, getTranslations } from 'next-intl/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { buttonExtras } from '@kit/ui/button-extras';
 import { Card } from '@kit/ui/card';
@@ -41,6 +40,7 @@ import type { Database } from '~/lib/database.types';
 
 import { CampaignStatusBadge } from '../_components/leadmaker/campaign-status-badge';
 import { EmptyPanel } from '../_components/leadmaker/empty-panel';
+import { FilterChip } from '../_components/leadmaker/filter-chip';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import {
   loadCountryOptions,
@@ -51,7 +51,7 @@ import { loadCampaigns } from './_lib/server/campaigns.loader';
 
 type CampaignStatus = Database['public']['Enums']['lm_campaign_status'];
 
-/** Filtres de statut proposés dans la barre d'outils, dans l'ordre d'affichage. */
+/** Pastilles de statut, dans l'ordre d'affichage. */
 const STATUS_FILTERS: CampaignStatus[] = [
   'running',
   'paused',
@@ -86,11 +86,11 @@ function CampaignsPage({ params, searchParams }: CampaignsPageProps) {
         <Suspense
           fallback={
             <Delayed>
-              <CardSkeleton rows={5} />
+              <CardSkeleton rows={6} />
             </Delayed>
           }
         >
-          <CampaignsCard params={params} searchParams={searchParams} />
+          <CampaignsList params={params} searchParams={searchParams} />
         </Suspense>
       </div>
     </PageBody>
@@ -128,7 +128,7 @@ async function CampaignsPageHeader({ params }: { params: Params }) {
   );
 }
 
-async function CampaignsCard({
+async function CampaignsList({
   params,
   searchParams,
 }: {
@@ -201,9 +201,7 @@ async function CampaignsCard({
     return qs ? `${campaignsPath}?${qs}` : campaignsPath;
   };
 
-  const hasAny = allCampaigns.length > 0;
-
-  if (!hasAny) {
+  if (allCampaigns.length === 0) {
     return (
       <div className={'py-6'} data-test={'campaigns-empty'}>
         <EmptyPanel
@@ -212,7 +210,7 @@ async function CampaignsCard({
           description={t('list.emptyDescription')}
           actions={
             <Button
-              className={buttonExtras.brand}
+              className={cn(buttonExtras.brand, buttonExtras.pill)}
               nativeButton={false}
               render={<Link href={`${campaignsPath}/new`} />}
             >
@@ -243,17 +241,13 @@ async function CampaignsCard({
   }
 
   return (
-    <Card className={'gap-0 py-0'}>
-      {/* barre d'outils : recherche + filtres par statut */}
-      <div
-        className={
-          'flex flex-wrap items-center gap-2 border-b px-3 py-2.5 sm:px-4'
-        }
-      >
+    <div className={'flex flex-col gap-4'}>
+      {/* recherche en pilule + pastilles de statut */}
+      <div className={'flex flex-wrap items-center gap-2'}>
         <form
           action={campaignsPath}
           method={'get'}
-          className={'relative w-full sm:max-w-xs'}
+          className={'relative w-full sm:w-72'}
           role={'search'}
         >
           {activeStatus ? (
@@ -262,7 +256,7 @@ async function CampaignsCard({
 
           <Search
             className={
-              'text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2'
+              'text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2'
             }
           />
 
@@ -270,12 +264,12 @@ async function CampaignsCard({
             name={'q'}
             defaultValue={query.q ?? ''}
             placeholder={t('list.searchPlaceholder')}
-            className={'h-8 pl-9'}
+            className={'h-8 rounded-full pl-10 text-[13px]'}
             data-test={'campaigns-search'}
           />
         </form>
 
-        <div className={'flex flex-wrap items-center gap-1'}>
+        <div className={'flex flex-wrap items-center gap-1.5'}>
           <FilterChip
             href={filterHref()}
             active={!activeStatus}
@@ -301,143 +295,116 @@ async function CampaignsCard({
         </div>
       </div>
 
-      {campaigns.length === 0 ? (
-        <p
-          className={'text-muted-foreground px-4 py-12 text-center text-sm'}
-          data-test={'campaigns-empty'}
-        >
-          {activeStatus === 'archived' && !search
-            ? t('archive.listEmpty')
-            : t('list.emptyFiltered')}
-        </p>
-      ) : (
-        <Table data-test={'campaigns-table'}>
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <Trans i18nKey={'campaigns.list.nameColumn'} />
-              </TableHead>
-
-              <TableHead>
-                <Trans i18nKey={'campaigns.list.statusColumn'} />
-              </TableHead>
-
-              {showFolders ? (
+      <Card className={'gap-0 py-0'}>
+        {campaigns.length === 0 ? (
+          <p
+            className={'text-muted-foreground px-4 py-12 text-center text-sm'}
+            data-test={'campaigns-empty'}
+          >
+            {activeStatus === 'archived' && !search
+              ? t('archive.listEmpty')
+              : t('list.emptyFiltered')}
+          </p>
+        ) : (
+          <Table data-test={'campaigns-table'}>
+            <TableHeader>
+              <TableRow>
                 <TableHead>
-                  <Trans i18nKey={'campaigns.list.folderColumn'} />
+                  <Trans i18nKey={'campaigns.list.nameColumn'} />
                 </TableHead>
-              ) : null}
 
-              <TableHead>
-                <Trans i18nKey={'campaigns.list.countryColumn'} />
-              </TableHead>
-
-              <TableHead className={'text-right'}>
-                <Trans i18nKey={'campaigns.list.prospectsColumn'} />
-              </TableHead>
-
-              <TableHead>
-                <Trans i18nKey={'campaigns.list.createdAtColumn'} />
-              </TableHead>
-
-              <TableHead className={'w-28'} />
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {campaigns.map((campaign) => (
-              <TableRow key={campaign.id}>
-                <TableCell className={'max-w-[28rem] truncate font-medium'}>
-                  <Link
-                    className={'underline-offset-4 hover:underline'}
-                    data-test={'campaign-link'}
-                    href={`${campaignsPath}/${campaign.id}`}
-                  >
-                    {campaign.name}
-                  </Link>
-                </TableCell>
-
-                <TableCell>
-                  <CampaignStatusBadge status={campaign.status} />
-                </TableCell>
+                <TableHead>
+                  <Trans i18nKey={'campaigns.list.statusColumn'} />
+                </TableHead>
 
                 {showFolders ? (
-                  <TableCell className={'text-muted-foreground'}>
-                    {folderLabel(campaign.spaceId)}
-                  </TableCell>
+                  <TableHead>
+                    <Trans i18nKey={'campaigns.list.folderColumn'} />
+                  </TableHead>
                 ) : null}
 
-                <TableCell className={'text-muted-foreground'}>
-                  {countryName(campaign.countryCode)}
-                </TableCell>
+                <TableHead>
+                  <Trans i18nKey={'campaigns.list.countryColumn'} />
+                </TableHead>
 
-                <TableCell className={'text-right tabular-nums'}>
-                  {format.number(campaign.prospects)}
-                </TableCell>
+                <TableHead className={'text-right'}>
+                  <Trans i18nKey={'campaigns.list.prospectsColumn'} />
+                </TableHead>
 
-                <TableCell className={'text-muted-foreground'}>
-                  {format.dateTime(new Date(campaign.createdAt), {
-                    dateStyle: 'medium',
-                  })}
-                </TableCell>
-
-                <TableCell className={'text-right'}>
-                  <Button
-                    variant={'outline'}
-                    size={'sm'}
-                    nativeButton={false}
-                    render={<Link href={`${campaignsPath}/${campaign.id}`} />}
-                  >
-                    <span>{t('list.open')}</span>
-                    <ArrowRight />
-                  </Button>
-                </TableCell>
+                <TableHead className={'w-12'} />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            </TableHeader>
 
-      <div
-        className={
-          'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[13px]'
-        }
-      >
-        <span>{t('list.count', { count: campaigns.length })}</span>
-      </div>
-    </Card>
-  );
-}
+            <TableBody>
+              {campaigns.map((campaign) => (
+                <TableRow key={campaign.id} className={'group/row'}>
+                  <TableCell className={'max-w-[28rem]'}>
+                    <Link
+                      className={'flex min-w-0 flex-col'}
+                      data-test={'campaign-link'}
+                      href={`${campaignsPath}/${campaign.id}`}
+                    >
+                      <span className={'truncate font-medium'}>
+                        {campaign.name}
+                      </span>
 
-function FilterChip(props: {
-  href: string;
-  active: boolean;
-  count: number;
-  label: string;
-  testId: string;
-}) {
-  return (
-    <Link
-      href={props.href}
-      aria-current={props.active ? 'page' : undefined}
-      data-test={props.testId}
-      className={cn(
-        'flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition-colors',
-        props.active
-          ? 'bg-foreground text-background'
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-      )}
-    >
-      <span>{props.label}</span>
-      <Badge
-        variant={'secondary'}
-        className={cn(
-          'h-4 min-w-4 px-1 text-[11px]',
-          props.active && 'bg-background/20 text-background',
+                      <span
+                        className={'text-muted-foreground truncate text-xs'}
+                      >
+                        {t('list.createdAtColumn')}{' '}
+                        {format.dateTime(new Date(campaign.createdAt), {
+                          dateStyle: 'medium',
+                        })}
+                      </span>
+                    </Link>
+                  </TableCell>
+
+                  <TableCell>
+                    <CampaignStatusBadge status={campaign.status} />
+                  </TableCell>
+
+                  {showFolders ? (
+                    <TableCell className={'text-muted-foreground'}>
+                      {folderLabel(campaign.spaceId)}
+                    </TableCell>
+                  ) : null}
+
+                  <TableCell className={'text-muted-foreground'}>
+                    {countryName(campaign.countryCode)}
+                  </TableCell>
+
+                  <TableCell className={'text-right tabular-nums'}>
+                    {format.number(campaign.prospects)}
+                  </TableCell>
+
+                  <TableCell className={'text-right'}>
+                    <Button
+                      variant={'ghost'}
+                      size={'icon-sm'}
+                      nativeButton={false}
+                      aria-label={t('list.open')}
+                      className={
+                        'text-muted-foreground group-hover/row:text-foreground'
+                      }
+                      render={<Link href={`${campaignsPath}/${campaign.id}`} />}
+                    >
+                      <ArrowRight />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
-      >
-        {props.count}
-      </Badge>
-    </Link>
+
+        <div
+          className={
+            'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[13px]'
+          }
+        >
+          <span>{t('list.count', { count: campaigns.length })}</span>
+        </div>
+      </Card>
+    </div>
   );
 }

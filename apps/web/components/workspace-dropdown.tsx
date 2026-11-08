@@ -169,7 +169,7 @@ export function WorkspaceDropdown({
               <Button
                 data-test="workspace-dropdown-trigger"
                 variant="ghost"
-                className="bg-card hover:bg-muted active:bg-muted border-border h-9 w-full justify-start gap-x-1.5 rounded-lg border px-1.5 text-[13px] transition-colors"
+                className="hover:bg-sidebar-accent active:bg-sidebar-accent h-9 w-full justify-start gap-x-2 rounded-lg px-2 text-sm font-medium transition-colors"
               >
                 <span className="flex aspect-square size-6 items-center justify-center">
                   <WorkspaceAvatar

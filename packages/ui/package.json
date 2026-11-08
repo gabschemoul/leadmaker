@@ -14,7 +14,7 @@
     "./accordion": "./src/shadcn/accordion.tsx",
     "./alert-dialog": "./src/shadcn/alert-dialog.tsx",
     "./avatar": "./src/makerkit/avatar.tsx",
-    "./button": "./src/shadcn/button.tsx",
+    "./button": "./src/makerkit/button.tsx",
     "./calendar": "./src/shadcn/calendar.tsx",
     "./card": "./src/makerkit/card.tsx",
     "./checkbox": "./src/shadcn/checkbox.tsx",

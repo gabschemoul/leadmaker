@@ -258,7 +258,12 @@ function SidebarNavigationRouteChildItem({
   const triggerItem = collapsible ? (
     <CollapsibleTrigger
       render={
-        <SidebarMenuButton tooltip={tooltip} className={'text-[13px]'}>
+        <SidebarMenuButton
+          tooltip={tooltip}
+          className={
+            'hover:bg-muted hover:text-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&_svg]:data-active:text-sidebar-accent-foreground text-[13px]'
+          }
+        >
           <span
             className={cn('flex items-center gap-2', {
               'mx-auto w-full gap-0 [&>svg]:flex-1 [&>svg]:shrink-0': !open,
@@ -301,7 +306,9 @@ function SidebarNavigationRouteChildItem({
         <SidebarMenuButton
           isActive={isActive}
           tooltip={tooltip}
-          className={'text-[13px]'}
+          className={
+            'hover:bg-muted hover:text-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&_svg]:data-active:text-sidebar-accent-foreground text-[13px]'
+          }
           render={
             <Link
               className={cn('flex items-center gap-x-2', {

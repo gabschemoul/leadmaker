@@ -241,7 +241,7 @@ function FamilyRow(props: {
         {props.selectedCount > 0 ? (
           <span
             className={
-              'bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums'
+              'bg-brand-pale text-brand-hover dark:text-brand rounded-md px-2 py-0.5 text-xs font-medium tabular-nums'
             }
           >
             {props.selectedCount}

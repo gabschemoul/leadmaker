@@ -7,6 +7,10 @@
     var(--font-heading-face), var(--font-sans-fallback), system-ui, sans-serif;
   --font-display: 'Season Mix', var(--font-display-fallback), Georgia, serif;
   --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-pale: var(--brand-pale);
+  --color-ok: var(--ok);
+  --color-ok-pale: var(--ok-pale);
   --color-primary-hover: var(--primary-hover);
   --color-hairline: var(--hairline);
   --color-pill-ring: var(--pill-ring);

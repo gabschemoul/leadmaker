@@ -76,7 +76,7 @@ export async function ContactStep(props: {
       <div className={'flex flex-wrap items-center justify-between gap-3'}>
         <nav
           aria-label={tMode('label')}
-          className={'bg-muted inline-flex gap-1 rounded-xl p-1'}
+          className={'bg-muted inline-flex gap-1 rounded-full p-1'}
         >
           {(
             [
@@ -90,9 +90,9 @@ export async function ContactStep(props: {
               aria-current={props.mode === mode ? 'page' : undefined}
               data-test={`contact-mode-${mode}`}
               className={cn(
-                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                'flex h-8 items-center rounded-full px-4 text-sm font-medium transition-colors',
                 props.mode === mode
-                  ? 'bg-card text-primary shadow-sm'
+                  ? 'bg-card text-foreground shadow-soft'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >

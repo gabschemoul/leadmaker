@@ -1,7 +1,7 @@
 /**
- * Prospectigo (8/11/2026) — boutons de l'appli dans la charte du site : toujours en pilule,
- * noir plein pour l'action neutre, blanc avec un contour de 0,5 px et une ombre très douce pour
- * le secondaire (`outline`), bleu Klein pour l'action principale (`buttonExtras.brand`).
+ * Prospectigo (8/11/2026) — boutons de l'appli dans la charte du site (fenêtre d'appli de la page
+ * d'accueil) : toujours en pilule, bleu Klein pour l'action (`default`), blanc avec un contour de
+ * 0,5 px et une ombre très douce pour le secondaire (`outline`).
  * Enveloppe la primitive shadcn (laissée intacte) ; `cn()` fait gagner le `className` du point d'appel.
  */
 import * as React from 'react';
@@ -17,6 +17,8 @@ function Button({ className, variant = 'default', ...props }: ButtonProps) {
       variant={variant}
       className={cn(
         'rounded-full',
+        variant === 'default' &&
+          'bg-brand text-brand-foreground hover:bg-brand-hover',
         variant === 'outline' &&
           'ring-pill-ring shadow-soft hover:bg-background dark:bg-card dark:hover:bg-secondary border-transparent ring-[0.5px] dark:border-transparent',
         className,

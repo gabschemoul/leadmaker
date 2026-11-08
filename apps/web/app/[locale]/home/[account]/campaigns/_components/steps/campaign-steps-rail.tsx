@@ -85,7 +85,7 @@ export function CampaignStepsRail(props: {
         aria-label={t('tabsLabel')}
         data-test={'campaign-steps'}
         className={
-          'flex [scrollbar-width:none] items-end gap-1 overflow-x-auto border-b'
+          'bg-muted inline-flex max-w-full [scrollbar-width:none] items-center gap-1 self-start overflow-x-auto rounded-full p-1'
         }
       >
         {CAMPAIGN_STEPS.map((step, index) => {
@@ -100,28 +100,20 @@ export function CampaignStepsRail(props: {
               data-test={`campaign-step-${step}`}
               title={subtitles[step]}
               className={cn(
-                '-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors',
+                'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors',
                 isActive
-                  ? 'border-foreground text-foreground'
-                  : 'text-muted-foreground hover:text-foreground border-transparent',
+                  ? 'bg-card text-foreground shadow-soft'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              <span
-                className={cn(
-                  'inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium',
-                  state === 'done'
-                    ? 'bg-primary text-primary-foreground'
-                    : state === 'active' || isActive
-                      ? 'bg-brand text-brand-foreground'
-                      : 'bg-muted text-muted-foreground',
-                )}
-              >
-                {state === 'done' ? (
-                  <Check className={'size-3'} strokeWidth={3} />
-                ) : (
-                  index + 1
-                )}
-              </span>
+              {state === 'done' ? (
+                <Check
+                  className={'text-brand size-3.5 shrink-0'}
+                  strokeWidth={2.5}
+                />
+              ) : (
+                <span className={'tabular-nums'}>{index + 1} ·</span>
+              )}
 
               <span>{t(step)}</span>
             </Link>

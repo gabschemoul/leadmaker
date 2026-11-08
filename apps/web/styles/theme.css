@@ -56,6 +56,9 @@
      survol du bouton bleu, fond bleu pâle des états vides / étapes en cours */
   --brand-hover: #2626d6;
   --brand-pale: #e9e9ff;
+  /* vert « trouvé / terminé » de la fenêtre d'appli de la page d'accueil */
+  --ok: #157a40;
+  --ok-pale: #e3f5ea;
   --background: #fdfcfc;
   --foreground: #000000;
   --card: #ffffff;
@@ -101,6 +104,8 @@
   --brand-foreground: #ffffff;
   --brand-hover: #8585ff;
   --brand-pale: #1e1e4a;
+  --ok: #6fd59a;
+  --ok-pale: #16301f;
   --background: #0c0a09;
   --foreground: #faf8f8;
   --card: #1c1917;

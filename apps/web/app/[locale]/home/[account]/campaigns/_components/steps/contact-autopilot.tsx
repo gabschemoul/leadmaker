@@ -661,10 +661,10 @@ function Chip(
       data-test={props.testId}
       onClick={props.onClick}
       className={cn(
-        'rounded-full border px-4 py-2 text-sm font-medium tabular-nums transition-colors',
+        'flex h-8 items-center rounded-full px-3.5 text-[13px] font-medium tabular-nums transition-colors',
         props.selected
-          ? 'border-primary bg-primary/10 text-primary'
-          : 'bg-card hover:bg-muted/50',
+          ? 'bg-brand-pale text-brand-hover dark:text-brand'
+          : 'bg-card ring-pill-ring shadow-soft hover:bg-muted ring-[0.5px]',
       )}
     >
       {props.children}
@@ -790,7 +790,7 @@ function AutopilotPreview(props: {
 
                 <span
                   className={
-                    'bg-primary/10 text-primary shrink-0 rounded-full px-2.5 py-1 text-xs font-medium'
+                    'bg-brand-pale text-brand-hover dark:text-brand shrink-0 rounded-md px-2.5 py-1 text-xs font-medium'
                   }
                 >
                   {t('ready')}
@@ -980,7 +980,7 @@ function AutopilotRunning(props: {
         </div>
 
         <div
-          className={'bg-muted h-3 overflow-hidden rounded-full'}
+          className={'bg-muted h-2 overflow-hidden rounded-full'}
           role={'progressbar'}
           aria-valuemin={0}
           aria-valuemax={target}
@@ -988,7 +988,7 @@ function AutopilotRunning(props: {
           aria-label={t('progressLabel')}
         >
           <div
-            className={'bg-primary h-full rounded-full transition-all'}
+            className={'bg-brand h-full rounded-full transition-all'}
             style={{ width: `${pct}%` }}
           />
         </div>

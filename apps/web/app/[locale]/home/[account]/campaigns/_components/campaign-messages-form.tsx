@@ -39,6 +39,7 @@ import { toast } from '@kit/ui/sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Trans } from '@kit/ui/trans';
+import { cn } from '@kit/ui/utils';
 
 import {
   BODY_MAX,
@@ -318,7 +319,12 @@ export function CampaignMessagesForm(props: {
                       key={item.id}
                       type={'button'}
                       size={'sm'}
-                      variant={index === previewIndex ? 'default' : 'outline'}
+                      variant={'secondary'}
+                      className={cn(
+                        'rounded-md',
+                        index === previewIndex &&
+                          'bg-foreground text-background hover:bg-foreground/90',
+                      )}
                       data-test={`preview-prospect-${index}`}
                       onClick={() => setPreviewIndex(index)}
                     >
@@ -485,7 +491,8 @@ function VariableButtons(props: { onInsert: (token: string) => void }) {
               key={variable.token}
               type={'button'}
               size={'sm'}
-              variant={'outline'}
+              variant={'secondary'}
+              className={'rounded-md'}
               data-test={`insert-${variable.token}`}
               onClick={() => props.onInsert(variable.token)}
             >

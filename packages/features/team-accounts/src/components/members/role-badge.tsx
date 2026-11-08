@@ -5,10 +5,10 @@ import { Trans } from '@kit/ui/trans';
 
 type Role = string;
 
+// Prospectigo (8/11/2026) : propriétaire en bleu pâle, membre en crème (charte du site)
 const roles = {
   owner: '',
-  member:
-    'bg-blue-50 hover:bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:hover:bg-blue-500/10',
+  member: '',
 };
 
 const roleClassNameBuilder = cva('font-medium capitalize shadow-none', {
@@ -23,7 +23,12 @@ export function RoleBadge({ role }: { role: Role }) {
   const isCustom = !(role in roles);
 
   return (
-    <Badge className={className} variant={isCustom ? 'outline' : 'default'}>
+    <Badge
+      className={className}
+      variant={
+        isCustom ? 'outline' : role === 'owner' ? 'default' : 'secondary'
+      }
+    >
       <span data-test={'member-role-badge'}>
         <Trans i18nKey={`common.roles.${role}.label`} defaults={role} />
       </span>

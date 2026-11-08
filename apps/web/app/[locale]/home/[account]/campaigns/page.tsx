@@ -1,7 +1,7 @@
 /**
  * Rôle : page liste des campagnes de l'organisation (par dossier client), dans la charte du site
  * (relooking du 8/11/2026) : pastilles de statut, recherche en pilule, tableau dans un panneau blanc
- * avec en-têtes en petites capitales, lignes avec titre et sous-titre, flèche discrète à droite.
+ * avec en-têtes en petites capitales, lignes de 56 px avec titre et sous-titre, flèche discrète à droite.
  * Données : loadCampaigns (campaigns.loader) et leadmaker.loader. Filtres : ?q= (texte) et ?statut=.
  * Écritures : aucune.
  */
@@ -337,7 +337,7 @@ async function CampaignsList({
 
             <TableBody>
               {campaigns.map((campaign) => (
-                <TableRow key={campaign.id} className={'group/row'}>
+                <TableRow key={campaign.id} className={'group/row [&>td]:h-14'}>
                   <TableCell className={'max-w-[28rem]'}>
                     <Link
                       className={'flex min-w-0 flex-col'}

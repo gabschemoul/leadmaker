@@ -41,7 +41,7 @@ export function LogoImage({
       role={'img'}
       aria-label={'Prospectigo'}
       className={cn(
-        'text-foreground in-data-[sidebar=sidebar]:text-sidebar-accent-foreground font-heading inline-block text-[1.375rem] leading-none font-semibold tracking-[-0.025em] whitespace-nowrap select-none',
+        'text-foreground font-heading inline-block text-[1.375rem] leading-none font-semibold tracking-[-0.025em] whitespace-nowrap select-none',
         className,
       )}
     >

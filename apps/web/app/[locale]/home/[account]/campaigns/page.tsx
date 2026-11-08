@@ -113,7 +113,7 @@ async function CampaignsPageHeader({ params }: { params: Params }) {
       title={<Trans i18nKey={'common.routes.campaigns'} />}
     >
       <Button
-        className={buttonExtras.brand}
+        className={cn(buttonExtras.brand, buttonExtras.pill)}
         nativeButton={false}
         data-test={'new-campaign-button'}
         render={<Link href={`${campaignsPath}/new`} />}
@@ -422,7 +422,7 @@ function FilterChip(props: {
       aria-current={props.active ? 'page' : undefined}
       data-test={props.testId}
       className={cn(
-        'flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors',
+        'flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition-colors',
         props.active
           ? 'bg-foreground text-background'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',

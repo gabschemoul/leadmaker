@@ -18,18 +18,30 @@ import { Trans } from './trans';
 
 const unslugify = (slug: string) => slug.replace(/-/g, ' ');
 
+// Prospectigo (8/11/2026) : un identifiant technique (UUID) n'a rien à faire
+// dans un fil d'Ariane ; sans libellé fourni dans `values`, on le saute.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function AppBreadcrumbs(props: {
   values?: Record<string, string>;
   maxDepth?: number;
+  /** Nombre de premiers niveaux à ne pas afficher (ex. 2 pour cacher « Accueil › Équipe »). */
+  skip?: number;
 }) {
   const pathName = usePathname();
   const { locale } = useParams();
 
   // Remove the locale from the path
-  const splitPath = pathName
+  const fullPath = pathName
     .split('/')
     .filter(Boolean)
     .filter((path) => path !== locale);
+
+  const skip = props.skip ?? 0;
+
+  const splitPath = fullPath
+    .slice(skip)
+    .filter((path) => !UUID.test(path) || path in (props.values ?? {}));
 
   const values = props.values ?? {};
   const maxDepth = props.maxDepth ?? 6;
@@ -72,8 +84,8 @@ export function AppBreadcrumbs(props: {
                       <Link
                         href={
                           '/' +
-                          splitPath
-                            .slice(0, splitPath.indexOf(path) + 1)
+                          fullPath
+                            .slice(0, fullPath.indexOf(path) + 1)
                             .join('/')
                         }
                       >

@@ -145,7 +145,7 @@ function SidebarNavigationRouteGroupLabel({
 }) {
   // Prospectigo (8/11/2026) : titres de groupe discrets, en petites capitales espacées
   const className = cn(
-    'text-sidebar-foreground/50 mt-1 h-7 px-2 text-[11px] font-medium tracking-[0.06em] uppercase',
+    'text-sidebar-foreground/50 mt-2 h-7 px-2 text-xs font-medium',
     { hidden: !open },
   );
 

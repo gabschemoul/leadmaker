@@ -7,7 +7,7 @@ export const buttonExtras = {
   /** L'action principale de la page, en bleu Klein (une seule par écran). */
   brand: 'bg-brand text-brand-foreground hover:bg-brand-hover',
   /** Grand appel à l'action en pilule (connexion, paiement, lancer la campagne). */
-  pill: 'h-10 rounded-full px-5 text-sm',
+  pill: 'h-9 rounded-full px-4 text-sm',
 } as const;
 
 export type ButtonExtraVariant = keyof typeof buttonExtras;

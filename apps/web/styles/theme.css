@@ -83,13 +83,13 @@
   --chart-5: #d7d2cc;
   --radius: 0.5rem;
   /* barre latérale gris pierre 50 séparée par un filet, comme ElevenLabs */
-  --sidebar: #faf8f8;
+  --sidebar: #f7f5f3;
   --sidebar-foreground: #000000;
   --sidebar-primary: #000000;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f5f3f1;
   --sidebar-accent-foreground: #000000;
-  --sidebar-border: #ebe8e4;
+  --sidebar-border: #e9e6e2;
   --sidebar-ring: #2b7fff;
 }
 

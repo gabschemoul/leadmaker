@@ -131,7 +131,11 @@ export function PageBody(
     className?: string;
   }>,
 ) {
-  const className = cn('flex min-w-0 flex-1 flex-col lg:px-4', props.className);
+  // Prospectigo (8/11/2026) : contenu centré avec de l'air, comme les pages ElevenLabs
+  const className = cn(
+    'mx-auto flex w-full max-w-[1200px] min-w-0 flex-1 flex-col lg:px-10',
+    props.className,
+  );
 
   return <div className={className}>{props.children}</div>;
 }
@@ -162,7 +166,7 @@ export function PageTitle(props: React.PropsWithChildren) {
   return (
     <h1
       className={
-        'font-heading text-2xl leading-tight font-medium tracking-[-0.02em] dark:text-white'
+        'font-display text-[1.75rem] leading-tight font-medium tracking-[-0.01em] dark:text-white'
       }
     >
       {props.children}
@@ -189,7 +193,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 py-4 sm:py-5 lg:flex-row lg:items-center lg:justify-between',
+        'flex flex-col gap-4 py-5 sm:pt-8 sm:pb-6 lg:flex-row lg:items-center lg:justify-between',
         className,
       )}
     >

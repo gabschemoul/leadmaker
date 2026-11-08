@@ -52,13 +52,13 @@ export function TeamAccountTopBar(props: {
       />
 
       <div className={'min-w-0 flex-1'}>
-        <AppBreadcrumbs />
+        <AppBreadcrumbs skip={2} />
       </div>
 
       <Link
         href={prospectsPath}
         className={
-          'text-muted-foreground hover:bg-muted hover:text-foreground ring-border hidden h-8 w-72 items-center gap-2 rounded-lg px-3 text-[13px] ring-1 transition-colors xl:flex'
+          'text-muted-foreground hover:bg-muted hover:text-foreground ring-border hidden h-8 w-72 items-center gap-2 rounded-full px-3 text-[13px] ring-1 transition-colors xl:flex'
         }
         data-test={'top-bar-search'}
       >

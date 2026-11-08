@@ -48,7 +48,10 @@ function TeamWorkspaceLayout({ children, params }: TeamWorkspaceLayoutProps) {
   );
 
   const content = (
-    <Page style={isSidebar ? 'sidebar' : 'header'}>
+    <Page
+      style={isSidebar ? 'sidebar' : 'header'}
+      className={'[--background:#ffffff] dark:[--background:#0c0a09]'}
+    >
       <PageNavigation>{navigation}</PageNavigation>
 
       <PageMobileNavigation>

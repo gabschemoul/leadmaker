@@ -94,7 +94,11 @@ export async function CreditUsageCard(props: { accountId: string }) {
       </CardHeader>
 
       <CardContent className={'flex flex-col gap-6'}>
-        <div className={'grid gap-3 sm:grid-cols-2'}>
+        <div
+          className={
+            'grid divide-y overflow-hidden rounded-xl border sm:grid-cols-2 sm:divide-x sm:divide-y-0'
+          }
+        >
           <Balance
             label={t('discovery')}
             value={balance?.discovery_balance ?? 0}
@@ -179,18 +183,45 @@ function Balance(props: {
   ofLabel: string;
   format: Awaited<ReturnType<typeof getFormatter>>;
 }) {
+  // jauge façon ElevenLabs : étiquette, grand chiffre, barre de progression
+  const ratio = props.max
+    ? Math.max(0, Math.min(1, props.value / props.max))
+    : null;
+
   return (
-    <div className={'rounded-lg border p-4'}>
-      <p className={'text-muted-foreground text-sm'}>{props.label}</p>
-      <p className={'text-2xl tabular-nums'}>
+    <div className={'flex flex-col gap-2 px-5 py-4'}>
+      <p
+        className={
+          'text-muted-foreground font-mono text-[11px] font-medium tracking-[0.06em] uppercase'
+        }
+      >
+        {props.label}
+      </p>
+
+      <p className={'font-heading text-2xl tracking-tight tabular-nums'}>
         {props.format.number(props.value)}
         {props.max ? (
-          <span className={'text-muted-foreground text-sm'}>
+          <span className={'text-muted-foreground text-sm font-normal'}>
             {' '}
             {props.ofLabel} {props.format.number(props.max)}
           </span>
         ) : null}
       </p>
+
+      {ratio !== null ? (
+        <div
+          className={'bg-muted h-1.5 w-full overflow-hidden rounded-full'}
+          role={'progressbar'}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(ratio * 100)}
+        >
+          <div
+            className={'bg-brand h-full rounded-full'}
+            style={{ width: `${Math.round(ratio * 100)}%` }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

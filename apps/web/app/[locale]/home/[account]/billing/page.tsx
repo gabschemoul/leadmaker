@@ -115,7 +115,12 @@ async function TeamAccountBillingContent({
 
   return (
     <>
-      <div className={cn(`flex max-w-2xl flex-col space-y-4`)}>
+      {/* relooking du 8/11/2026 : les crédits d'abord (jauges), puis le forfait sur toute la largeur */}
+      <div className={cn('flex flex-col gap-4 pb-32')}>
+        <Suspense fallback={null}>
+          <CreditUsageCard accountId={accountId} />
+        </Suspense>
+
         <If condition={!hasBillingData}>
           <If
             condition={canManageBilling}
@@ -155,10 +160,6 @@ async function TeamAccountBillingContent({
         {shouldShowBillingPortal ? (
           <TeamBillingPortalForm accountId={accountId} slug={account} />
         ) : null}
-
-        <Suspense fallback={null}>
-          <CreditUsageCard accountId={accountId} />
-        </Suspense>
       </div>
     </>
   );

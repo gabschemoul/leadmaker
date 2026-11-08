@@ -17,6 +17,12 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* cases et boutons radio natifs (hors @kit/ui) : coche bleu Klein comme sur le site */
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--brand);
+  }
 }
 
 /*

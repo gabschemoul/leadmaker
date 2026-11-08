@@ -60,7 +60,7 @@ export const generateMetadata = async () => {
 
 function FormsPage({ params, searchParams }: FormsPageProps) {
   return (
-    <PageBody>
+    <PageBody className={'max-w-[1600px]'}>
       <Suspense fallback={<PageHeaderSkeleton />}>
         <FormsPageHeader params={params} />
       </Suspense>

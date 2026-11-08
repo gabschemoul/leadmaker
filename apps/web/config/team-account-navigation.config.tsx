@@ -2,8 +2,8 @@ import {
   Contact,
   CreditCard,
   FolderKanban,
+  House,
   Inbox,
-  LayoutDashboard,
   Radar,
   Settings,
   UserSearch,
@@ -15,7 +15,9 @@ import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 
-const iconClasses = 'w-4';
+// icônes au gabarit d'ElevenLabs (8/11/2026) : 18 px, trait 1,5 px, bouts arrondis
+const iconClasses = 'size-[18px]';
+const iconProps = { className: iconClasses, strokeWidth: 1.5 } as const;
 
 /**
  * `showSpaces` : l'entrée « Dossiers clients » n'apparaît que quand
@@ -29,23 +31,23 @@ const getRoutes = (account: string, showSpaces: boolean) => [
       {
         label: 'common.routes.dashboard',
         path: pathsConfig.app.accountHome.replace('[account]', account),
-        Icon: <LayoutDashboard className={iconClasses} />,
+        Icon: <House {...iconProps} />,
         highlightMatch: `${pathsConfig.app.home}$`,
       },
       {
         label: 'common.routes.campaigns',
         path: createPath(pathsConfig.app.accountCampaigns, account),
-        Icon: <Radar className={iconClasses} />,
+        Icon: <Radar {...iconProps} />,
       },
       {
         label: 'common.routes.forms',
         path: createPath(pathsConfig.app.accountForms, account),
-        Icon: <Inbox className={iconClasses} />,
+        Icon: <Inbox {...iconProps} />,
       },
       {
         label: 'common.routes.prospects',
         path: createPath(pathsConfig.app.accountProspects, account),
-        Icon: <UserSearch className={iconClasses} />,
+        Icon: <UserSearch {...iconProps} />,
       },
     ],
   },
@@ -56,31 +58,31 @@ const getRoutes = (account: string, showSpaces: boolean) => [
       {
         label: 'common.routes.sender',
         path: createPath(pathsConfig.app.accountSender, account),
-        Icon: <Contact className={iconClasses} />,
+        Icon: <Contact {...iconProps} />,
       },
       {
         label: 'common.routes.members',
         path: createPath(pathsConfig.app.accountMembers, account),
-        Icon: <Users className={iconClasses} />,
+        Icon: <Users {...iconProps} />,
       },
       showSpaces
         ? {
             label: 'common.routes.spaces',
             path: createPath(pathsConfig.app.accountSpaces, account),
-            Icon: <FolderKanban className={iconClasses} />,
+            Icon: <FolderKanban {...iconProps} />,
           }
         : undefined,
       featureFlagsConfig.enableTeamAccountBilling
         ? {
             label: 'common.routes.billing',
             path: createPath(pathsConfig.app.accountBilling, account),
-            Icon: <CreditCard className={iconClasses} />,
+            Icon: <CreditCard {...iconProps} />,
           }
         : undefined,
       {
         label: 'common.routes.settings',
         path: createPath(pathsConfig.app.accountSettings, account),
-        Icon: <Settings className={iconClasses} />,
+        Icon: <Settings {...iconProps} />,
       },
     ].filter(Boolean),
   },

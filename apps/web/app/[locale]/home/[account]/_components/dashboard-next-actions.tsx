@@ -10,6 +10,7 @@ import { ArrowRight, Plus } from 'lucide-react';
 import { getFormatter, getTranslations } from 'next-intl/server';
 
 import { Button } from '@kit/ui/button';
+import { buttonExtras } from '@kit/ui/button-extras';
 import {
   Card,
   CardContent,
@@ -44,49 +45,57 @@ export async function DashboardNextActions(props: {
 
   return (
     <div className={'flex flex-col gap-6 pb-32'}>
-      <div className={'grid grid-cols-2 gap-3 md:grid-cols-4'}>
-        <Kpi
-          label={t('kpi.toReview')}
-          value={format.number(kpis.toReview)}
-          hint={t('kpi.toReviewHint')}
-          highlight={kpis.toReview > 0}
-          testId={'kpi-to-review'}
-        />
-        <Kpi
-          label={t('kpi.activeCampaigns')}
-          value={format.number(kpis.activeCampaigns)}
-          hint={
-            kpis.activeCampaignsMax
-              ? t('kpi.of', { max: format.number(kpis.activeCampaignsMax) })
-              : t('kpi.unlimited')
+      <Card className={'py-0'} data-test={'dashboard-kpis'}>
+        <div
+          className={
+            'grid grid-cols-2 divide-x divide-y md:grid-cols-4 md:divide-y-0 md:[&>*:last-child]:border-r-0 [&>*:nth-child(2n)]:border-r-0 md:[&>*:nth-child(2n)]:border-r'
           }
-          testId={'kpi-active-campaigns'}
-        />
-        <Kpi
-          label={t('kpi.outreach')}
-          value={format.number(kpis.outreachBalance)}
-          hint={
-            kpis.outreachMonthly
-              ? t('kpi.perMonth', { max: format.number(kpis.outreachMonthly) })
-              : t('kpi.noPlan')
-          }
-          href={props.billingPath}
-          testId={'kpi-outreach'}
-        />
-        <Kpi
-          label={t('kpi.discovery')}
-          value={format.number(kpis.discoveryBalance)}
-          hint={
-            kpis.discoveryMonthly
-              ? t('kpi.perMonth', {
-                  max: format.number(kpis.discoveryMonthly),
-                })
-              : t('kpi.noPlan')
-          }
-          href={props.billingPath}
-          testId={'kpi-discovery'}
-        />
-      </div>
+        >
+          <Kpi
+            label={t('kpi.toReview')}
+            value={format.number(kpis.toReview)}
+            hint={t('kpi.toReviewHint')}
+            highlight={kpis.toReview > 0}
+            testId={'kpi-to-review'}
+          />
+          <Kpi
+            label={t('kpi.activeCampaigns')}
+            value={format.number(kpis.activeCampaigns)}
+            hint={
+              kpis.activeCampaignsMax
+                ? t('kpi.of', { max: format.number(kpis.activeCampaignsMax) })
+                : t('kpi.unlimited')
+            }
+            testId={'kpi-active-campaigns'}
+          />
+          <Kpi
+            label={t('kpi.outreach')}
+            value={format.number(kpis.outreachBalance)}
+            hint={
+              kpis.outreachMonthly
+                ? t('kpi.perMonth', {
+                    max: format.number(kpis.outreachMonthly),
+                  })
+                : t('kpi.noPlan')
+            }
+            href={props.billingPath}
+            testId={'kpi-outreach'}
+          />
+          <Kpi
+            label={t('kpi.discovery')}
+            value={format.number(kpis.discoveryBalance)}
+            hint={
+              kpis.discoveryMonthly
+                ? t('kpi.perMonth', {
+                    max: format.number(kpis.discoveryMonthly),
+                  })
+                : t('kpi.noPlan')
+            }
+            href={props.billingPath}
+            testId={'kpi-discovery'}
+          />
+        </div>
+      </Card>
 
       <Card data-test={'dashboard-next-actions'}>
         <CardHeader
@@ -101,6 +110,7 @@ export async function DashboardNextActions(props: {
 
           <Button
             size={'sm'}
+            variant={'outline'}
             nativeButton={false}
             data-test={'dashboard-new-campaign'}
             render={<Link href={`${props.campaignsPath}/new`} />}
@@ -121,6 +131,7 @@ export async function DashboardNextActions(props: {
                 {t('emptyDescription')}
               </p>
               <Button
+                className={buttonExtras.brand}
                 nativeButton={false}
                 render={<Link href={`${props.campaignsPath}/new`} />}
               >
@@ -165,6 +176,9 @@ export async function DashboardNextActions(props: {
                 <Button
                   size={'sm'}
                   variant={row.action.kind === 'todo' ? 'default' : 'outline'}
+                  className={cn(
+                    row.action.kind === 'todo' && buttonExtras.brand,
+                  )}
                   nativeButton={false}
                   render={<Link href={href(row.id, row.action)} />}
                 >
@@ -190,11 +204,17 @@ function Kpi(props: {
 }) {
   const body = (
     <>
-      <span className={'text-muted-foreground text-xs'}>{props.label}</span>
+      <span
+        className={
+          'text-muted-foreground font-mono text-[11px] font-medium tracking-[0.06em] uppercase'
+        }
+      >
+        {props.label}
+      </span>
       <span
         className={cn(
-          'font-heading text-[1.75rem] leading-tight font-normal tracking-[-0.02em] tabular-nums',
-          props.highlight && 'text-primary',
+          'font-heading text-2xl leading-tight font-medium tracking-[-0.02em] tabular-nums',
+          props.highlight && 'text-brand',
         )}
       >
         {props.value}
@@ -203,8 +223,7 @@ function Kpi(props: {
     </>
   );
 
-  const className =
-    'bg-card flex flex-col gap-0.5 rounded-xl border px-4 py-3.5';
+  const className = 'flex flex-col gap-1 px-5 py-4';
 
   return props.href ? (
     <Link

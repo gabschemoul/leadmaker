@@ -48,7 +48,20 @@
     "folderColumn": "Dossier client",
     "countryColumn": "Pays",
     "prospectsColumn": "Prospects trouvés",
-    "createdAtColumn": "Créée le"
+    "createdAtColumn": "Créée le",
+    "searchPlaceholder": "Rechercher une campagne",
+    "filterAll": "Toutes",
+    "open": "Ouvrir",
+    "count": "{count, plural, =0 {Aucune campagne} one {# campagne} other {# campagnes}}",
+    "emptyTitle": "Créez votre première campagne",
+    "emptyDescription": "Choisissez une zone géographique et un secteur d’activité : Prospectigo trouve les entreprises qui correspondent et les contacte pour vous.",
+    "emptyFiltered": "Aucune campagne ne correspond à ces filtres.",
+    "featureTarget": "Ciblez",
+    "featureTargetText": "Une zone, un secteur, des critères : la liste se construit toute seule.",
+    "featureFind": "Trouvez",
+    "featureFindText": "Les entreprises qui correspondent, avec site, téléphone et note moyenne.",
+    "featureContact": "Contactez",
+    "featureContactText": "Vos messages partent par les formulaires de contact, au rythme choisi."
   },
   "form": {
     "pageTitle": "Nouvelle campagne",

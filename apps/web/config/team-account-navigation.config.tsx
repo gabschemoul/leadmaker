@@ -2,6 +2,7 @@ import {
   Contact,
   CreditCard,
   FolderKanban,
+  Inbox,
   LayoutDashboard,
   Radar,
   Settings,
@@ -35,6 +36,11 @@ const getRoutes = (account: string, showSpaces: boolean) => [
         label: 'common.routes.campaigns',
         path: createPath(pathsConfig.app.accountCampaigns, account),
         Icon: <Radar className={iconClasses} />,
+      },
+      {
+        label: 'common.routes.forms',
+        path: createPath(pathsConfig.app.accountForms, account),
+        Icon: <Inbox className={iconClasses} />,
       },
       {
         label: 'common.routes.prospects',

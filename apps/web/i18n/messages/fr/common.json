@@ -126,5 +126,9 @@
   },
   "repeatPassword": "Confirmez le mot de passe",
   "error": "Erreur",
-  "themeDescription": "Choisissez l'apparence de l'application"
+  "themeDescription": "Choisissez l'apparence de l'application",
+  "topBar": {
+    "search": "Rechercher un prospect…",
+    "credits": "{count} crédits"
+  }
 }

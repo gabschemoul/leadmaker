@@ -169,11 +169,11 @@ export function WorkspaceDropdown({
               <Button
                 data-test="workspace-dropdown-trigger"
                 variant="ghost"
-                className="hover:bg-accent/40 active:bg-accent border-border/50! hover:border-border h-11 w-full justify-start gap-x-1 rounded-md border px-1 transition-colors hover:shadow-xs"
+                className="bg-card hover:bg-muted active:bg-muted border-border h-9 w-full justify-start gap-x-1.5 rounded-lg border px-1.5 text-[13px] transition-colors"
               >
-                <span className="flex aspect-square size-8 items-center justify-center">
+                <span className="flex aspect-square size-6 items-center justify-center">
                   <WorkspaceAvatar
-                    className="size-6"
+                    className="size-5 rounded-md text-[11px]"
                     isTeam={isTeamContext}
                     pictureUrl={currentAvatar}
                     label={currentLabel}

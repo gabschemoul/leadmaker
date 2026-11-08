@@ -143,7 +143,11 @@ function SidebarNavigationRouteGroupLabel({
   collapsible: boolean;
   open: boolean;
 }) {
-  const className = cn({ hidden: !open });
+  // Prospectigo (8/11/2026) : titres de groupe discrets, en petites capitales espacées
+  const className = cn(
+    'text-sidebar-foreground/50 mt-1 h-7 px-2 text-[11px] font-medium tracking-[0.06em] uppercase',
+    { hidden: !open },
+  );
 
   return (
     <If
@@ -254,7 +258,7 @@ function SidebarNavigationRouteChildItem({
   const triggerItem = collapsible ? (
     <CollapsibleTrigger
       render={
-        <SidebarMenuButton tooltip={tooltip}>
+        <SidebarMenuButton tooltip={tooltip} className={'text-[13px]'}>
           <span
             className={cn('flex items-center gap-2', {
               'mx-auto w-full gap-0 [&>svg]:flex-1 [&>svg]:shrink-0': !open,
@@ -297,6 +301,7 @@ function SidebarNavigationRouteChildItem({
         <SidebarMenuButton
           isActive={isActive}
           tooltip={tooltip}
+          className={'text-[13px]'}
           render={
             <Link
               className={cn('flex items-center gap-x-2', {

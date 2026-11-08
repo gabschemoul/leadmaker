@@ -19,6 +19,7 @@ import { NoPlanBanner } from './_components/leadmaker/no-plan-banner';
 import { TeamAccountLayoutMobileNavigation } from './_components/team-account-layout-mobile-navigation';
 import { TeamAccountLayoutSidebar } from './_components/team-account-layout-sidebar';
 import { TeamAccountNavigationMenu } from './_components/team-account-navigation-menu';
+import { TeamAccountTopBar } from './_components/team-account-top-bar';
 import { hasSeveralSpaces } from './_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from './_lib/server/team-account-workspace.loader';
 
@@ -94,6 +95,8 @@ async function HydratedWorkspace({
 
   return (
     <QueryHydration user={data.user}>
+      <TeamAccountTopBar account={account} workspace={data} />
+
       <Suspense fallback={null}>
         <NoPlanBanner accountId={data.account.id} slug={account} />
       </Suspense>

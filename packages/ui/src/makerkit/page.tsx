@@ -194,7 +194,7 @@ export function PageHeader({
       )}
     >
       <div className={'flex min-w-0 flex-col gap-y-2'}>
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 empty:hidden">
           <If condition={displaySidebarTrigger}>
             <PageSidebarTrigger className="text-muted-foreground hover:text-secondary-foreground h-4.5 w-4.5 cursor-pointer" />
           </If>
@@ -258,3 +258,5 @@ function getSlotsFromPage(props: React.PropsWithChildren) {
     },
   );
 }
+
+export { PageSidebarTrigger };

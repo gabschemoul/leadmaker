@@ -1,7 +1,8 @@
 import { Suspense } from 'react';
 
+import Link from 'next/link';
+
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { If } from '@kit/ui/if';
 import {
   Sidebar,
   SidebarContent,
@@ -10,46 +11,61 @@ import {
 } from '@kit/ui/sidebar';
 
 import { LogoImage } from '~/components/app-logo';
+import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
 import { SidebarHeaderSkeleton } from '~/components/skeletons/page-skeletons';
 import { WorkspaceDropdown } from '~/components/workspace-dropdown';
-import featureFlagsConfig from '~/config/feature-flags.config';
+import pathsConfig from '~/config/paths.config';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
-import { TeamAccountNotifications } from '~/home/[account]/_components/team-account-notifications';
 
 import { hasSeveralSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { TeamAccountLayoutSidebarNavigation } from './team-account-layout-sidebar-navigation';
 
 /**
- * Frame and navigation come from config, so they render immediately and the
- * sidebar never shifts. Only the header widget waits on the workspace, and
- * the « Dossiers clients » entry waits on the number of folders (the
- * fallback is the same navigation without it).
+ * Barre latérale façon ElevenLabs (relooking du 8/11/2026) : logo en haut à
+ * gauche, sélecteur d'équipe juste dessous, navigation par groupes, et en bas
+ * la ligne du compte (avatar, nom, menu). Le cadre et la navigation viennent de
+ * la configuration et s'affichent tout de suite ; seuls le sélecteur et la
+ * ligne du compte attendent l'espace de travail.
  */
 export function TeamAccountLayoutSidebar({ account }: { account: string }) {
   const config = getTeamAccountSidebarConfig(account);
+  const homePath = pathsConfig.app.accountHome.replace('[account]', account);
 
   return (
     <Sidebar variant="sidebar" collapsible={config.sidebarCollapsedStyle}>
-      <SidebarHeader className={'h-16 justify-center'}>
+      <SidebarHeader className={'gap-3 px-3 pt-3.5 pb-1'}>
+        <Link
+          href={homePath}
+          aria-label={'Prospectigo'}
+          className={
+            'flex h-7 items-center px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'
+          }
+        >
+          <LogoImage className={'text-[1.25rem]'} />
+        </Link>
+
         <Suspense fallback={<SidebarHeaderSkeleton />}>
           <TeamAccountSidebarHeader account={account} />
         </Suspense>
       </SidebarHeader>
 
-      <SidebarContent className="h-[calc(100%-160px)] overflow-y-auto">
+      <SidebarContent className={'px-1 pt-2'}>
         <Suspense
           fallback={<TeamAccountLayoutSidebarNavigation config={config} />}
         >
           <TeamAccountSidebarNavigation account={account} />
         </Suspense>
       </SidebarContent>
+
       <SidebarFooter
         className={
-          'mt-auto px-4 pt-3 pb-5 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0'
+          'border-t px-2 py-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0'
         }
       >
-        <LogoImage className={'text-lg'} />
+        <Suspense fallback={<SidebarHeaderSkeleton />}>
+          <TeamAccountSidebarUser account={account} />
+        </Suspense>
       </SidebarFooter>
     </Sidebar>
   );
@@ -77,21 +93,22 @@ async function TeamAccountSidebarHeader({ account }: { account: string }) {
   }));
 
   return (
-    <div className={'flex items-center justify-between gap-x-1'}>
-      <WorkspaceDropdown
-        user={data.user}
-        accounts={accounts}
-        selectedAccount={account}
-      />
+    <WorkspaceDropdown
+      user={data.user}
+      accounts={accounts}
+      selectedAccount={account}
+    />
+  );
+}
 
-      <If condition={featureFlagsConfig.enableNotifications}>
-        <div className={'group-data-[collapsible=icon]:hidden'}>
-          <TeamAccountNotifications
-            userId={data.user.id}
-            accountId={data.account.id}
-          />
-        </div>
-      </If>
-    </div>
+async function TeamAccountSidebarUser({ account }: { account: string }) {
+  const data = await loadTeamWorkspace(account);
+
+  return (
+    <ProfileAccountDropdownContainer
+      user={data.user}
+      accountSlug={account}
+      showProfileName
+    />
   );
 }

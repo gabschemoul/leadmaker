@@ -204,11 +204,7 @@ function Kpi(props: {
 }) {
   const body = (
     <>
-      <span
-        className={
-          'text-muted-foreground font-mono text-[11px] font-medium tracking-[0.06em] uppercase'
-        }
-      >
+      <span className={'text-muted-foreground text-[13px] font-medium'}>
         {props.label}
       </span>
       <span

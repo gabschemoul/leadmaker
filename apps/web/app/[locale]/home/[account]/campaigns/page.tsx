@@ -344,12 +344,12 @@ async function CampaignsList({
                       data-test={'campaign-link'}
                       href={`${campaignsPath}/${campaign.id}`}
                     >
-                      <span className={'truncate font-medium'}>
+                      <span className={'truncate text-[15px] font-medium'}>
                         {campaign.name}
                       </span>
 
                       <span
-                        className={'text-muted-foreground truncate text-xs'}
+                        className={'text-muted-foreground truncate text-[13px]'}
                       >
                         {t('list.createdAtColumn')}{' '}
                         {format.dateTime(new Date(campaign.createdAt), {

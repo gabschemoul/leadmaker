@@ -44,7 +44,7 @@ function TableHead({
   return (
     <ShadcnTableHead
       className={cn(
-        'text-muted-foreground h-10 px-3 font-mono text-[11px] font-medium tracking-[0.06em] uppercase',
+        'text-muted-foreground h-11 px-4 text-sm font-medium',
         className,
       )}
       {...props}
@@ -57,7 +57,7 @@ function TableCell({
   ...props
 }: React.ComponentProps<typeof ShadcnTableCell>) {
   return (
-    <ShadcnTableCell className={cn('h-12 px-3 py-2', className)} {...props} />
+    <ShadcnTableCell className={cn('h-14 px-4 py-2', className)} {...props} />
   );
 }
 

@@ -30,6 +30,7 @@ export function ProspectsList(props: {
   campaigns: Array<{ id: string; name: string }>;
   formsHref: string;
   spaceId: string;
+  framed?: boolean;
 }) {
   const router = useProgressRouter();
 
@@ -65,6 +66,7 @@ export function ProspectsList(props: {
       campaigns={props.campaigns}
       formsHref={props.formsHref}
       liveSpaceId={props.spaceId}
+      framed={props.framed}
     />
   );
 }

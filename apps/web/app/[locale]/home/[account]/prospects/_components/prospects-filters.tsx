@@ -6,13 +6,14 @@
  * Écritures : aucune.
  */
 
-import { Search, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import { Input } from '@kit/ui/input';
 import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
+import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { Trans } from '@kit/ui/trans';
 
 import { useProgressRouter } from '~/components/navigation-progress';
@@ -77,6 +78,16 @@ export function ProspectsFilters(props: {
     props.campaigns.find((campaign) => campaign.id === id)?.name ?? id;
 
   const activeCount = countActiveFilters(filters);
+  // filtres rangés derrière le bouton « Filtres »
+  const secondaryCount =
+    [
+      filters.ratingMin,
+      filters.ratingMax,
+      filters.reviewsMin,
+      filters.website,
+      filters.source,
+    ].filter((value) => value !== undefined).length +
+    (filters.status !== 'active' ? 1 : 0);
 
   return (
     <div className={'flex flex-col gap-3'} data-test={'prospects-filters'}>
@@ -110,20 +121,29 @@ export function ProspectsFilters(props: {
             navigate({ query: query || undefined });
           }}
         >
-          <Input
-            name={'q'}
-            type={'search'}
-            className={'h-7 w-48 text-[0.8rem] md:w-64'}
-            data-test={'prospects-search-input'}
-            defaultValue={filters.query ?? ''}
-            placeholder={t('filters.searchPlaceholder')}
-            maxLength={100}
-          />
+          <div className={'relative'}>
+            <Search
+              className={
+                'text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2'
+              }
+            />
+
+            <Input
+              name={'q'}
+              type={'search'}
+              className={'h-8 w-56 pl-9 text-[13px] md:w-72'}
+              data-test={'prospects-search-input'}
+              defaultValue={filters.query ?? ''}
+              placeholder={t('filters.searchPlaceholder')}
+              maxLength={100}
+            />
+          </div>
 
           <Button
             type={'submit'}
             size={'icon-sm'}
-            variant={'secondary'}
+            variant={'ghost'}
+            className={'sr-only'}
             aria-label={t('filters.searchButton')}
             data-test={'prospects-search-button'}
           >
@@ -171,135 +191,162 @@ export function ProspectsFilters(props: {
           data-test={'prospects-city-filter'}
         />
 
-        <NativeSelect
-          size={'sm'}
-          aria-label={t('filters.ratingMin')}
-          data-test={'prospects-rating-min'}
-          value={filters.ratingMin ?? ''}
-          onChange={(event) =>
-            navigate({ ratingMin: number(event.target.value) })
-          }
-        >
-          <NativeSelectOption value={''}>
-            {t('filters.ratingMin')}
-          </NativeSelectOption>
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                size={'sm'}
+                variant={'outline'}
+                data-test={'prospects-more-filters'}
+              />
+            }
+          >
+            <SlidersHorizontal className={'w-4'} />
+            <span>{t('filters.more')}</span>
+            {secondaryCount > 0 ? (
+              <Badge variant={'secondary'} className={'ml-1 h-4 px-1.5'}>
+                {secondaryCount}
+              </Badge>
+            ) : null}
+          </PopoverTrigger>
 
-          {withCurrent(RATING_STEPS, filters.ratingMin).map((value) => (
-            <NativeSelectOption key={value} value={value}>
-              {t('filters.ratingAtLeast', { value })}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+          <PopoverContent
+            align={'start'}
+            className={'flex w-72 flex-col gap-2 p-3'}
+          >
+            <NativeSelect
+              size={'sm'}
+              aria-label={t('filters.ratingMin')}
+              data-test={'prospects-rating-min'}
+              value={filters.ratingMin ?? ''}
+              onChange={(event) =>
+                navigate({ ratingMin: number(event.target.value) })
+              }
+            >
+              <NativeSelectOption value={''}>
+                {t('filters.ratingMin')}
+              </NativeSelectOption>
 
-        <NativeSelect
-          size={'sm'}
-          aria-label={t('filters.ratingMax')}
-          data-test={'prospects-rating-max'}
-          value={filters.ratingMax ?? ''}
-          onChange={(event) =>
-            navigate({ ratingMax: number(event.target.value) })
-          }
-        >
-          <NativeSelectOption value={''}>
-            {t('filters.ratingMax')}
-          </NativeSelectOption>
+              {withCurrent(RATING_STEPS, filters.ratingMin).map((value) => (
+                <NativeSelectOption key={value} value={value}>
+                  {t('filters.ratingAtLeast', { value })}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
 
-          {withCurrent(RATING_STEPS, filters.ratingMax).map((value) => (
-            <NativeSelectOption key={value} value={value}>
-              {t('filters.ratingAtMost', { value })}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+            <NativeSelect
+              size={'sm'}
+              aria-label={t('filters.ratingMax')}
+              data-test={'prospects-rating-max'}
+              value={filters.ratingMax ?? ''}
+              onChange={(event) =>
+                navigate({ ratingMax: number(event.target.value) })
+              }
+            >
+              <NativeSelectOption value={''}>
+                {t('filters.ratingMax')}
+              </NativeSelectOption>
 
-        <NativeSelect
-          size={'sm'}
-          aria-label={t('filters.reviewsMin')}
-          data-test={'prospects-reviews-min'}
-          value={filters.reviewsMin ?? ''}
-          onChange={(event) =>
-            navigate({ reviewsMin: number(event.target.value) })
-          }
-        >
-          <NativeSelectOption value={''}>
-            {t('filters.reviewsMin')}
-          </NativeSelectOption>
+              {withCurrent(RATING_STEPS, filters.ratingMax).map((value) => (
+                <NativeSelectOption key={value} value={value}>
+                  {t('filters.ratingAtMost', { value })}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
 
-          {withCurrent(REVIEWS_STEPS, filters.reviewsMin).map((value) => (
-            <NativeSelectOption key={value} value={value}>
-              {t('filters.reviewsAtLeast', { count: value })}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+            <NativeSelect
+              size={'sm'}
+              aria-label={t('filters.reviewsMin')}
+              data-test={'prospects-reviews-min'}
+              value={filters.reviewsMin ?? ''}
+              onChange={(event) =>
+                navigate({ reviewsMin: number(event.target.value) })
+              }
+            >
+              <NativeSelectOption value={''}>
+                {t('filters.reviewsMin')}
+              </NativeSelectOption>
 
-        <NativeSelect
-          size={'sm'}
-          aria-label={t('filters.website')}
-          data-test={'prospects-website-select'}
-          value={filters.website ?? ''}
-          onChange={(event) =>
-            navigate({
-              website: (event.target.value || undefined) as Filters['website'],
-            })
-          }
-        >
-          <NativeSelectOption value={''}>
-            {t('filters.websiteAll')}
-          </NativeSelectOption>
+              {withCurrent(REVIEWS_STEPS, filters.reviewsMin).map((value) => (
+                <NativeSelectOption key={value} value={value}>
+                  {t('filters.reviewsAtLeast', { count: value })}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
 
-          <NativeSelectOption value={'with'}>
-            {t('filters.websiteWith')}
-          </NativeSelectOption>
+            <NativeSelect
+              size={'sm'}
+              aria-label={t('filters.website')}
+              data-test={'prospects-website-select'}
+              value={filters.website ?? ''}
+              onChange={(event) =>
+                navigate({
+                  website: (event.target.value ||
+                    undefined) as Filters['website'],
+                })
+              }
+            >
+              <NativeSelectOption value={''}>
+                {t('filters.websiteAll')}
+              </NativeSelectOption>
 
-          <NativeSelectOption value={'without'}>
-            {t('filters.websiteWithout')}
-          </NativeSelectOption>
-        </NativeSelect>
+              <NativeSelectOption value={'with'}>
+                {t('filters.websiteWith')}
+              </NativeSelectOption>
 
-        <NativeSelect
-          size={'sm'}
-          aria-label={t('filters.source')}
-          data-test={'prospects-source-select'}
-          value={filters.source ?? ''}
-          onChange={(event) =>
-            navigate({
-              source: (event.target.value || undefined) as Filters['source'],
-            })
-          }
-        >
-          <NativeSelectOption value={''}>
-            {t('filters.sourceAll')}
-          </NativeSelectOption>
+              <NativeSelectOption value={'without'}>
+                {t('filters.websiteWithout')}
+              </NativeSelectOption>
+            </NativeSelect>
 
-          <NativeSelectOption value={'maps'}>
-            {t('source.maps')}
-          </NativeSelectOption>
+            <NativeSelect
+              size={'sm'}
+              aria-label={t('filters.source')}
+              data-test={'prospects-source-select'}
+              value={filters.source ?? ''}
+              onChange={(event) =>
+                navigate({
+                  source: (event.target.value ||
+                    undefined) as Filters['source'],
+                })
+              }
+            >
+              <NativeSelectOption value={''}>
+                {t('filters.sourceAll')}
+              </NativeSelectOption>
 
-          <NativeSelectOption value={'csv'}>
-            {t('source.csv')}
-          </NativeSelectOption>
-        </NativeSelect>
+              <NativeSelectOption value={'maps'}>
+                {t('source.maps')}
+              </NativeSelectOption>
 
-        <NativeSelect
-          size={'sm'}
-          aria-label={t('filters.status')}
-          data-test={'prospects-status-select'}
-          value={filters.status}
-          onChange={(event) =>
-            navigate({ status: event.target.value as Filters['status'] })
-          }
-        >
-          <NativeSelectOption value={'active'}>
-            {t('filters.statusActive')}
-          </NativeSelectOption>
+              <NativeSelectOption value={'csv'}>
+                {t('source.csv')}
+              </NativeSelectOption>
+            </NativeSelect>
 
-          <NativeSelectOption value={'excluded'}>
-            {t('filters.statusExcluded')}
-          </NativeSelectOption>
+            <NativeSelect
+              size={'sm'}
+              aria-label={t('filters.status')}
+              data-test={'prospects-status-select'}
+              value={filters.status}
+              onChange={(event) =>
+                navigate({ status: event.target.value as Filters['status'] })
+              }
+            >
+              <NativeSelectOption value={'active'}>
+                {t('filters.statusActive')}
+              </NativeSelectOption>
 
-          <NativeSelectOption value={'all'}>
-            {t('filters.statusAll')}
-          </NativeSelectOption>
-        </NativeSelect>
+              <NativeSelectOption value={'excluded'}>
+                {t('filters.statusExcluded')}
+              </NativeSelectOption>
+
+              <NativeSelectOption value={'all'}>
+                {t('filters.statusAll')}
+              </NativeSelectOption>
+            </NativeSelect>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {activeCount > 0 ? (

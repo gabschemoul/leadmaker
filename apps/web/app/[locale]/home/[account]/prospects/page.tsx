@@ -168,10 +168,10 @@ async function ProspectsContent(props: ProspectsPageProps) {
   const hasFilters = countActiveFilters(state.filters) > 0;
 
   return (
-    <Card>
+    <Card className={'gap-0 py-0'}>
       <CardHeader
         className={
-          'flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between'
+          'flex flex-col gap-3 border-b px-4 py-3 xl:flex-row xl:items-start xl:justify-between'
         }
       >
         <ProspectsFilters
@@ -217,8 +217,9 @@ async function ProspectsContent(props: ProspectsPageProps) {
         </div>
       </CardHeader>
 
-      <CardContent className={'flex flex-col gap-4'}>
+      <CardContent className={'flex flex-col gap-0 px-0'}>
         <ProspectsList
+          framed={false}
           // nouvelle page, nouveau tri ou nouveaux filtres : la sélection repart de zéro
           key={pageHref(state.page)}
           basePath={basePath}
@@ -242,7 +243,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
         <div
           className={
-            'text-muted-foreground flex items-center justify-between text-sm'
+            'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[13px]'
           }
         >
           <span data-test={'prospects-total'}>

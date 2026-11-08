@@ -14,13 +14,6 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@kit/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@kit/ui/dialog';
-import {
   Form,
   FormControl,
   FormField,
@@ -29,6 +22,13 @@ import {
   FormMessage,
 } from '@kit/ui/form';
 import { Input } from '@kit/ui/input';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@kit/ui/sheet';
 import { toast } from '@kit/ui/sonner';
 import { Textarea } from '@kit/ui/textarea';
 import { Trans } from '@kit/ui/trans';
@@ -62,9 +62,9 @@ export function AttemptDetailDialog(props: {
   const attempt = props.attempt;
 
   return (
-    <Dialog open={attempt !== null} onOpenChange={props.onOpenChange}>
-      <DialogContent
-        className={'max-h-[90vh] overflow-y-auto sm:max-w-3xl'}
+    <Sheet open={attempt !== null} onOpenChange={props.onOpenChange}>
+      <SheetContent
+        className={'w-full gap-4 overflow-y-auto p-6 sm:max-w-3xl'}
         data-test={'attempt-detail-dialog'}
       >
         {attempt ? (
@@ -76,8 +76,8 @@ export function AttemptDetailDialog(props: {
             onMutated={props.onMutated}
           />
         ) : null}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -153,12 +153,12 @@ function AttemptDetail(props: {
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle>
+      <SheetHeader className={'p-0 pr-8'}>
+        <SheetTitle>
           {t('detail.title', { name: attempt.prospect.name })}
-        </DialogTitle>
+        </SheetTitle>
 
-        <DialogDescription className={'flex flex-wrap gap-x-4 gap-y-1'}>
+        <SheetDescription className={'flex flex-wrap gap-x-4 gap-y-1'}>
           <span>
             <Trans i18nKey={`outreach.forms.status.${attempt.status}`} />
           </span>
@@ -191,8 +191,8 @@ function AttemptDetail(props: {
             // adresse qui n'est pas une URL http(s) : affichée, jamais cliquable
             <span className={'break-all'}>{siteUrl}</span>
           ) : null}
-        </DialogDescription>
-      </DialogHeader>
+        </SheetDescription>
+      </SheetHeader>
 
       {attempt.detail ? (
         <p

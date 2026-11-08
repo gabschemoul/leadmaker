@@ -18,6 +18,7 @@ import { Badge } from '@kit/ui/badge';
 import { Checkbox } from '@kit/ui/checkbox';
 import { DataTable } from '@kit/ui/enhanced-data-table';
 import { Trans } from '@kit/ui/trans';
+import { cn } from '@kit/ui/utils';
 
 import { LocalDateTime } from '~/components/local-date-time';
 import { websiteHref, websiteLabel } from '~/lib/leadmaker/website';
@@ -29,6 +30,7 @@ import {
   SORTABLE_PROSPECT_COLUMNS,
   prospectColumnsStorageKey,
 } from './prospect-columns';
+import { ProspectDrawer } from './prospect-drawer';
 import { ProspectsBulkActions } from './prospects-bulk-actions';
 import { ProspectsColumnsMenu } from './prospects-columns-menu';
 import { ProspectsLiveRefresh } from './prospects-live-refresh';
@@ -96,10 +98,17 @@ export function ProspectsTable(props: {
   formsHref?: string;
   /** dossier à suivre en temps réel (e-mails trouvés, prospects ajoutés) */
   liveSpaceId?: string;
+  /** false : le tableau est posé à ras bord dans un panneau qui dessine déjà le cadre */
+  framed?: boolean;
 }) {
   const t = useTranslations('prospects');
   const format = useFormatter();
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  // prospect ouvert dans le tiroir (relooking du 8/11/2026)
+  const [openId, setOpenId] = useState<string | null>(null);
+  const openProspect =
+    props.prospects.find((prospect) => prospect.id === openId) ?? null;
+  const framed = props.framed ?? true;
 
   const storageKey = prospectColumnsStorageKey(props.accountId);
 
@@ -122,6 +131,7 @@ export function ProspectsTable(props: {
         t,
         format,
         campaignsPath: props.campaignsPath,
+        onOpen: setOpenId,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [columnIds.join(','), t, format, props.campaignsPath],
@@ -142,7 +152,11 @@ export function ProspectsTable(props: {
         />
       ) : null}
 
-      <div className={'flex flex-wrap items-center justify-between gap-2'}>
+      <div
+        className={cn('flex flex-wrap items-center justify-between gap-2', {
+          'px-4 pt-3': !framed,
+        })}
+      >
         <div className={'min-w-0 flex-1'}>
           {selected.length > 0 ? (
             <ProspectsBulkActions
@@ -165,7 +179,7 @@ export function ProspectsTable(props: {
         />
       </div>
 
-      <div className={'overflow-x-auto rounded-lg border'}>
+      <div className={cn('overflow-x-auto', { 'rounded-lg border': framed })}>
         <DataTable
           // le tri contrôlé par l'URL doit resynchroniser l'état interne
           key={manualSorting ? JSON.stringify(props.sorting) : 'client'}
@@ -183,6 +197,14 @@ export function ProspectsTable(props: {
           noResultsMessage={props.noResultsMessage}
         />
       </div>
+
+      <ProspectDrawer
+        prospect={openProspect}
+        campaignsPath={props.campaignsPath}
+        onOpenChange={(open) => {
+          if (!open) setOpenId(null);
+        }}
+      />
     </div>
   );
 }
@@ -192,6 +214,8 @@ function buildColumns(params: {
   t: ReturnType<typeof useTranslations<'prospects'>>;
   format: ReturnType<typeof useFormatter>;
   campaignsPath: string | undefined;
+  /** ouvre la fiche du prospect dans le tiroir */
+  onOpen: (id: string) => void;
 }): ColumnDef<ProspectRow>[] {
   const { t, format } = params;
 
@@ -228,25 +252,22 @@ function buildColumns(params: {
       header: t('columns.name'),
       cell: ({ row }) => {
         const prospect = row.original;
-        const href = websiteHref(prospect.website);
 
         return (
           <span
             className={'flex items-center gap-2 font-medium'}
             data-test={'prospect-name'}
           >
-            {href ? (
-              <a
-                className={'truncate hover:underline'}
-                href={href}
-                target={'_blank'}
-                rel={'noopener noreferrer nofollow'}
-              >
-                {prospect.name}
-              </a>
-            ) : (
-              <span className={'truncate'}>{prospect.name}</span>
-            )}
+            <button
+              type={'button'}
+              className={
+                'cursor-pointer truncate text-left underline-offset-4 hover:underline'
+              }
+              data-test={'prospect-open'}
+              onClick={() => params.onOpen(prospect.id)}
+            >
+              {prospect.name}
+            </button>
 
             {prospect.is_chain ? (
               <Badge variant={'outline'} data-test={'prospect-chain-badge'}>

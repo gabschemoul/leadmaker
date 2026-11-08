@@ -61,7 +61,8 @@
     "statusExcluded": "Exclus",
     "statusAll": "Actifs et exclus",
     "reset": "Réinitialiser",
-    "remove": "Retirer ce filtre"
+    "remove": "Retirer ce filtre",
+    "more": "Filtres"
   },
   "badges": {
     "search": "Recherche : {value}",
@@ -112,5 +113,8 @@
     "all": "Exporter en CSV",
     "filtered": "Exporter la liste filtrée"
   },
-  "emailNotFound": "aucun trouvé"
+  "emailNotFound": "aucun trouvé",
+  "drawer": {
+    "site": "Ouvrir le site"
+  }
 }

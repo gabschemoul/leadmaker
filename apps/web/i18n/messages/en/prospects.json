@@ -61,7 +61,8 @@
     "statusExcluded": "Excluded",
     "statusAll": "Active and excluded",
     "reset": "Reset",
-    "remove": "Remove this filter"
+    "remove": "Remove this filter",
+    "more": "Filters"
   },
   "badges": {
     "search": "Search: {value}",
@@ -112,5 +113,8 @@
     "all": "Export CSV",
     "filtered": "Export filtered list"
   },
-  "emailNotFound": "none found"
+  "emailNotFound": "none found",
+  "drawer": {
+    "site": "Open website"
+  }
 }

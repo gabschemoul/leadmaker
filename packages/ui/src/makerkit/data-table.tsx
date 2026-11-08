@@ -32,6 +32,7 @@ import {
 
 import { cn } from '../lib/utils/cn';
 import { Button } from '../shadcn/button';
+import { If } from './if';
 import {
   Table,
   TableBody,
@@ -39,8 +40,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../shadcn/table';
-import { If } from './if';
+} from './table';
 import { Trans } from './trans';
 
 type DataItem = Record<string, unknown> | object;

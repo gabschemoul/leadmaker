@@ -101,7 +101,7 @@ async function CreditsPill(props: { accountId: string; billingPath: string }) {
     <Link
       href={props.billingPath}
       className={
-        'ring-border hover:bg-muted hidden h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium tabular-nums ring-1 transition-colors md:flex'
+        'ring-border hover:bg-muted hidden h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium whitespace-nowrap tabular-nums ring-1 transition-colors md:flex'
       }
       data-test={'top-bar-credits'}
     >

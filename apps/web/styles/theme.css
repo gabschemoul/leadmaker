@@ -23,6 +23,13 @@
   input[type='radio'] {
     accent-color: var(--brand);
   }
+
+  /* grands chiffres et titres d'affichage : espacement resserré, chiffres à largeur naturelle
+     (la largeur fixe creusait l'écart entre les milliers) */
+  .font-display {
+    letter-spacing: -0.03em;
+    font-variant-numeric: normal;
+  }
 }
 
 /*

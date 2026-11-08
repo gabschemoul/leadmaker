@@ -80,34 +80,35 @@ export function CampaignStepsRail(props: {
   };
 
   return (
-    <nav
-      aria-label={t('tabsLabel')}
-      data-test={'campaign-steps'}
-      className={
-        'bg-card grid grid-cols-2 gap-1.5 rounded-xl border p-1.5 md:grid-cols-4'
-      }
-    >
-      {CAMPAIGN_STEPS.map((step, index) => {
-        const state = states[step];
-        const isActive = step === props.active;
+    <div className={'flex flex-col gap-3'}>
+      <nav
+        aria-label={t('tabsLabel')}
+        data-test={'campaign-steps'}
+        className={
+          'flex [scrollbar-width:none] items-end gap-1 overflow-x-auto border-b'
+        }
+      >
+        {CAMPAIGN_STEPS.map((step, index) => {
+          const state = states[step];
+          const isActive = step === props.active;
 
-        return (
-          <Link
-            key={step}
-            href={`${props.basePath}?etape=${step}`}
-            aria-current={isActive ? 'page' : undefined}
-            data-test={`campaign-step-${step}`}
-            className={cn(
-              'flex min-w-0 flex-col gap-1.5 rounded-lg px-3 py-2.5 transition-colors',
-              isActive
-                ? 'bg-accent text-accent-foreground'
-                : 'hover:bg-muted text-foreground',
-            )}
-          >
-            <span className={'flex items-center gap-2 text-sm font-medium'}>
+          return (
+            <Link
+              key={step}
+              href={`${props.basePath}?etape=${step}`}
+              aria-current={isActive ? 'page' : undefined}
+              data-test={`campaign-step-${step}`}
+              title={subtitles[step]}
+              className={cn(
+                '-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors',
+                isActive
+                  ? 'border-foreground text-foreground'
+                  : 'text-muted-foreground hover:text-foreground border-transparent',
+              )}
+            >
               <span
                 className={cn(
-                  'inline-flex size-5.5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium',
+                  'inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium',
                   state === 'done'
                     ? 'bg-primary text-primary-foreground'
                     : state === 'active' || isActive
@@ -116,28 +117,24 @@ export function CampaignStepsRail(props: {
                 )}
               >
                 {state === 'done' ? (
-                  <Check className={'size-3.5'} strokeWidth={3} />
+                  <Check className={'size-3'} strokeWidth={3} />
                 ) : (
                   index + 1
                 )}
               </span>
 
-              <span className={'truncate'}>{t(step)}</span>
-            </span>
+              <span>{t(step)}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
-            <span
-              className={cn(
-                'truncate text-xs',
-                isActive
-                  ? 'text-accent-foreground/80'
-                  : 'text-muted-foreground',
-              )}
-            >
-              {subtitles[step]}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
+      <p
+        className={'text-muted-foreground text-sm'}
+        data-test={'campaign-step-summary'}
+      >
+        {subtitles[props.active]}
+      </p>
+    </div>
   );
 }

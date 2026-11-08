@@ -50,19 +50,47 @@ export async function WriteStep(props: {
   const t = await getTranslations('campaigns.steps.write');
   const { sender } = props;
 
+  // Relooking du 8/11/2026 : l'éditeur de messages à gauche, l'expéditeur dans un
+  // panneau qui reste visible à droite (comme le panneau de réglages d'ElevenLabs).
   return (
-    <div className={'flex flex-col gap-4'} data-test={'campaign-step-write'}>
-      <Card data-test={'campaign-sender-card'}>
+    <div
+      className={'grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]'}
+      data-test={'campaign-step-write'}
+    >
+      <div className={'order-2 min-w-0 lg:order-1'}>
+        <CampaignMessagesForm
+          accountId={props.accountId}
+          campaignId={props.campaignId}
+          templates={props.templates}
+          sender={
+            sender
+              ? {
+                  first_name: sender.first_name,
+                  last_name: sender.last_name,
+                  company: sender.company,
+                  email: sender.email,
+                  phone: sender.phone,
+                  website: sender.website,
+                }
+              : null
+          }
+          senderHref={props.senderHref}
+          prospects={props.prospects}
+          sending={props.sending}
+          companyOptional={props.companyOptional}
+        />
+      </div>
+
+      <Card
+        data-test={'campaign-sender-card'}
+        className={'order-1 lg:sticky lg:top-16 lg:order-2'}
+      >
         <CardHeader>
           <CardTitle>{t('senderTitle')}</CardTitle>
           <CardDescription>{t('senderIntro')}</CardDescription>
         </CardHeader>
 
-        <CardContent
-          className={
-            'flex flex-wrap items-center justify-between gap-4 text-sm'
-          }
-        >
+        <CardContent className={'flex flex-col gap-4 text-sm'}>
           {sender ? (
             <div className={'flex items-center gap-3'}>
               <span
@@ -100,7 +128,7 @@ export async function WriteStep(props: {
           </Button>
 
           {props.senders.length > 1 ? (
-            <div className={'w-full border-t pt-4'}>
+            <div className={'border-t pt-4'}>
               <CampaignSenderSelect
                 campaignId={props.campaignId}
                 senders={props.senders}
@@ -110,28 +138,6 @@ export async function WriteStep(props: {
           ) : null}
         </CardContent>
       </Card>
-
-      <CampaignMessagesForm
-        accountId={props.accountId}
-        campaignId={props.campaignId}
-        templates={props.templates}
-        sender={
-          sender
-            ? {
-                first_name: sender.first_name,
-                last_name: sender.last_name,
-                company: sender.company,
-                email: sender.email,
-                phone: sender.phone,
-                website: sender.website,
-              }
-            : null
-        }
-        senderHref={props.senderHref}
-        prospects={props.prospects}
-        sending={props.sending}
-        companyOptional={props.companyOptional}
-      />
     </div>
   );
 }

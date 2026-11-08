@@ -203,7 +203,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
         />
       </TeamAccountLayoutPageHeader>
 
-      <div className={'flex flex-col gap-5 pb-32'}>
+      <div className={'-mt-2 flex flex-col gap-5 pb-32'}>
         {campaign.status === 'archived' ? (
           <Alert data-test={'campaign-archived-banner'}>
             <AlertTitle>
@@ -225,15 +225,6 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
           </p>
         ) : null}
 
-        {localDiscovery ? (
-          <CampaignLocalDiscovery
-            campaignId={id}
-            allowed={localDiscovery.allowed}
-            enabled={localDiscovery.enabled}
-            minutesAgo={localDiscovery.minutesAgo}
-          />
-        ) : null}
-
         <CampaignStepsRail
           basePath={basePath}
           active={step}
@@ -242,6 +233,15 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
           zones={live.progress.zones}
           categories={live.progress.categories}
         />
+
+        {localDiscovery ? (
+          <CampaignLocalDiscovery
+            campaignId={id}
+            allowed={localDiscovery.allowed}
+            enabled={localDiscovery.enabled}
+            minutesAgo={localDiscovery.minutesAgo}
+          />
+        ) : null}
 
         {step === 'cibler' ? (
           <TargetStepContent

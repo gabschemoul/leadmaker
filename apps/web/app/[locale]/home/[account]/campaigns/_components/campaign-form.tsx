@@ -364,7 +364,7 @@ export function CampaignForm(props: {
           </div>
         </div>
 
-        <div className={'lg:sticky lg:top-4 lg:self-start'}>
+        <div className={'lg:sticky lg:top-16 lg:self-start'}>
           <CampaignEstimate
             accountId={props.accountId}
             countryCode={countryCode}

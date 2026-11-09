@@ -176,9 +176,14 @@ begin
   end if;
 
   return (
+    -- Entreprises de la campagne (lien campagne ↔ entreprise) ; campagne triée par l'IA : seulement les gardées
+    -- et payées (CDC §5-6, 9/11/2026)
     select count(*)::integer
-      from public.lm_prospects p
-     where p.campaign_id = p_campaign_id
+      from public.lm_campaign_prospects cp
+      join public.lm_prospects p on p.id = cp.prospect_id
+     where cp.campaign_id = p_campaign_id
+       and (not (select nullif(trim(sc.sort_target), '') is not null from public.lm_campaigns sc where sc.id = p_campaign_id)
+                 or (coalesce(cp.client_choice, cp.verdict) = 'gardee' and cp.paid_at is not null))
        and p.excluded_at is null and p.website is not null
        and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
        and not exists (select 1 from public.lm_attempts a where a.space_id = p.space_id and a.prospect_id = p.id));
@@ -424,8 +429,12 @@ begin
     if v_want > 0 then
       for p in
         select pr.id, pr.account_id, pr.space_id, pr.created_at
-          from public.lm_prospects pr
-         where pr.campaign_id = ap.campaign_id
+          from public.lm_campaign_prospects cp
+          join public.lm_prospects pr on pr.id = cp.prospect_id
+         where cp.campaign_id = ap.campaign_id
+           -- campagne triée par l'IA : seulement les entreprises gardées et payées (CDC §5-6)
+           and (not (select nullif(trim(sc.sort_target), '') is not null from public.lm_campaigns sc where sc.id = ap.campaign_id)
+                or (coalesce(cp.client_choice, cp.verdict) = 'gardee' and cp.paid_at is not null))
            -- audit A1 : uniquement les prospects de l'espace du pilote (jamais ceux d'une autre organisation)
            and pr.space_id = ap.space_id and pr.account_id = ap.account_id
            and pr.excluded_at is null and pr.website is not null
@@ -475,8 +484,11 @@ begin
 
     -- Plus aucun prospect à contacter et plus rien en cours : passage terminé
     if ap.status = 'running' and v_found = 0 and c.in_flight = 0
-       and not exists (select 1 from public.lm_prospects pr
-                        where pr.campaign_id = ap.campaign_id
+       and not exists (select 1 from public.lm_campaign_prospects cp
+                          join public.lm_prospects pr on pr.id = cp.prospect_id
+                        where cp.campaign_id = ap.campaign_id
+                          and (not (select nullif(trim(sc.sort_target), '') is not null from public.lm_campaigns sc where sc.id = ap.campaign_id)
+                 or (coalesce(cp.client_choice, cp.verdict) = 'gardee' and cp.paid_at is not null))
                           and pr.space_id = ap.space_id and pr.account_id = ap.account_id
                           and pr.excluded_at is null and pr.website is not null
                           and pr.site_key not like 'maps:%' and pr.site_key not like 'tel:%'

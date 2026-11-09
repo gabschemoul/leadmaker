@@ -918,7 +918,9 @@ begin
   insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, credits, paid_at, gcid)
   values (p_campaign_id, v_id, v_campaign.account_id, v_campaign.space_id, v_credits,
           case when v_credits > 0 then now() end, nullif(p_place ->> 'gcid', ''))
-  on conflict (campaign_id, prospect_id) do nothing;
+  -- lien déjà posé par le déclencheur lm_prospects_campaign_link : on le complète
+  on conflict (campaign_id, prospect_id) do update
+    set credits = excluded.credits, paid_at = excluded.paid_at, gcid = excluded.gcid;
 
   update public.lm_place_sightings set kept = true
    where space_id = v_campaign.space_id and google_place_id = p_place ->> 'place_id';

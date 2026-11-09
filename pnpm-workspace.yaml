@@ -13,6 +13,7 @@ allowBuilds:
   supabase: true
 
 catalog:
+  '@anthropic-ai/sdk': 1.7.0
   '@base-ui/react': ^1.9.0
   '@faker-js/faker': ^10.6.0
   '@hookform/resolvers': ^6.0.0
@@ -119,3 +120,4 @@ minimumReleaseAgeExclude:
   - stripe
   - '@next/*'
   - next
+  - '@anthropic-ai/sdk@1.7.0'

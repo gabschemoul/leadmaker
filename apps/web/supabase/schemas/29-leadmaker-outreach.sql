@@ -187,9 +187,13 @@ begin
 
   select array_agg(x.id order by x.created_at) into v_ids
     from (select p.id, p.created_at
-            from public.lm_prospects p
+            from public.lm_campaign_prospects cp
+            join public.lm_prospects p on p.id = cp.prospect_id
             left join public.lm_attempts a on a.space_id = p.space_id and a.prospect_id = p.id
-           where p.campaign_id = p_campaign_id
+           where cp.campaign_id = p_campaign_id
+             -- campagne triée par l'IA : seulement les entreprises gardées et payées (CDC §5-6)
+             and (not (select nullif(trim(sc.sort_target), '') is not null from public.lm_campaigns sc where sc.id = p_campaign_id)
+                 or (coalesce(cp.client_choice, cp.verdict) = 'gardee' and cp.paid_at is not null))
              and p.excluded_at is null and p.website is not null
              and p.site_key not like 'maps:%' and p.site_key not like 'tel:%'
              and (a.id is null or public.lm_attempt_repreparable(a.status))

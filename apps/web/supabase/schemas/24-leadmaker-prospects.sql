@@ -395,6 +395,31 @@ create trigger lm_campaign_prospects_check_space
   before insert or update of campaign_id, prospect_id, account_id, space_id on public.lm_campaign_prospects
   for each row execute function public.lm_check_campaign_prospect();
 
+-- Garantie : une entreprise rattachée à une campagne (lm_prospects.campaign_id) a toujours son lien, quel que
+-- soit le chemin par lequel elle arrive (les écrans de contact lisent les liens depuis le 9/11/2026).
+-- Appelant : déclencheur (trigger).
+create or replace function public.lm_prospect_campaign_link() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  if new.campaign_id is not null then
+    insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id)
+    values (new.campaign_id, new.id, new.account_id, new.space_id)
+    on conflict (campaign_id, prospect_id) do nothing;
+  end if;
+
+  return null;
+end;
+$$;
+
+revoke all on function public.lm_prospect_campaign_link() from public;
+
+create trigger lm_prospects_campaign_link
+  after insert or update of campaign_id on public.lm_prospects
+  for each row execute function public.lm_prospect_campaign_link();
+
 -- Réponse de l'entreprise, une par tentative
 create table if not exists public.lm_replies (
   id uuid not null default extensions.uuid_generate_v4(),

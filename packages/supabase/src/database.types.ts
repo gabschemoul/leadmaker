@@ -1537,11 +1537,19 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"lm_campaign_sort_summary":
+{ Args: { "p_campaign_id": string }; Returns: {
+              "credits_per_prospect": number,"examined": number,"kept": number,"offer": string,"pending": number,"price_pending": boolean,"sort_target": string,"to_check": number,"total": number
+            }[]
+                           },
 "lm_campaign_timezone":
 { Args: { "p_campaign_id": string }; Returns: string
                            },
 "lm_cancel_autopilot":
 { Args: { "p_autopilot_id": string }; Returns: boolean
+                           },
+"lm_choose_prospects":
+{ Args: { "p_campaign_id": string,"p_choice": string,"p_prospect_ids": (string)[] }; Returns: number
                            },
 "lm_city_grid":
 { Args: { "p_lat": number,"p_lng": number,"p_population": number }; Returns: {
@@ -1801,6 +1809,12 @@ isOneToOne: false
                            },
 "lm_set_local_discovery":
 { Args: { "p_campaign_id": string,"p_enabled": boolean }; Returns: boolean
+                           },
+"lm_set_sort_target":
+{ Args: { "p_campaign_id": string,"p_target": string }; Returns: number
+                           },
+"lm_set_space_offer":
+{ Args: { "p_offer": string,"p_space_id": string }; Returns: undefined
                            },
 "lm_settle_kept":
 { Args: { "p_campaign_id": string,"p_prospect_id"?: string }; Returns: number

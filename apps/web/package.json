@@ -29,6 +29,7 @@
     "supabase:db:dump:local": "supabase db dump --local --data-only"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "catalog:",
     "@hookform/resolvers": "catalog:",
     "@kit/accounts": "workspace:*",
     "@kit/admin": "workspace:*",

@@ -1029,22 +1029,8 @@ update public.lm_plans set discovery_credits = 15000 where id = 'growth';
 update public.lm_plans set discovery_credits = 40000 where id = 'business';
 update public.lm_plans set discovery_credits = 100000 where id = 'scale';
 
--- Soldes existants : pas de conversion (seuls des comptes internes existent), le solde unique est mis au volume
--- du forfait de chaque compte, avec sa trace dans le journal des crédits.
-with changed as (
-  select c.account_id, p.discovery_credits - c.discovery_balance as delta
-    from public.lm_account_credits c join public.lm_plans p on p.id = c.plan_id
-   where c.discovery_balance <> p.discovery_credits
-), ledger as (
-  insert into public.lm_credit_ledger (account_id, kind, delta, reason, event_ref)
-  select account_id, 'discovery', delta, 'single_credit', 'single_credit:' || account_id::text from changed
-  on conflict (event_ref) do nothing
-  returning account_id
-)
-update public.lm_account_credits c
-   set discovery_balance = p.discovery_credits
-  from public.lm_plans p, ledger l
- where p.id = c.plan_id and c.account_id = l.account_id;
+-- Soldes existants : gardés tels quels (décision de Gabriel du 9/11 au soir) ; discovery_balance devient le
+-- solde unique « crédits ».
 
 -- Campagnes déjà triées par l'IA (cible posée avant ces règles, ex. « Agences digital ») : prix remesuré sur le tri
 -- au prochain avis rendu (lm_measure_sort_price), au lieu du prix de l'estimation

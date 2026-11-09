@@ -127,17 +127,16 @@ export function CompaniesStep(props: {
                 <CampaignStatusBadge status={data.status} />
               </CardTitle>
 
-              <CardDescription
-                className={'flex flex-wrap items-baseline gap-x-2'}
-                data-test={'campaign-companies-target'}
-              >
-                <span className={'text-foreground'}>{sort.target}</span>
-
-                <span aria-hidden>·</span>
-
+              {/* Texte en ligne (pas de flex) : « · Modifier » suit la fin de la cible au lieu de tomber
+                  seul sur la ligne suivante quand la cible est longue */}
+              <CardDescription data-test={'campaign-companies-target'}>
+                <span className={'text-foreground'}>{sort.target}</span>{' '}
+                <span aria-hidden>·</span>{' '}
                 <Link
                   href={props.editHref}
-                  className={'text-brand inline-flex items-center gap-1'}
+                  className={
+                    'text-brand inline-flex items-center gap-1 whitespace-nowrap'
+                  }
                   data-test={'campaign-companies-edit-target'}
                 >
                   <Pencil className={'size-3'} />

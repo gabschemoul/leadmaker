@@ -43,7 +43,8 @@ On te donne sa phrase (sa cible) et une liste d'activités possibles (code gcid,
 
 1. refinements : 3 à 5 précisions courtes qui rendraient sa cible plus nette, chacune un bout de phrase à
    ajouter tel quel à sa phrase (par exemple « sans celles qui font du web », « 2 personnes ou plus »,
-   « avec un vrai site »). Dans la langue de sa phrase, sans répéter ce qu'elle dit déjà.
+   « avec un vrai site »). Dans la langue de sa phrase, sans répéter ce qu'elle dit déjà. Jamais de précision de
+   lieu (pays, ville, région) : la zone se choisit à part.
 2. gcids : les activités de la liste qui correspondent à sa cible (1 à 15, les plus pertinentes d'abord).
    Seulement des codes de la liste.`;
 

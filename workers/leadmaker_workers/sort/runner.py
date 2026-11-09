@@ -90,6 +90,7 @@ def page_text(raw: str) -> str:
     """Titre, description et texte visible d'une page HTML (au plus TEXT_CHARS caractères de texte)."""
     title = re.search(r"<title[^>]*>(.*?)</title>", raw, re.S | re.I)
     desc = re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']*)', raw, re.I)
+    raw = raw.replace("\x00", "")  # caractère nul : refusé par Postgres (vu en ligne le 9/11 sur un site)
     body = re.sub(r"<(script|style|noscript|svg|template)[^>]*>.*?</\1>", " ", raw, flags=re.S | re.I)
     body = html.unescape(re.sub(r"<[^>]+>", " ", body))
     body = re.sub(r"\s+", " ", body).strip()
@@ -214,7 +215,7 @@ class SortRunner:
             return {"verdict": "a_verifier", "site": status, "reused": reused, "saved": saved, **usage}
         keys = {g.get("key") for g in groups}
         group = verdict.groupe if verdict.groupe in keys else "autre"
-        saved = finish(verdict.verdict, group, verdict.raison.strip())
+        saved = finish(verdict.verdict, group, verdict.raison.replace("\x00", "").strip())
         log.info("tri %s → %s (%s) %s", ctx["name"], verdict.verdict, status or "sans site", verdict.raison[:80])
         return {"verdict": verdict.verdict, "site": status, "reused": reused, "saved": saved, **usage}
 

@@ -52,7 +52,8 @@ $$;
 grant execute on function public.lm_attempt_repreparable(public.lm_attempt_status) to authenticated, service_role;
 
 -- Demande la préparation des formulaires de prospects (membre de l'organisation).
--- p_campaign_id sert aux prospects importés sans campagne (les messages de cette campagne sont utilisés).
+-- p_campaign_id : campagne au nom de laquelle contacter les prospects qui lui sont liés (lm_campaign_prospects),
+-- et campagne des prospects importés sans campagne (les messages de cette campagne sont utilisés).
 -- Erreurs (hint) : no_sender, no_messages, cap_reached.
 -- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_prepare_prospects(p_ids uuid[], p_campaign_id uuid default null)
@@ -72,7 +73,14 @@ declare
 begin
   for r in
     select p.id, p.account_id, p.space_id, p.website, p.site_key, p.excluded_at,
-           coalesce(p.campaign_id, p_campaign_id) as campaign_id
+           -- Entreprise liée à la campagne demandée (lm_campaign_prospects, CDC §7) : contactée au nom de celle-ci,
+           -- avec ses messages ; sinon sa campagne d'origine, puis la campagne demandée (prospects importés)
+           case
+             when p_campaign_id is not null and exists (
+                    select 1 from public.lm_campaign_prospects cp
+                     where cp.campaign_id = p_campaign_id and cp.prospect_id = p.id) then p_campaign_id
+             else coalesce(p.campaign_id, p_campaign_id)
+           end as campaign_id
       from public.lm_prospects p
      where p.id = any (p_ids) and public.lm_member(p.account_id)
      order by p.created_at

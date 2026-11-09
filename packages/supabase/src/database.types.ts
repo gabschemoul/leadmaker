@@ -341,6 +341,56 @@ isOneToOne: false
       referencedColumns: ["gcid"]
     }
                   ]
+                },"lm_campaign_prospects": {
+                  Row: {
+                    "account_id": string,"campaign_id": string,"client_choice": string | null,"created_at": string,"credits": number,"decided_at": string | null,"group_key": string | null,"prospect_id": string,"reason": string | null,"sorted_at": string | null,"space_id": string,"verdict": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"campaign_id": string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"group_key"?: string | null,"prospect_id": string,"reason"?: string | null,"sorted_at"?: string | null,"space_id": string,"verdict"?: string | null
+                  }
+                  Update: {
+                    "account_id"?: string,"campaign_id"?: string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"group_key"?: string | null,"prospect_id"?: string,"reason"?: string | null,"sorted_at"?: string | null,"space_id"?: string,"verdict"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_campaign_prospects_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_campaign_prospects_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_campaign_prospects_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_campaign_prospects_campaign_id_fkey"
+      columns: ["campaign_id"]
+isOneToOne: false
+      referencedRelation: "lm_campaigns"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_campaign_prospects_prospect_id_fkey"
+      columns: ["prospect_id"]
+isOneToOne: false
+      referencedRelation: "lm_prospects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_campaign_prospects_space_id_fkey"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "lm_spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"lm_campaign_zones": {
                   Row: {
                     "account_id": string,"campaign_id": string,"geoname_id": number,"idx": number,"label": string,"latitude": number | null,"longitude": number | null,"population": number,"pos": number,"removed": boolean,"zoom": number | null

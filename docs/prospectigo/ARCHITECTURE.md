@@ -94,7 +94,7 @@ nécessaire, pour garder les mises à jour du kit faciles (remote git `upstream`
 | 21 plans | `lm_plans`, `lm_account_credits`, `lm_credit_ledger`, `lm_debit_credits`, `lm_reset_credits`, `lm_refill_credits`, `lm_member`, `lm_has_plan` |
 | 22 spaces | espaces (dossiers clients) et expéditeurs |
 | 23 campaigns | `lm_campaigns`, `lm_searches`, normalisation des filtres |
-| 24 prospects | prospects, tentatives (`lm_attempts`), réponses, listes d'opposition, `lm_clean_website`, `lm_site_suppressed` |
+| 24 prospects | prospects, **lien campagne ↔ entreprise** (`lm_campaign_prospects` : une entreprise dans plusieurs campagnes de son espace, tri, crédits), tentatives (`lm_attempts`), réponses, listes d'opposition, `lm_clean_website`, `lm_site_suppressed` |
 | 25 tasks | file `lm_tasks` (claim / complete / fail / requeue) |
 | 26 geo | villes, pays couverts |
 | 27 discovery | ciblage → zones × activités, lancement / pause / modification, planificateur, enregistrement des prospects, import CSV |
@@ -110,6 +110,9 @@ nécessaire, pour garder les mises à jour du kit faciles (remote git `upstream`
 
 Hiérarchie : organisation (compte d'équipe MakerKit) → espace → campagne → zones × activités → recherches →
 prospects → tentatives (prises de contact) → pilote automatique.
+Une entreprise (`lm_prospects`, unique par espace et par site) peut appartenir à plusieurs campagnes de son espace
+(`lm_campaign_prospects`) ; `lm_prospects.campaign_id` = campagne qui l'a trouvée en premier (encore lu par les écrans).
+Elle n'est contactée qu'une fois par équipe (`lm_attempts` unique sur espace + prospect).
 
 **Conventions de sécurité SQL** (voir aussi `apps/web/supabase/AGENTS.md`) :
 - Toute fonction `SECURITY DEFINER` appelée par l'appli vérifie l'accès avec **`public.lm_member(account_id)`**

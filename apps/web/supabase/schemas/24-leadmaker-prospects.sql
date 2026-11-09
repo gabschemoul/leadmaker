@@ -311,6 +311,83 @@ create policy "lm_attempts_read" on public.lm_attempts for select
 create policy "restrict_mfa_lm_attempts" on public.lm_attempts
   as restrictive to authenticated using ((select public.is_mfa_compliant()));
 
+-- Lien campagne ↔ entreprise (9/11/2026, CDC-PARCOURS-TRI-ANNUAIRE §7). Une entreprise (lm_prospects, unique
+-- par espace et par site) peut appartenir à plusieurs campagnes de son espace : groupes (« Créer 3 campagnes »),
+-- réutilisation des fiches déjà trouvées. Par campagne : verdict du tri IA, groupe, raison, choix du client et
+-- crédits débités. lm_prospects.campaign_id reste la campagne qui l'a trouvée en premier (transition : le code
+-- en ligne le lit encore). Le contact reste unique par équipe : lm_attempts (space_id, prospect_id).
+create table if not exists public.lm_campaign_prospects (
+  campaign_id uuid references public.lm_campaigns(id) on delete cascade not null,
+  prospect_id uuid references public.lm_prospects(id) on delete cascade not null,
+  account_id uuid references public.accounts(id) on delete cascade not null,
+  space_id uuid references public.lm_spaces(id) on delete cascade not null,
+  -- Tri IA (étape 3) : gardee | a_verifier | ecartee, groupe de la campagne et raison courte montrée au client
+  verdict text,
+  group_key text,
+  reason text,
+  sorted_at timestamptz,
+  -- Choix du client à l'écran « Vos entreprises » : il l'emporte sur le verdict
+  client_choice text,
+  decided_at timestamptz,
+  -- Crédits débités pour cette entreprise dans cette campagne (0 : déjà payée par l'équipe, jamais deux fois)
+  credits integer not null default 0,
+  created_at timestamptz not null default now(),
+  primary key (campaign_id, prospect_id),
+  constraint lm_campaign_prospects_verdict check (verdict is null or verdict in ('gardee', 'a_verifier', 'ecartee')),
+  constraint lm_campaign_prospects_client_choice check (client_choice is null or client_choice in ('gardee', 'ecartee')),
+  constraint lm_campaign_prospects_credits check (credits >= 0)
+);
+
+comment on table public.lm_campaign_prospects is 'Entreprises de chaque campagne (une entreprise peut être dans plusieurs campagnes de son espace) : tri, choix du client, crédits';
+
+alter table public.lm_campaign_prospects enable row level security;
+
+revoke all on public.lm_campaign_prospects from anon, authenticated, service_role;
+
+grant select, insert, update, delete on table public.lm_campaign_prospects to service_role;
+
+-- Lecture seule pour les clients : liens posés par les fonctions serveur (robots, tri, groupes)
+grant select on table public.lm_campaign_prospects to authenticated;
+
+create index if not exists ix_lm_campaign_prospects_prospect_id on public.lm_campaign_prospects (prospect_id);
+
+create index if not exists ix_lm_campaign_prospects_account_id on public.lm_campaign_prospects (account_id);
+
+create index if not exists ix_lm_campaign_prospects_campaign_id_created_at
+  on public.lm_campaign_prospects (campaign_id, created_at desc);
+
+create policy "lm_campaign_prospects_read" on public.lm_campaign_prospects for select
+  to authenticated using (account_id in (select public.lm_user_account_ids()));
+
+create policy "restrict_mfa_lm_campaign_prospects" on public.lm_campaign_prospects
+  as restrictive to authenticated using ((select public.is_mfa_compliant()));
+
+-- Un lien ne relie qu'une campagne et une entreprise du même espace, et de l'organisation indiquée.
+-- Appelant : déclencheur (trigger).
+create or replace function public.lm_check_campaign_prospect() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  if not exists (select 1 from public.lm_campaigns c
+                  where c.id = new.campaign_id and c.space_id = new.space_id and c.account_id = new.account_id)
+     or not exists (select 1 from public.lm_prospects p
+                     where p.id = new.prospect_id and p.space_id = new.space_id and p.account_id = new.account_id) then
+    raise exception 'campaign % and prospect % are not in space %', new.campaign_id, new.prospect_id, new.space_id
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.lm_check_campaign_prospect() from public;
+
+create trigger lm_campaign_prospects_check_space
+  before insert or update of campaign_id, prospect_id, account_id, space_id on public.lm_campaign_prospects
+  for each row execute function public.lm_check_campaign_prospect();
+
 -- Réponse de l'entreprise, une par tentative
 create table if not exists public.lm_replies (
   id uuid not null default extensions.uuid_generate_v4(),

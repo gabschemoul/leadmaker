@@ -838,6 +838,9 @@ grant execute on function public.lm_site_known(uuid, text) to service_role;
 -- Enregistre un prospect découvert et débite les crédits de prospection de la campagne
 -- (credits_per_prospect, fixé au lancement selon la difficulté, roadmap n°13).
 -- Renvoie 'kept', 'duplicate' (site déjà présent) ou 'no_credits' (campagne mise en pause).
+-- Lien campagne ↔ entreprise (lm_campaign_prospects, CDC §7) : posé pour un prospect gardé (avec les crédits
+-- débités) ; une entreprise que l'espace a déjà est liée à cette campagne aussi, sans débit (jamais payée deux
+-- fois par une équipe, CDC §5.1).
 -- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_record_prospect(p_campaign_id uuid, p_place jsonb) returns text
 set search_path = ''
@@ -847,6 +850,7 @@ as $$
 declare
   v_campaign public.lm_campaigns%rowtype;
   v_id uuid;
+  v_credits integer;
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id;
 
@@ -860,15 +864,28 @@ begin
   returning id into v_id;
 
   if v_id is null then
+    -- Déjà dans l'espace (trouvée par une autre campagne ou importée) : liée à cette campagne, sans débit
+    insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, credits)
+    select p_campaign_id, p.id, p.account_id, p.space_id, 0
+      from public.lm_prospects p
+     where p.space_id = v_campaign.space_id and p.site_key = p_place ->> 'site_key'
+    on conflict (campaign_id, prospect_id) do nothing;
+
     return 'duplicate';
   end if;
 
-  if not public.lm_debit_credits(v_campaign.account_id, 'discovery', greatest(v_campaign.credits_per_prospect, 1),
+  v_credits := greatest(v_campaign.credits_per_prospect, 1);
+
+  if not public.lm_debit_credits(v_campaign.account_id, 'discovery', v_credits,
                                  'prospect:' || v_id, 'discovery', p_campaign_id) then
     delete from public.lm_prospects where id = v_id;
     perform public.lm_pause_campaign(p_campaign_id, 'no_credits');
     return 'no_credits';
   end if;
+
+  insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, credits)
+  values (p_campaign_id, v_id, v_campaign.account_id, v_campaign.space_id, v_credits)
+  on conflict (campaign_id, prospect_id) do nothing;
 
   update public.lm_place_sightings set kept = true
    where space_id = v_campaign.space_id and google_place_id = p_place ->> 'place_id';

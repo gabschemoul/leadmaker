@@ -28,10 +28,14 @@ select 'a0000000-0000-4000-8000-0000000c0001', account_id, space_id, 'Grosse', '
        '{"messages":[{"name":"M1","subject":"Objet","body":"Bonjour {company}, ici {my_company}"}]}'::jsonb from tpc;
 
 -- 5 prospects avec site, créés dans l'ordre P1 → P5 ; plafond de l'espace : 3
+-- (le déclencheur des dates remplacerait created_at par l'heure du moment : les 5 auraient la même date et
+-- l'ordre « les plus anciens d'abord » deviendrait aléatoire)
+alter table public.lm_prospects disable trigger lm_prospects_set_timestamps;
 insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_key, website, created_at)
 select t.account_id, t.space_id, 'a0000000-0000-4000-8000-0000000c0001', 'P' || i, 'p' || i || '.fr',
        'https://p' || i || '.fr', now() - make_interval(mins => 10 - i)
   from tpc t, generate_series(1, 5) i;
+alter table public.lm_prospects enable trigger lm_prospects_set_timestamps;
 update public.lm_spaces set ready_forms_cap = 3 where id = (select space_id from tpc);
 
 select makerkit.authenticate_as('pc_owner');

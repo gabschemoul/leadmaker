@@ -1,8 +1,9 @@
 /**
- * Rôle : page d'une campagne, parcours en quatre étapes (Qui ?, Vos entreprises, Votre message, Envoi ; dans le
- * code : cibler, trouver, rediger, contacter) via `?etape=`. Campagne triée (cible en mots) : l'étape « trouver »
+ * Rôle : page d'une campagne, parcours en cinq étapes (Qui ?, Vos entreprises, Votre message, Envoi, Résultats ;
+ * dans le code : cibler, trouver, rediger, contacter, resultats) via `?etape=`. Campagne triée (cible en mots) : l'étape « trouver »
  * est l'écran « Vos entreprises » ; sinon l'ancien écran de recherche.
- * Données : campaigns.loader, forms.loader, sender.loader, leadmaker.loader (client Supabase de l'utilisateur).
+ * Données : campaigns.loader, forms.loader, sender.loader, leadmaker.loader, results.loader (client Supabase de
+ * l'utilisateur).
  * Écritures : aucune ici (actions serveur dans les composants d'étape).
  */
 
@@ -55,6 +56,7 @@ import {
   ContactStep,
 } from '../_components/steps/contact-step';
 import { DiscoverStep } from '../_components/steps/discover-step';
+import { ResultsStep } from '../_components/steps/results-step';
 import { TargetStep } from '../_components/steps/target-step';
 import { WriteStep } from '../_components/steps/write-step';
 import { fetchCampaignLive } from '../_lib/campaign-live';
@@ -68,6 +70,7 @@ import {
   loadPreviewProspects,
 } from '../_lib/server/campaigns.loader';
 import { isPowerUser } from '../_lib/server/power-user';
+import { loadCampaignResults } from '../_lib/server/results.loader';
 import {
   type CampaignStep,
   type CampaignStepFacts,
@@ -91,8 +94,8 @@ export const generateMetadata = async () => {
 };
 
 /**
- * La page d'une campagne : son parcours en quatre étapes (Cibler, Trouver,
- * Rédiger, Contacter), chaque étape étant un onglet `?etape=`.
+ * La page d'une campagne : son parcours en cinq étapes (Cibler, Trouver,
+ * Rédiger, Contacter, Résultats), chaque étape étant un onglet `?etape=`.
  * L'en-tête porte le nom de la campagne : il attend donc les mêmes données
  * que le contenu et partage sa frontière.
  */
@@ -349,6 +352,18 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
             discoverHref={stepHref('trouver')}
           />
         ) : null}
+
+        {step === 'resultats' ? (
+          <ResultsStepContent
+            campaignId={id}
+            templates={templates}
+            kept={live.sort ? live.sort.kept : null}
+            senderEmail={sender?.email ?? null}
+            toVerifyHref={`${stepHref('contacter')}&statut=to_verify`}
+            sendingHref={stepHref('contacter')}
+            writeHref={stepHref('rediger')}
+          />
+        ) : null}
       </div>
     </>
   );
@@ -492,6 +507,35 @@ async function ContactStepContent(props: {
       rows={rows}
       writeHref={props.writeHref}
       discoverHref={props.discoverHref}
+    />
+  );
+}
+
+async function ResultsStepContent(props: {
+  campaignId: string;
+  templates: ReturnType<typeof parseTemplates>;
+  kept: number | null;
+  senderEmail: string | null;
+  toVerifyHref: string;
+  sendingHref: string;
+  writeHref: string;
+}) {
+  const client = getSupabaseServerClient();
+
+  const results = await loadCampaignResults(client, {
+    campaignId: props.campaignId,
+    templates: props.templates,
+    kept: props.kept,
+  });
+
+  return (
+    <ResultsStep
+      results={results}
+      sorted={props.kept !== null}
+      senderEmail={props.senderEmail}
+      toVerifyHref={props.toVerifyHref}
+      sendingHref={props.sendingHref}
+      writeHref={props.writeHref}
     />
   );
 }

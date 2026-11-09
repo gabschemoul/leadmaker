@@ -25,6 +25,7 @@ const namespaces = [
   'campaigns',
   'prospects',
   'outreach',
+  'results',
 ] as const;
 
 const isDevelopment = process.env.NODE_ENV === 'development';

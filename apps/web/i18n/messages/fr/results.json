@@ -1,0 +1,32 @@
+{
+  "step": {
+    "label": "Résultats",
+    "subTodo": "Pas encore d'envoi",
+    "subSent": "{count, plural, one {# entreprise contactée} other {# entreprises contactées}}"
+  },
+  "contacted": {
+    "title": "Entreprises contactées",
+    "of": "{count, plural, =0 {contactée} one {contactée} other {contactées}} sur {total}",
+    "progressLabel": "Part des entreprises contactées",
+    "keptHint": "Le total compte les entreprises gardées de la campagne.",
+    "websiteHint": "Le total compte les entreprises de la campagne qui ont un site.",
+    "toVerify": "{count, plural, one {# autre envoi est à vérifier} other {# autres envois sont à vérifier}} : Prospectigo a cliqué sur Envoyer sans voir de confirmation claire.",
+    "toVerifyLink": "Les regarder",
+    "empty": "Aucune prise de contact n'est encore partie.",
+    "goToSending": "Aller à l'envoi"
+  },
+  "versions": {
+    "title": "Envois par version",
+    "description": "Les versions du message sont envoyées à tour de rôle.",
+    "version": "Version {letter}",
+    "other": "Versions modifiées ou retirées depuis",
+    "sent": "{count, plural, =0 {Aucun envoi} one {# envoi} other {# envois}}",
+    "toVerify": "{count, plural, one {# à vérifier} other {# à vérifier}}",
+    "empty": "Pas encore de message pour cette campagne.",
+    "goToMessage": "Écrire le message"
+  },
+  "replies": {
+    "withEmail": "Les entreprises vous répondent directement à l'adresse de l'expéditeur, {email}. Le suivi des réponses dans Prospectigo arrivera plus tard.",
+    "withoutEmail": "Les entreprises vous répondent directement à l'adresse de l'expéditeur. Le suivi des réponses dans Prospectigo arrivera plus tard."
+  }
+}

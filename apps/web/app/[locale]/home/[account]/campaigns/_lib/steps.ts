@@ -3,8 +3,9 @@ import type { Database } from '@kit/supabase/database';
 import type { AttemptGroup } from '~/lib/leadmaker/attempts';
 
 /**
- * Le parcours d'une campagne, en quatre étapes dans l'ordre :
- * Qui ? → Vos entreprises → Votre message → Envoi (codes historiques : cibler, trouver, rediger, contacter).
+ * Le parcours d'une campagne, en cinq étapes dans l'ordre :
+ * Qui ? → Vos entreprises → Votre message → Envoi → Résultats (codes : cibler, trouver, rediger, contacter,
+ * resultats).
  * Chaque étape est un onglet de la page de campagne (`?etape=`), avec son propre bouton d'action.
  */
 export const CAMPAIGN_STEPS = [
@@ -12,6 +13,7 @@ export const CAMPAIGN_STEPS = [
   'trouver',
   'rediger',
   'contacter',
+  'resultats',
 ] as const;
 
 export type CampaignStep = (typeof CAMPAIGN_STEPS)[number];
@@ -76,6 +78,8 @@ export function stepStates(
           : total > 0
             ? 'active'
             : 'todo',
+    // jamais « fait » : les chiffres continuent d'avancer tant que des prises de contact partent
+    resultats: facts.attempts.sent > 0 ? 'active' : 'todo',
   };
 }
 

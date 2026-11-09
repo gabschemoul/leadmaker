@@ -15,7 +15,7 @@ import {
 } from '../../_lib/steps';
 
 /**
- * Le rail : quatre onglets dans l'ordre du parcours, chacun avec son état
+ * Le rail : cinq onglets dans l'ordre du parcours, chacun avec son état
  * (fait, en cours, à faire) et une ligne de résumé.
  */
 export function CampaignStepsRail(props: {
@@ -27,6 +27,8 @@ export function CampaignStepsRail(props: {
   categories: number;
 }) {
   const t = useTranslations('campaigns.steps');
+  // l'étape « Résultats » a ses textes dans son propre fichier (results.json)
+  const tr = useTranslations('results.step');
   const states = stepStates(props.facts);
   const { facts } = props;
 
@@ -79,6 +81,10 @@ export function CampaignStepsRail(props: {
                       count: facts.attempts.preparing,
                     })
                   : t('sub.contacterTodo'),
+    resultats:
+      facts.attempts.sent > 0
+        ? tr('subSent', { count: facts.attempts.sent })
+        : tr('subTodo'),
   };
 
   return (
@@ -117,7 +123,7 @@ export function CampaignStepsRail(props: {
                 <span className={'tabular-nums'}>{index + 1} ·</span>
               )}
 
-              <span>{t(step)}</span>
+              <span>{step === 'resultats' ? tr('label') : t(step)}</span>
             </Link>
           );
         })}

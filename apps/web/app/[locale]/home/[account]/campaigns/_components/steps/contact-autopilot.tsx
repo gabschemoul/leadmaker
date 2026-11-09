@@ -1,7 +1,10 @@
 'use client';
 
 /**
- * Rôle : étape Contacter en mode pilote automatique : réglage, aperçu à valider, suivi en direct, pause / reprise.
+ * Rôle : étape Envoi en mode pilote automatique : réglage, aperçu à valider, suivi en direct, pause / reprise.
+ * Réglage regroupé le 10/11/2026 (CDC-PARCOURS-TRI-ANNUAIRE §6 « Écran 4 ») : planification, note sur les réglages
+ * du mode Avancé, expéditeur, messages, nombre, puis « Lancer » avec un résumé sur une ligne. Mêmes réglages et
+ * mêmes actions qu'avant.
  * Données : lm_autopilots et tentatives lus côté client (~/lib/leadmaker/autopilot-query), rafraîchis toutes les 4 s.
  * Écritures : start/update/pause/resume/confirm/cancel (autopilot-actions.ts).
  */
@@ -19,6 +22,7 @@ import { useForm } from 'react-hook-form';
 
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { Button } from '@kit/ui/button';
+import { Input } from '@kit/ui/input';
 import { toast } from '@kit/ui/sonner';
 import { cn } from '@kit/ui/utils';
 
@@ -33,10 +37,7 @@ import {
   isCleanAttempt,
 } from '~/lib/leadmaker/autopilot-query';
 
-import {
-  AUTOPILOT_SPREAD_DAYS,
-  type AutopilotSchedule,
-} from '../../_lib/schema/autopilot.schema';
+import type { AutopilotSchedule } from '../../_lib/schema/autopilot.schema';
 import {
   cancelAutopilotAction,
   confirmAutopilotAction,
@@ -49,6 +50,9 @@ import {
 const POLL_MS = 4_000;
 const STEP = 50;
 const PRESETS = [100, 250, 500, 1000];
+/** bornes de « Répartir sur N jours » (mêmes que AutopilotSettings et lm_autopilots_spread_days) */
+const SPREAD_MIN = 1;
+const SPREAD_MAX = 60;
 
 export interface AutopilotMessage {
   name: string;
@@ -61,6 +65,8 @@ interface SetupValues {
   messages: string[];
   schedule: AutopilotSchedule;
   spreadDays: number;
+  /** saisie en cours de « Répartir sur » (bornée à la sortie du champ) */
+  spreadDraft: string | null;
   preview: boolean;
 }
 
@@ -76,6 +82,10 @@ export function ContactAutopilot(props: {
   messages: AutopilotMessage[];
   writeHref: string;
   advancedHref: string;
+  /** mode Avancé, où se règlent les prises de contact par jour et la validation automatique */
+  sendingSettingsHref: string;
+  /** section « Qui envoie ? » (rendue côté serveur) */
+  senderSection: React.ReactNode;
   billingHref: string;
   /** l'organisation a un forfait (sinon le pilote ne peut rien envoyer) */
   hasPlan: boolean;
@@ -137,6 +147,8 @@ export function ContactAutopilot(props: {
         editing={editing && active}
         messages={props.messages}
         writeHref={props.writeHref}
+        sendingSettingsHref={props.sendingSettingsHref}
+        senderSection={props.senderSection}
         billingHref={props.billingHref}
         hasPlan={props.hasPlan}
         ready={props.ready}
@@ -182,6 +194,8 @@ function AutopilotSetup(props: {
   editing: boolean;
   messages: AutopilotMessage[];
   writeHref: string;
+  sendingSettingsHref: string;
+  senderSection: React.ReactNode;
   billingHref: string;
   hasPlan: boolean;
   ready: boolean;
@@ -216,6 +230,7 @@ function AutopilotSetup(props: {
           : props.messages.slice(0, 1).map((message) => message.name),
       schedule: (summary.schedule as AutopilotSchedule | null) ?? 'office',
       spreadDays: summary.spread_days ?? 5,
+      spreadDraft: null,
       preview: !summary.contacted_before,
     },
   });
@@ -226,6 +241,8 @@ function AutopilotSetup(props: {
     form.setValue('target', clamp(value));
     form.setValue('draft', null);
   };
+  const clampSpread = (value: number) =>
+    Math.min(Math.max(Math.round(value), SPREAD_MIN), SPREAD_MAX);
 
   const onError = ({
     error,
@@ -260,7 +277,7 @@ function AutopilotSetup(props: {
       target: clamp(input.target),
       messages: input.messages,
       schedule: input.schedule,
-      spreadDays: input.spreadDays,
+      spreadDays: clampSpread(input.spreadDays),
     };
 
     if (props.editing && summary.autopilot_id) {
@@ -287,14 +304,15 @@ function AutopilotSetup(props: {
 
   const target = clamp(values.target);
   const presets = PRESETS.filter((value) => value >= min && value < max);
-  const perDay = Math.ceil(target / Math.max(values.spreadDays, 1));
+  const spreadDays = clampSpread(values.spreadDays);
+  const perDay = Math.ceil(target / spreadDays);
   const abCount = values.messages.length;
 
   const paceText =
     values.schedule === 'office'
       ? t('pace.officeText')
       : values.schedule === 'spread'
-        ? t('pace.spreadText', { perDay, days: values.spreadDays })
+        ? t('pace.spreadText', { perDay, days: spreadDays })
         : t('pace.continuousText', { count: target });
 
   return (
@@ -308,98 +326,14 @@ function AutopilotSetup(props: {
           'bg-card flex w-full min-w-0 flex-col gap-6 rounded-2xl border p-6 lg:flex-[2]'
         }
       >
-        <div className={'flex flex-col gap-1.5'}>
-          <h2
-            className={'font-heading text-2xl font-normal tracking-[-0.02em]'}
-          >
-            {t('question')}
+        {/* 1. Planification */}
+        <section
+          className={'flex flex-col gap-3'}
+          data-test={'autopilot-schedule'}
+        >
+          <h2 className={'font-heading text-xl font-medium tracking-[-0.01em]'}>
+            {t('pace.title')}
           </h2>
-
-          <p className={'text-muted-foreground'}>{t('questionHint')}</p>
-        </div>
-
-        <div className={'flex items-center gap-3'}>
-          <Button
-            type={'button'}
-            variant={'outline'}
-            size={'icon'}
-            className={'size-12 rounded-xl'}
-            aria-label={t('less')}
-            disabled={target <= min}
-            onClick={() => setTarget(target - STEP)}
-          >
-            <Minus className={'size-5'} />
-          </Button>
-
-          <input
-            type={'number'}
-            inputMode={'numeric'}
-            min={min}
-            max={max}
-            step={1}
-            aria-label={t('countLabel')}
-            data-test={'autopilot-count'}
-            className={
-              'font-heading text-primary border-input bg-background h-16 w-44 rounded-xl border px-2 text-center text-4xl font-normal tabular-nums sm:w-56 sm:text-5xl'
-            }
-            value={values.draft ?? String(target)}
-            onChange={(event) => {
-              const raw = event.target.value;
-              const parsed = Number.parseInt(raw, 10);
-
-              form.setValue('draft', raw);
-
-              if (Number.isFinite(parsed) && parsed >= 1) {
-                form.setValue('target', parsed);
-              }
-            }}
-            onBlur={() => setTarget(values.target)}
-          />
-
-          <Button
-            type={'button'}
-            variant={'outline'}
-            size={'icon'}
-            className={'size-12 rounded-xl'}
-            aria-label={t('more')}
-            disabled={target >= max}
-            onClick={() => setTarget(target + STEP)}
-          >
-            <Plus className={'size-5'} />
-          </Button>
-        </div>
-
-        <div className={'flex flex-wrap gap-2'}>
-          {presets.map((value) => (
-            <Chip
-              key={value}
-              selected={target === value}
-              onClick={() => setTarget(value)}
-            >
-              {format.number(value)}
-            </Chip>
-          ))}
-
-          <Chip
-            selected={target === max}
-            onClick={() => setTarget(max)}
-            testId={'autopilot-count-all'}
-          >
-            {t('all', { count: max })}
-          </Chip>
-        </div>
-
-        <p className={'text-muted-foreground text-sm'}>
-          {props.editing
-            ? t('maxHintEdit', { min, max })
-            : t('maxHint', {
-                max,
-                prospects: summary.contactable,
-              })}
-        </p>
-
-        <section className={'flex flex-col gap-3 border-t pt-5'}>
-          <h3 className={'font-medium'}>{t('pace.title')}</h3>
 
           <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-3'}>
             {(['office', 'spread', 'continuous'] as const).map((schedule) => (
@@ -432,19 +366,37 @@ function AutopilotSetup(props: {
           </div>
 
           {values.schedule === 'spread' ? (
-            <div className={'flex flex-wrap items-center gap-2'}>
-              <span className={'text-sm'}>{t('pace.spreadOver')}</span>
+            <label className={'flex flex-wrap items-center gap-2 text-sm'}>
+              <span>{t('pace.spreadOver')}</span>
 
-              {AUTOPILOT_SPREAD_DAYS.map((days) => (
-                <Chip
-                  key={days}
-                  selected={values.spreadDays === days}
-                  onClick={() => form.setValue('spreadDays', days)}
-                >
-                  {t('pace.days', { count: days })}
-                </Chip>
-              ))}
-            </div>
+              <Input
+                type={'number'}
+                inputMode={'numeric'}
+                min={SPREAD_MIN}
+                max={SPREAD_MAX}
+                step={1}
+                className={'w-20 tabular-nums'}
+                data-test={'autopilot-spread-days'}
+                value={values.spreadDraft ?? String(spreadDays)}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  const parsed = Number.parseInt(raw, 10);
+
+                  form.setValue('spreadDraft', raw);
+
+                  if (Number.isFinite(parsed) && parsed >= SPREAD_MIN) {
+                    form.setValue('spreadDays', clampSpread(parsed));
+                  }
+                }}
+                onBlur={() => form.setValue('spreadDraft', null)}
+              />
+
+              <span>
+                {tAll('outreach.sendStep.spreadDaysUnit', {
+                  count: spreadDays,
+                })}
+              </span>
+            </label>
           ) : null}
 
           <p
@@ -457,9 +409,25 @@ function AutopilotSetup(props: {
           </p>
         </section>
 
+        {/* 2. Prises de contact par jour et validation automatique : réglages du mode Avancé (le pilote suit
+            sa planification et envoie seul les formulaires sans alerte, lm_queue_sends) */}
+        <p
+          className={'text-muted-foreground border-t pt-5 text-sm'}
+          data-test={'autopilot-advanced-settings-note'}
+        >
+          {tAll('outreach.sendStep.autopilotSettingsNote')}{' '}
+          <Link href={props.sendingSettingsHref} className={'text-primary'}>
+            {tAll('outreach.sendStep.autopilotSettingsLink')}
+          </Link>
+        </p>
+
+        {/* 3. Expéditeur */}
+        <div className={'border-t pt-5'}>{props.senderSection}</div>
+
+        {/* 4. Messages (versions) */}
         <section className={'flex flex-col gap-3 border-t pt-5'}>
           <div className={'flex flex-wrap justify-between gap-2'}>
-            <h3 className={'font-medium'}>{t('messages.title')}</h3>
+            <h3 className={'text-base font-medium'}>{t('messages.title')}</h3>
 
             <Link href={props.writeHref} className={'text-primary text-sm'}>
               {t('messages.edit')}
@@ -533,6 +501,97 @@ function AutopilotSetup(props: {
           </p>
         </section>
 
+        {/* 5. Nombre d'entreprises */}
+        <section className={'flex flex-col gap-3 border-t pt-5'}>
+          <div className={'flex flex-col gap-1'}>
+            <h3 className={'text-base font-medium'}>{t('question')}</h3>
+
+            <p className={'text-muted-foreground text-sm'}>
+              {t('questionHint')}
+            </p>
+          </div>
+
+          <div className={'flex items-center gap-3'}>
+            <Button
+              type={'button'}
+              variant={'outline'}
+              size={'icon'}
+              className={'size-12 rounded-xl'}
+              aria-label={t('less')}
+              disabled={target <= min}
+              onClick={() => setTarget(target - STEP)}
+            >
+              <Minus className={'size-5'} />
+            </Button>
+
+            <input
+              type={'number'}
+              inputMode={'numeric'}
+              min={min}
+              max={max}
+              step={1}
+              aria-label={t('countLabel')}
+              data-test={'autopilot-count'}
+              className={
+                'font-heading text-primary border-input bg-background h-16 w-44 rounded-xl border px-2 text-center text-4xl font-normal tabular-nums sm:w-56 sm:text-5xl'
+              }
+              value={values.draft ?? String(target)}
+              onChange={(event) => {
+                const raw = event.target.value;
+                const parsed = Number.parseInt(raw, 10);
+
+                form.setValue('draft', raw);
+
+                if (Number.isFinite(parsed) && parsed >= 1) {
+                  form.setValue('target', parsed);
+                }
+              }}
+              onBlur={() => setTarget(values.target)}
+            />
+
+            <Button
+              type={'button'}
+              variant={'outline'}
+              size={'icon'}
+              className={'size-12 rounded-xl'}
+              aria-label={t('more')}
+              disabled={target >= max}
+              onClick={() => setTarget(target + STEP)}
+            >
+              <Plus className={'size-5'} />
+            </Button>
+          </div>
+
+          <div className={'flex flex-wrap gap-2'}>
+            {presets.map((value) => (
+              <Chip
+                key={value}
+                selected={target === value}
+                onClick={() => setTarget(value)}
+              >
+                {format.number(value)}
+              </Chip>
+            ))}
+
+            <Chip
+              selected={target === max}
+              onClick={() => setTarget(max)}
+              testId={'autopilot-count-all'}
+            >
+              {t('all', { count: max })}
+            </Chip>
+          </div>
+
+          <p className={'text-muted-foreground text-sm'}>
+            {props.editing
+              ? t('maxHintEdit', { min, max })
+              : t('maxHint', {
+                  max,
+                  prospects: summary.contactable,
+                })}
+          </p>
+        </section>
+
         {props.editing ? null : (
           <label
             className={
@@ -557,33 +616,50 @@ function AutopilotSetup(props: {
           </label>
         )}
 
-        <div className={'flex flex-wrap items-center gap-3'}>
-          <Button
-            type={'submit'}
-            size={'lg'}
-            className={'h-12 rounded-xl px-6 text-base font-medium'}
-            disabled={!props.ready}
-            loading={pending}
-            data-test={'autopilot-launch'}
+        {/* 6. Lancer, avec le résumé sur une ligne */}
+        <div
+          className={
+            'flex flex-wrap items-center justify-between gap-3 border-t pt-5'
+          }
+        >
+          <span
+            className={'text-muted-foreground text-sm tabular-nums'}
+            data-test={'autopilot-launch-summary'}
           >
-            {props.editing
-              ? t('update')
-              : values.preview
-                ? t('launchPreview', {
-                    count: Math.min(3, target),
-                  })
-                : t('launch')}
-          </Button>
+            {tAll('outreach.sendStep.launchSummary', {
+              companies: target,
+              versions: abCount,
+            })}
+          </span>
 
-          {props.onCancelEdit ? (
+          <div className={'flex flex-wrap items-center gap-3'}>
+            {props.onCancelEdit ? (
+              <Button
+                type={'button'}
+                variant={'ghost'}
+                onClick={props.onCancelEdit}
+              >
+                {t('cancelEdit')}
+              </Button>
+            ) : null}
+
             <Button
-              type={'button'}
-              variant={'ghost'}
-              onClick={props.onCancelEdit}
+              type={'submit'}
+              size={'lg'}
+              className={'h-12 rounded-xl px-6 text-base font-medium'}
+              disabled={!props.ready}
+              loading={pending}
+              data-test={'autopilot-launch'}
             >
-              {t('cancelEdit')}
+              {props.editing
+                ? t('update')
+                : values.preview
+                  ? t('launchPreview', {
+                      count: Math.min(3, target),
+                    })
+                  : t('launch')}
             </Button>
-          ) : null}
+          </div>
         </div>
       </div>
 
@@ -895,6 +971,14 @@ function AutopilotRunning(props: {
     nextSend.getTime() - props.checkedAt > 60_000;
   // sans forfait le pilote attend (les envois ne coûtent pas de crédit, mais il faut un forfait)
   const noPlan = !done && !props.hasPlan;
+  // juste après le lancement, tant que rien n'est parti ni mis de côté. Jamais de délai chiffré : il faut
+  // quelques minutes pour préparer un formulaire (CDC-PARCOURS-TRI-ANNUAIRE §6, écran 4)
+  const justLaunched =
+    summary.status === 'running' &&
+    summary.sent === 0 &&
+    summary.aside === 0 &&
+    !waitingWindow &&
+    !noPlan;
 
   const title = done
     ? summary.finished_reason === 'no_prospects'
@@ -997,6 +1081,18 @@ function AutopilotRunning(props: {
             style={{ width: `${pct}%` }}
           />
         </div>
+
+        {justLaunched ? (
+          <p
+            className={'bg-brand-pale rounded-lg px-3 py-2.5 text-sm'}
+            data-test={'autopilot-launched'}
+          >
+            <span className={'font-medium'}>
+              {tAll('outreach.sendStep.launchedTitle')}
+            </span>{' '}
+            {tAll('outreach.sendStep.launchedText')}
+          </p>
+        ) : null}
 
         {waitingWindow && nextSend ? (
           <p

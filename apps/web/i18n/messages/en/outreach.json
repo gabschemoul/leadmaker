@@ -267,5 +267,14 @@
       "working": "Preparing…"
     },
     "preparingBanner": "Prospectigo is working: {count, plural, one {# form being prepared} other {# forms being prepared}} (about a minute per site). Results land in the tabs below without reloading the page."
+  },
+  "sendStep": {
+    "spreadDaysUnit": "{count, plural, one {business day} other {business days}}",
+    "daysToSend": "≈ {count, plural, one {# day} other {# days}} to send everything",
+    "autopilotSettingsNote": "Maximum outreach per day and automatic validation: the autopilot follows the schedule above and sends forms without alerts on its own. These two settings are for Advanced mode.",
+    "autopilotSettingsLink": "Adjust them",
+    "launchSummary": "{companies, plural, one {# business} other {# businesses}} · {versions, plural, one {# version} other {# versions}}",
+    "launchedTitle": "Campaign launched.",
+    "launchedText": "First forms in a few minutes."
   }
 }

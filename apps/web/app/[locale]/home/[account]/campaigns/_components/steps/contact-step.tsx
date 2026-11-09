@@ -1,7 +1,11 @@
 /**
- * Rôle : étape Contacter d'une campagne (composant serveur) : choisit entre pilote automatique et mode avancé.
- * Données : props de la page campagne (compteurs de formulaires, expéditeur, pilote).
- * Écritures : aucune ici (déléguées à ContactAutopilot, PrepareCampaignButton, CampaignFormsPanel).
+ * Rôle : étape Envoi (ex-Contacter) d'une campagne (composant serveur) : choisit entre pilote automatique et mode
+ * avancé. Présentation regroupée le 10/11/2026 selon CDC-PARCOURS-TRI-ANNUAIRE §6 « Écran 4 » (planification,
+ * prises de contact par jour, validation automatique, expéditeur, lancement) sans changer aucun réglage.
+ * Données : props de la page campagne (compteurs de formulaires, pilote) ; expéditeurs de l'espace et expéditeur de
+ * la campagne (sender.loader), droit à la validation automatique (lm_auto_validation_allowed, mode Avancé).
+ * Écritures : aucune ici (déléguées à ContactAutopilot, CampaignSendingSettings, CampaignSenderSelect,
+ * PrepareCampaignButton, CampaignFormsPanel).
  */
 
 import Link from 'next/link';
@@ -11,6 +15,7 @@ import {
   MessageSquareText,
   Search,
   TriangleAlert,
+  UserRound,
 } from 'lucide-react';
 import { getFormatter, getTranslations } from 'next-intl/server';
 
@@ -21,11 +26,17 @@ import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { cn } from '@kit/ui/utils';
 
+import pathsConfig from '~/config/paths.config';
 import type { AttemptGroup } from '~/lib/leadmaker/attempts';
 import type { AttemptRow } from '~/lib/leadmaker/attempts-query';
 import type { AutopilotSummary } from '~/lib/leadmaker/autopilot-query';
 
+import {
+  loadCampaignSender,
+  loadSenders,
+} from '../../../sender/_lib/server/sender.loader';
 import { attemptsTotal } from '../../_lib/steps';
+import { CampaignSenderSelect } from '../campaign-sender-select';
 import { CampaignFormsPanel } from './campaign-forms-panel';
 import { CampaignSendingSettings } from './campaign-sending-settings';
 import { type AutopilotMessage, ContactAutopilot } from './contact-autopilot';
@@ -34,11 +45,11 @@ import { PrepareCampaignButton } from './prepare-campaign-button';
 export type ContactMode = 'auto' | 'advanced';
 
 /**
- * Étape 4, Contacter. Deux modes (roadmap n°18) :
- * - Pilote automatique (par défaut) : un nombre d'entreprises, Prospectigo
- *   prépare et envoie tout seul ;
- * - Avancé : préparer, vérifier, envoyer à la main (a/b/c), puis la liste des
- *   formulaires de cette campagne par statut.
+ * Étape 4, Envoi. Deux modes (roadmap n°18) :
+ * - Pilote automatique (par défaut) : planification, expéditeur, messages, nombre d'entreprises, puis « Lancer » ;
+ *   Prospectigo prépare et envoie tout seul, à son propre rythme ;
+ * - Avancé : réglages d'envoi (prises de contact par jour, validation automatique) et expéditeur, puis préparer,
+ *   vérifier, envoyer à la main (a/b/c) et la liste des formulaires de cette campagne par statut.
  */
 export async function ContactStep(props: {
   mode: ContactMode;
@@ -71,6 +82,14 @@ export async function ContactStep(props: {
 
   const autoHref = `${props.basePath}?etape=contacter`;
   const advancedHref = `${props.basePath}?etape=contacter&mode=avance`;
+
+  const senderSection = (
+    <ContactSender
+      campaignId={props.campaignId}
+      spaceId={props.spaceId}
+      basePath={props.basePath}
+    />
+  );
 
   return (
     <div className={'flex flex-col gap-4'} data-test={'campaign-step-contact'}>
@@ -145,13 +164,20 @@ export async function ContactStep(props: {
           messages={props.messages}
           writeHref={props.writeHref}
           advancedHref={groupHref('intervention_required')}
+          sendingSettingsHref={advancedHref}
+          senderSection={senderSection}
           billingHref={props.billingHref}
           hasPlan={props.hasPlan}
           // le nombre de prospects contactables est vérifié par le pilote lui-même
           ready={props.messagesCount > 0 && props.hasSender}
         />
       ) : (
-        <AdvancedContact {...props} total={total} groupHref={groupHref} />
+        <AdvancedContact
+          {...props}
+          total={total}
+          groupHref={groupHref}
+          senderSection={senderSection}
+        />
       )}
     </div>
   );
@@ -161,6 +187,7 @@ async function AdvancedContact(
   props: Parameters<typeof ContactStep>[0] & {
     total: number;
     groupHref: (target: AttemptGroup) => string;
+    senderSection: React.ReactNode;
   },
 ) {
   const t = await getTranslations('campaigns.steps.contact');
@@ -177,6 +204,21 @@ async function AdvancedContact(
 
   return (
     <>
+      {/* réglages d'envoi puis expéditeur, avant les actions a/b/c (ordre de l'écran 4 du CDC) */}
+      <div className={'grid grid-cols-1 items-start gap-3 lg:grid-cols-2'}>
+        <CampaignSendingSettings
+          campaignId={props.campaignId}
+          dailyLimit={props.dailyLimit}
+          autoValidation={props.autoValidation}
+          autoValidationAllowed={Boolean(autoValidationAllowed)}
+          contactable={props.autopilot?.contactable ?? null}
+        />
+
+        <div className={'bg-card rounded-2xl border p-6'}>
+          {props.senderSection}
+        </div>
+      </div>
+
       <div className={'grid grid-cols-1 gap-3 md:grid-cols-3'}>
         <StepCard title={t('prepareTitle')} testId={'contact-prepare-card'}>
           <Big
@@ -259,13 +301,6 @@ async function AdvancedContact(
               ? t('sendAutoValidation')
               : t('sendAuto', { limit: props.dailyLimit })}
           </p>
-
-          <CampaignSendingSettings
-            campaignId={props.campaignId}
-            dailyLimit={props.dailyLimit}
-            autoValidation={props.autoValidation}
-            autoValidationAllowed={Boolean(autoValidationAllowed)}
-          />
         </StepCard>
       </div>
 
@@ -279,6 +314,104 @@ async function AdvancedContact(
         total={total}
       />
     </>
+  );
+}
+
+/**
+ * Section « Qui envoie ? » de l'étape Envoi : l'expéditeur de la campagne (choisi, sinon celui par défaut de
+ * l'espace), le lien vers sa fiche et, s'il y en a plusieurs, le choix de l'expéditeur (CampaignSenderSelect,
+ * même composant et même action que dans l'étape « Votre message »).
+ */
+async function ContactSender(props: {
+  campaignId: string;
+  spaceId: string;
+  basePath: string;
+}) {
+  const t = await getTranslations('campaigns.steps.write');
+  const client = getSupabaseServerClient();
+
+  const [sender, senders] = await Promise.all([
+    loadCampaignSender(client, props.campaignId),
+    loadSenders(client, props.spaceId),
+  ]);
+
+  // basePath = `${accountCampaigns}/${id}` (paths.config) : on en retire le slug de l'équipe pour viser la page
+  // Expéditeur du même compte, comme la page campagne (senderHref)
+  const [before = '', after = ''] =
+    pathsConfig.app.accountCampaigns.split('[account]');
+  const campaignsPath = props.basePath.slice(
+    0,
+    props.basePath.lastIndexOf('/'),
+  );
+  const slug = campaignsPath.slice(
+    before.length,
+    campaignsPath.length - after.length,
+  );
+  const senderHref = `${pathsConfig.app.accountSender.replace('[account]', slug)}?space=${props.spaceId}${sender ? `&sender=${sender.id}` : ''}`;
+
+  return (
+    <section
+      className={'flex flex-col gap-4 text-sm'}
+      data-test={'contact-sender'}
+    >
+      <h3 className={'text-base font-medium'}>{t('senderTitle')}</h3>
+
+      <div className={'flex flex-wrap items-center justify-between gap-3'}>
+        {sender ? (
+          <div className={'flex min-w-0 items-center gap-3'}>
+            <span
+              className={
+                'bg-accent text-accent-foreground inline-flex size-10 shrink-0 items-center justify-center rounded-full font-medium'
+              }
+            >
+              {`${sender.first_name.charAt(0)}${sender.last_name.charAt(0)}`.toUpperCase()}
+            </span>
+
+            <div className={'flex min-w-0 flex-col'}>
+              <span className={'truncate font-medium'}>
+                {sender.first_name} {sender.last_name} · {sender.company}
+              </span>
+              <span className={'text-muted-foreground truncate'}>
+                {[sender.email, sender.phone].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className={'text-muted-foreground flex items-center gap-3'}>
+            <UserRound className={'size-5'} />
+            <span>{t('senderMissing')}</span>
+          </div>
+        )}
+
+        <Button
+          variant={sender ? 'outline' : 'default'}
+          size={'sm'}
+          nativeButton={false}
+          data-test={'contact-sender-link'}
+          render={<Link href={senderHref} />}
+        >
+          {sender ? t('senderEdit') : t('senderFill')}
+        </Button>
+      </div>
+
+      {senders.length > 1 ? (
+        <CampaignSenderSelect
+          campaignId={props.campaignId}
+          senders={senders.map(
+            ({ id, first_name, last_name, company, is_default }) => ({
+              id,
+              first_name,
+              last_name,
+              company,
+              is_default,
+            }),
+          )}
+          // la page campagne passe lm_campaigns.sender_id ; ici on le déduit de l'expéditeur retenu
+          // (celui par défaut = « Par défaut », même affichage)
+          chosenSenderId={sender && !sender.is_default ? sender.id : null}
+        />
+      ) : null}
+    </section>
   );
 }
 

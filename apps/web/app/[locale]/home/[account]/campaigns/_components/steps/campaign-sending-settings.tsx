@@ -1,24 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-
 import { TriangleAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@kit/ui/dialog';
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from '@kit/ui/form';
 import { Input } from '@kit/ui/input';
-import { Label } from '@kit/ui/label';
 import { toast } from '@kit/ui/sonner';
 import { Switch } from '@kit/ui/switch';
 import { Trans } from '@kit/ui/trans';
@@ -26,146 +24,189 @@ import { Trans } from '@kit/ui/trans';
 import { DAILY_LIMIT_MAX } from '../../_lib/schema/templates.schema';
 import { saveCampaignSendingAction } from '../../_lib/server/campaign-outreach-actions';
 
+interface SendingValues {
+  dailyLimit: string;
+  autoValidation: boolean;
+}
+
 /**
- * Rôle : fenêtre « Réglages d'envoi » du mode avancé (étape Contacter) — envois par jour et validation automatique.
+ * Rôle : réglages d'envoi du mode avancé (étape Envoi) — prises de contact par jour, au maximum, et validation
+ * automatique. Affichés directement dans l'étape (écran 4 du CDC-PARCOURS-TRI-ANNUAIRE §6, 10/11/2026) au lieu
+ * d'une fenêtre : mêmes champs, mêmes bornes, mêmes textes, même action.
  * Données : valeurs actuelles de la campagne (props). Modifications : saveCampaignSendingAction.
- * Déplacée depuis l'étape Rédiger le 5/11/2026 (audit E10) : le pilote automatique a son propre rythme.
+ * Le pilote automatique a son propre rythme (sa planification) : ces deux réglages ne s'appliquent qu'aux
+ * formulaires validés hors pilote (lm_queue_sends).
  */
 export function CampaignSendingSettings(props: {
   campaignId: string;
   dailyLimit: number;
   autoValidation: boolean;
   autoValidationAllowed: boolean;
+  /** entreprises pas encore contactées (null = inconnu) : pour « ≈ N jours pour tout envoyer » */
+  contactable: number | null;
 }) {
   const t = useTranslations();
-  const [open, setOpen] = useState(false);
-  const [dailyLimit, setDailyLimit] = useState(String(props.dailyLimit));
-  const [autoValidation, setAutoValidation] = useState(props.autoValidation);
+
+  const form = useForm<SendingValues>({
+    defaultValues: {
+      dailyLimit: String(props.dailyLimit),
+      autoValidation: props.autoValidation,
+    },
+  });
 
   const save = useAction(saveCampaignSendingAction, {
-    onSuccess: () => {
-      setOpen(false);
+    onSuccess: ({ input }) => {
+      // les valeurs enregistrées deviennent la nouvelle référence (bouton désactivé tant que rien ne change)
+      form.reset({
+        dailyLimit: String(input.dailyLimit),
+        autoValidation: input.autoValidation,
+      });
       toast.success(t('outreach.messages.saved'));
     },
     onError: ({ error }) =>
       toast.error(t(error.serverError ?? 'outreach.messages.saveFailed')),
   });
 
-  const limit = Number(dailyLimit);
+  const values = useWatch({ control: form.control });
+  const limit = Number(values.dailyLimit);
   const limitValid =
     Number.isInteger(limit) && limit >= 1 && limit <= DAILY_LIMIT_MAX;
 
+  const daysToSend =
+    limitValid && props.contactable !== null && props.contactable > 0
+      ? Math.ceil(props.contactable / limit)
+      : null;
+
+  const submit = form.handleSubmit((input) =>
+    save.execute({
+      campaignId: props.campaignId,
+      dailyLimit: Number(input.dailyLimit),
+      autoValidation: input.autoValidation,
+    }),
+  );
+
   return (
-    <>
-      <Button
-        variant={'outline'}
-        className={'mt-auto'}
-        data-test={'contact-send-settings'}
-        onClick={() => {
-          setDailyLimit(String(props.dailyLimit));
-          setAutoValidation(props.autoValidation);
-          setOpen(true);
-        }}
+    <Form {...form}>
+      <form
+        onSubmit={submit}
+        className={'bg-card flex flex-col gap-5 rounded-2xl border p-6'}
+        data-test={'sending-settings'}
       >
-        <Trans i18nKey={'campaigns.steps.contact.sendSettings'} />
-      </Button>
+        <div className={'flex flex-col gap-1'}>
+          <h3 className={'font-medium'}>
+            <Trans i18nKey={'outreach.messages.sending.title'} />
+          </h3>
 
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          if (!save.isPending) setOpen(next);
-        }}
-      >
-        <DialogContent data-test={'sending-settings-dialog'}>
-          <DialogHeader>
-            <DialogTitle>
-              <Trans i18nKey={'outreach.messages.sending.title'} />
-            </DialogTitle>
-            <DialogDescription>
-              <Trans i18nKey={'outreach.messages.sending.intro'} />
-            </DialogDescription>
-          </DialogHeader>
+          <p className={'text-muted-foreground text-sm'}>
+            <Trans i18nKey={'outreach.messages.sending.intro'} />
+          </p>
+        </div>
 
-          <div className={'flex flex-col gap-6'}>
-            <div className={'flex max-w-xs flex-col gap-2'}>
-              <Label htmlFor={'sending-daily-limit'}>
+        <FormField
+          control={form.control}
+          name={'dailyLimit'}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
                 <Trans i18nKey={'outreach.messages.sending.dailyLimit'} />
-              </Label>
-              <Input
-                id={'sending-daily-limit'}
-                type={'number'}
-                min={1}
-                max={DAILY_LIMIT_MAX}
-                data-test={'sending-daily-limit'}
-                value={dailyLimit}
-                onChange={(event) => setDailyLimit(event.target.value)}
-              />
-              <p className={'text-muted-foreground text-sm'}>
-                <Trans i18nKey={'outreach.messages.sending.dailyLimitHint'} />
-              </p>
-            </div>
+              </FormLabel>
 
-            <div className={'flex items-start gap-3'}>
-              <Switch
-                id={'sending-auto-validation'}
-                checked={autoValidation}
-                onCheckedChange={setAutoValidation}
-                disabled={!props.autoValidationAllowed}
-                data-test={'sending-auto-validation'}
-              />
-              <div className={'flex flex-col gap-1'}>
-                <Label htmlFor={'sending-auto-validation'}>
-                  <Trans i18nKey={'outreach.messages.sending.autoValidation'} />
-                </Label>
-                <p className={'text-muted-foreground text-sm'}>
-                  <Trans
-                    i18nKey={
-                      props.autoValidationAllowed
-                        ? 'outreach.messages.sending.autoValidationHint'
-                        : 'outreach.messages.sending.autoValidationPlanHint'
-                    }
+              <div className={'flex flex-wrap items-center gap-3'}>
+                <FormControl className={'w-40'}>
+                  <Input
+                    type={'number'}
+                    min={1}
+                    max={DAILY_LIMIT_MAX}
+                    inputMode={'numeric'}
+                    data-test={'sending-daily-limit'}
+                    className={'tabular-nums'}
+                    {...field}
                   />
-                </p>
+                </FormControl>
+
+                {daysToSend !== null ? (
+                  <span
+                    className={'text-muted-foreground text-sm tabular-nums'}
+                    data-test={'sending-days-to-send'}
+                  >
+                    <Trans
+                      i18nKey={'outreach.sendStep.daysToSend'}
+                      values={{ count: daysToSend }}
+                    />
+                  </span>
+                ) : null}
               </div>
-            </div>
 
-            {autoValidation ? (
-              <Alert className={alertExtras.warning}>
-                <TriangleAlert className={'h-4'} />
-                <AlertDescription>
-                  <Trans
-                    i18nKey={'outreach.messages.sending.autoValidationWarning'}
-                  />
-                </AlertDescription>
-              </Alert>
-            ) : null}
-          </div>
+              <FormDescription>
+                <Trans i18nKey={'outreach.messages.sending.dailyLimitHint'} />
+              </FormDescription>
+            </FormItem>
+          )}
+        />
 
-          <DialogFooter>
-            <Button
-              variant={'outline'}
-              disabled={save.isPending}
-              onClick={() => setOpen(false)}
-            >
-              <Trans i18nKey={'common.cancel'} />
-            </Button>
-            <Button
-              data-test={'sending-settings-save'}
-              disabled={!limitValid}
-              loading={save.isPending}
-              onClick={() =>
-                save.execute({
-                  campaignId: props.campaignId,
-                  dailyLimit: limit,
-                  autoValidation,
-                })
-              }
-            >
-              <Trans i18nKey={'outreach.messages.save'} />
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        <FormField
+          control={form.control}
+          name={'autoValidation'}
+          render={({ field }) => (
+            <FormItem className={'flex flex-col gap-3 border-t pt-5'}>
+              <div className={'flex items-start gap-3'}>
+                <FormControl
+                  render={
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!props.autoValidationAllowed}
+                      data-test={'sending-auto-validation'}
+                    />
+                  }
+                />
+
+                <div className={'flex flex-col gap-1'}>
+                  <FormLabel>
+                    <Trans
+                      i18nKey={'outreach.messages.sending.autoValidation'}
+                    />
+                  </FormLabel>
+
+                  <FormDescription>
+                    <Trans
+                      i18nKey={
+                        props.autoValidationAllowed
+                          ? 'outreach.messages.sending.autoValidationHint'
+                          : 'outreach.messages.sending.autoValidationPlanHint'
+                      }
+                    />
+                  </FormDescription>
+                </div>
+              </div>
+
+              {field.value ? (
+                <Alert className={alertExtras.warning}>
+                  <TriangleAlert className={'h-4'} />
+                  <AlertDescription>
+                    <Trans
+                      i18nKey={
+                        'outreach.messages.sending.autoValidationWarning'
+                      }
+                    />
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+            </FormItem>
+          )}
+        />
+
+        <div className={'flex justify-end'}>
+          <Button
+            type={'submit'}
+            data-test={'sending-settings-save'}
+            disabled={!limitValid || !form.formState.isDirty}
+            loading={save.isPending}
+          >
+            <Trans i18nKey={'outreach.messages.save'} />
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

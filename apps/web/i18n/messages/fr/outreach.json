@@ -267,5 +267,14 @@
       "working": "Préparation en cours…"
     },
     "preparingBanner": "Prospectigo travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page."
+  },
+  "sendStep": {
+    "spreadDaysUnit": "{count, plural, one {jour ouvré} other {jours ouvrés}}",
+    "daysToSend": "≈ {count, plural, one {# jour} other {# jours}} pour tout envoyer",
+    "autopilotSettingsNote": "Prises de contact par jour et validation automatique : le pilote automatique suit la planification ci-dessus et envoie seul les formulaires sans alerte. Ces deux réglages servent au mode Avancé.",
+    "autopilotSettingsLink": "Les régler",
+    "launchSummary": "{companies, plural, one {# entreprise} other {# entreprises}} · {versions, plural, one {# version} other {# versions}}",
+    "launchedTitle": "Campagne lancée.",
+    "launchedText": "Premiers formulaires dans quelques minutes."
   }
 }

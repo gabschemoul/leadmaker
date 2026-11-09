@@ -668,7 +668,26 @@
     "emptyKept": "Aucune entreprise gardée.",
     "emptyToCheck": "Aucune entreprise à vérifier.",
     "more": "Afficher plus",
-    "next": "Suivant : le message"
+    "next": "Suivant : le message",
+    "groups": {
+      "title": "{count, plural, other {# groupes repérés. Un message par groupe ?}}",
+      "description": "Chaque groupe peut avoir sa propre campagne, avec un message écrit pour lui. Ses entreprises gardées y sont reprises, sans nouvelle recherche ni crédit en plus.",
+      "kept": "{count, plural, one {# gardée} other {# gardées}}",
+      "single": "Un seul message",
+      "split": "{count, plural, other {Créer # campagnes}}",
+      "singleLine": "{count, plural, other {Un seul message pour les # groupes}}",
+      "change": "Changer",
+      "createdTitle": "{count, plural, one {# campagne créée} other {# campagnes créées}}",
+      "createdDescription": "Elles sont en brouillon, avec leurs entreprises gardées. Écrivez le message de chacune :",
+      "companies": "{count, plural, =0 {aucune entreprise} one {# entreprise} other {# entreprises}}",
+      "splitLine": "Campagnes créées par groupe :",
+      "splitLineFallback": "Une campagne a été créée pour chaque groupe · <link>Voir vos campagnes</link>",
+      "childLine": "Campagne du groupe « {label} »",
+      "choiceFailed": "Le choix n'a pas pu être enregistré. Réessayez dans un instant.",
+      "splitFailed": "Les campagnes n'ont pas pu être créées. Réessayez dans un instant.",
+      "alreadySplit": "Les campagnes par groupe ont déjà été créées.",
+      "noGroups": "Cette campagne n'a pas encore de groupes."
+    }
   },
   "messages": {
     "title": "Votre message",

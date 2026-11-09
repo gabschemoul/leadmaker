@@ -2,10 +2,11 @@
 
 /**
  * Rôle : écran « Vos entreprises » d'une campagne triée (CDC-PARCOURS-TRI-ANNUAIRE §6) : cible, avancement,
- * onglets Gardées / À vérifier, choix du client sur les entreprises à vérifier.
- * Données : fetchCampaignLive (dont lm_campaign_sort_summary) + temps réel, fetchSortedCompanies
- * (lm_campaign_prospects) page par page, dans le navigateur.
- * Écritures : chooseProspectsAction (lm_choose_prospects), startCampaignAction / pauseCampaignAction.
+ * encart des groupes (§4.3), onglets Gardées / À vérifier, choix du client sur les entreprises à vérifier.
+ * Données : fetchCampaignLive (dont lm_campaign_sort_summary et lm_campaign_groups) + temps réel,
+ * fetchSortedCompanies (lm_campaign_prospects) page par page, dans le navigateur.
+ * Écritures : chooseProspectsAction (lm_choose_prospects), startCampaignAction / pauseCampaignAction, actions de
+ * l'encart des groupes (campaign-groups.tsx).
  */
 
 import { useState } from 'react';
@@ -47,6 +48,7 @@ import {
 import { CampaignStatusBadge } from '../../../_components/leadmaker/campaign-status-badge';
 import { type CampaignLive, fetchCampaignLive } from '../../_lib/campaign-live';
 import { chooseProspectsAction } from '../../_lib/server/sort-actions';
+import { CampaignGroups, groupLabels } from './campaign-groups';
 import {
   CampaignActions,
   PauseAlerts,
@@ -67,6 +69,8 @@ export function CompaniesStep(props: {
   editHref: string;
   writeHref: string;
   billingPath: string;
+  /** liste des campagnes de l'équipe (campagnes créées par groupe) */
+  campaignsPath: string;
   initialData: CampaignLive;
 }) {
   const client = useSupabase();
@@ -158,6 +162,13 @@ export function CompaniesStep(props: {
         <CardContent className={'flex flex-col gap-5'}>
           <SortProgress sort={sort} live={live} />
 
+          <CampaignGroups
+            campaignId={props.campaignId}
+            campaignsPath={props.campaignsPath}
+            groups={data.groups}
+            queryKey={queryKey}
+          />
+
           <Tabs
             value={tab}
             onValueChange={(value) => setTab(value as CompaniesTab)}
@@ -206,6 +217,7 @@ export function CompaniesStep(props: {
               tab={tab}
               live={live}
               waiting={sort.pending > 0 || data.status === 'running'}
+              groupLabels={groupLabels(data.groups)}
             />
           </Tabs>
         </CardContent>
@@ -292,6 +304,8 @@ function CompaniesList(props: {
   live: boolean;
   /** des entreprises vont encore arriver (texte de la liste vide) */
   waiting: boolean;
+  /** libellé de chaque groupe (campagne à plusieurs groupes), affiché en petit sur la ligne */
+  groupLabels: Map<string, string> | null;
 }) {
   const t = useTranslations();
   const client = useSupabase();
@@ -468,6 +482,11 @@ function CompaniesList(props: {
           <CompanyRow
             key={row.id}
             row={row}
+            group={
+              row.groupKey
+                ? (props.groupLabels?.get(row.groupKey) ?? null)
+                : null
+            }
             choosable={choosable}
             checked={selected.includes(row.id)}
             onCheckedChange={(checked) => toggle(row.id, checked)}
@@ -497,6 +516,8 @@ function CompaniesList(props: {
 
 function CompanyRow(props: {
   row: SortedCompany;
+  /** libellé du groupe de l'entreprise, null sans groupe */
+  group: string | null;
   choosable: boolean;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
@@ -526,6 +547,15 @@ function CompanyRow(props: {
 
           {row.city ? (
             <span className={'text-muted-foreground text-sm'}>{row.city}</span>
+          ) : null}
+
+          {props.group ? (
+            <span
+              className={'text-muted-foreground text-xs'}
+              data-test={'campaign-company-group'}
+            >
+              {props.group}
+            </span>
           ) : null}
         </div>
 

@@ -668,7 +668,26 @@
     "emptyKept": "No company kept.",
     "emptyToCheck": "No company to check.",
     "more": "Show more",
-    "next": "Next: the message"
+    "next": "Next: the message",
+    "groups": {
+      "title": "{count, plural, other {# groups found. One message per group?}}",
+      "description": "Each group can have its own campaign, with a message written for it. Its kept companies are carried over, with no new search and no extra credits.",
+      "kept": "{count, plural, one {# kept} other {# kept}}",
+      "single": "One message",
+      "split": "{count, plural, other {Create # campaigns}}",
+      "singleLine": "{count, plural, other {One message for all # groups}}",
+      "change": "Change",
+      "createdTitle": "{count, plural, one {# campaign created} other {# campaigns created}}",
+      "createdDescription": "They are drafts, with their kept companies. Write the message for each one:",
+      "companies": "{count, plural, =0 {no companies} one {# company} other {# companies}}",
+      "splitLine": "Campaigns created by group:",
+      "splitLineFallback": "A campaign was created for each group · <link>See your campaigns</link>",
+      "childLine": "Campaign for the “{label}” group",
+      "choiceFailed": "Your choice could not be saved. Please try again in a moment.",
+      "splitFailed": "The campaigns could not be created. Please try again in a moment.",
+      "alreadySplit": "The campaigns by group have already been created.",
+      "noGroups": "This campaign has no groups yet."
+    }
   },
   "messages": {
     "title": "Your message",

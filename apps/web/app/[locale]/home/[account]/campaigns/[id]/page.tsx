@@ -281,6 +281,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
               '[account]',
               slug,
             )}
+            campaignsPath={campaignsPath}
             initialData={live}
           />
         ) : null}

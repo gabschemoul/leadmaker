@@ -21,7 +21,8 @@ export function keptCompaniesFilter(version: number) {
 
 /**
  * Une page d'entreprises triées d'une campagne (lm_campaign_prospects, lisible par les membres grâce à la
- * RLS), les plus récemment triées d'abord, avec le nom et la ville de l'entreprise et la raison courte du tri.
+ * RLS), les plus récemment triées d'abord, avec le nom et la ville de l'entreprise, la raison courte du tri et
+ * son groupe.
  * - Gardées : gardées par le client, ou par le tri pour la cible en cours (`version`) sans choix du client.
  * - À vérifier : « à vérifier » pour la cible en cours, sans choix du client.
  * Les entreprises écartées ne sont jamais lues.
@@ -40,7 +41,7 @@ export async function fetchSortedCompanies(
   let query = client
     .from('lm_campaign_prospects')
     .select(
-      'prospect_id, reason, sorted_at, prospect:lm_prospects(name, city, website)',
+      'prospect_id, reason, group_key, sorted_at, prospect:lm_prospects(name, city, website)',
     )
     .eq('campaign_id', params.campaignId);
 
@@ -67,6 +68,8 @@ export async function fetchSortedCompanies(
     city: row.prospect?.city ?? null,
     website: row.prospect?.website ?? null,
     reason: row.reason,
+    /** groupe de l'entreprise (CDC §4.3), null tant que la campagne n'a pas de groupes */
+    groupKey: row.group_key,
   }));
 }
 

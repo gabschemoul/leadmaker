@@ -484,3 +484,8 @@ export const ChooseProspectsSchema = CampaignIdSchema.extend({
   prospectIds: z.array(z.string().uuid()).min(1).max(MAX_CHOSEN_PROSPECTS),
   choice: z.enum(['gardee', 'ecartee']),
 });
+
+/** Encart des groupes : « Un seul message » ('single') ou « Changer » (null, l'encart revient). */
+export const SetGroupsChoiceSchema = CampaignIdSchema.extend({
+  choice: z.enum(['single']).nullable(),
+});

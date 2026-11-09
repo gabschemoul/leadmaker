@@ -11,7 +11,7 @@ export async function fetchCampaignLive(
   client: SupabaseClient<Database>,
   campaignId: string,
 ) {
-  const [campaign, progress, pricing, prospects, sortSummary] =
+  const [campaign, progress, pricing, prospects, sortSummary, groups] =
     await Promise.all([
       client
         .from('lm_campaigns')
@@ -30,6 +30,8 @@ export async function fetchCampaignLive(
         .limit(50),
       // écran « Vos entreprises » (campagne triée) : nombres par onglet, fiches examinées, prix
       client.rpc('lm_campaign_sort_summary', { p_campaign_id: campaignId }),
+      // groupes proposés par le tri (CDC §4.3) : gardées par groupe et choix du client ; vide sans groupes
+      client.rpc('lm_campaign_groups', { p_campaign_id: campaignId }),
     ]);
 
   if (campaign.error) throw campaign.error;
@@ -43,6 +45,8 @@ export async function fetchCampaignLive(
   const price = pricing.error ? undefined : pricing.data?.[0];
   const sortTarget = campaign.data.sort_target?.trim() || null;
   const summary = sortSummary.error ? undefined : sortSummary.data?.[0];
+  // même prudence : sans la fonction des groupes en base, l'encart ne s'affiche simplement pas
+  const groupRows = groups.error ? [] : (groups.data ?? []);
 
   return {
     status: campaign.data.status,
@@ -89,6 +93,19 @@ export async function fetchCampaignLive(
           pricePending: summary?.price_pending ?? true,
         }
       : null,
+    /**
+     * Groupes de la campagne (encart « Un message par groupe ? » de « Vos entreprises ») : liste vide tant que
+     * le tri n'a pas proposé de groupes. choice : null (pas encore choisi), 'single' ou 'split'.
+     */
+    groups: {
+      choice: (groupRows[0]?.choice ?? null) as 'single' | 'split' | null,
+      totalKept: groupRows[0]?.total_kept ?? 0,
+      list: groupRows.map((row) => ({
+        key: row.group_key,
+        label: row.label || row.group_key,
+        kept: row.kept ?? 0,
+      })),
+    },
   };
 }
 

@@ -51,6 +51,13 @@ export const CHOOSE_PROSPECTS_ERRORS: RpcHintMap = {
   invalid_choice: 'campaigns.companies.chooseFailed',
 };
 
+/** Groupes d'une campagne (lm_set_groups_choice, lm_split_campaign_by_groups) : encart de « Vos entreprises ». */
+export const GROUPS_ERRORS: RpcHintMap = {
+  invalid_choice: 'campaigns.companies.groups.choiceFailed',
+  no_groups: 'campaigns.companies.groups.noGroups',
+  already_split: 'campaigns.companies.groups.alreadySplit',
+};
+
 /** Modification d'une campagne (lm_update_campaign) : pays figé après lancement. */
 export const UPDATE_CAMPAIGN_ERRORS: RpcHintMap = {
   country_locked: 'campaigns.errors.countryLocked',

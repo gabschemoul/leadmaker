@@ -663,6 +663,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"lm_place_searches": {
+                  Row: {
+                    "campaign_id": string | null,"cards": number,"complete": boolean,"country_code": string,"gcid": string,"geoname_id": number | null,"id": number,"latitude": number | null,"longitude": number | null,"place_ids": (string)[],"query": string | null,"searched_at": string,"source": string,"zone_key": string,"zoom": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "campaign_id"?: string | null,"cards"?: number,"complete"?: boolean,"country_code": string,"gcid": string,"geoname_id"?: number | null,"id"?: never,"latitude"?: number | null,"longitude"?: number | null,"place_ids"?: (string)[],"query"?: string | null,"searched_at"?: string,"source"?: string,"zone_key": string,"zoom"?: number | null
+                  }
+                  Update: {
+                    "campaign_id"?: string | null,"cards"?: number,"complete"?: boolean,"country_code"?: string,"gcid"?: string,"geoname_id"?: number | null,"id"?: never,"latitude"?: number | null,"longitude"?: number | null,"place_ids"?: (string)[],"query"?: string | null,"searched_at"?: string,"source"?: string,"zone_key"?: string,"zoom"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_place_searches_campaign_id_fkey"
+      columns: ["campaign_id"]
+isOneToOne: false
+      referencedRelation: "lm_campaigns"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"lm_place_sightings": {
                   Row: {
                     "created_at": string,"google_place_id": string,"kept": boolean,"site_key": string | null,"space_id": string
@@ -682,6 +702,20 @@ isOneToOne: false
       referencedRelation: "lm_spaces"
       referencedColumns: ["id"]
     }
+                  ]
+                },"lm_places": {
+                  Row: {
+                    "address": string | null,"category": string | null,"city": string | null,"closed_at": string | null,"country_code": string,"details_at": string | null,"first_seen_at": string,"gcid": string | null,"geoname_id": number | null,"google_place_id": string,"is_chain": boolean,"last_seen_at": string,"latitude": number | null,"longitude": number | null,"maps_url": string | null,"name": string,"phone": string | null,"rating": number | null,"review_count": number | null,"site_key": string | null,"site_read_at": string | null,"site_status": string | null,"site_text": string | null,"updated_at": string,"website": string | null,"website_known": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "address"?: string | null,"category"?: string | null,"city"?: string | null,"closed_at"?: string | null,"country_code": string,"details_at"?: string | null,"first_seen_at"?: string,"gcid"?: string | null,"geoname_id"?: number | null,"google_place_id": string,"is_chain"?: boolean,"last_seen_at"?: string,"latitude"?: number | null,"longitude"?: number | null,"maps_url"?: string | null,"name": string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string | null,"site_read_at"?: string | null,"site_status"?: string | null,"site_text"?: string | null,"updated_at"?: string,"website"?: string | null,"website_known"?: boolean
+                  }
+                  Update: {
+                    "address"?: string | null,"category"?: string | null,"city"?: string | null,"closed_at"?: string | null,"country_code"?: string,"details_at"?: string | null,"first_seen_at"?: string,"gcid"?: string | null,"geoname_id"?: number | null,"google_place_id"?: string,"is_chain"?: boolean,"last_seen_at"?: string,"latitude"?: number | null,"longitude"?: number | null,"maps_url"?: string | null,"name"?: string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string | null,"site_read_at"?: string | null,"site_status"?: string | null,"site_text"?: string | null,"updated_at"?: string,"website"?: string | null,"website_known"?: boolean
+                  }
+                  Relationships: [
+                    
                   ]
                 },"lm_plan_variants": {
                   Row: {
@@ -1619,6 +1653,9 @@ isOneToOne: false
 "lm_pause_campaign":
 { Args: { "p_campaign_id": string,"p_reason"?: string }; Returns: undefined
                            },
+"lm_place_zone_key":
+{ Args: { "p_geoname_id": number,"p_latitude": number,"p_longitude": number,"p_zoom": number }; Returns: string
+                           },
 "lm_prepare_campaign":
 { Args: { "p_campaign_id": string }; Returns: {
               "queued": number,"skipped": number
@@ -1648,6 +1685,9 @@ isOneToOne: false
                            },
 "lm_record_prospect":
 { Args: { "p_campaign_id": string,"p_place": Json }; Returns: string
+                           },
+"lm_record_search_places":
+{ Args: { "p_places": Json,"p_search": Json }; Returns: number
                            },
 "lm_recount_in_flight":
 { Args: { "p_campaign_id": string }; Returns: number

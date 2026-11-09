@@ -145,6 +145,12 @@ class Place:
     # Liste compacte (aucun bouton sur la carte) et pas de lien « Website » : le site éventuel n'est visible
     # que sur la fiche. Sert à l'estimation, qui n'ouvre jamais les fiches (voir runner.estimate).
     site_unknown: bool = False
+    opened: bool = False  # fiche complète ouverte pendant la recherche (adresse, téléphone, site sûrs)
+
+    @property
+    def website_known(self) -> bool:
+        """Sait-on si l'entreprise a un site ? Non seulement pour une carte de liste compacte jamais ouverte."""
+        return bool(self.website) or self.opened or not self.site_unknown
 
 
 def _parse_float(txt: str | None) -> float | None:
@@ -208,6 +214,10 @@ class GMapsScraper:
         self._pw = self._browser = self._ctx = None
         self.searches = 0
         self.opened = 0  # fiches ouvertes depuis le lancement (mesure du n°11)
+        # Toutes les fiches de la dernière recherche, écartées comprises, complétées au fil de la lecture : le
+        # robot les range dans l'annuaire commun (lm_places). last_complete : liste lue jusqu'au bout.
+        self.last_places: list[Place] = []
+        self.last_complete = False
         # octets reçus à travers le proxy depuis l'ouverture (voir _meter)
         self.bytes = 0
 
@@ -387,6 +397,8 @@ class GMapsScraper:
         if not self.is_open:
             self.open()
         self.searches += 1
+        self.last_places = []
+        self.last_complete = False
         page = self._ctx.new_page()
         detail = self._ctx.new_page()
         self._meter(page)
@@ -408,19 +420,29 @@ class GMapsScraper:
                 cards = [{"name": "", "href": page.url, "star": None, "star_text": "", "site": "", "single": True}]
             else:
                 cards = self._collect_cards(page, max_results)
+            self.last_complete = not self.stop_flag()
             yield "info", f"« {query} » : {len(cards)} fiches"
             opened = 0
 
+            # Toutes les fiches de la liste, avant tout filtre : l'annuaire commun garde ce qui a été vu
+            # (adresse et téléphone lus sur la carte, remplacés par ceux de la fiche si on l'ouvre).
+            places = []
             for c in cards:
-                if self.stop_flag():
-                    return
-                rating = _parse_float(c["star"])
-                place = Place(name=c["name"], rating=rating, review_count=_parse_count(c["star_text"]),
+                place = Place(name=c["name"], rating=_parse_float(c["star"]), review_count=_parse_count(c["star_text"]),
                               website=c["site"], maps_url=c["href"].split("?")[0],
-                              card_category=card_category(c.get("text", "")))
+                              card_category=card_category(c.get("text", "")),
+                              site_unknown=not c["site"] and card_hides_buttons(c.get("actions") or []))
+                place.address, place.phone = card_details(c.get("text", ""))
                 place.latitude, place.longitude = coords(c["href"])
                 m = PLACE_ID.search(c["href"])
                 place.place_id = m.group(1) if m else place.maps_url
+                places.append((c, place))
+            self.last_places = [place for _, place in places]
+
+            for c, place in places:
+                if self.stop_flag():
+                    return
+                rating = _parse_float(c["star"])
 
                 if filters.in_area and not filters.in_area(place):
                     yield "skip", place
@@ -472,6 +494,7 @@ class GMapsScraper:
                         detail = self._ctx.new_page()
                         self._meter(detail)
                     self._scrape_detail(detail, c["href"], place)
+                    place.opened = True
                     if "/sorry/" in detail.url:
                         raise BlockedError("Google a bloqué la lecture d'une fiche (captcha)")
                     self._sleep()

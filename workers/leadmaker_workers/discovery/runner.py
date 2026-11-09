@@ -99,6 +99,44 @@ def likely_has_site(place_id: str, rate: float = COMPACT_SITE_RATE) -> bool:
     return int(digest, 16) / 0xFFFFFFFF < rate
 
 
+def record_places(conn: psycopg.Connection, payload: dict[str, Any], scraper: GMapsScraper, in_area) -> int | None:
+    """Range dans l'annuaire commun (lm_places) toutes les fiches vues par la recherche, écartées comprises, et
+    note la recherche au registre (lm_place_searches). CDC-PARCOURS-TRI-ANNUAIRE §8.2, étape 1.
+
+    Ne doit JAMAIS faire échouer une recherche : en cas d'erreur (fonction absente tant que la base n'est pas
+    à jour, coupure…), un simple avertissement. La ville n'est notée que si l'entreprise est dans la zone."""
+    try:
+        return _record_places(conn, payload, scraper, in_area)
+    except Exception as exc:
+        log.warning("annuaire : fiches non rangées (%s)", str(exc).splitlines()[0] if str(exc) else type(exc).__name__)
+        return None
+
+
+def _record_places(conn: psycopg.Connection, payload: dict[str, Any], scraper: GMapsScraper, in_area) -> int | None:
+    places = scraper.last_places
+    if not places and not scraper.last_complete:
+        return None
+    city, geoname_id = payload.get("city"), payload.get("geoname_id")
+    rows = []
+    for pl in places:
+        here = in_area(pl) if in_area else True
+        rows.append({
+            "place_id": pl.place_id, "name": pl.name, "category": pl.category or pl.card_category,
+            "rating": pl.rating, "review_count": pl.review_count, "address": pl.address, "phone": pl.phone,
+            "website": pl.website, "site_key": site_key(pl.website) or None, "website_known": pl.website_known,
+            "maps_url": pl.maps_url, "latitude": pl.latitude, "longitude": pl.longitude,
+            "city": city if here else None, "geoname_id": geoname_id if here else None, "opened": pl.opened,
+        })
+    search = {
+        "country_code": payload.get("country_code"), "gcid": payload.get("gcid"), "geoname_id": geoname_id,
+        "latitude": payload.get("latitude"), "longitude": payload.get("longitude"), "zoom": payload.get("zoom"),
+        "query": payload.get("query"), "complete": scraper.last_complete, "source": "discovery",
+        "campaign_id": payload.get("campaign_id"),
+    }
+    return conn.execute("select public.lm_record_search_places(%s, %s) as n",
+                        (Jsonb(search), Jsonb(rows))).fetchone()["n"]
+
+
 def _category_fn(filters: dict[str, Any], label: str | None):
     """Garde seulement les entreprises dont l'activité principale est celle recherchée (réglage par défaut)."""
     if not label or not filters.get("main_category_only", True):
@@ -239,6 +277,8 @@ class DiscoveryRunner:
                     break
         finally:
             scraper.stop_flag = lambda: False
+            # Même si la recherche s'arrête (pause, crédits épuisés, blocage) : tout ce qui a été vu est gardé
+            stored = record_places(conn, p, scraper, filters.in_area)
 
         duration_ms = int((time.monotonic() - started) * 1000)
         proxy_bytes = scraper.bytes - bytes_before
@@ -258,7 +298,7 @@ class DiscoveryRunner:
         log.info("%s | %d fiches, %d nouvelles, %d retenues (%.1fs, %.1f Mo)", p["query"], cards, new, kept,
                  duration_ms / 1000, proxy_bytes / 1e6)
         return {"cards": cards, "new": new, "kept": kept, "opened": opened, "stopped": stopped,
-                "proxy_bytes": proxy_bytes}
+                "proxy_bytes": proxy_bytes, "places_stored": stored}
 
     def on_final_failure(self, task: Task, conn: psycopg.Connection) -> None:
         """Recherche abandonnée après plusieurs échecs : on libère sa place (campagne) ou on la compte vide (estimation)."""

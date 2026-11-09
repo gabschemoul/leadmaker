@@ -77,7 +77,7 @@ Navigateur ──► Next.js (Vercel : prospectigo.com = main, staging.prospecti
 | `apps/web/lib/leadmaker` | Code partagé client/serveur : CSV, clé de site (`site-key.ts`, identique à `workers/.../text.py`), modèles de messages |
 | `apps/web/lib/server/leadmaker` | Serveur seulement : crédits Stripe (`plan-credits.service.ts`), erreurs RPC (`rpc-errors.ts`) |
 | `apps/web/config/billing.config.ts` | Forfaits et prix Stripe |
-| `apps/web/supabase/schemas/20-34-leadmaker-*.sql` | **Source de vérité** du modèle de données (voir §5) |
+| `apps/web/supabase/schemas/20-36-leadmaker-*.sql` | **Source de vérité** du modèle de données (voir §5) |
 | `apps/web/supabase/tests/database/leadmaker-*.test.sql` | Tests pgTAP (isolation, crédits, découverte, envoi, pilote, audit) |
 | `workers/leadmaker_workers` | Robots : `main.py` (boucle), `queue.py`, `discovery/` (recherche), `outreach/` (formulaires), `watchdog.py` |
 | `workers/scripts` | Déploiement et exploitation (deploy-robots.sh, set-proxy-budget.sh…) |
@@ -86,7 +86,7 @@ Navigateur ──► Next.js (Vercel : prospectigo.com = main, staging.prospecti
 Tout le reste (`packages/`, auth, comptes, facturation générique) est du MakerKit d'origine : n'y toucher que si
 nécessaire, pour garder les mises à jour du kit faciles (remote git `upstream`).
 
-## 5. Modèle de données (schémas 20 à 34)
+## 5. Modèle de données (schémas 20 à 36)
 
 | Fichier | Contenu |
 |---|---|
@@ -105,6 +105,8 @@ nécessaire, pour garder les mises à jour du kit faciles (remote git `upstream`
 | 32 campaign copy | duplication de campagne |
 | 33 autopilot | pilote automatique (`lm_autopilots`, `lm_autopilot_tick` appelé par `lm_queue_sends`) |
 | 34 local discovery | recherche sur le Mac dédié |
+| 35 notifications | e-mails de notification |
+| 36 places | **annuaire commun** à tous les clients : `lm_places` (toutes les fiches vues, infos publiques), `lm_place_searches` (registre pays × activité × zone), `lm_record_search_places` appelée par le robot de recherche à chaque recherche. Illisible par les clients |
 
 Hiérarchie : organisation (compte d'équipe MakerKit) → espace → campagne → zones × activités → recherches →
 prospects → tentatives (prises de contact) → pilote automatique.

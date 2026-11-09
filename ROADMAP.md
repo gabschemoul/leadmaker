@@ -196,6 +196,7 @@ Pistes à discuter :
 - **Cahier des charges complet** : `docs/prospectigo/CDC-PARCOURS-TRI-ANNUAIRE.md`. **Maquette UX seulement (pas de design)** : `docs/prospectigo/maquette-parcours-ux/`.
 - **En bref** : parcours Qui ? → Vos entreprises → Message → Envoi → Résultats ; tri IA de chaque fiche selon la cible en mots ; plus d'estimation ; 1 crédit = 1 entreprise gardée, prise de contact incluse (paliers 1/2/4, pause sous 6 %) ; toutes les fiches trouvées gardées dans un annuaire commun et réutilisées pendant 3 mois, avec une arrivée progressive pour que le client voie une vraie recherche.
 - **Ordre** : 1) garder toutes les fiches vues · 2) lien campagne ↔ entreprise · 3) tri IA · 4) crédit unique · 5) nouveaux écrans · 6) réutiliser l'annuaire · 7) remettre à jour les fiches de plus de 3 mois.
+- **Étape 1 FAITE sur staging (9/11)** : tables communes `lm_places` (une ligne par entreprise) et `lm_place_searches` (registre des recherches), remplies par le robot de recherche avec TOUTES les fiches vues (écartées comprises) ; les 211 000 prospects existants y sont copiés par la mise à jour de la base. Mise en ligne : Gabriel pousse la base, puis `deploy-robots.sh` (serveur principal), 10 min de vérification.
 
 ## Déjà prévu (liste du 31 octobre)
 

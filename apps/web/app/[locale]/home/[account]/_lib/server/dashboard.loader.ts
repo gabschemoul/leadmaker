@@ -53,7 +53,7 @@ export async function loadDashboard(client: Client, accountId: string) {
       client
         .from('lm_account_credits')
         .select(
-          'discovery_balance, outreach_balance, plan:lm_plans(discovery_credits, outreach_credits, active_campaigns)',
+          'discovery_balance, plan:lm_plans(discovery_credits, active_campaigns)',
         )
         .eq('account_id', accountId)
         .maybeSingle(),
@@ -133,10 +133,9 @@ export async function loadDashboard(client: Client, accountId: string) {
   return {
     campaigns: rows,
     kpis: {
-      discoveryBalance: credits.data?.discovery_balance ?? 0,
-      discoveryMonthly: plan?.discovery_credits ?? null,
-      outreachBalance: credits.data?.outreach_balance ?? 0,
-      outreachMonthly: plan?.outreach_credits ?? null,
+      // crédit unique (9/11) : discovery_balance est le seul solde
+      creditBalance: credits.data?.discovery_balance ?? 0,
+      creditMonthly: plan?.discovery_credits ?? null,
       toReview: totals.ready + totals.to_verify + totals.incomplete,
       activeCampaigns: rows.filter((row) => row.facts.status === 'running')
         .length,

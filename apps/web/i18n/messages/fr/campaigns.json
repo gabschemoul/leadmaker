@@ -169,8 +169,8 @@
     "cities": "Villes",
     "categories": "Activités",
     "searches": "Recherches",
-    "balance": "Vos crédits de prospection",
-    "creditsHint": "Chaque prospect trouvé utilise 1 crédit de prospection.",
+    "balance": "Vos crédits",
+    "creditsHint": "Chaque entreprise gardée utilise 1 crédit, prise de contact comprise.",
     "exceedsBalance": "Vos crédits ne suffisent pas pour toute la campagne. Elle se mettra en pause quand ils seront épuisés.",
     "real": {
       "title": "Entreprises qui correspondent",
@@ -184,10 +184,10 @@
       "changed": "Vos critères ont changé : relancez l'estimation.",
       "failed": "L'estimation n'a pas abouti. Réessayez.",
       "again": "Relancer",
-      "pricing": "Tarif : {count, plural, one {# crédit de prospection} other {# crédits de prospection}} par prospect",
+      "pricing": "Tarif : {count, plural, one {# crédit} other {# crédits}} par prospect",
       "pricingHint": "{rate} % des entreprises lues passent vos filtres. Plus les filtres sont sélectifs, plus chaque prospect coûte de crédits. Le tarif est fixé au lancement de la campagne."
     },
-    "creditsHintPriced": "Chaque prospect trouvé utilisera {count, plural, one {# crédit} other {# crédits}} de prospection (tarif fixé au lancement)."
+    "creditsHintPriced": "Chaque entreprise gardée utilisera {count, plural, one {# crédit} other {# crédits}}, prise de contact comprise (tarif fixé au lancement)."
   },
   "detail": {
     "pageTitle": "Campagne",
@@ -200,7 +200,9 @@
     "resumed": "La campagne a repris.",
     "paused": "La campagne est en pause.",
     "noCreditsTitle": "Campagne en pause : plus de crédits",
-    "noCreditsDescription": "Vous n'avez plus de crédits de prospection. <link>Voir mon forfait</link> pour en avoir plus, puis cliquez sur « Reprendre ».",
+    "noCreditsDescription": "Vous n'avez plus de crédits. <link>Voir mon forfait</link> pour en avoir plus, puis cliquez sur « Reprendre ».",
+    "tooHardTitle": "Campagne en pause : cible trop difficile",
+    "tooHardDescription": "Moins de 6 % des entreprises trouvées correspondent à votre cible : précisez votre cible (<link>étape Cibler</link>), puis cliquez sur « Reprendre ».",
     "progressTitle": "Avancement",
     "progressDescription": "Où en est la recherche.",
     "progressLive": "Mis à jour en direct.",
@@ -254,7 +256,7 @@
     "estimateFailed": "L'estimation n'a pas pu être calculée.",
     "createFailed": "La campagne n'a pas pu être enregistrée. Réessayez dans un instant.",
     "targetingIncomplete": "Complétez les villes et les activités.",
-    "noCredits": "Vous n'avez pas de crédits de prospection : choisissez un forfait (menu Facturation) pour lancer la campagne.",
+    "noCredits": "Vous n'avez pas de crédits : choisissez un forfait (menu Facturation) pour lancer la campagne.",
     "campaignLimit": "Votre forfait ne permet pas d'autres campagnes en cours. Mettez-en une en pause ou changez de forfait.",
     "noCities": "Aucune ville ne correspond à vos critères. Élargissez le rayon ou baissez le nombre minimum d'habitants.",
     "startFailed": "La campagne n'a pas pu être lancée. Réessayez dans un instant.",
@@ -379,8 +381,7 @@
       "activeCampaigns": "Campagnes en cours",
       "of": "sur {max} autorisées",
       "unlimited": "sans limite",
-      "outreach": "Crédits de prise de contact",
-      "discovery": "Crédits de prospection",
+      "credits": "Crédits",
       "perMonth": "{max} par mois",
       "noPlan": "aucun forfait"
     },
@@ -449,8 +450,12 @@
       "button": "Vérifier"
     },
     "noCredits": {
-      "text": "Recherche arrêtée : plus de crédits de prospection · {count, plural, one {# prospect} other {# prospects}}",
+      "text": "Recherche arrêtée : plus de crédits · {count, plural, one {# prospect} other {# prospects}}",
       "button": "Voir mon forfait"
+    },
+    "tooHard": {
+      "text": "Recherche en pause : moins de 6 % des entreprises trouvées correspondent à votre cible",
+      "button": "Préciser la cible"
     },
     "contactMore": {
       "text": "{sent, plural, one {# envoyé} other {# envoyés}} · {remaining, plural, one {# prospect pas encore contacté} other {# prospects pas encore contactés}}",
@@ -471,9 +476,9 @@
     "more": "Plus",
     "countLabel": "Nombre d'entreprises à contacter",
     "all": "Tous ({count, number})",
-    "maxHint": "Tapez un nombre ou utilisez les boutons. Maximum {max, number} : {prospects, plural, one {# prospect pas encore contacté} other {# prospects pas encore contactés}}, {credits, plural, one {# crédit de prise de contact disponible} other {# crédits de prise de contact disponibles}}.",
-    "maxHintEdit": "Entre {min, number} (déjà envoyés ou en cours) et {max, number} (prospects restants et crédits de prise de contact disponibles).",
-    "targetAdjusted": "Nombre ajusté à {count, number} (prospects restants et crédits disponibles).",
+    "maxHint": "Tapez un nombre ou utilisez les boutons. Maximum {max, number} : {prospects, plural, one {# prospect pas encore contacté} other {# prospects pas encore contactés}}. Les envois ne consomment aucun crédit.",
+    "maxHintEdit": "Entre {min, number} (déjà envoyés ou en cours) et {max, number} (en comptant les prospects pas encore contactés).",
+    "targetAdjusted": "Nombre ajusté à {count, number} (prospects pas encore contactés).",
     "pace": {
       "title": "Quand envoyer ?",
       "office": "Heures de bureau (recommandé)",
@@ -517,12 +522,12 @@
       "title": "Ce qui va se passer",
       "step1": "Prospectigo prend vos prospects dans l'ordre où ils ont été trouvés.",
       "step2": "Il remplit le formulaire et l'envoie au moment choisi si tout est clair.",
-      "step3": "Les cas douteux (captcha, champ inconnu) sont mis de côté, sans crédit dépensé.",
+      "step3": "Les cas douteux (captcha, champ inconnu) sont mis de côté.",
       "step4": "Il s'arrête à {count, plural, one {# message envoyé} other {# messages envoyés}}. Vous pouvez mettre en pause à tout moment.",
-      "credits": "1 crédit de prise de contact par message envoyé, soit {count, number} au plus."
+      "credits": "Les envois ne consomment aucun crédit : chaque entreprise a déjà été payée quand elle a été gardée."
     },
     "blocked": {
-      "noCredits": "Plus aucun crédit de prise de contact : changez de forfait ou attendez son renouvellement pour contacter d'autres entreprises.",
+      "noPlan": "Il faut un forfait pour contacter des entreprises : choisissez-en un dans Facturation.",
       "noProspects": "Tous les prospects de cette campagne ont déjà été contactés ou préparés. Lancez une nouvelle recherche pour en trouver d'autres, ou passez en mode Avancé.",
       "billing": "Voir mon forfait"
     },
@@ -538,12 +543,12 @@
       "ofSent": "/ {count, number} envoyés",
       "progressLabel": "Messages envoyés",
       "nextSend": "Hors des heures de bureau : prochain envoi {when} (heure de {zone}).",
-      "noCredits": "Plus aucun crédit de prise de contact : le pilote attend.",
+      "noPlan": "Aucun forfait en cours : le pilote attend.",
       "billing": "Voir mon forfait",
       "sent": "Envoyés",
       "inFlight": "En cours",
       "aside": "Mis de côté",
-      "asideHint": "Mis de côté : sans formulaire, captcha ou champ inconnu. Aucun crédit dépensé.",
+      "asideHint": "Mis de côté : sans formulaire, captcha ou champ inconnu.",
       "seeAdvanced": "Les voir en mode Avancé"
     },
     "feed": {
@@ -571,7 +576,7 @@
       "messages": "Un message coché n'existe plus : rechargez la page.",
       "active": "Le pilote automatique est déjà lancé sur cette campagne : rechargez la page.",
       "noProspects": "Aucun prospect à contacter : tous ont déjà été contactés ou préparés.",
-      "noCredits": "Plus aucun crédit de prise de contact.",
+      "noCredits": "Il faut un forfait pour contacter des entreprises.",
       "target": "Choisissez au moins une entreprise.",
       "schedule": "Choisissez sur combien de jours étaler les envois.",
       "notActive": "Ce passage du pilote est déjà terminé : rechargez la page."

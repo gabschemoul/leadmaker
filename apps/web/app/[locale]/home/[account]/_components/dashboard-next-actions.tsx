@@ -24,7 +24,7 @@ import type { DashboardData } from '../_lib/server/dashboard.loader';
 import { compareNextActions, nextAction } from '../campaigns/_lib/next-action';
 
 /**
- * Le tableau de bord : quatre chiffres clés, puis une ligne par campagne
+ * Le tableau de bord : trois chiffres clés (à vérifier, campagnes en cours, crédits), puis une ligne par campagne
  * avec sa prochaine action et le bouton qui y mène.
  */
 export async function DashboardNextActions(props: {
@@ -48,7 +48,7 @@ export async function DashboardNextActions(props: {
       <Card className={'py-0'} data-test={'dashboard-kpis'}>
         <div
           className={
-            'grid grid-cols-2 divide-x divide-y md:grid-cols-4 md:divide-y-0 md:[&>*:last-child]:border-r-0 [&>*:nth-child(2n)]:border-r-0 md:[&>*:nth-child(2n)]:border-r'
+            'grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0'
           }
         >
           <Kpi
@@ -69,30 +69,17 @@ export async function DashboardNextActions(props: {
             testId={'kpi-active-campaigns'}
           />
           <Kpi
-            label={t('kpi.outreach')}
-            value={format.number(kpis.outreachBalance)}
+            label={t('kpi.credits')}
+            value={format.number(kpis.creditBalance)}
             hint={
-              kpis.outreachMonthly
+              kpis.creditMonthly
                 ? t('kpi.perMonth', {
-                    max: format.number(kpis.outreachMonthly),
+                    max: format.number(kpis.creditMonthly),
                   })
                 : t('kpi.noPlan')
             }
             href={props.billingPath}
-            testId={'kpi-outreach'}
-          />
-          <Kpi
-            label={t('kpi.discovery')}
-            value={format.number(kpis.discoveryBalance)}
-            hint={
-              kpis.discoveryMonthly
-                ? t('kpi.perMonth', {
-                    max: format.number(kpis.discoveryMonthly),
-                  })
-                : t('kpi.noPlan')
-            }
-            href={props.billingPath}
-            testId={'kpi-discovery'}
+            testId={'kpi-credits'}
           />
         </div>
       </Card>

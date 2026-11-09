@@ -74,7 +74,7 @@ export async function loadCountryOptions(client: Client) {
   return toCountryOptions(data ?? [], locale);
 }
 
-/** Solde de crédits de prospection de l'organisation (0 sans forfait). */
+/** Solde de crédits de l'organisation (crédit unique, colonne discovery_balance ; 0 sans forfait). */
 export async function loadDiscoveryBalance(client: Client, accountId: string) {
   const { data, error } = await client
     .from('lm_account_credits')
@@ -87,4 +87,23 @@ export async function loadDiscoveryBalance(client: Client, accountId: string) {
   }
 
   return data?.discovery_balance ?? 0;
+}
+
+/**
+ * L'organisation a-t-elle un forfait (ou un reste de crédits) ? Même règle que le bandeau « Choisissez un
+ * forfait » ; sans forfait, le pilote automatique ne peut rien envoyer (les envois sont gratuits mais
+ * réservés aux organisations avec forfait).
+ */
+export async function loadHasPlan(client: Client, accountId: string) {
+  const { data, error } = await client
+    .from('lm_account_credits')
+    .select('plan_id, discovery_balance')
+    .eq('account_id', accountId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data?.plan_id) || (data?.discovery_balance ?? 0) > 0;
 }

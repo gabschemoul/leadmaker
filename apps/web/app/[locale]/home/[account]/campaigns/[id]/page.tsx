@@ -32,6 +32,7 @@ import { requireUserInServerComponent } from '~/lib/server/require-user-in-serve
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
   loadCountryOptions,
+  loadHasPlan,
   loadSpaces,
 } from '../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../_lib/server/team-account-workspace.loader';
@@ -271,6 +272,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
             )}
             formsHref={formsHref}
             writeHref={stepHref('rediger')}
+            targetHref={stepHref('cibler')}
             readyToWrite={messagesCount > 0 && sender !== null}
             initialData={live}
           />
@@ -410,14 +412,16 @@ async function ContactStepContent(props: {
   const client = getSupabaseServerClient();
 
   // la liste des formulaires n'est chargée qu'en mode Avancé
-  const rows =
+  const [rows, hasPlan] = await Promise.all([
     props.mode === 'advanced'
-      ? await loadAttempts(client, {
+      ? loadAttempts(client, {
           spaceId: props.campaign.space_id,
           campaignId: props.campaign.id,
           group: props.group,
         })
-      : [];
+      : Promise.resolve([]),
+    loadHasPlan(client, props.accountId),
+  ]);
 
   return (
     <ContactStep
@@ -425,6 +429,7 @@ async function ContactStepContent(props: {
       autopilot={props.autopilot}
       messages={props.messages}
       billingHref={props.billingHref}
+      hasPlan={hasPlan}
       campaignId={props.campaign.id}
       accountId={props.accountId}
       spaceId={props.campaign.space_id}

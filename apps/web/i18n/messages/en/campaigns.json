@@ -169,8 +169,8 @@
     "cities": "Cities",
     "categories": "Activities",
     "searches": "Searches",
-    "balance": "Your prospecting credits",
-    "creditsHint": "Each prospect found uses 1 prospecting credit.",
+    "balance": "Your credits",
+    "creditsHint": "Each business kept uses 1 credit, contacting included.",
     "exceedsBalance": "Your credits won't cover the whole campaign. It will pause when they run out.",
     "real": {
       "title": "Matching businesses",
@@ -184,10 +184,10 @@
       "changed": "Your criteria changed: run the estimate again.",
       "failed": "The estimate did not complete. Please try again.",
       "again": "Run again",
-      "pricing": "Rate: {count, plural, one {# prospecting credit} other {# prospecting credits}} per prospect",
+      "pricing": "Rate: {count, plural, one {# credit} other {# credits}} per prospect",
       "pricingHint": "{rate}% of the businesses read match your filters. The more selective the filters, the more credits each prospect costs. The rate is fixed when the campaign launches."
     },
-    "creditsHintPriced": "Each prospect found will use {count, plural, one {# prospecting credit} other {# prospecting credits}} (rate fixed at launch)."
+    "creditsHintPriced": "Each business kept will use {count, plural, one {# credit} other {# credits}}, contacting included (rate fixed at launch)."
   },
   "detail": {
     "pageTitle": "Campaign",
@@ -200,7 +200,9 @@
     "resumed": "The campaign has resumed.",
     "paused": "The campaign is paused.",
     "noCreditsTitle": "Campaign paused: out of credits",
-    "noCreditsDescription": "You have no prospecting credits left. <link>See my plan</link> to get more, then click “Resume”.",
+    "noCreditsDescription": "You have no credits left. <link>See my plan</link> to get more, then click “Resume”.",
+    "tooHardTitle": "Campaign paused: target too hard",
+    "tooHardDescription": "Less than 6% of the businesses found match your target: make your target more precise (<link>Target step</link>), then click “Resume”.",
     "progressTitle": "Progress",
     "progressDescription": "How far the search has gone.",
     "progressLive": "Updated live.",
@@ -254,7 +256,7 @@
     "estimateFailed": "The estimate couldn't be calculated.",
     "createFailed": "The campaign couldn't be saved. Please try again in a moment.",
     "targetingIncomplete": "Complete the cities and activities.",
-    "noCredits": "You have no prospecting credits: choose a plan (Billing menu) to launch the campaign.",
+    "noCredits": "You have no credits: choose a plan (Billing menu) to launch the campaign.",
     "campaignLimit": "Your plan doesn't allow more running campaigns. Pause one or change your plan.",
     "noCities": "No city matches your criteria. Widen the radius or lower the minimum population.",
     "startFailed": "The campaign couldn't be launched. Please try again in a moment.",
@@ -379,8 +381,7 @@
       "activeCampaigns": "Running campaigns",
       "of": "of {max} allowed",
       "unlimited": "no limit",
-      "outreach": "Outreach credits",
-      "discovery": "Prospecting credits",
+      "credits": "Credits",
       "perMonth": "{max} per month",
       "noPlan": "no plan"
     },
@@ -449,8 +450,12 @@
       "button": "Check"
     },
     "noCredits": {
-      "text": "Search stopped: no prospecting credits left · {count, plural, one {# prospect} other {# prospects}}",
+      "text": "Search stopped: no credits left · {count, plural, one {# prospect} other {# prospects}}",
       "button": "See my plan"
+    },
+    "tooHard": {
+      "text": "Search paused: less than 6% of the businesses found match your target",
+      "button": "Refine the target"
     },
     "contactMore": {
       "text": "{sent, plural, one {# sent} other {# sent}} · {remaining, plural, one {# prospect not contacted yet} other {# prospects not contacted yet}}",
@@ -471,9 +476,9 @@
     "more": "More",
     "countLabel": "Number of businesses to contact",
     "all": "All ({count, number})",
-    "maxHint": "Type a number or use the buttons. Maximum {max, number}: {prospects, plural, one {# prospect not contacted yet} other {# prospects not contacted yet}}, {credits, plural, one {# outreach credit available} other {# outreach credits available}}.",
-    "maxHintEdit": "Between {min, number} (already sent or in progress) and {max, number} (remaining prospects and available outreach credits).",
-    "targetAdjusted": "Number adjusted to {count, number} (remaining prospects and available credits).",
+    "maxHint": "Type a number or use the buttons. Maximum {max, number}: {prospects, plural, one {# prospect not contacted yet} other {# prospects not contacted yet}}. Sending uses no credits.",
+    "maxHintEdit": "Between {min, number} (already sent or in progress) and {max, number} (counting the prospects not contacted yet).",
+    "targetAdjusted": "Number adjusted to {count, number} (prospects not contacted yet).",
     "pace": {
       "title": "When to send?",
       "office": "Business hours (recommended)",
@@ -517,12 +522,12 @@
       "title": "What will happen",
       "step1": "Prospectigo takes your prospects in the order they were found.",
       "step2": "It fills in the form and sends it at the chosen time if everything is clear.",
-      "step3": "Doubtful cases (captcha, unknown field) are set aside, no credit spent.",
+      "step3": "Doubtful cases (captcha, unknown field) are set aside.",
       "step4": "It stops at {count, plural, one {# message sent} other {# messages sent}}. You can pause at any time.",
-      "credits": "1 outreach credit per message sent, so {count, number} at most."
+      "credits": "Sending uses no credits: each business was already paid for when it was kept."
     },
     "blocked": {
-      "noCredits": "No contact credits left: upgrade your plan or wait for its renewal to contact more businesses.",
+      "noPlan": "You need a plan to contact businesses: choose one in Billing.",
       "noProspects": "Every prospect of this campaign has already been contacted or prepared. Run a new search to find more, or switch to Advanced mode.",
       "billing": "See my plan"
     },
@@ -538,12 +543,12 @@
       "ofSent": "/ {count, number} sent",
       "progressLabel": "Messages sent",
       "nextSend": "Outside business hours: next send {when} ({zone} time).",
-      "noCredits": "No outreach credits left: the autopilot is waiting.",
+      "noPlan": "No active plan: the autopilot is waiting.",
       "billing": "See my plan",
       "sent": "Sent",
       "inFlight": "In progress",
       "aside": "Set aside",
-      "asideHint": "Set aside: no form, captcha or unknown field. No credit spent.",
+      "asideHint": "Set aside: no form, captcha or unknown field.",
       "seeAdvanced": "See them in Advanced mode"
     },
     "feed": {
@@ -571,7 +576,7 @@
       "messages": "A ticked message no longer exists: reload the page.",
       "active": "The autopilot is already running on this campaign: reload the page.",
       "noProspects": "No prospect to contact: all of them have already been contacted or prepared.",
-      "noCredits": "No outreach credits left.",
+      "noCredits": "You need a plan to contact businesses.",
       "target": "Pick at least one business.",
       "schedule": "Choose how many days to spread the sends over.",
       "notActive": "This autopilot run is already over: reload the page."

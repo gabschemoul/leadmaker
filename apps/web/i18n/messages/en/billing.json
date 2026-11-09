@@ -129,8 +129,8 @@
     "growth": {
       "description": "For a business prospecting for itself",
       "features": {
-        "discovery": "30,000 prospecting credits per month",
-        "outreach": "15,000 contacts per month",
+        "discovery": "15,000 credits per month (1 credit = 1 business kept)",
+        "outreach": "Contacting included, no extra credit",
         "seats": "1 seat",
         "campaigns": "1 active campaign",
         "support": "Support and onboarding"
@@ -139,8 +139,8 @@
     "business": {
       "description": "The main plan for agencies",
       "features": {
-        "discovery": "80,000 prospecting credits per month",
-        "outreach": "40,000 contacts per month",
+        "discovery": "40,000 credits per month (1 credit = 1 business kept)",
+        "outreach": "Contacting included, no extra credit",
         "seats": "3 seats",
         "campaigns": "3 active campaigns",
         "support": "Support and onboarding"
@@ -149,8 +149,8 @@
     "scale": {
       "description": "For high-volume agencies and networks",
       "features": {
-        "discovery": "200,000 prospecting credits per month",
-        "outreach": "100,000 contacts per month",
+        "discovery": "100,000 credits per month (1 credit = 1 business kept)",
+        "outreach": "Contacting included, no extra credit",
         "seats": "6 seats",
         "campaigns": "10 active campaigns",
         "support": "Priority support and onboarding"
@@ -161,14 +161,12 @@
     "title": "Your credits",
     "renewal": "Next refill on {date}. Unused credits do not roll over.",
     "noRenewal": "No active plan.",
-    "discovery": "Prospecting credits",
-    "outreach": "Contact credits",
+    "balance": "Credits left",
     "of": "of",
     "empty": "No activity in the last 30 days.",
     "dateColumn": "Date",
     "campaignColumn": "Campaign",
-    "discoveryColumn": "Prospecting",
-    "outreachColumn": "Contact",
+    "creditsColumn": "Credits",
     "refill": "Plan refill",
     "other": "Other"
   }

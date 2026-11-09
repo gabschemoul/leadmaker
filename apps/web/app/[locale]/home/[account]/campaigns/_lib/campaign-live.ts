@@ -55,7 +55,7 @@ export async function fetchCampaignLive(
       lastSearchAt: row?.last_search_at ?? null,
     },
     /**
-     * Tarif en crédits de prospection par prospect (roadmap n°13) : figé au lancement,
+     * Tarif en crédits par prospect (roadmap n°13) : figé au lancement,
      * sinon celui de la dernière estimation faite avec ce ciblage (terminée ou en cours).
      */
     pricing: {

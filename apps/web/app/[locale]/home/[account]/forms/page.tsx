@@ -35,11 +35,7 @@ import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { FolderSwitch } from '../sender/_components/folder-switch';
 import { FormsTable } from './_components/forms-table';
-import {
-  loadAttemptCounts,
-  loadAttempts,
-  loadOutreachBalance,
-} from './_lib/server/forms.loader';
+import { loadAttemptCounts, loadAttempts } from './_lib/server/forms.loader';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -111,10 +107,8 @@ async function FormsContent(props: FormsPageProps) {
   const space = spaces.find((item) => item.id === requestedSpace) ?? spaces[0]!;
   const showFolders = spaces.length > 1;
 
-  const [counts, balance] = await Promise.all([
-    loadAttemptCounts(client, space.id),
-    loadOutreachBalance(client, account.id),
-  ]);
+  // crédit unique (9/11) : les envois sont gratuits, plus de solde de prise de contact à afficher
+  const counts = await loadAttemptCounts(client, space.id);
 
   // Sans onglet choisi : « Prêts », ou le premier onglet non vide (robot au
   // travail, formulaires à compléter…) pour ne jamais tomber sur une liste vide
@@ -143,13 +137,7 @@ async function FormsContent(props: FormsPageProps) {
     <Card>
       <CardHeader className={'flex flex-col gap-4'}>
         <CardDescription className={'max-w-2xl'}>
-          <Trans i18nKey={'outreach.forms.intro'} />{' '}
-          <span data-test={'forms-balance'}>
-            <Trans
-              i18nKey={'outreach.forms.balance'}
-              values={{ count: balance }}
-            />
-          </span>
+          <Trans i18nKey={'outreach.forms.intro'} />
         </CardDescription>
 
         {counts.preparing > 0 ? (

@@ -63,9 +63,13 @@ export const GET = enhanceRouteHandler(
     for (const notification of (data ??
       []) as unknown as ClaimedNotification[]) {
       try {
-        const recipients = notification.kind.startsWith('admin_')
-          ? adminRecipients()
-          : notification.recipients;
+        // crédit unique (9/11) : l'ancien solde de prise de contact n'existe plus pour le client ;
+        // une alerte « crédits bas » le concernant est close sans e-mail
+        const recipients = isObsoleteNotification(notification)
+          ? []
+          : notification.kind.startsWith('admin_')
+            ? adminRecipients()
+            : notification.recipients;
 
         for (const recipient of recipients) {
           const email = await buildEmail(notification, recipient.language);
@@ -109,6 +113,13 @@ export const GET = enhanceRouteHandler(
   },
   { auth: false },
 );
+
+function isObsoleteNotification(notification: ClaimedNotification) {
+  return (
+    notification.kind === 'credits_low' &&
+    notification.payload?.credit === 'outreach'
+  );
+}
 
 function adminRecipients(): Recipient[] {
   const raw =
@@ -174,10 +185,7 @@ async function buildEmail(notification: ClaimedNotification, language: string) {
       ctaUrl = `${team}/billing`;
       break;
     case 'credits_low':
-      kind =
-        payload.credit === 'outreach'
-          ? 'creditsLowOutreach'
-          : 'creditsLowDiscovery';
+      kind = 'creditsLowDiscovery';
       values = {
         remaining: count('remaining'),
         quota: count('quota'),

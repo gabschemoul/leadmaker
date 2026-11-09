@@ -37,6 +37,16 @@ export function nextAction(facts: CampaignStepFacts): NextAction {
     };
   }
 
+  // Crédit unique (9/11) : moins de 6 % des entreprises trouvées correspondent à la cible
+  if (facts.status === 'paused' && facts.pausedReason === 'too_hard') {
+    return {
+      kind: 'todo',
+      key: 'tooHard',
+      values: {},
+      step: 'cibler',
+    };
+  }
+
   if (!facts.hasSender) {
     return { kind: 'todo', key: 'sender', values: {}, step: 'rediger' };
   }

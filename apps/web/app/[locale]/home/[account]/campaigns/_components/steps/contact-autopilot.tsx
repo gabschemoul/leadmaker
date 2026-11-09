@@ -77,6 +77,8 @@ export function ContactAutopilot(props: {
   writeHref: string;
   advancedHref: string;
   billingHref: string;
+  /** l'organisation a un forfait (sinon le pilote ne peut rien envoyer) */
+  hasPlan: boolean;
   ready: boolean;
 }) {
   const client = useSupabase();
@@ -136,6 +138,7 @@ export function ContactAutopilot(props: {
         messages={props.messages}
         writeHref={props.writeHref}
         billingHref={props.billingHref}
+        hasPlan={props.hasPlan}
         ready={props.ready}
         onDone={() => {
           setEditing(false);
@@ -162,6 +165,7 @@ export function ContactAutopilot(props: {
       checkedAt={dataUpdatedAt}
       advancedHref={props.advancedHref}
       billingHref={props.billingHref}
+      hasPlan={props.hasPlan}
       onEdit={() => setEditing(true)}
       onDone={refreshAll}
     />
@@ -179,6 +183,7 @@ function AutopilotSetup(props: {
   messages: AutopilotMessage[];
   writeHref: string;
   billingHref: string;
+  hasPlan: boolean;
   ready: boolean;
   onDone: () => void;
   onCancelEdit?: () => void;
@@ -188,12 +193,11 @@ function AutopilotSetup(props: {
   const format = useFormatter();
   const { summary } = props;
 
-  // bornes du nombre : en modification, jamais sous ce qui est parti ou en cours
+  // bornes du nombre : en modification, jamais sous ce qui est parti ou en cours.
+  // Crédit unique (9/11) : les envois sont gratuits, seul le nombre d'entreprises contactables limite
+  // (summary.balance est l'ancien solde de prise de contact : plus lu).
   const base = props.editing ? summary.sent + summary.in_flight : 0;
-  const room = Math.min(
-    summary.contactable,
-    Math.max(summary.balance - (props.editing ? summary.in_flight : 0), 0),
-  );
+  const room = props.hasPlan ? summary.contactable : 0;
   const max = base + room;
   const min = Math.max(base, 1);
 
@@ -273,7 +277,7 @@ function AutopilotSetup(props: {
   if (!props.editing && max === 0) {
     return (
       <SetupBlocked
-        noCredits={summary.balance <= 0}
+        noPlan={!props.hasPlan}
         billingHref={props.billingHref}
         finished={summary.status === 'done'}
         sent={summary.sent}
@@ -391,7 +395,6 @@ function AutopilotSetup(props: {
             : t('maxHint', {
                 max,
                 prospects: summary.contactable,
-                credits: summary.balance,
               })}
         </p>
 
@@ -612,7 +615,7 @@ function AutopilotSetup(props: {
 }
 
 function SetupBlocked(props: {
-  noCredits: boolean;
+  noPlan: boolean;
   billingHref: string;
   finished: boolean;
   sent: number;
@@ -631,10 +634,10 @@ function SetupBlocked(props: {
       ) : null}
 
       <p className={'text-muted-foreground'}>
-        {props.noCredits ? t('blocked.noCredits') : t('blocked.noProspects')}
+        {props.noPlan ? t('blocked.noPlan') : t('blocked.noProspects')}
       </p>
 
-      {props.noCredits ? (
+      {props.noPlan ? (
         <Button
           nativeButton={false}
           className={'self-start'}
@@ -849,6 +852,7 @@ function AutopilotRunning(props: {
   checkedAt: number;
   advancedHref: string;
   billingHref: string;
+  hasPlan: boolean;
   onEdit: () => void;
   onDone: () => void;
 }) {
@@ -889,7 +893,8 @@ function AutopilotRunning(props: {
     !paused &&
     nextSend !== null &&
     nextSend.getTime() - props.checkedAt > 60_000;
-  const noCredits = !done && summary.balance <= 0;
+  // sans forfait le pilote attend (les envois ne coûtent pas de crédit, mais il faut un forfait)
+  const noPlan = !done && !props.hasPlan;
 
   const title = done
     ? summary.finished_reason === 'no_prospects'
@@ -1015,12 +1020,12 @@ function AutopilotRunning(props: {
           </p>
         ) : null}
 
-        {noCredits ? (
+        {noPlan ? (
           <p
             className={'bg-brand/10 rounded-lg px-3 py-2.5 text-sm'}
-            data-test={'autopilot-no-credits'}
+            data-test={'autopilot-no-plan'}
           >
-            {t('noCredits')}{' '}
+            {t('noPlan')}{' '}
             <Link href={props.billingHref} className={'text-primary underline'}>
               {t('billing')}
             </Link>

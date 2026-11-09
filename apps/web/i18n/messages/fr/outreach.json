@@ -164,7 +164,7 @@
       "no_form": "Aucun formulaire de contact trouvé. Quand une adresse email a été repérée sur le site, elle est notée sur le prospect.",
       "unreachable": "Site injoignable, erreur, ou envoi qui a échoué. Vous pouvez relancer la préparation depuis la page Prospects.",
       "skipped": "Formulaires passés sans envoi.",
-      "sent": "Formulaires envoyés (confirmation vue sur le site). Un crédit de prise de contact a été débité par formulaire.",
+      "sent": "Formulaires envoyés (confirmation vue sur le site). L'envoi ne consomme aucun crédit.",
       "excluded": "Entreprises à ne jamais contacter.",
       "to_verify": "Prospectigo a cliqué sur Envoyer mais n'a pas vu de confirmation claire. Regardez la capture après envoi et tranchez : bien arrivé ou pas arrivé."
     },
@@ -266,7 +266,6 @@
       "noPlan": "Choisissez un forfait pour préparer des formulaires de contact.",
       "working": "Préparation en cours…"
     },
-    "preparingBanner": "Prospectigo travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page.",
-    "balance": "Crédits de prise de contact restants : {count, number}."
+    "preparingBanner": "Prospectigo travaille : {count, plural, one {# formulaire en préparation} other {# formulaires en préparation}} (environ une minute par site). Les résultats arrivent dans les onglets ci-dessous, sans recharger la page."
   }
 }

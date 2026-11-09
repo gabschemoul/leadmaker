@@ -26,21 +26,15 @@
     "cta": "Contact the businesses"
   },
   "searchNoCredits": {
-    "subject": "Search stopped: no prospecting credits left",
+    "subject": "Search stopped: no credits left",
     "heading": "Your search is paused",
-    "body": "The search of the “{campaign}” campaign stopped: you have no prospecting credits left ({prospects} businesses already found). Upgrade your plan to resume right away, or wait for the renewal.",
+    "body": "The search of the “{campaign}” campaign stopped: you have no credits left ({prospects} businesses already found). Upgrade your plan to resume right away, or wait for the renewal.",
     "cta": "See my plan"
   },
   "creditsLowDiscovery": {
-    "subject": "Less than 20% of your prospecting credits left",
-    "heading": "Prospecting credits running low",
-    "body": "You have {remaining} prospecting credits left out of {quota}. Next refill: {renewal}.",
-    "cta": "See my credits"
-  },
-  "creditsLowOutreach": {
-    "subject": "Less than 20% of your contact credits left",
-    "heading": "Contact credits running low",
-    "body": "You have {remaining} contact credits left out of {quota}. Next refill: {renewal}.",
+    "subject": "Less than 20% of your credits left",
+    "heading": "Credits running low",
+    "body": "You have {remaining} credits left out of {quota}. Next refill: {renewal}.",
     "cta": "See my credits"
   },
   "adminSignup": {

@@ -268,7 +268,7 @@ function KitPage({ params }: KitPageProps) {
           <Card className={'py-0'}>
             <div
               className={
-                'grid divide-y sm:grid-cols-4 sm:divide-x sm:divide-y-0'
+                'grid divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0'
               }
             >
               <Kpi
@@ -283,14 +283,9 @@ function KitPage({ params }: KitPageProps) {
                 hint={'sur 10 autorisées'}
               />
               <Kpi
-                label={'Prises de contact'}
-                value={'999 645'}
-                hint={'crédits restants'}
-              />
-              <Kpi
-                label={'Prospection'}
-                value={'737 506'}
-                hint={'crédits restants'}
+                label={'Crédits'}
+                value={'37 506'}
+                hint={'40 000 par mois'}
               />
             </div>
           </Card>
@@ -523,7 +518,7 @@ function KitPage({ params }: KitPageProps) {
                 </div>
                 <div className={'flex justify-between border-t pt-3'}>
                   <span className={'text-muted-foreground'}>Vos crédits</span>
-                  <span className={'tabular-nums'}>737 497</span>
+                  <span className={'tabular-nums'}>37 497</span>
                 </div>
 
                 <Button className={cn(buttonExtras.brand, 'mt-2 w-full')}>

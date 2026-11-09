@@ -2,8 +2,8 @@
  * Configuration de facturation Prospectigo.
  * Trois forfaits (Growth, Business, Scale), facturés en dollars américains,
  * mensuels ou annuels (annuel = 10 mois : deux mois offerts).
- * Volumes décidés le 2/11/2026 : 30 000 / 80 000 / 200 000 crédits de prospection
- * et 15 000 / 40 000 / 100 000 prises de contact par mois. Aucun plafond par jour.
+ * Crédit unique (9/11/2026) : 15 000 / 40 000 / 100 000 crédits par mois, 1 crédit = 1 entreprise
+ * gardée, prise de contact incluse (les envois ne coûtent rien). Aucun plafond par jour.
  * Les textes (description, avantages, badge) sont des clés de traduction : billing.json › plans (FR/EN).
  * Les identifiants de prix Stripe sont lus dans l'environnement : tant qu'ils ne sont
  * pas renseignés, des valeurs de substitution permettent de faire tourner l'application.

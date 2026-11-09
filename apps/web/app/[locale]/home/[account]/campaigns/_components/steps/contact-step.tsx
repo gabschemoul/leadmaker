@@ -57,6 +57,7 @@ export async function ContactStep(props: {
   writeHref: string;
   discoverHref: string;
   billingHref: string;
+  hasPlan: boolean;
   autopilot: AutopilotSummary | null;
   messages: AutopilotMessage[];
 }) {
@@ -145,6 +146,7 @@ export async function ContactStep(props: {
           writeHref={props.writeHref}
           advancedHref={groupHref('intervention_required')}
           billingHref={props.billingHref}
+          hasPlan={props.hasPlan}
           // le nombre de prospects contactables est vérifié par le pilote lui-même
           ready={props.messagesCount > 0 && props.hasSender}
         />

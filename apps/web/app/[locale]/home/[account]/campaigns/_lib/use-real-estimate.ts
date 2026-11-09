@@ -30,7 +30,7 @@ type EstimateRow = {
   expected_high: number | null;
   /** part des fiches lues qui passent les filtres (0 à 1) */
   rate: number | null;
-  /** crédits de prospection par prospect qui en découlent (roadmap n°13) */
+  /** crédits par prospect qui en découlent (roadmap n°13) */
   credits_per_prospect: number | null;
 };
 

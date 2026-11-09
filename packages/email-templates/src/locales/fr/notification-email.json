@@ -26,21 +26,15 @@
     "cta": "Contacter les entreprises"
   },
   "searchNoCredits": {
-    "subject": "Recherche arrêtée : plus de crédits de prospection",
+    "subject": "Recherche arrêtée : plus de crédits",
     "heading": "Votre recherche est en pause",
-    "body": "La recherche de la campagne « {campaign} » s'est arrêtée : vous n'avez plus de crédits de prospection ({prospects} entreprises déjà trouvées). Changez de forfait pour la reprendre tout de suite, ou attendez le renouvellement.",
+    "body": "La recherche de la campagne « {campaign} » s'est arrêtée : vous n'avez plus de crédits ({prospects} entreprises déjà trouvées). Changez de forfait pour la reprendre tout de suite, ou attendez le renouvellement.",
     "cta": "Voir mon forfait"
   },
   "creditsLowDiscovery": {
-    "subject": "Il vous reste moins de 20 % de vos crédits de prospection",
-    "heading": "Crédits de prospection bientôt épuisés",
-    "body": "Il vous reste {remaining} crédits de prospection sur {quota}. Prochaine recharge : {renewal}.",
-    "cta": "Voir mes crédits"
-  },
-  "creditsLowOutreach": {
-    "subject": "Il vous reste moins de 20 % de vos crédits de prise de contact",
-    "heading": "Crédits de prise de contact bientôt épuisés",
-    "body": "Il vous reste {remaining} crédits de prise de contact sur {quota}. Prochaine recharge : {renewal}.",
+    "subject": "Il vous reste moins de 20 % de vos crédits",
+    "heading": "Crédits bientôt épuisés",
+    "body": "Il vous reste {remaining} crédits sur {quota}. Prochaine recharge : {renewal}.",
     "cta": "Voir mes crédits"
   },
   "adminSignup": {

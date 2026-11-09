@@ -22,7 +22,6 @@ export type NotificationEmailKind =
   | 'searchDone'
   | 'searchNoCredits'
   | 'creditsLowDiscovery'
-  | 'creditsLowOutreach'
   | 'adminSignup'
   | 'adminSubscriptionNew'
   | 'adminSubscriptionCanceled'

@@ -3,7 +3,7 @@
 **À lire en premier par toute IA qui travaille sur ce dépôt.** Le reste de `docs/` (hors `docs/prospectigo/`)
 est la documentation générique du kit MakerKit sur lequel l'appli est construite.
 
-Dernière mise à jour : 5 novembre 2026 (audit complet : `docs/prospectigo/AUDIT-2026-11-05.md`).
+Dernière mise à jour : 9 novembre 2026 (crédit unique ; audit complet : `docs/prospectigo/AUDIT-2026-11-05.md`).
 
 ---
 
@@ -13,15 +13,18 @@ SaaS B2B vendu dans le monde entier (facturation en dollars). Un client (agence,
 
 1. **Cible** : choisit une zone (pays, villes, rayon) et des activités (plombiers, dentistes…) + des filtres
    (note moyenne, nombre d'avis, avec / sans site web).
-2. **Trouve** : une *campagne* lance des recherches ; chaque entreprise retenue devient un *prospect* et coûte
-   des **crédits de prospection** (1 à 4 selon la difficulté, voir §7).
+2. **Trouve** : une *campagne* lance des recherches ; le tri IA ne garde que les entreprises qui correspondent à
+   la cible ; chaque entreprise **gardée** devient un *prospect* et coûte des **crédits** (1, 2 ou 4 selon la
+   difficulté, voir §7). Les entreprises écartées sont gratuites.
 3. **Rédige** : écrit 1 à 4 messages (variables `{company}`, `{city}`…).
 4. **Contacte** : des robots ouvrent le site de chaque prospect, remplissent son formulaire de contact et
-   l'envoient. Chaque envoi coûte un **crédit de prise de contact**. Par défaut le **pilote automatique** enchaîne
-   préparation et envoi ; le mode **avancé** laisse valider formulaire par formulaire.
+   l'envoient. **Les envois sont gratuits** (la prise de contact est comprise dans le crédit de l'entreprise
+   gardée). Par défaut le **pilote automatique** enchaîne préparation et envoi ; le mode **avancé** laisse valider
+   formulaire par formulaire.
 
-Vocabulaire client : « crédits de prospection », « crédits de prise de contact », « prospects », « prises de
-contact ». Fondateurs : Gabriel et Nath (non développeurs). Toute l'interface est en français et en anglais.
+Vocabulaire client (crédit unique depuis le 9/11/2026) : un seul mot, **« crédits »** (en anglais « credits »),
+« prospects », « prises de contact » (l'action de contacter). Ne plus jamais écrire « crédits de prospection » ni
+« crédits de prise de contact ». Fondateurs : Gabriel et Nath (non développeurs). Toute l'interface est en français et en anglais.
 
 ## 2. Règles d'or (à respecter sans exception)
 
@@ -139,16 +142,27 @@ Robots de prise de contact : chaque site est traité dans un processus et un nav
 
 ## 7. Crédits et argent
 
-- Forfaits (`lm_plans`) : Growth 499 $ (30 000 prospection / 15 000 prise de contact), Business 990 $ (80 000 / 40 000),
-  Scale 1 999 $ (200 000 / 100 000) ; annuel = 10 mois. Sièges 1/3/6, campagnes actives 1/3/10, budget proxy 50/100/200 Go.
+- **Crédit unique (9/11/2026)** : un seul solde, `lm_account_credits.discovery_balance` (type de crédit
+  `discovery`), appelé « crédits » dans l'interface. **1 crédit = 1 entreprise gardée, prise de contact comprise.**
+  `outreach_balance` / `lm_plans.outreach_credits` ne sont plus ni lus ni débités ni affichés (colonnes gardées tant
+  que l'ancien code peut tourner) ; `lm_outreach_balance` renvoie « illimité » avec forfait, 0 sans.
+- Forfaits (`lm_plans.discovery_credits`) : Growth 499 $ → 15 000 crédits, Business 990 $ → 40 000,
+  Scale 1 999 $ → 100 000 par mois ; annuel = 10 mois payés. Sièges 1/3/6, campagnes actives 1/3/10, budget proxy
+  50/100/200 Go. Packs de crédits supplémentaires : pas encore créés (prix à valider par Gabriel).
 - **Recharge** : webhook Stripe → `plan-credits.service.ts` → `lm_reset_credits` (idempotent par abonnement +
   période + forfait). Changement de forfait en cours de période = seulement la différence. Forfaits annuels :
   recharge mensuelle par `lm_refill_credits` (pg_cron « lm-refill-credits », toutes les heures).
-- **Débits** : `lm_record_prospect` (prospect gardé × `credits_per_prospect`) et `lm_finish_send` (1 par envoi
-  réellement soumis). Journal : `lm_credit_ledger` (unique par `event_ref`).
-- **Tarif par prospect** : mesuré par une estimation (part des entreprises qui passent les filtres → 1 à 4 crédits).
-  Une campagne lancée sans estimation part à 1 crédit (`price_pending`) jusqu'à la fin de la mesure. Changer
-  filtres / activités après lancement relance une mesure.
+- **Débits** : campagne avec une cible en mots (tri IA) : rien à la découverte, débit quand l'entreprise passe en
+  « gardée » (par l'IA ou le client, `lm_settle_kept`), jamais deux fois par équipe. Campagne sans cible (ancien
+  parcours) : débit à l'enregistrement (`lm_record_prospect`, × `credits_per_prospect`). **Aucun débit à l'envoi.**
+  Journal : `lm_credit_ledger` (unique par `event_ref`).
+- **Prix d'une entreprise gardée** (campagne triée) : mesuré sur les ~300 premières entreprises triées
+  (`lm_measure_sort_price`, paliers `sort_credit_tiers`) selon la part gardée par le tri IA : 25 % ou plus → 1 crédit,
+  12 à 25 % → 2, 6 à 12 % → 4 ; puis figé. **Sous 6 % : pause** avec la raison `too_hard` (`filters.paused_reason`,
+  l'interface demande de préciser la cible). Les gardées pendant la mesure sont payées au palier final.
+  Campagne sans cible : tarif mesuré par une estimation (part qui passe les filtres → 1 à 4 crédits), 1 crédit
+  (`price_pending`) le temps de la mesure.
+- Raisons de pause affichées : `no_credits` (plus de crédits) et `too_hard` (cible trop difficile).
 - Estimations : quota de 40 / 24 h par organisation avec forfait, 3 sans.
 - Le webhook ignore les événements dont le mode (test / réel) ne correspond pas à la clé Stripe, et tous les
   webhooks sur la pré-prod (sauf `BILLING_WEBHOOK_ENABLED=true`).

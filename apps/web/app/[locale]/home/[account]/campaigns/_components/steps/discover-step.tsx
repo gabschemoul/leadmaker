@@ -56,6 +56,8 @@ export function DiscoverStep(props: {
   billingPath: string;
   formsHref: string;
   writeHref: string;
+  /** étape Cibler, pour préciser la cible quand la campagne est en pause « too_hard » */
+  targetHref: string;
   /** message rédigé et expéditeur renseignés */
   readyToWrite: boolean;
   initialData: CampaignLive;
@@ -83,6 +85,8 @@ export function DiscoverStep(props: {
 
   const noCredits =
     data.status === 'paused' && data.pausedReason === 'no_credits';
+  // tri IA : moins de 6 % des entreprises trouvées correspondent à la cible (crédit unique, 9/11)
+  const tooHard = data.status === 'paused' && data.pausedReason === 'too_hard';
 
   return (
     <div className={'flex flex-col gap-4'} data-test={'campaign-step-discover'}>
@@ -100,6 +104,29 @@ export function DiscoverStep(props: {
               components={{
                 link: (chunks: React.ReactNode) => (
                   <Link className={'underline'} href={props.billingPath}>
+                    {chunks}
+                  </Link>
+                ),
+              }}
+            />
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {tooHard ? (
+        <Alert className={alertExtras.warning} data-test={'too-hard-alert'}>
+          <TriangleAlert className={'h-4'} />
+
+          <AlertTitle>
+            <Trans i18nKey={'campaigns.detail.tooHardTitle'} />
+          </AlertTitle>
+
+          <AlertDescription>
+            <Trans
+              i18nKey={'campaigns.detail.tooHardDescription'}
+              components={{
+                link: (chunks: React.ReactNode) => (
+                  <Link className={'underline'} href={props.targetHref}>
                     {chunks}
                   </Link>
                 ),
@@ -390,7 +417,7 @@ function ProgressCard({
 }
 
 /**
- * Tarif en crédits de prospection par prospect (roadmap n°13) : figé au lancement, sinon celui de la
+ * Tarif en crédits par prospect (roadmap n°13) : figé au lancement, sinon celui de la
  * dernière estimation (terminée ou en cours de mesure), sinon mesuré au lancement. Depuis le 4/11/2026 la
  * campagne part sans attendre : pendant la mesure, 1 crédit par prospect.
  */

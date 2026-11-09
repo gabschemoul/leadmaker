@@ -164,7 +164,7 @@
       "no_form": "No contact form found. When an email address was spotted on the site, it is saved on the prospect.",
       "unreachable": "Site unreachable, error, or a send that failed. You can relaunch the preparation from the Prospects page.",
       "skipped": "Forms skipped without sending.",
-      "sent": "Forms sent (confirmation seen on the site). One outreach credit was debited per form.",
+      "sent": "Forms sent (confirmation seen on the site). Sending doesn't use any credits.",
       "excluded": "Businesses never to contact.",
       "to_verify": "Prospectigo clicked Send but saw no clear confirmation. Look at the after-send screenshot and decide: delivered or not."
     },
@@ -266,7 +266,6 @@
       "noPlan": "Choose a plan to prepare contact forms.",
       "working": "Preparing…"
     },
-    "preparingBanner": "Prospectigo is working: {count, plural, one {# form being prepared} other {# forms being prepared}} (about a minute per site). Results land in the tabs below without reloading the page.",
-    "balance": "Outreach credits left: {count, number}."
+    "preparingBanner": "Prospectigo is working: {count, plural, one {# form being prepared} other {# forms being prepared}} (about a minute per site). Results land in the tabs below without reloading the page."
   }
 }

@@ -29,8 +29,8 @@ async function PricingPage() {
   const t = await getTranslations('marketing');
   const tCommon = await getTranslations('common');
 
-  // Comment les crédits fonctionnent : 1 crédit par prospect en général, 2 à 4 pour les
-  // campagnes difficiles (roadmap n°13), aucun plafond par jour, prix en dollars.
+  // Comment les crédits fonctionnent (crédit unique, 9/11) : 1 crédit par entreprise gardée, prise de
+  // contact comprise ; 2 ou 4 pour les cibles difficiles ; aucun plafond par jour ; prix en dollars.
   const notes = [1, 2, 3, 4].map((n) => ({
     label: t(`home.pricingNote${n}Label`),
     text: t(`home.pricingNote${n}`),

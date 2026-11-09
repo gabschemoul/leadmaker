@@ -19,14 +19,12 @@ export async function NoPlanBanner(props: { accountId: string; slug: string }) {
 
   const { data } = await client
     .from('lm_account_credits')
-    .select('plan_id, discovery_balance, outreach_balance')
+    .select('plan_id, discovery_balance')
     .eq('account_id', props.accountId)
     .maybeSingle();
 
-  const hasPlan =
-    Boolean(data?.plan_id) ||
-    (data?.discovery_balance ?? 0) > 0 ||
-    (data?.outreach_balance ?? 0) > 0;
+  // crédit unique (9/11) : discovery_balance est le seul solde
+  const hasPlan = Boolean(data?.plan_id) || (data?.discovery_balance ?? 0) > 0;
 
   if (hasPlan) {
     return null;

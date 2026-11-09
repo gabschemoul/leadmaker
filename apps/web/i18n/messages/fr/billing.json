@@ -129,8 +129,8 @@
     "growth": {
       "description": "Pour une PME qui prospecte pour elle-même",
       "features": {
-        "discovery": "30 000 crédits de prospection par mois",
-        "outreach": "15 000 prises de contact par mois",
+        "discovery": "15 000 crédits par mois (1 crédit = 1 entreprise gardée)",
+        "outreach": "Prise de contact incluse, sans crédit en plus",
         "seats": "1 siège",
         "campaigns": "1 campagne active",
         "support": "Support et onboarding"
@@ -139,8 +139,8 @@
     "business": {
       "description": "L'offre principale pour les agences",
       "features": {
-        "discovery": "80 000 crédits de prospection par mois",
-        "outreach": "40 000 prises de contact par mois",
+        "discovery": "40 000 crédits par mois (1 crédit = 1 entreprise gardée)",
+        "outreach": "Prise de contact incluse, sans crédit en plus",
         "seats": "3 sièges",
         "campaigns": "3 campagnes actives",
         "support": "Support et onboarding"
@@ -149,8 +149,8 @@
     "scale": {
       "description": "Pour les agences et réseaux à fort volume",
       "features": {
-        "discovery": "200 000 crédits de prospection par mois",
-        "outreach": "100 000 prises de contact par mois",
+        "discovery": "100 000 crédits par mois (1 crédit = 1 entreprise gardée)",
+        "outreach": "Prise de contact incluse, sans crédit en plus",
         "seats": "6 sièges",
         "campaigns": "10 campagnes actives",
         "support": "Support prioritaire et onboarding"
@@ -161,14 +161,12 @@
     "title": "Vos crédits",
     "renewal": "Prochaine recharge le {date}. Les crédits non utilisés ne sont pas reportés.",
     "noRenewal": "Aucun forfait en cours.",
-    "discovery": "Crédits de prospection",
-    "outreach": "Crédits de prise de contact",
+    "balance": "Crédits restants",
     "of": "sur",
     "empty": "Aucun mouvement ces 30 derniers jours.",
     "dateColumn": "Date",
     "campaignColumn": "Campagne",
-    "discoveryColumn": "Prospection",
-    "outreachColumn": "Prise de contact",
+    "creditsColumn": "Crédits",
     "refill": "Recharge du forfait",
     "other": "Autre"
   }

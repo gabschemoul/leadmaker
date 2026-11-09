@@ -20,16 +20,16 @@ import {
 type UsageRow = {
   day: string;
   campaignName: string | null;
-  discoveryUsed: number;
-  outreachUsed: number;
-  discoveryAdded: number;
-  outreachAdded: number;
+  used: number;
+  added: number;
 };
 
 /**
- * Soldes, date de renouvellement et consommation des 30 derniers jours (audit E12, E23), sur la page
+ * Solde, date de renouvellement et consommation des 30 derniers jours (audit E12, E23), sur la page
  * Facturation. Données : lm_account_credits et lm_credit_usage (journal agrégé par jour et campagne).
- * Si la fonction n'existe pas encore en base, seuls les soldes sont affichés.
+ * Crédit unique (9/11) : seul le solde `discovery_balance` (type 'discovery') compte ; l'ancien solde
+ * de prise de contact n'est plus ni affiché ni débité. Si la fonction n'existe pas encore en base,
+ * seul le solde est affiché.
  */
 export async function CreditUsageCard(props: { accountId: string }) {
   const client = getSupabaseServerClient();
@@ -40,7 +40,7 @@ export async function CreditUsageCard(props: { accountId: string }) {
     client
       .from('lm_account_credits')
       .select(
-        'discovery_balance, outreach_balance, period_ends_at, next_refill_at, plan:lm_plans(discovery_credits, outreach_credits)',
+        'discovery_balance, period_ends_at, next_refill_at, plan:lm_plans(discovery_credits)',
       )
       .eq('account_id', props.accountId)
       .maybeSingle(),
@@ -58,23 +58,19 @@ export async function CreditUsageCard(props: { accountId: string }) {
   const rows = new Map<string, UsageRow>();
 
   for (const row of usage.data ?? []) {
+    // anciens mouvements « prise de contact » : plus un solde, on ne les montre pas
+    if (row.kind !== 'discovery') continue;
+
     const key = `${row.day}|${row.campaign_id ?? ''}`;
     const current = rows.get(key) ?? {
       day: row.day,
       campaignName: row.campaign_name,
-      discoveryUsed: 0,
-      outreachUsed: 0,
-      discoveryAdded: 0,
-      outreachAdded: 0,
+      used: 0,
+      added: 0,
     };
 
-    if (row.kind === 'discovery') {
-      current.discoveryUsed += row.used;
-      current.discoveryAdded += row.added;
-    } else {
-      current.outreachUsed += row.used;
-      current.outreachAdded += row.added;
-    }
+    current.used += row.used;
+    current.added += row.added;
     rows.set(key, current);
   }
 
@@ -94,22 +90,11 @@ export async function CreditUsageCard(props: { accountId: string }) {
       </CardHeader>
 
       <CardContent className={'flex flex-col gap-6'}>
-        <div
-          className={
-            'grid divide-y overflow-hidden rounded-xl border sm:grid-cols-2 sm:divide-x sm:divide-y-0'
-          }
-        >
+        <div className={'overflow-hidden rounded-xl border'}>
           <Balance
-            label={t('discovery')}
+            label={t('balance')}
             value={balance?.discovery_balance ?? 0}
             max={plan?.discovery_credits ?? null}
-            format={format}
-            ofLabel={t('of')}
-          />
-          <Balance
-            label={t('outreach')}
-            value={balance?.outreach_balance ?? 0}
-            max={plan?.outreach_credits ?? null}
             format={format}
             ofLabel={t('of')}
           />
@@ -124,10 +109,7 @@ export async function CreditUsageCard(props: { accountId: string }) {
                 <TableHead>{t('dateColumn')}</TableHead>
                 <TableHead>{t('campaignColumn')}</TableHead>
                 <TableHead className={'text-right'}>
-                  {t('discoveryColumn')}
-                </TableHead>
-                <TableHead className={'text-right'}>
-                  {t('outreachColumn')}
+                  {t('creditsColumn')}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -142,15 +124,10 @@ export async function CreditUsageCard(props: { accountId: string }) {
                   </TableCell>
                   <TableCell>
                     {line.campaignName ??
-                      (line.discoveryAdded + line.outreachAdded > 0
-                        ? t('refill')
-                        : t('other'))}
+                      (line.added > 0 ? t('refill') : t('other'))}
                   </TableCell>
                   <TableCell className={'text-right tabular-nums'}>
-                    {movement(line.discoveryUsed, line.discoveryAdded, format)}
-                  </TableCell>
-                  <TableCell className={'text-right tabular-nums'}>
-                    {movement(line.outreachUsed, line.outreachAdded, format)}
+                    {movement(line.used, line.added, format)}
                   </TableCell>
                 </TableRow>
               ))}

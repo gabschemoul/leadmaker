@@ -13,7 +13,7 @@ export const PUBLISHER = {
   brand: 'Prospectigo',
   director: 'Gabriel Schemoul',
   email: 'hello@studionamma.com',
-  updatedAt: { fr: '5 novembre 2026', en: 'November 5, 2026' },
+  updatedAt: { fr: '9 novembre 2026', en: 'November 9, 2026' },
 };
 
 export type LegalSection = { title: string; paragraphs: string[] };
@@ -70,7 +70,7 @@ const fr: Record<LegalDocumentId, LegalDocument> = {
         title: '3. Forfaits, crédits et paiement',
         paragraphs: [
           'Les forfaits sont facturés en dollars américains, par mois ou par an, via notre prestataire de paiement Stripe. Le prix applicable est celui affiché sur la page Tarifs au moment de la souscription.',
-          'Chaque forfait donne droit chaque mois à des crédits de prospection (consommés pour chaque entreprise retenue, de 1 à 4 crédits selon la difficulté de la recherche, mesurée automatiquement) et à des crédits de prise de contact (1 crédit par formulaire envoyé). Les crédits non utilisés ne sont pas reportés sur la période suivante.',
+          'Chaque forfait donne droit chaque mois à un nombre de crédits. Des crédits sont consommés pour chaque entreprise gardée (1, 2 ou 4 crédits selon la difficulté de la recherche, mesurée automatiquement) ; la prise de contact de ces entreprises est incluse et ne consomme aucun crédit. Les crédits non utilisés ne sont pas reportés sur la période suivante.',
           "L'abonnement se renouvelle automatiquement. Vous pouvez le résilier à tout moment depuis la page Facturation : il reste actif jusqu'à la fin de la période payée, sans remboursement de la période en cours, sauf obligation légale contraire.",
           'Un changement de forfait en cours de période est facturé au prorata par Stripe ; vos crédits sont ajustés en conséquence.',
         ],
@@ -223,7 +223,7 @@ const en: Record<LegalDocumentId, LegalDocument> = {
         title: '3. Plans, credits and payment',
         paragraphs: [
           'Plans are billed in US dollars, monthly or yearly, through our payment provider Stripe. The applicable price is the one shown on the Pricing page when you subscribe.',
-          'Each plan grants, every month, prospecting credits (used for each business kept, 1 to 4 credits depending on how hard the search is, measured automatically) and contact credits (1 credit per form sent). Unused credits do not roll over to the next period.',
+          'Each plan grants a number of credits every month. Credits are used for each business kept (1, 2 or 4 credits depending on how hard the search is, measured automatically); contacting these businesses is included and uses no credits. Unused credits do not roll over to the next period.',
           'Subscriptions renew automatically. You can cancel at any time from the Billing page: it stays active until the end of the paid period, with no refund for the current period unless the law requires otherwise.',
           'A plan change during a period is prorated by Stripe; your credits are adjusted accordingly.',
         ],

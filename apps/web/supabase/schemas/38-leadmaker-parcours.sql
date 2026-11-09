@@ -138,3 +138,55 @@ $$;
 revoke all on function public.lm_campaign_sort_summary(uuid) from public;
 
 grant execute on function public.lm_campaign_sort_summary(uuid) to authenticated, service_role;
+
+-- Utilisation des fonctions d'IA de l'appli par organisation et par jour (heure UTC), pour les plafonds (CDC §6 :
+-- « Proposer avec l'IA » limité à 30 propositions par jour et par compte). Écrite seulement par lm_take_ai_quota.
+create table if not exists public.lm_ai_usage (
+  account_id uuid references public.accounts(id) on delete cascade not null,
+  day date not null,
+  kind text not null,
+  used integer not null default 0,
+  primary key (account_id, day, kind)
+);
+
+comment on table public.lm_ai_usage is 'Appels aux fonctions d''IA de l''appli par organisation et par jour (plafonds)';
+
+alter table public.lm_ai_usage enable row level security;
+
+revoke all on public.lm_ai_usage from anon, authenticated, service_role;
+
+grant select, insert, update, delete on table public.lm_ai_usage to service_role;
+
+-- Prend une utilisation du plafond du jour pour une fonction d'IA : vrai si c'est permis (et compté), faux si le
+-- plafond est atteint. Renvoie aussi ce qui reste.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
+create or replace function public.lm_take_ai_quota(p_account_id uuid, p_kind text, p_limit integer)
+returns table (allowed boolean, remaining integer)
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_used integer;
+begin
+  if not public.lm_member(p_account_id) then
+    raise exception 'account not found' using errcode = 'P0002';
+  end if;
+
+  insert into public.lm_ai_usage as u (account_id, day, kind, used)
+  values (p_account_id, (now() at time zone 'utc')::date, left(p_kind, 40), 1)
+  on conflict (account_id, day, kind) do update set used = u.used + 1
+    where u.used < greatest(p_limit, 0)
+  returning u.used into v_used;
+
+  if v_used is null then
+    return query select false, 0;
+  else
+    return query select true, greatest(p_limit - v_used, 0);
+  end if;
+end;
+$$;
+
+revoke all on function public.lm_take_ai_quota(uuid, text, integer) from public;
+
+grant execute on function public.lm_take_ai_quota(uuid, text, integer) to authenticated, service_role;

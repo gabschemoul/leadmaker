@@ -74,6 +74,16 @@ insert into public.lm_prospects (account_id, space_id, campaign_id, name, site_k
 select account_id, space_id, 'e2000000-0000-4000-8000-0000000000a1', 'Directe', 'directe.fr' from tpa;
 select ok(exists (select 1 from public.lm_campaign_prospects where prospect_id = pg_temp.pid('directe.fr')), 'Lien posé automatiquement');
 
+-- 7. Plafond des propositions de l'IA : permis jusqu'à la limite, puis refusé ; jamais pour une autre organisation
+select makerkit.authenticate_as('pa_owner');
+select is((select row(allowed, remaining)::text from public.lm_take_ai_quota((select account_id from tpa), 'message', 2)), '(t,1)', '1re proposition : permise, 1 restante');
+select is((select row(allowed, remaining)::text from public.lm_take_ai_quota((select account_id from tpa), 'message', 2)), '(t,0)', '2e : permise, plus rien');
+select is((select row(allowed, remaining)::text from public.lm_take_ai_quota((select account_id from tpa), 'message', 2)), '(f,0)', '3e : plafond atteint');
+select is((select row(allowed, remaining)::text from public.lm_take_ai_quota((select account_id from tpa), 'other', 2)), '(t,1)', 'Autre fonction : son propre compteur');
+select throws_ok($$ select * from public.lm_ai_usage $$, '42501', null, 'Compteurs illisibles pour le client');
+select makerkit.authenticate_as('pa_other');
+select throws_ok($$ select * from public.lm_take_ai_quota((select account_id from tpa), 'message', 30) $$, 'P0002', null, 'Autre utilisateur : refusé');
+
 select * from finish();
 
 rollback;

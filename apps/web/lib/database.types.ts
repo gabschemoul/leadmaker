@@ -197,6 +197,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"lm_ai_usage": {
+                  Row: {
+                    "account_id": string,"day": string,"kind": string,"used": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"day": string,"kind": string,"used"?: number
+                  }
+                  Update: {
+                    "account_id"?: string,"day"?: string,"kind"?: string,"used"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_ai_usage_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_ai_usage_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_ai_usage_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"lm_attempts": {
                   Row: {
                     "account_id": string,"autopilot_id": string | null,"body": string | null,"campaign_id": string,"created_at": string,"created_by": string | null,"detail": string | null,"extra": NonNullable<Json>,"filled": NonNullable<Json>,"form_url": string | null,"id": string,"missing": NonNullable<Json>,"prospect_id": string,"protection_type": string | null,"screenshot_after": string | null,"screenshot_before": string | null,"sent_at": string | null,"space_id": string,"status": Database["public"]['Enums']["lm_attempt_status"],"subject": string | null,"template_name": string | null,"template_used": string | null,"updated_at": string,"updated_by": string | null,"validated_at": string | null,"validated_by": string | null
@@ -1842,6 +1874,11 @@ isOneToOne: false
                            },
 "lm_start_sort":
 { Args: { "p_campaign_id": string,"p_limit"?: number,"p_offer"?: string,"p_target": string }; Returns: number
+                           },
+"lm_take_ai_quota":
+{ Args: { "p_account_id": string,"p_kind": string,"p_limit": number }; Returns: {
+              "allowed": boolean,"remaining": number
+            }[]
                            },
 "lm_target_categories":
 { Args: { "p_targeting": Json }; Returns: {

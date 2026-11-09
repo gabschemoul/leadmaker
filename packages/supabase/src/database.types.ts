@@ -343,14 +343,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_prospects": {
                   Row: {
-                    "account_id": string,"campaign_id": string,"client_choice": string | null,"created_at": string,"credits": number,"decided_at": string | null,"group_key": string | null,"prospect_id": string,"reason": string | null,"sorted_at": string | null,"space_id": string,"verdict": string | null
+                    "account_id": string,"campaign_id": string,"client_choice": string | null,"created_at": string,"credits": number,"decided_at": string | null,"group_key": string | null,"prospect_id": string,"reason": string | null,"sorted_at": string | null,"sorted_version": number | null,"space_id": string,"verdict": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"campaign_id": string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"group_key"?: string | null,"prospect_id": string,"reason"?: string | null,"sorted_at"?: string | null,"space_id": string,"verdict"?: string | null
+                    "account_id": string,"campaign_id": string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"group_key"?: string | null,"prospect_id": string,"reason"?: string | null,"sorted_at"?: string | null,"sorted_version"?: number | null,"space_id": string,"verdict"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"campaign_id"?: string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"group_key"?: string | null,"prospect_id"?: string,"reason"?: string | null,"sorted_at"?: string | null,"space_id"?: string,"verdict"?: string | null
+                    "account_id"?: string,"campaign_id"?: string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"group_key"?: string | null,"prospect_id"?: string,"reason"?: string | null,"sorted_at"?: string | null,"sorted_version"?: number | null,"space_id"?: string,"verdict"?: string | null
                   }
                   Relationships: [
                     {
@@ -431,14 +431,14 @@ isOneToOne: false
                   ]
                 },"lm_campaigns": {
                   Row: {
-                    "account_id": string,"auto_validation": boolean,"country_code": string,"created_at": string,"created_by": string | null,"credits_per_prospect": number,"daily_limit": number,"estimate_id": string | null,"filters": NonNullable<Json>,"id": string,"name": string,"price_pending": boolean,"sender_id": string | null,"space_id": string,"status": Database["public"]['Enums']["lm_campaign_status"],"targeting": NonNullable<Json>,"templates": NonNullable<Json>,"updated_at": string,"updated_by": string | null
+                    "account_id": string,"auto_validation": boolean,"country_code": string,"created_at": string,"created_by": string | null,"credits_per_prospect": number,"daily_limit": number,"estimate_id": string | null,"filters": NonNullable<Json>,"id": string,"name": string,"price_pending": boolean,"sender_id": string | null,"sort_groups": NonNullable<Json>,"sort_target": string | null,"sort_version": number,"space_id": string,"status": Database["public"]['Enums']["lm_campaign_status"],"targeting": NonNullable<Json>,"templates": NonNullable<Json>,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"auto_validation"?: boolean,"country_code": string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"id"?: string,"name": string,"price_pending"?: boolean,"sender_id"?: string | null,"space_id": string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id": string,"auto_validation"?: boolean,"country_code": string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"id"?: string,"name": string,"price_pending"?: boolean,"sender_id"?: string | null,"sort_groups"?: NonNullable<Json>,"sort_target"?: string | null,"sort_version"?: number,"space_id": string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"auto_validation"?: boolean,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"id"?: string,"name"?: string,"price_pending"?: boolean,"sender_id"?: string | null,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id"?: string,"auto_validation"?: boolean,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"id"?: string,"name"?: string,"price_pending"?: boolean,"sender_id"?: string | null,"sort_groups"?: NonNullable<Json>,"sort_target"?: string | null,"sort_version"?: number,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -961,14 +961,14 @@ isOneToOne: false
                   ]
                 },"lm_spaces": {
                   Row: {
-                    "account_id": string,"country_code": string | null,"created_at": string,"created_by": string | null,"id": string,"is_default": boolean,"language_code": string,"name": string,"ready_forms_cap": number,"updated_at": string,"updated_by": string | null
+                    "account_id": string,"country_code": string | null,"created_at": string,"created_by": string | null,"id": string,"is_default": boolean,"language_code": string,"name": string,"offer": string | null,"ready_forms_cap": number,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_default"?: boolean,"language_code"?: string,"name": string,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id": string,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_default"?: boolean,"language_code"?: string,"name": string,"offer"?: string | null,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_default"?: boolean,"language_code"?: string,"name"?: string,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id"?: string,"country_code"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_default"?: boolean,"language_code"?: string,"name"?: string,"offer"?: string | null,"ready_forms_cap"?: number,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -1454,6 +1454,9 @@ isOneToOne: false
 "name": string,
 "price_pending": boolean,
 "sender_id": string | null,
+"sort_groups": NonNullable<Json>,
+"sort_target": string | null,
+"sort_version": number,
 "space_id": string,
 "status": Database["public"]['Enums']["lm_campaign_status"],
 "targeting": NonNullable<Json>,
@@ -1668,6 +1671,9 @@ isOneToOne: false
 "lm_finish_send":
 { Args: { "p_attempt_id": string,"p_result": Json }; Returns: boolean
                            },
+"lm_finish_sort":
+{ Args: { "p_campaign_id": string,"p_group": string,"p_prospect_id": string,"p_reason": string,"p_site_status"?: string,"p_site_text"?: string,"p_verdict": string,"p_version": number }; Returns: boolean
+                           },
 "lm_has_plan":
 { Args: { "p_account_id": string }; Returns: boolean
                            },
@@ -1808,6 +1814,9 @@ isOneToOne: false
 "lm_start_campaign":
 { Args: { "p_campaign_id": string }; Returns: undefined
                            },
+"lm_start_sort":
+{ Args: { "p_campaign_id": string,"p_limit"?: number,"p_offer"?: string,"p_target": string }; Returns: number
+                           },
 "lm_target_categories":
 { Args: { "p_targeting": Json }; Returns: {
               "gcid": string,"is_generic": boolean
@@ -1898,7 +1907,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_autopilot_schedule": "office"|"spread"|"continuous","lm_autopilot_status": "preview"|"running"|"paused"|"done"|"cancelled","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy"|"estimate"|"emails","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
+            "app_permissions": "roles.manage"|"billing.manage"|"settings.manage"|"members.manage"|"invites.manage","billing_provider": "stripe"|"lemon-squeezy"|"paddle","lm_attempt_status": "pending"|"preparing"|"ready"|"incomplete"|"intervention_required"|"no_form"|"unreachable"|"validated"|"sending"|"sent"|"to_verify"|"failed"|"skipped"|"excluded","lm_autopilot_schedule": "office"|"spread"|"continuous","lm_autopilot_status": "preview"|"running"|"paused"|"done"|"cancelled","lm_campaign_status": "draft"|"running"|"paused"|"completed"|"archived","lm_coverage_tier": "verified"|"standard","lm_credit_kind": "discovery"|"outreach","lm_prospect_source": "maps"|"csv","lm_reply_kind": "interested"|"not_interested"|"question"|"stop"|"other","lm_reply_source": "manual"|"email","lm_task_kind": "discovery"|"prepare"|"send"|"dummy"|"estimate"|"emails"|"sort","lm_task_status": "queued"|"running"|"done"|"failed"|"cancelled","notification_channel": "in_app"|"email","notification_type": "info"|"warning"|"error","payment_status": "pending"|"succeeded"|"failed","subscription_item_type": "flat"|"per_seat"|"metered","subscription_status": "active"|"trialing"|"past_due"|"canceled"|"unpaid"|"incomplete"|"incomplete_expired"|"paused"
           }
           CompositeTypes: {
             "invitation": {
@@ -2277,7 +2286,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_autopilot_schedule": ["office", "spread", "continuous"],"lm_autopilot_status": ["preview", "running", "paused", "done", "cancelled"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy", "estimate", "emails"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
+            "app_permissions": ["roles.manage", "billing.manage", "settings.manage", "members.manage", "invites.manage"],"billing_provider": ["stripe", "lemon-squeezy", "paddle"],"lm_attempt_status": ["pending", "preparing", "ready", "incomplete", "intervention_required", "no_form", "unreachable", "validated", "sending", "sent", "to_verify", "failed", "skipped", "excluded"],"lm_autopilot_schedule": ["office", "spread", "continuous"],"lm_autopilot_status": ["preview", "running", "paused", "done", "cancelled"],"lm_campaign_status": ["draft", "running", "paused", "completed", "archived"],"lm_coverage_tier": ["verified", "standard"],"lm_credit_kind": ["discovery", "outreach"],"lm_prospect_source": ["maps", "csv"],"lm_reply_kind": ["interested", "not_interested", "question", "stop", "other"],"lm_reply_source": ["manual", "email"],"lm_task_kind": ["discovery", "prepare", "send", "dummy", "estimate", "emails", "sort"],"lm_task_status": ["queued", "running", "done", "failed", "cancelled"],"notification_channel": ["in_app", "email"],"notification_type": ["info", "warning", "error"],"payment_status": ["pending", "succeeded", "failed"],"subscription_item_type": ["flat", "per_seat", "metered"],"subscription_status": ["active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
           }
         },"storage": {
           Enums: {

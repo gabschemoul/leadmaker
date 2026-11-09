@@ -32,7 +32,7 @@ create type public.lm_reply_kind as enum ('interested', 'not_interested', 'quest
 
 create type public.lm_reply_source as enum ('manual', 'email');
 
-create type public.lm_task_kind as enum ('discovery', 'prepare', 'send', 'dummy', 'estimate', 'emails');
+create type public.lm_task_kind as enum ('discovery', 'prepare', 'send', 'dummy', 'estimate', 'emails', 'sort');
 
 create type public.lm_task_status as enum ('queued', 'running', 'done', 'failed', 'cancelled');
 

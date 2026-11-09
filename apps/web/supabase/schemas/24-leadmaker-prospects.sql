@@ -326,6 +326,8 @@ create table if not exists public.lm_campaign_prospects (
   group_key text,
   reason text,
   sorted_at timestamptz,
+  -- Version de la cible de la campagne pour laquelle ce verdict a été rendu (lm_campaigns.sort_version)
+  sorted_version integer,
   -- Choix du client à l'écran « Vos entreprises » : il l'emporte sur le verdict
   client_choice text,
   decided_at timestamptz,

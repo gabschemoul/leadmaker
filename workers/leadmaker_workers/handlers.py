@@ -10,6 +10,7 @@ from .queue import Task
 
 _discovery = None
 _prepare = None
+_sort = None
 
 
 def prepare_runner():
@@ -19,6 +20,15 @@ def prepare_runner():
 
         _prepare = PrepareRunner()
     return _prepare
+
+
+def sort_runner():
+    global _sort
+    if _sort is None:
+        from .sort.runner import SortRunner
+
+        _sort = SortRunner()
+    return _sort
 
 
 def discovery_runner():
@@ -59,6 +69,10 @@ def run_emails(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
     return prepare_runner().find_emails(task, conn)
 
 
+def run_sort(task: Task, conn: psycopg.Connection) -> dict[str, Any]:
+    return sort_runner().run(task, conn)
+
+
 HANDLERS = {
     "dummy": run_dummy,
     "discovery": run_discovery,
@@ -66,6 +80,7 @@ HANDLERS = {
     "prepare": run_prepare,
     "send": run_send,
     "emails": run_emails,
+    "sort": run_sort,
 }
 
 

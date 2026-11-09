@@ -26,6 +26,12 @@ create table if not exists public.lm_campaigns (
   -- Expéditeur choisi pour cette campagne (même espace, contrôlé par lm_campaigns_check_sender) ;
   -- null = l'expéditeur par défaut de l'espace (lm_campaign_sender)
   sender_id uuid references public.lm_sender_profiles(id) on delete set null,
+  -- Tri IA (CDC-PARCOURS-TRI-ANNUAIRE §4) : la cible décrite en mots par le client (« Agences marketing qui ne
+  -- font pas de web ») ; vide = pas de tri. Groupes proposés pour la campagne ([{"key", "label"}], §4.3).
+  -- sort_version augmente à chaque changement de cible : les entreprises sont retriées, les anciens avis ignorés.
+  sort_target text,
+  sort_groups jsonb not null default '[]'::jsonb,
+  sort_version integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,

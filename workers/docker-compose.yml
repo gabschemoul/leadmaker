@@ -1,6 +1,6 @@
 # Robots Prospectigo sur le serveur (Hetzner). Variables dans un fichier `.env` à côté (voir .env.server.example).
 #
-#   docker compose up -d --build          # 1 estimation, 6 recherches, 6 préparations / e-mails, surveillant
+#   docker compose up -d --build          # 1 estimation, 6 recherches, 6 préparations / e-mails, 4 tris IA, surveillant
 #   docker compose --profile send up -d   # + le robot d'envoi (seulement quand Gabriel dit « Envoie »)
 #   docker compose logs -f prepare        # suivre un type de robot
 #   docker compose down                   # tout arrêter (chaque robot finit sa tâche en cours)
@@ -56,6 +56,17 @@ services:
     deploy:
       replicas: ${SEND_REPLICAS:-4}
       resources: { limits: { memory: 1500M } }
+
+  # Tri IA des entreprises (leadmaker_workers/sort/runner.py, CDC parcours / tri / annuaire §4) : lit la page
+  # d'accueil sans proxy et demande un avis à Claude Haiku. Pas de navigateur : peu de mémoire.
+  sort:
+    <<: *robot
+    environment:
+      WORKER_KINDS: sort
+    shm_size: 64m
+    deploy:
+      replicas: ${SORT_REPLICAS:-4}
+      resources: { limits: { memory: 384M } }
 
   # Surveillant (leadmaker_workers/watchdog.py) : prévient Gabriel par e-mail (Resend) quand les robots
   # n'avancent plus alors qu'il y a du travail. Chaque serveur surveille L'AUTRE : le principal surveille les

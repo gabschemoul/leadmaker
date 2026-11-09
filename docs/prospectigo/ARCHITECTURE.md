@@ -54,7 +54,7 @@ Navigateur ──► Next.js (Vercel : prospectigo.com = main, staging.prospecti
                  │  file de tâches lm_tasks (SKIP LOCKED)
                  ▼
    Robots Python (Docker) ─────────────────────────────────────────────
-   • serveur principal : estimate ×1, discovery ×6, prepare ×6, watch (surveillant)
+   • serveur principal : estimate ×1, discovery ×6, prepare ×6, sort ×4 (tri IA), watch (surveillant)
    • serveur d'envoi   : send ×4 (profil « send »), watch-send
    • Mac dédié de l'équipe : recherche sans proxy pour les campagnes activées (lm_local_discovery_*)
    Proxy résidentiel (recherche uniquement, plafond quotidien : set-proxy-budget.sh) · Resend (e-mails)
@@ -77,7 +77,7 @@ Navigateur ──► Next.js (Vercel : prospectigo.com = main, staging.prospecti
 | `apps/web/lib/leadmaker` | Code partagé client/serveur : CSV, clé de site (`site-key.ts`, identique à `workers/.../text.py`), modèles de messages |
 | `apps/web/lib/server/leadmaker` | Serveur seulement : crédits Stripe (`plan-credits.service.ts`), erreurs RPC (`rpc-errors.ts`) |
 | `apps/web/config/billing.config.ts` | Forfaits et prix Stripe |
-| `apps/web/supabase/schemas/20-36-leadmaker-*.sql` | **Source de vérité** du modèle de données (voir §5) |
+| `apps/web/supabase/schemas/20-37-leadmaker-*.sql` | **Source de vérité** du modèle de données (voir §5) |
 | `apps/web/supabase/tests/database/leadmaker-*.test.sql` | Tests pgTAP (isolation, crédits, découverte, envoi, pilote, audit) |
 | `workers/leadmaker_workers` | Robots : `main.py` (boucle), `queue.py`, `discovery/` (recherche), `outreach/` (formulaires), `watchdog.py` |
 | `workers/scripts` | Déploiement et exploitation (deploy-robots.sh, set-proxy-budget.sh…) |
@@ -86,7 +86,7 @@ Navigateur ──► Next.js (Vercel : prospectigo.com = main, staging.prospecti
 Tout le reste (`packages/`, auth, comptes, facturation générique) est du MakerKit d'origine : n'y toucher que si
 nécessaire, pour garder les mises à jour du kit faciles (remote git `upstream`).
 
-## 5. Modèle de données (schémas 20 à 36)
+## 5. Modèle de données (schémas 20 à 37)
 
 | Fichier | Contenu |
 |---|---|
@@ -106,6 +106,7 @@ nécessaire, pour garder les mises à jour du kit faciles (remote git `upstream`
 | 33 autopilot | pilote automatique (`lm_autopilots`, `lm_autopilot_tick` appelé par `lm_queue_sends`) |
 | 34 local discovery | recherche sur le Mac dédié |
 | 35 notifications | e-mails de notification |
+| 37 sort | **tri IA** : `lm_enqueue_sort` (déclencheur : toute entreprise ajoutée à une campagne qui a une cible en mots), `lm_start_sort` (fixe la cible / l'offre, met en file, robots seulement pour l'instant), `lm_finish_sort` (avis gardee / a_verifier / ecartee pour la version de cible en cours) |
 | 36 places | **annuaire commun** à tous les clients : `lm_places` (toutes les fiches vues, infos publiques), `lm_place_searches` (registre pays × activité × zone), `lm_record_search_places` appelée par le robot de recherche à chaque recherche. Illisible par les clients |
 
 Hiérarchie : organisation (compte d'équipe MakerKit) → espace → campagne → zones × activités → recherches →
@@ -127,7 +128,7 @@ Elle n'est contactée qu'une fois par équipe (`lm_attempts` unique sur espace +
 ## 6. File de tâches
 
 `lm_tasks(kind, payload, status, attempts, max_attempts, run_after, priority, idempotency_key)`.
-Types : `estimate` (priorité 10), `discovery`, `prepare`, `emails`, `send`. Un robot réclame une tâche avec
+Types : `estimate` (priorité 10), `discovery`, `prepare`, `emails`, `send`, `sort` (tri IA). Un robot réclame une tâche avec
 `lm_claim_task(kinds, worker_id)` (SKIP LOCKED), puis `lm_complete_task` / `lm_fail_task` (nouvel essai avec
 attente exponentielle). `lm_requeue_stale_tasks` reprend les tâches abandonnées. Compteur `in_flight` d'une
 activité = nombre de ses tâches `queued` + `running`, rien d'autre. Un envoi n'est **jamais** réessayé
@@ -170,6 +171,7 @@ Toujours `pnpm exec supabase` depuis `apps/web` (la CLI globale est trop vieille
 - `workers/scripts/set-alert-email.sh` : e-mail d'alerte du surveillant.
 - `apps/web/scripts/push-auth-emails.sh` : modèles d'e-mails de connexion Supabase.
 - `docs/prospectigo/stripe-mode-reel.md` : passage de Stripe en mode réel.
+- `workers/scripts/sort_campaign.py lancer|bilan "<campagne>"` : tri IA d'une campagne (cible, offre, échantillon) et son bilan.
 
 ## 10. Glossaire interface ↔ code
 

@@ -14,6 +14,9 @@ create table if not exists public.lm_spaces (
   language_code varchar(5) not null default 'en',
   is_default boolean not null default false,
   ready_forms_cap integer not null default 500,
+  -- « Votre offre » (CDC-PARCOURS-TRI-ANNUAIRE §3.1) : ce que l'équipe vend, en une ou deux phrases. Sert au tri
+  -- IA (une entreprise qui n'a pas besoin de l'offre est écartée) et à « Proposer avec l'IA ».
+  offer text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,

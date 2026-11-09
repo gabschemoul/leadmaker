@@ -32,6 +32,9 @@ create table if not exists public.lm_campaigns (
   sort_target text,
   sort_groups jsonb not null default '[]'::jsonb,
   sort_version integer not null default 0,
+  -- Encart des groupes (§4.3) : null = pas encore répondu, 'single' = « Un seul message », 'split' = « Créer N
+  -- campagnes » déjà fait
+  groups_choice text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -41,7 +44,8 @@ create table if not exists public.lm_campaigns (
   constraint lm_campaigns_country_code_upper check (country_code = upper(country_code)),
   constraint lm_campaigns_daily_limit_positive check (daily_limit > 0),
   constraint lm_campaigns_daily_limit_max check (daily_limit <= 100000),
-  constraint lm_campaigns_credits_per_prospect check (credits_per_prospect between 1 and 10)
+  constraint lm_campaigns_credits_per_prospect check (credits_per_prospect between 1 and 10),
+  constraint lm_campaigns_groups_choice check (groups_choice is null or groups_choice in ('single', 'split'))
 );
 
 comment on table public.lm_campaigns is 'Campagnes de prospection d''un espace';

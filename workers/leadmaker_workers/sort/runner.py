@@ -23,6 +23,7 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 import psycopg
+from psycopg.types.json import Jsonb
 from pydantic import BaseModel
 
 from ..outreach.netguard import url_allowed
@@ -159,9 +160,46 @@ def ask(target: str, offer: str | None, groups: list[dict], fiche: str, site: st
     return r.parsed_output, usage
 
 
+GROUPS_MODEL = os.environ.get("SORT_GROUPS_MODEL", "claude-sonnet-5-5")
+
+GROUPS_SYSTEM = """Tu aides un client de Prospectigo à découper sa cible en groupes d'entreprises, pour écrire un message
+différent à chaque groupe. On te donne sa cible, son offre et un échantillon de raisons du tri (une par entreprise
+gardée, qui dit ce que fait l'entreprise).
+
+Propose 2 à 5 groupes qui couvrent l'essentiel de l'échantillon, assez différents pour justifier un message différent
+(par exemple « Marketing et com », « Branding », « Design graphique »). Pour chaque groupe : key (court, minuscules,
+sans accents ni espaces, tirets bas autorisés) et label (2 à 4 mots, dans la langue de la cible)."""
+
+
+class SortGroup(BaseModel):
+    key: str
+    label: str
+
+
+class SortGroups(BaseModel):
+    groups: list[SortGroup]
+
+
+GROUP_SYSTEM = """Range une entreprise dans l'un des groupes donnés, d'après sa fiche, la raison de son tri et le texte de son
+site s'il est là. Réponds par la clé du groupe, ou "autre" si aucun ne convient."""
+
+
+class SortGroupChoice(BaseModel):
+    groupe: str
+
+
+def _slug(key: str) -> str:
+    key = re.sub(r"[^a-z0-9_]+", "_", key.lower()).strip("_")
+    return key[:40] or "groupe"
+
+
 class SortRunner:
     def run(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
         p = task.payload
+        if p.get("action") == "groups":
+            return self.propose_groups(p, conn)
+        if p.get("action") == "group":
+            return self.classify_group(p, conn)
         ctx = conn.execute(
             """select c.sort_target, c.sort_groups, c.sort_version, s.offer,
                       pr.name, pr.category, pr.city, pr.website, pr.review_count, pr.google_place_id,
@@ -218,6 +256,69 @@ class SortRunner:
         saved = finish(verdict.verdict, group, verdict.raison.replace("\x00", "").strip())
         log.info("tri %s → %s (%s) %s", ctx["name"], verdict.verdict, status or "sans site", verdict.raison[:80])
         return {"verdict": verdict.verdict, "site": status, "reused": reused, "saved": saved, **usage}
+
+
+    def propose_groups(self, p: dict, conn: psycopg.Connection) -> dict[str, Any]:
+        """Groupes de la campagne (§4.3), proposés par Claude Sonnet une fois assez d'entreprises gardées."""
+        c = conn.execute(
+            """select c.sort_target, c.sort_version, c.sort_groups, s.offer from public.lm_campaigns c
+                 join public.lm_spaces s on s.id = c.space_id where c.id = %s""", (p["campaign_id"],)).fetchone()
+        if not c or c["sort_version"] != int(p.get("version", -1)) or c["sort_groups"]:
+            return {"skipped": "cible changée ou groupes déjà là"}
+        if not enabled():
+            raise RuntimeError("tri IA désactivé (ANTHROPIC_API_KEY absente ou SORT=off)")
+        reasons = [r["reason"] for r in conn.execute(
+            """select cp.reason from public.lm_campaign_prospects cp
+                where cp.campaign_id = %s and cp.sorted_version = %s and cp.verdict = 'gardee' and cp.reason is not null
+                order by md5(cp.prospect_id::text) limit 80""", (p["campaign_id"], c["sort_version"])).fetchall()]
+        content = (f"Cible du client : {c['sort_target']}\nOffre du client : {c['offer'] or '(non précisée)'}\n\n"
+                   "Raisons du tri (entreprises gardées) :\n" + "\n".join(f"- {r}" for r in reasons))
+        r = _get_client().messages.parse(model=GROUPS_MODEL, max_tokens=4000, system=GROUPS_SYSTEM,
+                                         output_format=SortGroups, output_config={"effort": "medium"},
+                                         messages=[{"role": "user", "content": content}])
+        if r.stop_reason == "refusal" or not r.parsed_output:
+            return {"groups": 0, "refused": True}
+        groups, seen = [], set()
+        for g in r.parsed_output.groups[:5]:
+            key = _slug(g.key)
+            if key in seen or key == "autre" or not g.label.strip():
+                continue
+            seen.add(key)
+            groups.append({"key": key, "label": g.label.strip()[:60]})
+        if len(groups) < 2:
+            return {"groups": len(groups), "skipped": "moins de 2 groupes"}
+        queued = conn.execute("select public.lm_set_sort_groups(%s, %s, %s) as n",
+                              (p["campaign_id"], c["sort_version"], Jsonb(groups))).fetchone()["n"]
+        log.info("groupes proposés : %s (%d entreprises à classer)", ", ".join(g["label"] for g in groups), queued)
+        return {"groups": len(groups), "queued": queued, "tokens_in": r.usage.input_tokens,
+                "tokens_out": r.usage.output_tokens}
+
+    def classify_group(self, p: dict, conn: psycopg.Connection) -> dict[str, Any]:
+        """Groupe d'une entreprise déjà triée, d'après sa raison et le texte de son site gardé dans l'annuaire."""
+        ctx = conn.execute(
+            """select c.sort_version, c.sort_groups, cp.reason, cp.group_key, pr.name, pr.category, pl.site_text
+                 from public.lm_campaigns c
+                 join public.lm_campaign_prospects cp on cp.campaign_id = c.id and cp.prospect_id = %s
+                 join public.lm_prospects pr on pr.id = cp.prospect_id
+                 left join public.lm_places pl on pl.google_place_id = pr.google_place_id
+                where c.id = %s""", (p["prospect_id"], p["campaign_id"])).fetchone()
+        if not ctx or ctx["sort_version"] != int(p.get("version", -1)) or ctx["group_key"]:
+            return {"skipped": "cible changée ou déjà classée"}
+        if not enabled():
+            raise RuntimeError("tri IA désactivé (ANTHROPIC_API_KEY absente ou SORT=off)")
+        groups = ctx["sort_groups"] if isinstance(ctx["sort_groups"], list) else []
+        lines = "\n".join(f"- {g.get('key')} : {g.get('label')}" for g in groups)
+        content = (f"Groupes :\n{lines}\n\nEntreprise : {ctx['name']} ({ctx['category'] or '?'})\n"
+                   f"Raison du tri : {ctx['reason'] or '?'}\n"
+                   + (f"Texte du site :\n{(ctx['site_text'] or '')[:3000]}" if ctx["site_text"] else ""))
+        r = _get_client().messages.parse(model=MODEL, max_tokens=500, system=GROUP_SYSTEM,
+                                         output_format=SortGroupChoice, output_config={"effort": "low"},
+                                         messages=[{"role": "user", "content": content}])
+        keys = {g.get("key") for g in groups}
+        group = r.parsed_output.groupe if r.parsed_output and r.parsed_output.groupe in keys else "autre"
+        conn.execute("select public.lm_finish_sort_group(%s, %s, %s, %s)",
+                     (p["campaign_id"], p["prospect_id"], ctx["sort_version"], group))
+        return {"group": group, "tokens_in": r.usage.input_tokens, "tokens_out": r.usage.output_tokens}
 
 
 __all__ = ["SortRunner", "fetch_site", "page_text"]

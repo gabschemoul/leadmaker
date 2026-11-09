@@ -314,6 +314,19 @@ begin
 
   if p_verdict = 'gardee' then
     perform public.lm_settle_kept(p_campaign_id, p_prospect_id);
+
+    -- Groupes (§4.3) : assez de gardées et pas encore de groupes → une tâche de proposition (une par cible)
+    if (select c.sort_groups = '[]'::jsonb from public.lm_campaigns c where c.id = p_campaign_id)
+       and (select count(*) from public.lm_campaign_prospects cp
+             where cp.campaign_id = p_campaign_id and cp.sorted_version = p_version and cp.verdict = 'gardee')
+           >= v_settings.sort_groups_after then
+      insert into public.lm_tasks (account_id, kind, payload, idempotency_key)
+      select c.account_id, 'sort',
+             jsonb_build_object('action', 'groups', 'campaign_id', c.id, 'version', p_version),
+             'sortgroups:' || c.id::text || ':' || p_version::text
+        from public.lm_campaigns c where c.id = p_campaign_id
+      on conflict (idempotency_key) do nothing;
+    end if;
   end if;
 
   return true;

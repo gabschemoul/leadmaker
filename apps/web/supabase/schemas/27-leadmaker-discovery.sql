@@ -85,6 +85,8 @@ create table if not exists public.lm_discovery_settings (
   -- gardées : la recherche cesse de dépenser du proxy pour une activité hors cible
   sort_abandon_after integer not null default 40,
   sort_abandon_rate numeric(4,3) not null default 0.03,
+  -- Groupes (§4.3) : proposés une fois que la campagne a ce nombre d'entreprises gardées
+  sort_groups_after integer not null default 100,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (id),

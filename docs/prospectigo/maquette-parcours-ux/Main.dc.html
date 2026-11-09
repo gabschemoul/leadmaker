@@ -1,0 +1,199 @@
+<!doctype html>
+<!-- MAQUETTE UX UNIQUEMENT, PAS DE DESIGN : ordre des écrans, infos demandées et actions possibles. Ne rien reprendre de l'apparence (couleurs, tailles, espacements, composants) : tout se fait avec la direction artistique et les composants actuels de l'appli Prospectigo. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Qui voulez-vous contacter ?</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#f7f5f2}
+a{color:#2626d6;text-decoration:none}a:hover{color:#1a1aa8}
+.navi{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#736f6c;text-decoration:none}
+.navi.on{background:#e9e9ff;color:#2626d6}
+.steps{display:flex;flex-wrap:wrap;gap:4px;font-size:13px}
+.steps a{padding:6px 12px;border-radius:999px;color:#9a958f;font-weight:500}
+.steps a.on{background:#e9e9ff;color:#2626d6}
+.steps a.done{color:#47423d}
+.chip{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:1px solid #e6e2dc;border-radius:999px;background:#fff;font:500 14px Inter,system-ui,sans-serif;color:#1a1a1a}
+.sg{cursor:pointer;color:#47423d}
+.sg:hover{border-color:#3d3dff;color:#2626d6}
+.sg.on{background:#e9e9ff;border-color:#3d3dff;color:#2626d6}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border-radius:999px;background:#efece6}
+.seg button{min-height:38px;padding:0 16px;border-radius:999px;border:0;background:transparent;font:500 14px Inter,system-ui,sans-serif;color:#47423d;cursor:pointer}
+.seg button.on{background:#fff;color:#1a1a1a;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tagx{display:inline-flex;align-items:center;gap:4px;padding:4px 4px 4px 12px;border-radius:999px;background:#e9e9ff;color:#1a1a8a;font:500 14px Inter,system-ui,sans-serif}
+.tagx button{width:28px;height:28px;border-radius:50%;border:0;background:transparent;color:#1a1a8a;cursor:pointer;font-size:16px;line-height:1}
+.field{min-height:44px;font:400 15px Inter,system-ui,sans-serif;padding:0 12px;border:1px solid #e6e2dc;border-radius:10px;background:#fff;color:#1a1a1a;box-sizing:border-box}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 24px;border-radius:12px;border:0;background:#3d3dff;color:#fff;font:600 16px Inter,system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.btn:hover{background:#2626d6;color:#fff}
+.lbl{font-size:13px;font-weight:600;color:#9a958f;text-transform:uppercase;letter-spacing:.05em}
+textarea:focus,select:focus,input:focus,button:focus-visible,a:focus-visible{outline:2px solid #3d3dff;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; font-family: Inter, system-ui, sans-serif; color: #1a1a1a; background: #f7f5f2;">
+  <nav aria-label="Menu" style="flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 18px; background: #fff; border-right: 1px solid #f0ede8;">
+    <div style="width: 34px; height: 34px; border-radius: 10px; background: #3d3dff; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 16px;" aria-label="Prospectigo">P</div>
+    <a class="navi on" href="Main.dc.html" aria-label="Campagnes" title="Campagnes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8-8-2z"></path></svg></a>
+    <a class="navi" href="Entreprises.dc.html" aria-label="Prospects" title="Prospects"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M9 4v16"></path></svg></a>
+    <a class="navi" href="Message.dc.html" aria-label="Réglages" title="Réglages"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg></a>
+  </nav>
+
+  <main style="flex: 1 1 auto; min-width: 0; padding: 24px 16px 64px;">
+    <div style="max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 36px;">
+      <div class="steps" aria-label="Étapes">
+        <a class="on" href="Main.dc.html">1 · Qui ?</a>
+        <a href="Entreprises.dc.html">2 · Entreprises</a>
+        <a href="Message.dc.html">3 · Message</a>
+        <a href="Envoi.dc.html">4 · Envoi</a>
+        <a href="Resultats.dc.html">5 · Résultats</a>
+      </div>
+
+      <section style="display: flex; flex-direction: column; gap: 14px;">
+        <label for="cible"><h1 style="margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.025em;">Qui voulez-vous contacter ?</h1></label>
+        <textarea id="cible" rows="2" value="{{phrase}}" onChange="{{onPhrase}}" placeholder="Ex. : agences marketing" style="font: 400 19px/1.5 Inter, system-ui, sans-serif; padding: 16px 18px; border: 1px solid #e6e2dc; border-radius: 14px; resize: vertical; color: #1a1a1a; background: #fff;"></textarea>
+        <div style="min-height: 36px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          <sc-if value="{{updating}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 13px; color: #9a958f;">Mise à jour…</span>
+          </sc-if>
+          <sc-if value="{{hasSuggs}}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{suggs}}" as="s" hint-placeholder-count="3">
+              <button class="{{s.cls}}" onClick="{{s.toggle}}">{{s.label}}</button>
+            </sc-for>
+          </sc-if>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 12px;">
+        <span class="lbl">On cherchera</span>
+        <sc-if value="{{hasActs}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <sc-for list="{{acts}}" as="a" hint-placeholder-count="4">
+              <span class="chip">{{a}}</span>
+            </sc-for>
+            <button class="chip sg" style="border-style: dashed; color: #2626d6;">+ Ajouter</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{noActs}}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 14px; color: #9a958f;">—</span>
+        </sc-if>
+        <span style="font-size: 14px; color: #736f6c;">Trié selon votre offre : sites Webflow en marque blanche · <a href="Message.dc.html">Modifier</a></span>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 12px;">
+        <span class="lbl">Où ?</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <label for="pays" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Pays</label>
+          <select id="pays" class="field" style="flex: 0 1 170px;">
+            <option>France</option>
+            <option>Belgique</option>
+            <option>Suisse</option>
+            <option>Canada</option>
+            <option>États-Unis</option>
+          </select>
+          <div class="seg" role="radiogroup" aria-label="Zone">
+            <sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+              <button class="{{m.cls}}" onClick="{{m.pick}}" role="radio">{{m.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{isRadius}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+            <label for="ville" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Ville</label>
+            <input id="ville" class="field" value="Lyon" style="flex: 1 1 200px;" />
+            <div style="flex: 2 1 260px; display: flex; align-items: center; gap: 12px;">
+              <input id="km" aria-label="Rayon en km" type="range" min="5" max="100" step="5" value="{{km}}" onChange="{{onKm}}" style="flex: 1; accent-color: #3d3dff; min-height: 44px;" />
+              <strong style="font-size: 15px; min-width: 56px; font-variant-numeric: tabular-nums;">{{km}} km</strong>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isCities}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+            <sc-for list="{{cities}}" as="c" hint-placeholder-count="3">
+              <span class="tagx">{{c.name}}<button onClick="{{c.remove}}" aria-label="Retirer {{c.name}}">×</button></span>
+            </sc-for>
+            <input id="addcity" aria-label="Ajouter une ville" class="field" style="flex: 1 1 200px; border-style: dashed;" placeholder="+ Ville, puis Entrée" value="{{draft}}" onChange="{{onDraft}}" onKeyDown="{{onDraftKey}}" />
+          </div>
+        </sc-if>
+      </section>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding-top: 8px;">
+        <a class="btn" href="Entreprises.dc.html">Lancer la recherche</a>
+        <span style="font-size: 13px; color: #9a958f;">Vous ne payez que les entreprises gardées.</span>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { phrase: 'Agences marketing', settled: 'Agences marketing', updating: false, mode: 'country', km: 20, draft: '', cities: ['Paris', 'Lyon', 'Bordeaux'] };
+  }
+  componentWillUnmount() { clearTimeout(this.timer); }
+  typed(value) {
+    this.setState({ phrase: value, updating: true });
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.setState({ settled: this.state.phrase, updating: false }), 900);
+  }
+  addCity() {
+    const name = this.state.draft.trim();
+    if (!name || this.state.cities.indexOf(name) !== -1) return;
+    this.setState({ cities: this.state.cities.concat([name]), draft: '' });
+  }
+  renderVals() {
+    const { phrase, settled, updating, mode, km, cities, draft } = this.state;
+    const p = settled.toLowerCase();
+
+    const acts = [];
+    const add = (a) => { if (acts.indexOf(a) === -1) acts.push(a); };
+    if (p.indexOf('marketing') !== -1) { add('Agence de marketing'); add('Consultant en marketing'); add('Agence de publicité'); }
+    if (p.indexOf('com') !== -1) add('Agence de communication');
+    if (p.indexOf('brand') !== -1) add('Agence de branding');
+    if (p.indexOf('design') !== -1 || p.indexOf('graph') !== -1) { add('Agence de design'); add('Graphiste'); }
+    if (p.indexOf('pub') !== -1) add('Agence de publicité');
+
+    const options = [
+      { label: 'Sans celles qui font du web', add: ', sauf celles qui font déjà des sites web' },
+      { label: '2 personnes ou plus', add: ', avec une équipe de 2 personnes ou plus' },
+      { label: 'Avec un vrai site', add: ', avec un vrai site (pas seulement une page de réseau social)' }
+    ];
+    const suggs = options.map((o) => {
+      const on = phrase.indexOf(o.add) !== -1;
+      const next = on ? phrase.split(o.add).join('') : phrase + o.add;
+      return { label: (on ? '✓ ' : '+ ') + o.label, cls: on ? 'chip sg on' : 'chip sg', toggle: () => this.setState({ phrase: next, settled: next }) };
+    });
+
+    const modeBtn = (key, label) => ({ label, cls: mode === key ? 'on' : '', pick: () => this.setState({ mode: key }) });
+
+    return {
+      phrase,
+      updating,
+      onPhrase: (ev) => this.typed(ev.target.value),
+      hasSuggs: !updating && settled.trim().length > 2,
+      suggs,
+      acts,
+      hasActs: acts.length > 0,
+      noActs: acts.length === 0,
+      modes: [modeBtn('country', 'Tout le pays'), modeBtn('radius', 'Autour d’une ville'), modeBtn('cities', 'Villes précises')],
+      isRadius: mode === 'radius',
+      isCities: mode === 'cities',
+      km,
+      onKm: (ev) => this.setState({ km: Number(ev.target.value) }),
+      draft,
+      onDraft: (ev) => this.setState({ draft: ev.target.value }),
+      onDraftKey: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); this.addCity(); } },
+      cities: cities.map((name) => ({ name, remove: () => this.setState({ cities: this.state.cities.filter((c) => c !== name) }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

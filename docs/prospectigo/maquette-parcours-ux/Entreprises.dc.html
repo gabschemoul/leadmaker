@@ -1,0 +1,176 @@
+<!doctype html>
+<!-- MAQUETTE UX UNIQUEMENT, PAS DE DESIGN : ordre des écrans, infos demandées et actions possibles. Ne rien reprendre de l'apparence (couleurs, tailles, espacements, composants) : tout se fait avec la direction artistique et les composants actuels de l'appli Prospectigo. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Vos entreprises</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#f7f5f2}
+a{color:#2626d6;text-decoration:none}a:hover{color:#1a1aa8}
+.navi{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#736f6c;text-decoration:none}
+.navi.on{background:#e9e9ff;color:#2626d6}
+.steps{display:flex;flex-wrap:wrap;gap:4px;font-size:13px}
+.steps a{padding:6px 12px;border-radius:999px;color:#9a958f;font-weight:500}
+.steps a.on{background:#e9e9ff;color:#2626d6}
+.steps a.done{color:#47423d}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:12px;border:0;background:#3d3dff;color:#fff;font:600 15px Inter,system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.btn:hover{background:#2626d6;color:#fff}
+.btn2{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:12px;border:1px solid #d9d4cd;background:#fff;color:#1a1a1a;font:500 15px Inter,system-ui,sans-serif;cursor:pointer}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border-radius:999px;background:#efece6}
+.seg button{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;border:0;background:transparent;font:500 14px Inter,system-ui,sans-serif;color:#47423d;cursor:pointer}
+.seg button b{font-weight:600;color:#9a958f;font-variant-numeric:tabular-nums}
+.seg button.on{background:#fff;color:#1a1a1a;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg button.on b{color:#1a1a1a}
+.mini{min-height:36px;padding:0 12px;border-radius:8px;border:1px solid #e6e2dc;background:#fff;font:500 13px Inter,system-ui,sans-serif;color:#47423d;cursor:pointer;white-space:nowrap}
+.mini:hover{border-color:#3d3dff;color:#2626d6}
+.grp{background:#fff;border-radius:999px;padding:5px 12px;font-size:14px;color:#1a1a8a}
+button:focus-visible,a:focus-visible{outline:2px solid #3d3dff;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; font-family: Inter, system-ui, sans-serif; color: #1a1a1a; background: #f7f5f2;">
+  <nav aria-label="Menu" style="flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 18px; background: #fff; border-right: 1px solid #f0ede8;">
+    <div style="width: 34px; height: 34px; border-radius: 10px; background: #3d3dff; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 16px;" aria-label="Prospectigo">P</div>
+    <a class="navi on" href="Main.dc.html" aria-label="Campagnes" title="Campagnes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8-8-2z"></path></svg></a>
+    <a class="navi" href="Entreprises.dc.html" aria-label="Prospects" title="Prospects"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M9 4v16"></path></svg></a>
+    <a class="navi" href="Message.dc.html" aria-label="Réglages" title="Réglages"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg></a>
+  </nav>
+
+  <main style="flex: 1 1 auto; min-width: 0; padding: 24px 16px 64px;">
+    <div style="max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+      <div class="steps" aria-label="Étapes">
+        <a class="done" href="Main.dc.html">1 · Qui ?</a>
+        <a class="on" href="Entreprises.dc.html">2 · Entreprises</a>
+        <a href="Message.dc.html">3 · Message</a>
+        <a href="Envoi.dc.html">4 · Envoi</a>
+        <a href="Resultats.dc.html">5 · Résultats</a>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+          <h1 style="margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.025em;">Vos entreprises</h1>
+          <span style="font-size: 15px; color: #736f6c;">Agences marketing, sauf celles qui font déjà des sites web · <a href="Main.dc.html">Modifier</a></span>
+        </div>
+        <div style="flex: 0 1 220px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; color: #736f6c; font-variant-numeric: tabular-nums;">18 240 fiches examinées</span>
+          <div style="height: 6px; border-radius: 999px; background: #e6e2dc; overflow: hidden;"><div style="width: 51%; height: 100%; background: #3d3dff;"></div></div>
+        </div>
+      </div>
+
+      <sc-if value="{{showSplit}}" hint-placeholder-val="{{ true }}">
+        <section style="background: #e9e9ff; border-radius: 16px; padding: 18px 20px; display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; justify-content: space-between;">
+          <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+            <strong style="font-size: 16px; color: #1a1a8a;">3 groupes repérés. Un message par groupe ?</strong>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              <span class="grp">Marketing et com · 58 %</span>
+              <span class="grp">Branding · 24 %</span>
+              <span class="grp">Design graphique · 18 %</span>
+            </div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button class="btn2" onClick="{{keepOne}}">Un seul message</button>
+            <button class="btn" onClick="{{split}}">Créer 3 campagnes</button>
+          </div>
+        </section>
+      </sc-if>
+      <sc-if value="{{splitOne}}" hint-placeholder-val="{{ false }}">
+        <div style="font-size: 14px; color: #736f6c;">Un seul message pour les 3 groupes · <button onClick="{{reask}}" style="border: 0; background: none; padding: 0; font: inherit; color: #2626d6; cursor: pointer;">Changer</button></div>
+      </sc-if>
+      <sc-if value="{{splitDone}}" hint-placeholder-val="{{ false }}">
+        <div style="background: #e3f5ea; color: #0f5c30; border-radius: 16px; padding: 14px 20px; font-size: 15px;"><strong>3 campagnes créées</strong> · Marketing et com, Branding, Design graphique</div>
+      </sc-if>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+        <div class="seg" role="tablist" aria-label="Piles">
+          <button class="{{tabKept}}" onClick="{{goKept}}" role="tab">Gardées <b>{{countKept}}</b></button>
+          <button class="{{tabCheck}}" onClick="{{goCheck}}" role="tab">À vérifier <b>{{countCheck}}</b></button>
+        </div>
+        <span style="font-size: 13px; color: #9a958f;">2 crédits par entreprise gardée</span>
+      </div>
+
+      <section style="background: #fff; border-radius: 16px; overflow: hidden;">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center; padding: 14px 20px; border-bottom: 1px solid #f3f0eb;">
+            <div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-weight: 600; font-size: 15px;">{{r.nom}}</span>
+              <span style="font-size: 13px; color: #9a958f;">{{r.ville}}</span>
+            </div>
+            <div style="flex: 2 1 280px; min-width: 0; font-size: 14px; color: #736f6c;">{{r.raison}}</div>
+            <sc-if value="{{r.canKeep}}" hint-placeholder-val="{{ false }}"><button class="mini" onClick="{{r.keep}}">Garder</button></sc-if>
+            <sc-if value="{{r.canDrop}}" hint-placeholder-val="{{ true }}"><button class="mini" onClick="{{r.drop}}">Écarter</button></sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 28px 20px; color: #9a958f; font-size: 14px;">Rien pour l'instant.</div>
+        </sc-if>
+      </section>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <a class="btn" href="Message.dc.html">Suivant : le message</a>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const items = [
+      { id: 1, nom: 'VELSYA', ville: 'Montpellier', raison: 'Agence de com, le web n’est qu’un service parmi d’autres', pile: 'kept' },
+      { id: 2, nom: 'Studio BIKI', ville: 'Nevers', raison: 'Graphisme et print, pas de développeur', pile: 'kept' },
+      { id: 3, nom: 'STUDIO 808', ville: 'Toulouse', raison: 'Crée des identités, ne développe pas de sites', pile: 'kept' },
+      { id: 4, nom: '404com', ville: 'Belfort', raison: 'Com et marketing, les sites sont secondaires', pile: 'kept' },
+      { id: 5, nom: 'Agence FB Communication', ville: 'Dijon', raison: 'Logos, plaquettes, réseaux sociaux', pile: 'kept' },
+      { id: 6, nom: 'Citron Frappé', ville: 'Roubaix', raison: 'Graphiste : logos et identités', pile: 'kept' },
+      { id: 7, nom: 'Paul & Ludo', ville: 'Perpignan', raison: 'Agence de com, mais met les sites en avant', pile: 'check' },
+      { id: 8, nom: 'Com and Design', ville: 'Lille', raison: 'Met en avant un « atelier web »', pile: 'check' },
+      { id: 9, nom: 'SPARK Media Marketing', ville: 'Paris', raison: 'Site injoignable', pile: 'check' },
+      { id: 10, nom: 'Agence KAPIZ', ville: 'Staffelfelden', raison: 'Agence web, développe ses sites', pile: 'dropped' },
+      { id: 11, nom: 'Blackgrid Studio', ville: 'Paris', raison: 'Développe ses sites (WordPress)', pile: 'dropped' },
+      { id: 12, nom: 'Signa Vision', ville: 'Givrand', raison: 'Enseigniste, pas une agence', pile: 'dropped' },
+      { id: 13, nom: 'Sonia Blanc Photographe', ville: 'Marsannay-la-Côte', raison: 'Photographe, pas une agence', pile: 'dropped' }
+    ];
+    this.initial = { kept: 6, check: 3, dropped: 4 };
+    this.state = { tab: 'kept', items, split: 'ask' };
+  }
+  move(id, pile) {
+    this.setState({ items: this.state.items.map((i) => (i.id === id ? { ...i, pile } : i)) });
+  }
+  renderVals() {
+    const { tab, items, split } = this.state;
+    const n = (p) => items.filter((i) => i.pile === p).length;
+    const fmt = (x) => x.toLocaleString('fr-FR');
+    const rows = items.filter((i) => i.pile === tab).map((i) => ({
+      ...i,
+      canKeep: i.pile !== 'kept',
+      canDrop: i.pile === 'check',
+      keep: () => this.move(i.id, 'kept'),
+      drop: () => this.move(i.id, 'dropped')
+    }));
+    return {
+      rows,
+      empty: rows.length === 0,
+      countKept: fmt(2210 + n('kept') - this.initial.kept),
+      countCheck: fmt(610 + n('check') - this.initial.check),
+      tabKept: tab === 'kept' ? 'on' : '',
+      tabCheck: tab === 'check' ? 'on' : '',
+      goKept: () => this.setState({ tab: 'kept' }),
+      goCheck: () => this.setState({ tab: 'check' }),
+      showSplit: split === 'ask',
+      splitDone: split === 'done',
+      split: () => this.setState({ split: 'done' }),
+      keepOne: () => this.setState({ split: 'one' }),
+      splitOne: split === 'one',
+      reask: () => this.setState({ split: 'ask' })
+    };
+  }
+}
+</script>
+</body>
+</html>

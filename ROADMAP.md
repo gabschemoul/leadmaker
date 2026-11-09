@@ -192,6 +192,11 @@ Pistes à discuter :
 - **En attendant** : l'option « Tout le pays, villes de plus de X habitants » du ciblage limite déjà le problème (ex. 20 000 habitants).
 - **Vu au même test** : quand le plafond quotidien de proxy est atteint, la recherche s'arrête jusqu'à minuit sans rien dire au client (« Recherche en cours » figée). Il faut au minimum afficher « Recherche en pause jusqu'à minuit ». Plafond passé de 8 à 10 Go/jour le 2/11 à 22h20 (décision Gabriel).
 
+### 20. Nouveau parcours campagne + tri IA + crédit unique + annuaire commun 🔴 — VALIDÉ par l'équipe (9/11), cahier des charges écrit
+- **Cahier des charges complet** : `docs/prospectigo/CDC-PARCOURS-TRI-ANNUAIRE.md`. **Maquette UX seulement (pas de design)** : `docs/prospectigo/maquette-parcours-ux/`.
+- **En bref** : parcours Qui ? → Vos entreprises → Message → Envoi → Résultats ; tri IA de chaque fiche selon la cible en mots ; plus d'estimation ; 1 crédit = 1 entreprise gardée, prise de contact incluse (paliers 1/2/4, pause sous 6 %) ; toutes les fiches trouvées gardées dans un annuaire commun et réutilisées pendant 3 mois, avec une arrivée progressive pour que le client voie une vraie recherche.
+- **Ordre** : 1) garder toutes les fiches vues · 2) lien campagne ↔ entreprise · 3) tri IA · 4) crédit unique · 5) nouveaux écrans · 6) réutiliser l'annuaire · 7) remettre à jour les fiches de plus de 3 mois.
+
 ## Déjà prévu (liste du 31 octobre)
 
 1. **Premier envoi réel surveillé** sur 2-3 entreprises choisies par Gabriel. Le robot d'envoi reste coupé tant que Gabriel ne dit pas « Envoie ».

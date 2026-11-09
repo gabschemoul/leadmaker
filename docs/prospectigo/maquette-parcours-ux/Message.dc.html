@@ -1,0 +1,144 @@
+<!doctype html>
+<!-- MAQUETTE UX UNIQUEMENT, PAS DE DESIGN : ordre des écrans, infos demandées et actions possibles. Ne rien reprendre de l'apparence (couleurs, tailles, espacements, composants) : tout se fait avec la direction artistique et les composants actuels de l'appli Prospectigo. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Votre message</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#f7f5f2}
+a{color:#2626d6;text-decoration:none}a:hover{color:#1a1aa8}
+.navi{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#736f6c;text-decoration:none}
+.navi.on{background:#e9e9ff;color:#2626d6}
+.steps{display:flex;flex-wrap:wrap;gap:4px;font-size:13px}
+.steps a{padding:6px 12px;border-radius:999px;color:#9a958f;font-weight:500}
+.steps a.on{background:#e9e9ff;color:#2626d6}
+.steps a.done{color:#47423d}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:12px;border:0;background:#3d3dff;color:#fff;font:600 15px Inter,system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.btn:hover{background:#2626d6;color:#fff}
+.ai{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:999px;border:0;background:#e9e9ff;color:#2626d6;font:600 14px Inter,system-ui,sans-serif;cursor:pointer}
+.ai:hover{background:#dcdcff}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border-radius:999px;background:#efece6}
+.seg button{min-height:36px;padding:0 14px;border-radius:999px;border:0;background:transparent;font:500 14px Inter,system-ui,sans-serif;color:#47423d;cursor:pointer}
+.seg button.on{background:#fff;color:#1a1a1a;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.var{min-height:32px;font:500 13px Inter,system-ui,sans-serif;background:#fff;border:1px solid #e6e2dc;border-radius:999px;padding:0 10px;color:#47423d;cursor:pointer}
+.var:hover{border-color:#3d3dff;color:#2626d6}
+.link{border:0;background:none;padding:0;font:500 14px Inter,system-ui,sans-serif;color:#2626d6;cursor:pointer}
+textarea:focus,input:focus,button:focus-visible,a:focus-visible{outline:2px solid #3d3dff;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; font-family: Inter, system-ui, sans-serif; color: #1a1a1a; background: #f7f5f2;">
+  <nav aria-label="Menu" style="flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 18px; background: #fff; border-right: 1px solid #f0ede8;">
+    <div style="width: 34px; height: 34px; border-radius: 10px; background: #3d3dff; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 16px;" aria-label="Prospectigo">P</div>
+    <a class="navi on" href="Main.dc.html" aria-label="Campagnes" title="Campagnes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8-8-2z"></path></svg></a>
+    <a class="navi" href="Entreprises.dc.html" aria-label="Prospects" title="Prospects"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M9 4v16"></path></svg></a>
+    <a class="navi" href="Message.dc.html" aria-label="Réglages" title="Réglages"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg></a>
+  </nav>
+
+  <main style="flex: 1 1 auto; min-width: 0; padding: 24px 16px 64px;">
+    <div style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+      <div class="steps" aria-label="Étapes">
+        <a class="done" href="Main.dc.html">1 · Qui ?</a>
+        <a class="done" href="Entreprises.dc.html">2 · Entreprises</a>
+        <a class="on" href="Message.dc.html">3 · Message</a>
+        <a href="Envoi.dc.html">4 · Envoi</a>
+        <a href="Resultats.dc.html">5 · Résultats</a>
+      </div>
+
+      <h1 style="margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.025em;">Votre message</h1>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start;">
+        <section style="flex: 3 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+            <div class="seg" role="tablist" aria-label="Versions">
+              <button class="{{clsA}}" onClick="{{pickA}}" role="tab">Version A</button>
+              <button class="{{clsB}}" onClick="{{pickB}}" role="tab">Version B</button>
+              <button style="color: #2626d6;" aria-label="Ajouter une version">+</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <sc-if value="{{aiNote}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #9a958f;">Proposé ✓</span></sc-if>
+              <button class="ai" onClick="{{propose}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg>Proposer avec l'IA</button>
+            </div>
+          </div>
+          <label for="msg" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Texte du message</label>
+          <textarea id="msg" rows="13" value="{{text}}" onChange="{{onText}}" style="font: 400 16px/1.65 Inter, system-ui, sans-serif; padding: 18px 20px; border: 1px solid #e6e2dc; border-radius: 16px; resize: vertical; color: #1a1a1a; background: #fff;"></textarea>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+            <span style="font-size: 13px; color: #9a958f; margin-right: 4px;">Insérer</span>
+            <button class="var" onClick="{{insE}}">Entreprise</button>
+            <button class="var" onClick="{{insV}}">Ville</button>
+            <button class="var" onClick="{{insA}}">Activité</button>
+          </div>
+        </section>
+
+        <aside style="flex: 2 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 46px;">
+            <span style="font-size: 14px; color: #736f6c;">Aperçu · <strong style="color: #1a1a1a;">{{exNom}}</strong></span>
+            <button class="link" onClick="{{nextExample}}">Autre ›</button>
+          </div>
+          <div style="background: #fff; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;"><span style="color: #9a958f; font-size: 12px;">Nom</span><span style="border: 1px solid #efece6; border-radius: 8px; padding: 8px 10px;">Gabriel, Studio Namma</span></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;"><span style="color: #9a958f; font-size: 12px;">E-mail</span><span style="border: 1px solid #efece6; border-radius: 8px; padding: 8px 10px;">[VOTRE E-MAIL]</span></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;"><span style="color: #9a958f; font-size: 12px;">Message</span><div style="border: 1px solid #efece6; border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; line-height: 1.55;">{{preview}}</div></div>
+          </div>
+          <a class="btn" href="Envoi.dc.html" style="align-self: flex-end;">Suivant : l'envoi</a>
+        </aside>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      version: 'A',
+      ex: 0,
+      aiNote: false,
+      texts: {
+        A: 'Bonjour l’équipe {entreprise},\n\nJe suis Gabriel, de Studio Namma. On développe des sites Webflow en marque blanche pour des agences comme la vôtre : vous vendez le site et gardez la relation client, on s’occupe du développement, sous votre nom.\n\nSi des clients vous demandent des sites que vous refusez ou sous-traitez aujourd’hui, un échange de 15 minutes ?\n\nGabriel, Studio Namma',
+        B: 'Bonjour,\n\nQuand un client de {entreprise} vous demande un site, qui le développe ?\n\nChez Studio Namma, on le fait pour vous, en marque blanche, sur Webflow. Vous restez l’interlocuteur, on livre dans vos délais.\n\nJe vous montre trois sites qu’on a faits pour d’autres agences ?\n\nGabriel'
+      }
+    };
+  }
+  renderVals() {
+    const { version, texts, ex, aiNote } = this.state;
+    const examples = [
+      { nom: 'STUDIO 808', ville: 'Toulouse', act: 'studio de branding' },
+      { nom: 'Citron Frappé', ville: 'Roubaix', act: 'graphiste' },
+      { nom: 'MAGM.', ville: 'Bassussarry', act: 'agence de communication' }
+    ];
+    const e = examples[ex % examples.length];
+    const text = texts[version];
+    const preview = text.split('{entreprise}').join(e.nom).split('{ville}').join(e.ville).split('{activité}').join(e.act);
+    const setText = (t) => this.setState({ texts: { ...texts, [version]: t } });
+    const ins = (tag) => () => setText(text + tag);
+    return {
+      text,
+      preview,
+      exNom: e.nom,
+      aiNote,
+      clsA: version === 'A' ? 'on' : '',
+      clsB: version === 'B' ? 'on' : '',
+      pickA: () => this.setState({ version: 'A', aiNote: false }),
+      pickB: () => this.setState({ version: 'B', aiNote: false }),
+      onText: (ev) => setText(ev.target.value),
+      insE: ins('{entreprise}'),
+      insV: ins('{ville}'),
+      insA: ins('{activité}'),
+      nextExample: () => this.setState({ ex: ex + 1 }),
+      propose: () => this.setState({
+        aiNote: true,
+        texts: { ...texts, [version]: 'Bonjour l’équipe {entreprise},\n\nVotre travail d’identité de marque mérite des sites à la hauteur. Studio Namma développe vos maquettes sur Webflow, en marque blanche : vous gardez le client et la marge, on livre un site fidèle au pixel près.\n\nPartants pour en parler 15 minutes cette semaine ?\n\nGabriel, Studio Namma' }
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

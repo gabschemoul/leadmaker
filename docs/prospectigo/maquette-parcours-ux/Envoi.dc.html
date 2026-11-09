@@ -1,0 +1,149 @@
+<!doctype html>
+<!-- MAQUETTE UX UNIQUEMENT, PAS DE DESIGN : ordre des écrans, infos demandées et actions possibles. Ne rien reprendre de l'apparence (couleurs, tailles, espacements, composants) : tout se fait avec la direction artistique et les composants actuels de l'appli Prospectigo. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Envoi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#f7f5f2}
+a{color:#2626d6;text-decoration:none}a:hover{color:#1a1aa8}
+.navi{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#736f6c;text-decoration:none}
+.navi.on{background:#e9e9ff;color:#2626d6}
+.steps{display:flex;flex-wrap:wrap;gap:4px;font-size:13px}
+.steps a{padding:6px 12px;border-radius:999px;color:#9a958f;font-weight:500}
+.steps a.on{background:#e9e9ff;color:#2626d6}
+.steps a.done{color:#47423d}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 24px;border-radius:12px;border:0;background:#3d3dff;color:#fff;font:600 16px Inter,system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.btn:hover{background:#2626d6;color:#fff}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border-radius:999px;background:#efece6}
+.seg button{min-height:38px;padding:0 14px;border-radius:999px;border:0;background:transparent;font:500 14px Inter,system-ui,sans-serif;color:#47423d;cursor:pointer}
+.seg button.on{background:#fff;color:#1a1a1a;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.row{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid #f3f0eb}
+.row:last-child{border-bottom:0}
+.rl{font-size:15px;font-weight:600}
+.num{min-height:44px;font:600 15px Inter,system-ui,sans-serif;padding:0 12px;border:1px solid #e6e2dc;border-radius:10px;font-variant-numeric:tabular-nums;box-sizing:border-box}
+.sw{position:relative;width:46px;height:28px;border-radius:999px;border:0;background:#d9d4cd;cursor:pointer;flex:0 0 auto}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on{background:#3d3dff}.sw.on::after{left:21px}
+select:focus,input:focus,button:focus-visible,a:focus-visible{outline:2px solid #3d3dff;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; font-family: Inter, system-ui, sans-serif; color: #1a1a1a; background: #f7f5f2;">
+  <nav aria-label="Menu" style="flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 18px; background: #fff; border-right: 1px solid #f0ede8;">
+    <div style="width: 34px; height: 34px; border-radius: 10px; background: #3d3dff; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 16px;" aria-label="Prospectigo">P</div>
+    <a class="navi on" href="Main.dc.html" aria-label="Campagnes" title="Campagnes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8-8-2z"></path></svg></a>
+    <a class="navi" href="Entreprises.dc.html" aria-label="Prospects" title="Prospects"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M9 4v16"></path></svg></a>
+    <a class="navi" href="Message.dc.html" aria-label="Réglages" title="Réglages"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg></a>
+  </nav>
+
+  <main style="flex: 1 1 auto; min-width: 0; padding: 24px 16px 64px;">
+    <div style="max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+      <div class="steps" aria-label="Étapes">
+        <a class="done" href="Main.dc.html">1 · Qui ?</a>
+        <a class="done" href="Entreprises.dc.html">2 · Entreprises</a>
+        <a class="done" href="Message.dc.html">3 · Message</a>
+        <a class="on" href="Envoi.dc.html">4 · Envoi</a>
+        <a href="Resultats.dc.html">5 · Résultats</a>
+      </div>
+
+      <h1 style="margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.025em;">Envoi</h1>
+
+      <section style="background: #fff; border-radius: 16px;">
+        <div class="row" style="flex-direction: column; align-items: stretch;">
+          <span class="rl">Planification</span>
+          <div class="seg" role="radiogroup" aria-label="Planification" style="align-self: flex-start;">
+            <sc-for list="{{schedules}}" as="o" hint-placeholder-count="3">
+              <button class="{{o.cls}}" onClick="{{o.pick}}" role="radio">{{o.label}}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{isSpread}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
+              <label for="days">Répartir sur</label>
+              <input id="days" class="num" type="number" min="1" max="60" value="{{days}}" onChange="{{onDays}}" style="width: 80px;" />
+              <span>jours</span>
+            </div>
+          </sc-if>
+        </div>
+
+        <div class="row">
+          <label for="daily" class="rl">Prises de contact par jour, au maximum</label>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 13px; color: #9a958f;">{{rateText}}</span>
+            <input id="daily" class="num" type="number" min="1" max="100000" value="{{rate}}" onChange="{{onRate}}" style="width: 110px;" />
+          </div>
+        </div>
+
+        <div class="row" style="flex-direction: column; align-items: stretch;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+            <span class="rl" id="autolbl">Validation automatique</span>
+            <button class="{{swCls}}" onClick="{{toggleAuto}}" role="switch" aria-checked="{{autoStr}}" aria-labelledby="autolbl"></button>
+          </div>
+          <sc-if value="{{auto}}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: 14px; color: #9a5b00; background: #fdf0dc; border-radius: 10px; padding: 10px 14px;">Attention : les formulaires validés automatiquement partiront dès que l'envoi est actif, sans que vous les ayez relus.</p>
+          </sc-if>
+        </div>
+
+        <div class="row">
+          <label for="exp" class="rl">Expéditeur</label>
+          <select id="exp" style="flex: 0 1 260px; min-height: 44px; font: 400 15px Inter, system-ui, sans-serif; padding: 0 12px; border: 1px solid #e6e2dc; border-radius: 10px; background: #fff; color: #1a1a1a;">
+            <option>Gabriel, Studio Namma</option>
+            <option>Ajouter un expéditeur…</option>
+          </select>
+        </div>
+      </section>
+
+      <sc-if value="{{notLaunched}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+          <span style="font-size: 15px; color: #736f6c;">1 060 entreprises · 2 versions</span>
+          <button class="btn" onClick="{{launch}}">Lancer la campagne</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{launched}}" hint-placeholder-val="{{ false }}">
+        <div style="background: #e3f5ea; color: #0f5c30; border-radius: 16px; padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-size: 15px;">
+          <span><strong>Campagne lancée.</strong> Premiers formulaires dans quelques minutes.</span>
+          <a href="Resultats.dc.html" style="font-weight: 600; color: #0f5c30;">Voir les résultats ›</a>
+        </div>
+      </sc-if>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { rate: 100, schedule: 'office', days: 5, auto: false, launched: false }; }
+  renderVals() {
+    const { rate, schedule, days, auto, launched } = this.state;
+    const r = Math.max(1, Number(rate) || 1);
+    const workDays = Math.ceil(1060 / r);
+    const opt = (key, label) => ({ label, cls: schedule === key ? 'on' : '', pick: () => this.setState({ schedule: key }) });
+    return {
+      rate,
+      days,
+      isSpread: schedule === 'spread',
+      schedules: [
+        opt('office', 'Heures de bureau (recommandé)'),
+        opt('spread', 'Étalé sur plusieurs jours'),
+        opt('continuous', 'En continu')
+      ],
+      onRate: (ev) => this.setState({ rate: ev.target.value }),
+      onDays: (ev) => this.setState({ days: ev.target.value }),
+      rateText: '≈ ' + workDays + ' jour' + (workDays > 1 ? 's' : '') + ' pour tout envoyer',
+      auto,
+      autoStr: auto ? 'true' : 'false',
+      swCls: auto ? 'sw on' : 'sw',
+      toggleAuto: () => this.setState({ auto: !auto }),
+      launched,
+      notLaunched: !launched,
+      launch: () => this.setState({ launched: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

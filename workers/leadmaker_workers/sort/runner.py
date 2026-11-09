@@ -88,9 +88,9 @@ def social_host(url: str) -> bool:
 
 def page_text(raw: str) -> str:
     """Titre, description et texte visible d'une page HTML (au plus TEXT_CHARS caractères de texte)."""
+    raw = raw.replace("\x00", "")  # caractère nul : refusé par Postgres (vu en ligne le 9/11 sur un site)
     title = re.search(r"<title[^>]*>(.*?)</title>", raw, re.S | re.I)
     desc = re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']*)', raw, re.I)
-    raw = raw.replace("\x00", "")  # caractère nul : refusé par Postgres (vu en ligne le 9/11 sur un site)
     body = re.sub(r"<(script|style|noscript|svg|template)[^>]*>.*?</\1>", " ", raw, flags=re.S | re.I)
     body = html.unescape(re.sub(r"<[^>]+>", " ", body))
     body = re.sub(r"\s+", " ", body).strip()

@@ -54,7 +54,11 @@ export const suggestTargetAction = authActionClient
     const candidates = await preselectCategories(phrase);
 
     if (!aiEnabled() || candidates.length === 0) {
-      return { refinements: [], categories: candidates.slice(0, 10), ai: false };
+      return {
+        refinements: [],
+        categories: candidates.slice(0, 10),
+        ai: false,
+      };
     }
 
     try {
@@ -78,7 +82,11 @@ export const suggestTargetAction = authActionClient
       const parsed = response.parsed_output;
 
       if (!parsed) {
-        return { refinements: [], categories: candidates.slice(0, 10), ai: false };
+        return {
+          refinements: [],
+          categories: candidates.slice(0, 10),
+          ai: false,
+        };
       }
 
       const byGcid = new Map(candidates.map((c) => [c.gcid, c]));
@@ -95,9 +103,16 @@ export const suggestTargetAction = authActionClient
       };
     } catch (error) {
       const logger = await getLogger();
-      logger.warn({ name: 'leadmaker.ai.suggest', error }, 'AI suggestion failed');
+      logger.warn(
+        { name: 'leadmaker.ai.suggest', error },
+        'AI suggestion failed',
+      );
 
-      return { refinements: [], categories: candidates.slice(0, 10), ai: false };
+      return {
+        refinements: [],
+        categories: candidates.slice(0, 10),
+        ai: false,
+      };
     }
   });
 
@@ -132,7 +147,10 @@ async function preselectCategories(phrase: string): Promise<CategoryOption[]> {
 
   if (error) {
     const logger = await getLogger();
-    logger.error({ name: 'leadmaker.ai.preselect', error }, 'Category preselection failed');
+    logger.error(
+      { name: 'leadmaker.ai.preselect', error },
+      'Category preselection failed',
+    );
 
     return [];
   }

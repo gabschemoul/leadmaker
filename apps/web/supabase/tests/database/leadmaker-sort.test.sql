@@ -47,9 +47,10 @@ select is((select payload ->> 'version' from public.lm_tasks where kind = 'sort'
 select public.lm_record_search_places('{"country_code":"FR"}', '[{"place_id":"so:1","name":"Agence Un"}]');
 select ok(public.lm_finish_sort('f0000000-0000-4000-8000-0000000000a1', (select id from public.lm_prospects where site_key = 'un.fr'),
   1, 'gardee', 'marketing_com', '  Agence de communication, pas de dev web  ', 'ok', 'Bienvenue chez Agence Un'), 'Avis enregistré');
-select is((select verdict || ' | ' || group_key || ' | ' || reason || ' | v' || sorted_version from public.lm_campaign_prospects
-            where prospect_id = (select id from public.lm_prospects where site_key = 'un.fr')),
-  'gardee | marketing_com | Agence de communication, pas de dev web | v1', 'Verdict, groupe, raison et version');
+select is((select verdict || ' | ' || coalesce(group_key, 'sans groupe') || ' | ' || reason || ' | v' || sorted_version
+             from public.lm_campaign_prospects where prospect_id = (select id from public.lm_prospects where site_key = 'un.fr')),
+  'gardee | sans groupe | Agence de communication, pas de dev web | v1',
+  'Verdict, raison et version ; pas de groupe tant que la campagne n''en a pas');
 select is((select site_status || ' | ' || site_text from public.lm_places where google_place_id = 'so:1'),
   'ok | Bienvenue chez Agence Un', 'Texte du site gardé dans l''annuaire');
 

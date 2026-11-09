@@ -215,6 +215,10 @@ begin
     return 0;
   end if;
 
+  -- Rangées « autre » avant que les groupes existent : à classer comme les autres
+  update public.lm_campaign_prospects set group_key = null
+   where campaign_id = p_campaign_id and group_key = 'autre';
+
   insert into public.lm_tasks (account_id, kind, payload, idempotency_key, priority)
   select cp.account_id, 'sort',
          jsonb_build_object('action', 'group', 'campaign_id', p_campaign_id, 'prospect_id', cp.prospect_id,

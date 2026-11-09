@@ -281,7 +281,10 @@ begin
 
   update public.lm_campaign_prospects cp
      set verdict = p_verdict,
-         group_key = left(nullif(trim(p_group), ''), 60),
+         -- pas de groupe tant que la campagne n'en a pas (sinon tout serait rangé « autre » et jamais reclassé)
+         group_key = case when (select jsonb_array_length(c.sort_groups) from public.lm_campaigns c
+                                 where c.id = p_campaign_id) > 0
+                          then left(nullif(trim(p_group), ''), 60) end,
          reason = left(nullif(trim(p_reason), ''), 300),
          sorted_at = now(),
          sorted_version = p_version

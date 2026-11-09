@@ -132,7 +132,7 @@ export async function loadProspectFacets(client: Client, spaceId: string) {
 export async function loadSpaceCampaigns(client: Client, spaceId: string) {
   const { data, error } = await client
     .from('lm_campaigns')
-    .select('id, name')
+    .select('id, name, status')
     .eq('space_id', spaceId)
     .order('created_at', { ascending: false });
 

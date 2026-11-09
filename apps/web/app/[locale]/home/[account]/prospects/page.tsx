@@ -155,11 +155,19 @@ async function ProspectsContent(props: ProspectsPageProps) {
     facets.campaigns.map((facet) => [facet.value, facet.total]),
   );
 
-  const campaignOptions = campaigns.map((campaign) => ({
-    id: campaign.id,
-    name: campaign.name,
-    total: campaignTotals.get(campaign.id) ?? 0,
-  }));
+  // campagnes archivées cachées (filtre et choix de campagne à la préparation),
+  // sauf celle déjà choisie dans le filtre (lien gardé)
+  const campaignOptions = campaigns
+    .filter(
+      (campaign) =>
+        campaign.status !== 'archived' ||
+        campaign.id === state.filters.campaign,
+    )
+    .map((campaign) => ({
+      id: campaign.id,
+      name: campaign.name,
+      total: campaignTotals.get(campaign.id) ?? 0,
+    }));
 
   const exportParams = toProspectsSearchParams({ filters: state.filters });
   exportParams.set('space_id', space.id);

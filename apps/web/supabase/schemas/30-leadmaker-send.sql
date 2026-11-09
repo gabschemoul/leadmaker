@@ -23,6 +23,24 @@ $$;
 
 grant execute on function public.lm_sends_today(uuid) to authenticated, service_role;
 
+-- Prises de contact disponibles d'une organisation. Crédit unique (CDC-PARCOURS-TRI-ANNUAIRE §5, 9/11/2026) :
+-- la prise de contact est comprise dans le crédit de l'entreprise gardée, les envois ne consomment plus rien.
+-- Avec un forfait (ou des crédits), illimité ; sans, aucune (robots réservés aux organisations avec forfait).
+-- L'ancien solde « prise de contact » (outreach_balance) n'est plus ni lu ni débité.
+-- Appelant : robots / serveur uniquement (rôle service), via lm_queue_sends et le pilote automatique.
+create or replace function public.lm_outreach_balance(p_account_id uuid) returns integer
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select case when public.lm_has_plan(p_account_id) then 1000000000 else 0 end;
+$$;
+
+revoke all on function public.lm_outreach_balance(uuid) from public;
+
+grant execute on function public.lm_outreach_balance(uuid) to service_role;
+
 -- Planification (worker, rôle service) : met en file les tentatives validées dans la limite quotidienne
 -- de chaque campagne, tant qu'il reste des crédits outreach à l'organisation.
 -- Une tentative restée « en envoi » plus de 20 minutes (worker arrêté) passe « à vérifier », jamais renvoyée.
@@ -79,9 +97,7 @@ begin
                           and t.payload ->> 'attempt_id' = a.id::text)
      order by a.validated_at
   loop
-    select coalesce(cr.outreach_balance, 0) into v_balance
-      from public.lm_account_credits cr
-     where cr.account_id = r.account_id;
+    v_balance := public.lm_outreach_balance(r.account_id);
 
     -- Envois déjà en file ou en cours de l'organisation : jamais plus d'envois que de crédits
     select count(*)::integer into v_reserved from public.lm_tasks t
@@ -174,13 +190,7 @@ begin
     return false;
   end if;
 
-  -- Audit A13 : une référence par envoi (et non par prise de contact), sinon un formulaire re-préparé puis
-  -- renvoyé ne coûtait rien la seconde fois. lm_finish_send ne passe qu'une fois par envoi (status = 'sending').
-  if v_submitted then
-    perform public.lm_debit_credits(v_account, 'outreach', 1,
-                                    'send:' || p_attempt_id::text || ':' || extract(epoch from clock_timestamp())::text,
-                                    'form submitted', v_campaign);
-  end if;
+  -- Crédit unique (9/11/2026) : l'envoi ne débite plus rien, il est compris dans le crédit de l'entreprise gardée.
 
   return true;
 end;
@@ -222,16 +232,7 @@ begin
   loop
     v_count := v_count + 1;
 
-    -- Audit A13 : un envoi interrompu (robot arrêté) n'avait pas été débité ; confirmé « bien parti » à la main,
-    -- il l'est maintenant, sauf si cet envoi a déjà été débité par le robot.
-    if v_status = 'sent' and not exists (
-         select 1 from public.lm_credit_ledger l
-          where l.account_id = r.account_id and l.event_ref like 'send:' || r.id::text || '%'
-            and l.created_at >= coalesce(r.validated_at, '-infinity'::timestamptz)) then
-      perform public.lm_debit_credits(r.account_id, 'outreach', 1,
-                                      'send:' || r.id::text || ':manual:' || coalesce(r.validated_at::text, ''),
-                                      'form confirmed sent', r.campaign_id);
-    end if;
+    -- Crédit unique (9/11/2026) : un envoi confirmé à la main ne débite plus rien non plus.
   end loop;
 
   return v_count;

@@ -126,7 +126,7 @@ select is(public.lm_record_prospect((select campaign_id from t_cred),
   '{"place_id":"pl-1","name":"Entreprise 1","website":"https://entreprise-1.example","site_key":"entreprise-1.example"}'),
   'kept', 'Prospect gardé');
 select is((select discovery_balance from public.lm_account_credits where account_id = (select account_id from t_cred)),
-  30000 - 2, 'Un prospect = 2 crédits de prospection débités');
+  15000 - 2, 'Un prospect = 2 crédits débités');
 select is((select -delta from public.lm_credit_ledger where campaign_id = (select campaign_id from t_cred) and kind = 'discovery'
             order by created_at desc limit 1), 2, 'Le journal des crédits porte le débit de 2');
 

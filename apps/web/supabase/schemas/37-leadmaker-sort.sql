@@ -5,7 +5,11 @@
  * (tâche « sort ») : il lit la page d'accueil du site (gardée dans l'annuaire lm_places pour tous les clients),
  * puis Claude Haiku rend un avis : gardee | a_verifier | ecartee, un groupe et une raison courte.
  * « ecartee » reste interne : jamais montrée au client, jamais payée (décision du 9/11 : pas d'onglet
- * « Écartées »). Étape 3 = mesure seulement : le prix et les écrans ne changent pas.
+ * « Écartées »).
+ * Crédit unique (§5, étape 4) : 1 crédit = 1 entreprise gardée, prise de contact comprise. Le prix d'une
+ * entreprise gardée (1, 2 ou 4 crédits) est mesuré sur les premières entreprises triées (part de gardées), puis
+ * figé ; les gardées pendant la mesure sont payées au palier final (lm_settle_kept). Sous 6 % de gardées, la
+ * campagne se met en pause (« too_hard ») : le client doit préciser sa cible.
  * -------------------------------------------------------
  */
 
@@ -64,9 +68,14 @@ begin
   end if;
 
   if v_campaign.sort_target is distinct from v_target then
-    update public.lm_campaigns set sort_target = v_target, sort_version = sort_version + 1
+    -- Nouvelle cible : nouvelle version, prix remesuré sur le tri (l'estimation ne le fixe plus), compteurs
+    -- de tri par activité remis à zéro
+    update public.lm_campaigns
+       set sort_target = v_target, sort_version = sort_version + 1, price_pending = true, estimate_id = null
      where id = p_campaign_id
      returning * into v_campaign;
+
+    update public.lm_campaign_categories set sorted = 0, sorted_kept = 0 where campaign_id = p_campaign_id;
   end if;
 
   if nullif(trim(p_offer), '') is not null then
@@ -95,6 +104,146 @@ revoke all on function public.lm_start_sort(uuid, text, text, integer) from publ
 
 grant execute on function public.lm_start_sort(uuid, text, text, integer) to service_role;
 
+-- Prix d'une entreprise gardée pour une part de gardées donnée (paliers lm_discovery_settings.sort_credit_tiers) ;
+-- null sous le seuil de pause (sort_pause_rate).
+-- Appelant : robots / serveur uniquement (rôle service), via lm_measure_sort_price.
+create or replace function public.lm_credits_for_sort_rate(p_rate numeric) returns integer
+set search_path = ''
+language sql
+stable
+as $$
+  select case
+           when p_rate < s.sort_pause_rate then null
+           else coalesce((select (t ->> 'credits')::integer
+                            from jsonb_array_elements(s.sort_credit_tiers) t
+                           where p_rate >= (t ->> 'min_rate')::numeric
+                           order by (t ->> 'min_rate')::numeric desc
+                           limit 1), 4)
+         end
+    from public.lm_discovery_settings s
+   where s.id;
+$$;
+
+revoke all on function public.lm_credits_for_sort_rate(numeric) from public;
+
+grant execute on function public.lm_credits_for_sort_rate(numeric) to service_role;
+
+-- Mesure du prix d'une campagne triée (prix en attente) : dès que sort_measure_size entreprises sont triées pour
+-- la cible en cours, la part de gardées fixe le prix (1 / 2 / 4 crédits), puis les entreprises gardées pendant la
+-- mesure sont payées. Sous le seuil : pause « too_hard », le prix reste en attente (rien n'est payé).
+-- Appelant : robots / serveur uniquement (rôle service), via lm_finish_sort.
+create or replace function public.lm_measure_sort_price(p_campaign_id uuid) returns void
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_campaign public.lm_campaigns%rowtype;
+  v_size integer;
+  v_sorted integer;
+  v_kept integer;
+  v_credits integer;
+begin
+  select * into v_campaign from public.lm_campaigns where id = p_campaign_id;
+
+  if not v_campaign.price_pending or nullif(trim(v_campaign.sort_target), '') is null then
+    return;
+  end if;
+
+  select sort_measure_size into v_size from public.lm_discovery_settings where id;
+
+  select count(*), count(*) filter (where coalesce(cp.client_choice, cp.verdict) = 'gardee')
+    into v_sorted, v_kept
+    from public.lm_campaign_prospects cp
+   where cp.campaign_id = p_campaign_id and cp.sorted_version = v_campaign.sort_version;
+
+  if v_sorted < v_size then
+    return;
+  end if;
+
+  -- Un seul passage fixe le prix (plusieurs robots trient en même temps)
+  perform 1 from public.lm_campaigns where id = p_campaign_id and price_pending for update;
+
+  if not found then
+    return;
+  end if;
+
+  v_credits := public.lm_credits_for_sort_rate(v_kept::numeric / v_sorted);
+
+  if v_credits is null then
+    if v_campaign.status = 'running' then
+      perform public.lm_pause_campaign(p_campaign_id, 'too_hard');
+    end if;
+    return;
+  end if;
+
+  update public.lm_campaigns set credits_per_prospect = v_credits, price_pending = false where id = p_campaign_id;
+
+  perform public.lm_settle_kept(p_campaign_id, null);
+end;
+$$;
+
+revoke all on function public.lm_measure_sort_price(uuid) from public;
+
+grant execute on function public.lm_measure_sort_price(uuid) to service_role;
+
+-- Paiement des entreprises gardées (par le tri ou par le client) pas encore réglées d'une campagne au prix
+-- figé (une seule si p_prospect_id). Une entreprise déjà payée par l'équipe dans une autre campagne n'est pas
+-- redébitée (CDC §5.1). Crédits épuisés : la campagne se met en pause et les suivantes attendent. Renvoie le
+-- nombre d'entreprises réglées.
+-- Appelant : robots / serveur uniquement (rôle service).
+create or replace function public.lm_settle_kept(p_campaign_id uuid, p_prospect_id uuid default null) returns integer
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_campaign public.lm_campaigns%rowtype;
+  v_count integer := 0;
+  r record;
+begin
+  select * into v_campaign from public.lm_campaigns where id = p_campaign_id;
+
+  if v_campaign.id is null or v_campaign.price_pending then
+    return 0;
+  end if;
+
+  for r in
+    select cp.prospect_id,
+           exists (select 1 from public.lm_campaign_prospects o
+                    where o.prospect_id = cp.prospect_id and o.campaign_id <> cp.campaign_id
+                      and o.paid_at is not null) as already_paid
+      from public.lm_campaign_prospects cp
+     where cp.campaign_id = p_campaign_id
+       and (p_prospect_id is null or cp.prospect_id = p_prospect_id)
+       and cp.paid_at is null
+       and coalesce(cp.client_choice, cp.verdict) = 'gardee'
+     order by cp.sorted_at nulls last
+     for update of cp skip locked
+  loop
+    if not r.already_paid
+       and not public.lm_debit_credits(v_campaign.account_id, 'discovery', greatest(v_campaign.credits_per_prospect, 1),
+                                       'keep:' || p_campaign_id::text || ':' || r.prospect_id::text, 'kept',
+                                       p_campaign_id) then
+      perform public.lm_pause_campaign(p_campaign_id, 'no_credits');
+      exit;
+    end if;
+
+    update public.lm_campaign_prospects
+       set paid_at = now(), credits = case when r.already_paid then 0 else greatest(v_campaign.credits_per_prospect, 1) end
+     where campaign_id = p_campaign_id and prospect_id = r.prospect_id;
+
+    v_count := v_count + 1;
+  end loop;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.lm_settle_kept(uuid, uuid) from public;
+
+grant execute on function public.lm_settle_kept(uuid, uuid) to service_role;
+
 -- Résultat du tri d'une entreprise. Ignoré si la cible a changé entre-temps (version dépassée) ou si
 -- l'entreprise n'est plus dans la campagne. Le texte du site est gardé dans l'annuaire (lm_places), pour ne
 -- pas relire le site pour un autre client. Renvoie vrai si l'avis a été enregistré.
@@ -110,6 +259,8 @@ as $$
 declare
   v_place_id text;
   v_count integer;
+  v_gcid text;
+  v_settings public.lm_discovery_settings%rowtype;
 begin
   if p_verdict not in ('gardee', 'a_verifier', 'ecartee') then
     raise exception 'invalid verdict %', p_verdict using errcode = 'P0001';
@@ -135,10 +286,37 @@ begin
          sorted_at = now(),
          sorted_version = p_version
    where cp.campaign_id = p_campaign_id and cp.prospect_id = p_prospect_id
-     and p_version = (select c.sort_version from public.lm_campaigns c where c.id = p_campaign_id);
+     and p_version = (select c.sort_version from public.lm_campaigns c where c.id = p_campaign_id)
+  returning cp.gcid into v_gcid;
 
   get diagnostics v_count = row_count;
-  return v_count > 0;
+
+  if v_count = 0 then
+    return false;
+  end if;
+
+  select * into v_settings from public.lm_discovery_settings where id;
+
+  -- Rendement du tri par activité ; une activité qui ne donne presque que des entreprises hors cible est
+  -- abandonnée (la recherche cesse d'y dépenser du proxy)
+  if v_gcid is not null then
+    update public.lm_campaign_categories cc
+       set sorted = cc.sorted + 1,
+           sorted_kept = cc.sorted_kept + (p_verdict = 'gardee')::integer,
+           abandoned = cc.abandoned
+             or (cc.sorted + 1 >= v_settings.sort_abandon_after
+                 and (cc.sorted_kept + (p_verdict = 'gardee')::integer)
+                       < v_settings.sort_abandon_rate * (cc.sorted + 1))
+     where cc.campaign_id = p_campaign_id and cc.gcid = v_gcid;
+  end if;
+
+  perform public.lm_measure_sort_price(p_campaign_id);
+
+  if p_verdict = 'gardee' then
+    perform public.lm_settle_kept(p_campaign_id, p_prospect_id);
+  end if;
+
+  return true;
 end;
 $$;
 

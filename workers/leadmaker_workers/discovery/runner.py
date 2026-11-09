@@ -267,7 +267,7 @@ class DiscoveryRunner:
                         "place_id": obj.place_id, "name": obj.name, "category": obj.category, "rating": obj.rating,
                         "review_count": obj.review_count, "address": obj.address, "phone": obj.phone,
                         "website": obj.website, "site_key": key, "maps_url": obj.maps_url,
-                        "city": p.get("city"),
+                        "city": p.get("city"), "gcid": p.get("gcid"),
                     })),
                 ).fetchone()["r"]
                 if outcome == "kept":

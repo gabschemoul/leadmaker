@@ -111,7 +111,7 @@ select is(public.lm_record_prospect((select id from public.lm_campaigns where na
 select is(public.lm_record_prospect((select id from public.lm_campaigns where name = 'Campagne A'),
   '{"place_id":"p2","name":"Dupont bis","site_key":"dupont.fr","website":"https://www.dupont.fr/x"}'), 'duplicate', 'Même site : doublon');
 select is((select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'disc-a')),
-  29999, 'Un seul crédit débité');
+  14999, 'Un seul crédit débité');
 
 -- Fiche déjà vue : pas rouverte
 select is(public.lm_mark_place_seen((select id from public.lm_spaces where name = 'Espace A'), 'p9', 'x.fr'), true, 'Première vue');

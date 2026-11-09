@@ -299,14 +299,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_categories": {
                   Row: {
-                    "abandoned": boolean,"account_id": string,"campaign_id": string,"cards": number,"cards_new": number,"gcid": string,"in_flight": number,"is_generic": boolean,"kept": number,"next_zone_idx": number,"proxy_bytes": number,"recent_kept": number | null,"removed": boolean,"searches": number
+                    "abandoned": boolean,"account_id": string,"campaign_id": string,"cards": number,"cards_new": number,"gcid": string,"in_flight": number,"is_generic": boolean,"kept": number,"next_zone_idx": number,"proxy_bytes": number,"recent_kept": number | null,"removed": boolean,"searches": number,"sorted": number,"sorted_kept": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandoned"?: boolean,"account_id": string,"campaign_id": string,"cards"?: number,"cards_new"?: number,"gcid": string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"recent_kept"?: number | null,"removed"?: boolean,"searches"?: number
+                    "abandoned"?: boolean,"account_id": string,"campaign_id": string,"cards"?: number,"cards_new"?: number,"gcid": string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"recent_kept"?: number | null,"removed"?: boolean,"searches"?: number,"sorted"?: number,"sorted_kept"?: number
                   }
                   Update: {
-                    "abandoned"?: boolean,"account_id"?: string,"campaign_id"?: string,"cards"?: number,"cards_new"?: number,"gcid"?: string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"recent_kept"?: number | null,"removed"?: boolean,"searches"?: number
+                    "abandoned"?: boolean,"account_id"?: string,"campaign_id"?: string,"cards"?: number,"cards_new"?: number,"gcid"?: string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"recent_kept"?: number | null,"removed"?: boolean,"searches"?: number,"sorted"?: number,"sorted_kept"?: number
                   }
                   Relationships: [
                     {
@@ -343,14 +343,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_prospects": {
                   Row: {
-                    "account_id": string,"campaign_id": string,"client_choice": string | null,"created_at": string,"credits": number,"decided_at": string | null,"group_key": string | null,"prospect_id": string,"reason": string | null,"sorted_at": string | null,"sorted_version": number | null,"space_id": string,"verdict": string | null
+                    "account_id": string,"campaign_id": string,"client_choice": string | null,"created_at": string,"credits": number,"decided_at": string | null,"gcid": string | null,"group_key": string | null,"paid_at": string | null,"prospect_id": string,"reason": string | null,"sorted_at": string | null,"sorted_version": number | null,"space_id": string,"verdict": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"campaign_id": string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"group_key"?: string | null,"prospect_id": string,"reason"?: string | null,"sorted_at"?: string | null,"sorted_version"?: number | null,"space_id": string,"verdict"?: string | null
+                    "account_id": string,"campaign_id": string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"gcid"?: string | null,"group_key"?: string | null,"paid_at"?: string | null,"prospect_id": string,"reason"?: string | null,"sorted_at"?: string | null,"sorted_version"?: number | null,"space_id": string,"verdict"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"campaign_id"?: string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"group_key"?: string | null,"prospect_id"?: string,"reason"?: string | null,"sorted_at"?: string | null,"sorted_version"?: number | null,"space_id"?: string,"verdict"?: string | null
+                    "account_id"?: string,"campaign_id"?: string,"client_choice"?: string | null,"created_at"?: string,"credits"?: number,"decided_at"?: string | null,"gcid"?: string | null,"group_key"?: string | null,"paid_at"?: string | null,"prospect_id"?: string,"reason"?: string | null,"sorted_at"?: string | null,"sorted_version"?: number | null,"space_id"?: string,"verdict"?: string | null
                   }
                   Relationships: [
                     {
@@ -535,14 +535,14 @@ isOneToOne: false
                   ]
                 },"lm_discovery_settings": {
                   Row: {
-                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"prior": number,"recent_weight": number,"tasks_per_campaign": number,"updated_at": string
+                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"prior": number,"recent_weight": number,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"prior"?: number,"recent_weight"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"prior"?: number,"recent_weight"?: number,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"prior"?: number,"recent_weight"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"prior"?: number,"recent_weight"?: number,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -1628,6 +1628,9 @@ isOneToOne: false
 "lm_credits_for_rate":
 { Args: { "p_rate": number }; Returns: number
                            },
+"lm_credits_for_sort_rate":
+{ Args: { "p_rate": number }; Returns: number
+                           },
 "lm_debit_credits":
 { Args: { "p_account_id": string,"p_campaign_id"?: string,"p_event_ref": string,"p_kind": Database["public"]['Enums']["lm_credit_kind"],"p_quantity": number,"p_reason": string }; Returns: boolean
                            },
@@ -1691,6 +1694,9 @@ isOneToOne: false
 "lm_mark_place_seen":
 { Args: { "p_place_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
                            },
+"lm_measure_sort_price":
+{ Args: { "p_campaign_id": string }; Returns: undefined
+                           },
 "lm_member":
 { Args: { "p_account_id": string }; Returns: boolean
                            },
@@ -1699,6 +1705,9 @@ isOneToOne: false
                            },
 "lm_notify":
 { Args: { "p_account_id": string,"p_campaign_id": string,"p_dedupe_key": string,"p_kind": string,"p_payload": Json }; Returns: undefined
+                           },
+"lm_outreach_balance":
+{ Args: { "p_account_id": string }; Returns: number
                            },
 "lm_outreach_reserved":
 { Args: { "p_account_id": string }; Returns: number
@@ -1792,6 +1801,9 @@ isOneToOne: false
                            },
 "lm_set_local_discovery":
 { Args: { "p_campaign_id": string,"p_enabled": boolean }; Returns: boolean
+                           },
+"lm_settle_kept":
+{ Args: { "p_campaign_id": string,"p_prospect_id"?: string }; Returns: number
                            },
 "lm_site_known":
 { Args: { "p_site_key": string,"p_space_id": string }; Returns: boolean

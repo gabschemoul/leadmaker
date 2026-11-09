@@ -270,7 +270,9 @@ begin
   update public.lm_campaigns c
      set credits_per_prospect = coalesce(e.credits_per_prospect, 1), price_pending = false
     from public.lm_estimates e
-   where e.id = p_estimate_id and c.estimate_id = p_estimate_id and c.price_pending;
+   where e.id = p_estimate_id and c.estimate_id = p_estimate_id and c.price_pending
+     -- campagne avec une cible en mots : son prix vient du tri IA (lm_finish_sort), pas de l'estimation
+     and nullif(trim(c.sort_target), '') is null;
 end;
 $$;
 

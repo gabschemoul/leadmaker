@@ -74,6 +74,17 @@ create table if not exists public.lm_discovery_settings (
   -- le planificateur juge les activités sur leurs dernières recherches, comme l'ancien outil, pour lâcher
   -- vite celles qui s'épuisent (« Hôtel » repassé dans tous les secteurs de Bruxelles déjà vus)
   recent_weight numeric(4,3) not null default 0.3,
+  -- Crédit unique (CDC-PARCOURS-TRI-ANNUAIRE §5, 9/11/2026) : campagne avec une cible en mots, prix d'une
+  -- entreprise gardée selon la part de gardées par le tri IA, mesurée sur les sort_measure_size premières
+  -- entreprises triées puis figée. Du palier le plus facile au plus difficile ; sous sort_pause_rate, la
+  -- campagne se met en pause (le client doit préciser sa cible).
+  sort_measure_size integer not null default 300,
+  sort_credit_tiers jsonb not null default '[{"min_rate": 0.25, "credits": 1}, {"min_rate": 0.12, "credits": 2}, {"min_rate": 0.06, "credits": 4}]'::jsonb,
+  sort_pause_rate numeric(4,3) not null default 0.06,
+  -- Activité abandonnée quand, après sort_abandon_after entreprises triées, moins de sort_abandon_rate sont
+  -- gardées : la recherche cesse de dépenser du proxy pour une activité hors cible
+  sort_abandon_after integer not null default 40,
+  sort_abandon_rate numeric(4,3) not null default 0.03,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (id),
@@ -167,6 +178,9 @@ create table if not exists public.lm_campaign_categories (
   -- Prospects gardés par recherche, en moyenne glissante sur les dernières recherches (poids
   -- lm_discovery_settings.recent_weight pour la dernière) ; null tant que l'activité n'a pas été cherchée
   recent_kept numeric,
+  -- Tri IA (campagne avec une cible) : entreprises de cette activité triées / gardées, pour la cible en cours
+  sorted integer not null default 0,
+  sorted_kept integer not null default 0,
   abandoned boolean not null default false,
   -- Activité retirée du ciblage après le lancement
   removed boolean not null default false,
@@ -666,7 +680,7 @@ begin
   v_explore_slots := greatest(1, round(v_settings.explore_share * v_settings.tasks_per_campaign));
 
   for v_campaign in
-    select c.id, c.account_id, c.country_code
+    select c.id, c.account_id, c.country_code, nullif(trim(c.sort_target), '') is not null as sorted
       from public.lm_campaigns c
      where c.status = 'running'
   loop
@@ -712,7 +726,10 @@ begin
                       when cc.proxy_bytes > 0 and cc.searches > 0 then cc.proxy_bytes / 1e6 / cc.searches
                       else v_settings.default_search_mb
                     end
-                  / (1 + cc.in_flight) desc,
+                  / (1 + cc.in_flight)
+                  -- campagne triée par l'IA : part de gardées par le tri dans cette activité (lissée), pour
+                  -- ne pas dépenser le proxy sur des activités hors cible (CDC §5.3)
+                  * case when v_campaign.sorted then (cc.sorted_kept + 1)::numeric / (cc.sorted + 3) else 1 end desc,
                 random()
        limit 1
        for update of cc skip locked;
@@ -841,6 +858,10 @@ grant execute on function public.lm_site_known(uuid, text) to service_role;
 -- Lien campagne ↔ entreprise (lm_campaign_prospects, CDC §7) : posé pour un prospect gardé (avec les crédits
 -- débités) ; une entreprise que l'espace a déjà est liée à cette campagne aussi, sans débit (jamais payée deux
 -- fois par une équipe, CDC §5.1).
+-- Crédit unique (CDC §5, 9/11/2026) : une campagne avec une cible en mots (sort_target) ne débite rien ici ;
+-- l'entreprise est payée quand le tri IA (ou le client) la garde (lm_settle_kept). Sans cible (campagnes créées
+-- avant le nouveau parcours), le débit reste à l'enregistrement : 1 entreprise = ses crédits, prise de contact
+-- comprise. Crédits épuisés : la campagne se met en pause dans les deux cas.
 -- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_record_prospect(p_campaign_id uuid, p_place jsonb) returns text
 set search_path = ''
@@ -865,8 +886,8 @@ begin
 
   if v_id is null then
     -- Déjà dans l'espace (trouvée par une autre campagne ou importée) : liée à cette campagne, sans débit
-    insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, credits)
-    select p_campaign_id, p.id, p.account_id, p.space_id, 0
+    insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, credits, paid_at, gcid)
+    select p_campaign_id, p.id, p.account_id, p.space_id, 0, now(), nullif(p_place ->> 'gcid', '')
       from public.lm_prospects p
      where p.space_id = v_campaign.space_id and p.site_key = p_place ->> 'site_key'
     on conflict (campaign_id, prospect_id) do nothing;
@@ -874,17 +895,29 @@ begin
     return 'duplicate';
   end if;
 
-  v_credits := greatest(v_campaign.credits_per_prospect, 1);
+  if nullif(trim(v_campaign.sort_target), '') is not null then
+    -- Payée plus tard, si le tri la garde ; plus aucun crédit : la recherche s'arrête là
+    if coalesce((select c.discovery_balance from public.lm_account_credits c
+                  where c.account_id = v_campaign.account_id), 0) <= 0 then
+      delete from public.lm_prospects where id = v_id;
+      perform public.lm_pause_campaign(p_campaign_id, 'no_credits');
+      return 'no_credits';
+    end if;
+    v_credits := 0;
+  else
+    v_credits := greatest(v_campaign.credits_per_prospect, 1);
 
-  if not public.lm_debit_credits(v_campaign.account_id, 'discovery', v_credits,
-                                 'prospect:' || v_id, 'discovery', p_campaign_id) then
-    delete from public.lm_prospects where id = v_id;
-    perform public.lm_pause_campaign(p_campaign_id, 'no_credits');
-    return 'no_credits';
+    if not public.lm_debit_credits(v_campaign.account_id, 'discovery', v_credits,
+                                   'prospect:' || v_id, 'discovery', p_campaign_id) then
+      delete from public.lm_prospects where id = v_id;
+      perform public.lm_pause_campaign(p_campaign_id, 'no_credits');
+      return 'no_credits';
+    end if;
   end if;
 
-  insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, credits)
-  values (p_campaign_id, v_id, v_campaign.account_id, v_campaign.space_id, v_credits)
+  insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, credits, paid_at, gcid)
+  values (p_campaign_id, v_id, v_campaign.account_id, v_campaign.space_id, v_credits,
+          case when v_credits > 0 then now() end, nullif(p_place ->> 'gcid', ''))
   on conflict (campaign_id, prospect_id) do nothing;
 
   update public.lm_place_sightings set kept = true

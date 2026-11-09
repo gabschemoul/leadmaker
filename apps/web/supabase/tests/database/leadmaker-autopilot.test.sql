@@ -178,8 +178,8 @@ select public.lm_finish_prepare(pg_temp.att(n), '{"status":"no_form"}'::jsonb) f
 update public.lm_attempts set status = 'sending' where id in (pg_temp.att('P1'), pg_temp.att('P2'));
 select public.lm_finish_send(pg_temp.att('P1'), '{"status":"sent","submitted":true}'::jsonb);
 select public.lm_finish_send(pg_temp.att('P2'), '{"status":"to_verify","submitted":true}'::jsonb);
-select is((select outreach_balance from public.lm_account_credits c join ta on ta.account_id = c.account_id), 98,
-  'Un crédit par message parti, aucun pour les cas douteux');
+select is((select outreach_balance from public.lm_account_credits c join ta on ta.account_id = c.account_id), 100,
+  'Crédit unique (9/11) : les envois ne débitent plus rien');
 
 select pg_temp.tour();
 select is((select count(*)::int from public.lm_attempts where autopilot_id = (select id from ap_ids where name = 'camp')), 9,
@@ -261,12 +261,18 @@ select is(public.lm_cancel_autopilot((select id from ap_ids where name = 'camp3'
 select is((select status::text from public.lm_autopilots where id = (select id from ap_ids where name = 'camp3')), 'cancelled', 'Pilote annulé');
 select is((select contactable from public.lm_autopilot_summary((select id from camp3))), 5, 'Les prospects redeviennent contactables');
 
--- Plus de crédits : lancement refusé
+-- Plus de forfait ni de crédits : lancement refusé (crédit unique, 9/11 : les envois ne demandent plus de
+-- crédits de prise de contact, seulement un forfait)
 set local role postgres;
-update public.lm_account_credits set outreach_balance = 0 where account_id = (select account_id from ta);
+update public.lm_account_credits set plan_id = null, discovery_balance = 0, outreach_balance = 0
+ where account_id = (select account_id from ta);
 select makerkit.authenticate_as('ap_owner');
 select throws_ok($$ select public.lm_start_autopilot((select id from camp3), 2, array['M2'], 'office', 5, false) $$,
-  'P0001', null, 'Lancement refusé sans crédit de prise de contact');
+  'P0001', null, 'Lancement refusé sans forfait');
+set local role postgres;
+update public.lm_account_credits set plan_id = 'growth', discovery_balance = 100, outreach_balance = 100
+ where account_id = (select account_id from ta);
+select makerkit.authenticate_as('ap_owner');
 
 -- Validation automatique des campagnes ouverte à tous les forfaits (Growth compris)
 select is(public.lm_auto_validation_allowed((select account_id from ta)), true, 'Validation automatique permise en Growth');

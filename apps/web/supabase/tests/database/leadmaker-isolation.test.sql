@@ -48,8 +48,8 @@ $$, 'Avec Growth, A crée un deuxième espace');
 
 select is(
   (select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'org-a')),
-  30000,
-  'A lit son solde de crédits découverte');
+  15000,
+  'A lit son solde de crédits');
 
 -- A ne peut pas écrire dans l'organisation B
 select throws_ok($$
@@ -105,7 +105,7 @@ select is(
 
 select is(
   (select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'org-a')),
-  29990, 'Le solde a baissé de 10 une seule fois');
+  14990, 'Le solde a baissé de 10 une seule fois');
 
 select is(
   public.lm_debit_credits((select id from public.accounts where slug = 'org-b'), 'outreach', 1, 'test:debit:2', 'test'),
@@ -116,7 +116,7 @@ select public.lm_reset_credits((select id from public.accounts where slug = 'org
 
 select is(
   (select discovery_balance from public.lm_account_credits where account_id = (select id from public.accounts where slug = 'org-a')),
-  29990, 'Un renouvellement déjà traité ne remet pas le solde à zéro');
+  14990, 'Un renouvellement déjà traité ne remet pas le solde à zéro');
 
 -- Résiliation effective : forfait et crédits retirés
 insert into public.billing_customers (account_id, provider, customer_id)

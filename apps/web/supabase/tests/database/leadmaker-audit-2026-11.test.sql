@@ -184,7 +184,7 @@ select makerkit.authenticate_as('au_a');
 select is(public.lm_mark_attempts(array['a0000000-0000-4000-8000-00000000a7a1'::uuid], 'sent'), 1, 'Envoi confirmé');
 set local role postgres;
 select is((select outreach_balance from public.lm_account_credits where account_id = (select acc_a from t_au)),
-  (select outreach_balance - 1 from t_bal), 'A13 : envoi confirmé à la main débité');
+  (select outreach_balance from t_bal), 'Crédit unique (9/11) : un envoi confirmé à la main ne débite plus rien');
 
 -- ── E18 : archiver une campagne ─────────────────────────────────────────────────────────────────────────
 select makerkit.authenticate_as('au_b');

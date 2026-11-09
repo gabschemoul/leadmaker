@@ -410,8 +410,7 @@ begin
       -- Aperçu : assez de formulaires prêts pour en montrer 3 (au plus 30 sites visités pour y arriver)
       v_want := least(public.lm_autopilot_preview_size() - c.preview_ready - c.in_flight, 30 - c.total);
     else
-      select coalesce(cr.outreach_balance, 0) into v_balance
-        from public.lm_account_credits cr where cr.account_id = ap.account_id;
+      v_balance := public.lm_outreach_balance(ap.account_id);
 
       v_want := least(ap.target - c.sent - c.in_flight,
                       public.lm_autopilot_ahead() - c.in_flight,
@@ -596,8 +595,7 @@ begin
     raise exception 'no prospect to contact' using errcode = 'P0001', hint = 'no_prospects';
   end if;
 
-  select coalesce(cr.outreach_balance, 0) into v_balance
-    from public.lm_account_credits cr where cr.account_id = v_campaign.account_id;
+  v_balance := public.lm_outreach_balance(v_campaign.account_id);
 
   v_balance := coalesce(v_balance, 0) - public.lm_outreach_reserved(v_campaign.account_id);
 
@@ -744,8 +742,7 @@ begin
 
   select * into c from public.lm_autopilot_counts(ap.id);
 
-  select coalesce(cr.outreach_balance, 0) into v_balance
-    from public.lm_account_credits cr where cr.account_id = ap.account_id;
+  v_balance := public.lm_outreach_balance(ap.account_id);
 
   v_target := greatest(c.sent + c.in_flight, 1,
                        least(p_target,

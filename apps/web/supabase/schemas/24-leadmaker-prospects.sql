@@ -333,6 +333,11 @@ create table if not exists public.lm_campaign_prospects (
   decided_at timestamptz,
   -- Crédits débités pour cette entreprise dans cette campagne (0 : déjà payée par l'équipe, jamais deux fois)
   credits integer not null default 0,
+  -- Réglée (débitée, ou déjà payée par l'équipe) : null tant qu'une entreprise gardée attend son paiement
+  -- (prix de la campagne pas encore mesuré, crédits épuisés)
+  paid_at timestamptz,
+  -- Activité recherchée qui l'a trouvée (rendement du tri par activité, planificateur)
+  gcid text,
   created_at timestamptz not null default now(),
   primary key (campaign_id, prospect_id),
   constraint lm_campaign_prospects_verdict check (verdict is null or verdict in ('gardee', 'a_verifier', 'ecartee')),

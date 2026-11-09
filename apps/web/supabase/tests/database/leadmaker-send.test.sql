@@ -46,14 +46,14 @@ select is((select count(*)::int from public.lm_tasks t where t.kind = 'send' and
 update public.lm_attempts set status = 'sending' where prospect_id = (select id from public.lm_prospects where name = 'Un');
 select is(public.lm_finish_send((select a.id from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Un'),
   '{"status":"sent","submitted":true,"detail":"confirmation affichée","screenshot_after":"x/after.png"}'::jsonb), true, 'Résultat d''envoi enregistré');
-select is((select outreach_balance from public.lm_account_credits c join ta on ta.account_id = c.account_id), 1, 'Un crédit outreach débité');
+select is((select outreach_balance from public.lm_account_credits c join ta on ta.account_id = c.account_id), 2, 'Crédit unique (9/11) : l''envoi ne débite rien');
 select is((select sent_at is not null from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Un'), true, 'Date d''envoi posée');
 
 -- Envoi 2 : soumis sans confirmation → à vérifier, crédit débité quand même
 update public.lm_attempts set status = 'sending' where prospect_id = (select id from public.lm_prospects where name = 'Deux');
 select is(public.lm_finish_send((select a.id from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Deux'),
   '{"status":"to_verify","submitted":true,"detail":"pas de confirmation visible"}'::jsonb), true, 'À vérifier enregistré');
-select is((select outreach_balance from public.lm_account_credits c join ta on ta.account_id = c.account_id), 0, 'Deuxième crédit débité');
+select is((select outreach_balance from public.lm_account_credits c join ta on ta.account_id = c.account_id), 2, 'Toujours rien de débité');
 
 -- Plus de crédits : le troisième n'est pas mis en file
 select public.lm_queue_sends();
@@ -62,7 +62,7 @@ select is((select count(*)::int from public.lm_tasks t where t.kind = 'send' and
 -- Une tentative qui n'est plus « en envoi » n'est pas réécrite
 select is(public.lm_finish_send((select a.id from public.lm_attempts a join public.lm_prospects p on p.id = a.prospect_id where p.name = 'Un'),
   '{"status":"failed","submitted":true}'::jsonb), false, 'Un envoi terminé n''est pas réécrit');
-select is((select outreach_balance from public.lm_account_credits c join ta on ta.account_id = c.account_id), 0, 'Pas de double débit');
+select is((select outreach_balance from public.lm_account_credits c join ta on ta.account_id = c.account_id), 2, 'Toujours rien de débité après une réécriture refusée');
 
 -- Envoi interrompu : « en envoi » depuis plus de 20 minutes → à vérifier
 set local role postgres;

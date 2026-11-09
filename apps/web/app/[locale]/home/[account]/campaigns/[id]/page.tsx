@@ -1,5 +1,7 @@
 /**
- * Rôle : page d'une campagne, parcours en quatre étapes (Cibler, Trouver, Rédiger, Contacter) via `?etape=`.
+ * Rôle : page d'une campagne, parcours en quatre étapes (Qui ?, Vos entreprises, Votre message, Envoi ; dans le
+ * code : cibler, trouver, rediger, contacter) via `?etape=`. Campagne triée (cible en mots) : l'étape « trouver »
+ * est l'écran « Vos entreprises » ; sinon l'ancien écran de recherche.
  * Données : campaigns.loader, forms.loader, sender.loader, leadmaker.loader (client Supabase de l'utilisateur).
  * Écritures : aucune ici (actions serveur dans les composants d'étape).
  */
@@ -47,6 +49,7 @@ import {
 import { CampaignHeaderActions } from '../_components/campaign-header-actions';
 import { CampaignLocalDiscovery } from '../_components/campaign-local-discovery';
 import { CampaignStepsRail } from '../_components/steps/campaign-steps-rail';
+import { CompaniesStep } from '../_components/steps/companies-step';
 import {
   type ContactMode,
   ContactStep,
@@ -55,6 +58,7 @@ import { DiscoverStep } from '../_components/steps/discover-step';
 import { TargetStep } from '../_components/steps/target-step';
 import { WriteStep } from '../_components/steps/write-step';
 import { fetchCampaignLive } from '../_lib/campaign-live';
+import { isLaunchError } from '../_lib/schema/campaign.schema';
 import {
   loadAutoValidationAllowed,
   loadCampaign,
@@ -154,6 +158,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     status: live.status,
     pausedReason: live.pausedReason,
     prospects: live.progress.prospects,
+    kept: live.sort ? live.sort.kept : null,
     messagesCount,
     hasSender: sender !== null,
     attempts: counts,
@@ -216,6 +221,16 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
           </Alert>
         ) : null}
 
+        {isLaunchError(rawSearchParams.erreur) ? (
+          <Alert variant={'destructive'} data-test={'campaign-launch-error'}>
+            <AlertDescription>
+              <Trans
+                i18nKey={`campaigns.launchErrors.${rawSearchParams.erreur}`}
+              />
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         {folderName ? (
           <p
             className={'text-muted-foreground text-sm'}
@@ -253,7 +268,20 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
           />
         ) : null}
 
-        {step === 'trouver' ? (
+        {step === 'trouver' && live.sort ? (
+          <CompaniesStep
+            campaignId={id}
+            editHref={`${basePath}/edit`}
+            writeHref={stepHref('rediger')}
+            billingPath={pathsConfig.app.accountBilling.replace(
+              '[account]',
+              slug,
+            )}
+            initialData={live}
+          />
+        ) : null}
+
+        {step === 'trouver' && !live.sort ? (
           <DiscoverStep
             campaignId={id}
             accountId={account.id}

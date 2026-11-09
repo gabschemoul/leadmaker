@@ -160,7 +160,29 @@
     },
     "categoriesSelectAll": "Tout sélectionner",
     "categoriesDeselectAll": "Tout désélectionner",
-    "categoriesMore": "+ {count, plural, one {# autre activité} other {# autres activités}}"
+    "categoriesMore": "+ {count, plural, one {# autre activité} other {# autres activités}}",
+    "whereTitle": "Où ?",
+    "moreCriteriaTitle": "Plus de critères",
+    "launch": "Lancer la recherche",
+    "launching": "Lancement…",
+    "payKeptOnly": "Vous ne payez que les entreprises gardées.",
+    "who": {
+      "title": "Qui voulez-vous contacter ?",
+      "description": "Décrivez-les en une phrase, comme à un collègue. Chaque entreprise trouvée est triée selon cette phrase.",
+      "placeholder": "Par exemple : agences marketing",
+      "updating": "Mise à jour…",
+      "searchLabel": "On cherchera",
+      "offerLabel": "Votre offre",
+      "offerPlaceholder": "Par exemple : sites web en marque blanche pour les agences",
+      "offerHint": "En une phrase, ce que vous vendez. Les entreprises qui n'en ont pas besoin sont écartées.",
+      "offerLine": "Trié selon votre offre :",
+      "offerEdit": "Modifier",
+      "targetRequired": "Décrivez en une phrase qui vous voulez contacter.",
+      "targetTooLong": "Phrase trop longue (500 caractères au plus).",
+      "offerRequired": "Décrivez votre offre en une phrase : elle sert à trier les entreprises.",
+      "offerTooLong": "Offre trop longue (1 000 caractères au plus).",
+      "retargetHint": "La cible change : toutes les entreprises déjà trouvées seront triées à nouveau."
+    }
   },
   "estimate": {
     "title": "Estimation",
@@ -276,10 +298,10 @@
   },
   "steps": {
     "tabsLabel": "Étapes de la campagne",
-    "cibler": "Cibler",
-    "trouver": "Trouver",
-    "rediger": "Rédiger",
-    "contacter": "Contacter",
+    "cibler": "Qui ?",
+    "trouver": "Vos entreprises",
+    "rediger": "Votre message",
+    "contacter": "Envoi",
     "sub": {
       "cibler": "{country} · {zones, plural, one {# ville} other {# villes}} · {categories, plural, one {# activité} other {# activités}}",
       "ciblerDraft": "{country} · ciblage prêt",
@@ -296,7 +318,8 @@
       "contacterValidated": "{count, plural, one {# validé, envoi en cours} other {# validés, envoi en cours}}",
       "contacterSent": "{count, plural, one {# envoyé} other {# envoyés}}",
       "contacterAutopilot": "Pilote · {sent, number} / {target, number} envoyés",
-      "contacterAutopilotPaused": "Pilote en pause · {sent, number} / {target, number}"
+      "contacterAutopilotPaused": "Pilote en pause · {sent, number} / {target, number}",
+      "trouverSorted": "{count, plural, =0 {Aucune entreprise gardée pour l'instant} one {# entreprise gardée} other {# entreprises gardées}}"
     },
     "target": {
       "whereTitle": "Où chercher ?",
@@ -316,7 +339,8 @@
       "excludePublic": "Administrations et services publics exclus",
       "mainCategoryOnly": "Activité principale uniquement",
       "edit": "Modifier le ciblage",
-      "launchedHint": "La campagne est lancée : les villes et activités ajoutées rejoignent la recherche, celles retirées ne sont plus scannées."
+      "launchedHint": "La campagne est lancée : les villes et activités ajoutées rejoignent la recherche, celles retirées ne sont plus scannées.",
+      "whoTitle": "Qui voulez-vous contacter ?"
     },
     "discover": {
       "title": "Recherche des entreprises",
@@ -612,5 +636,38 @@
     "backToList": "Revenir aux campagnes",
     "listDescription": "Les campagnes archivées : rien ne tourne dessus.",
     "listEmpty": "Aucune campagne archivée."
+  },
+  "launchErrors": {
+    "offerFailed": "Votre offre n'a pas pu être enregistrée, la recherche n'est pas lancée. Cliquez sur « Modifier » pour réessayer.",
+    "sortFailed": "La cible n'a pas pu être enregistrée, la recherche n'est pas lancée. Cliquez sur « Modifier » pour réessayer.",
+    "noCredits": "La campagne est enregistrée, mais vous n'avez plus de crédits : choisissez un forfait (menu Facturation), puis lancez la recherche.",
+    "campaignLimit": "La campagne est enregistrée, mais votre forfait ne permet pas d'autres campagnes en cours. Mettez-en une en pause ou changez de forfait, puis lancez la recherche.",
+    "noCities": "La campagne est enregistrée, mais aucune ville ne correspond à vos critères. Cliquez sur « Modifier » pour élargir la zone.",
+    "archived": "Cette campagne est archivée : désarchivez-la d'abord.",
+    "startFailed": "La campagne est enregistrée, mais la recherche n'a pas pu démarrer. Réessayez dans un instant."
+  },
+  "companies": {
+    "title": "Vos entreprises",
+    "editTarget": "Modifier",
+    "examined": "{count, plural, =0 {Aucune fiche examinée pour l'instant} one {{value} fiche examinée} other {{value} fiches examinées}}",
+    "sorted": "{done} / {total} triées",
+    "sortedLabel": "Entreprises triées",
+    "tabKept": "Gardées",
+    "tabToCheck": "À vérifier",
+    "price": "{count, plural, one {# crédit par entreprise gardée} other {# crédits par entreprise gardée}}",
+    "pricePending": "Prix en cours de mesure",
+    "keep": "Garder",
+    "drop": "Écarter",
+    "selectAll": "Tout sélectionner",
+    "selected": "{count, plural, one {# sélectionnée} other {# sélectionnées}}",
+    "keptToast": "{count, plural, =0 {Rien à garder} one {# entreprise gardée} other {# entreprises gardées}}",
+    "droppedToast": "{count, plural, =0 {Rien à écarter} one {# entreprise écartée} other {# entreprises écartées}}",
+    "chooseFailed": "Le choix n'a pas pu être enregistré. Réessayez dans un instant.",
+    "loadFailed": "La liste n'a pas pu être chargée. Rechargez la page.",
+    "emptyWaiting": "Rien pour l'instant : les premières entreprises triées arrivent dans quelques minutes.",
+    "emptyKept": "Aucune entreprise gardée.",
+    "emptyToCheck": "Aucune entreprise à vérifier.",
+    "more": "Afficher plus",
+    "next": "Suivant : le message"
   }
 }

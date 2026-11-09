@@ -11,23 +11,26 @@ export async function fetchCampaignLive(
   client: SupabaseClient<Database>,
   campaignId: string,
 ) {
-  const [campaign, progress, pricing, prospects] = await Promise.all([
-    client
-      .from('lm_campaigns')
-      .select('status, filters')
-      .eq('id', campaignId)
-      .single(),
-    client.rpc('lm_campaign_progress', { p_campaign_id: campaignId }),
-    client.rpc('lm_campaign_pricing', { p_campaign_id: campaignId }),
-    client
-      .from('lm_prospects')
-      .select(
-        'id, name, category, city, rating, review_count, address, website, phone, found_email, is_chain, source, excluded_at, created_at',
-      )
-      .eq('campaign_id', campaignId)
-      .order('created_at', { ascending: false })
-      .limit(50),
-  ]);
+  const [campaign, progress, pricing, prospects, sortSummary] =
+    await Promise.all([
+      client
+        .from('lm_campaigns')
+        .select('status, filters, sort_target, sort_version')
+        .eq('id', campaignId)
+        .single(),
+      client.rpc('lm_campaign_progress', { p_campaign_id: campaignId }),
+      client.rpc('lm_campaign_pricing', { p_campaign_id: campaignId }),
+      client
+        .from('lm_prospects')
+        .select(
+          'id, name, category, city, rating, review_count, address, website, phone, found_email, is_chain, source, excluded_at, created_at',
+        )
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      // écran « Vos entreprises » (campagne triée) : nombres par onglet, fiches examinées, prix
+      client.rpc('lm_campaign_sort_summary', { p_campaign_id: campaignId }),
+    ]);
 
   if (campaign.error) throw campaign.error;
   if (progress.error) throw progress.error;
@@ -38,6 +41,8 @@ export async function fetchCampaignLive(
   // La pré-production partage la base de la production : tant que la migration du n°13 n'y est pas,
   // la fonction n'existe pas. On affiche alors « mesuré au lancement » plutôt que de casser la page.
   const price = pricing.error ? undefined : pricing.data?.[0];
+  const sortTarget = campaign.data.sort_target?.trim() || null;
+  const summary = sortSummary.error ? undefined : sortSummary.data?.[0];
 
   return {
     status: campaign.data.status,
@@ -67,6 +72,23 @@ export async function fetchCampaignLive(
       sampleSearches: price?.sample_searches ?? 0,
     },
     prospects: prospects.data ?? [],
+    /**
+     * Tri selon la cible en mots (nouveau parcours, CDC-PARCOURS-TRI-ANNUAIRE §6) ; null pour une campagne
+     * sans cible (ancien parcours, écran « Trouver » inchangé).
+     */
+    sort: sortTarget
+      ? {
+          target: sortTarget,
+          version: campaign.data.sort_version,
+          total: summary?.total ?? 0,
+          kept: summary?.kept ?? 0,
+          toCheck: summary?.to_check ?? 0,
+          pending: summary?.pending ?? 0,
+          examined: Number(summary?.examined ?? 0),
+          creditsPerProspect: summary?.credits_per_prospect ?? 1,
+          pricePending: summary?.price_pending ?? true,
+        }
+      : null,
   };
 }
 

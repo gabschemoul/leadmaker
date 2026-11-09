@@ -1,9 +1,12 @@
 'use client';
 
 /**
- * Rôle : formulaire de création / modification d'une campagne (point d'entrée ; sections dans ./campaign-form/).
- * Données : espaces, pays, solde et limite d'activités passés par la page ; estimation en direct (CampaignEstimate).
- * Écritures : createCampaignAction / updateCampaignAction (lm_campaigns) à l'enregistrement.
+ * Rôle : écran « Qui ? » : création / modification d'une campagne (CDC-PARCOURS-TRI-ANNUAIRE §3). Dans l'ordre :
+ * la cible en une phrase, ses précisions et les activités cherchées, l'offre du dossier (./campaign-form/who-section),
+ * « Où ? » (ciblage inchangé), « Plus de critères » (filtres, fermé par défaut), puis « Lancer la recherche ».
+ * Plus d'écran d'estimation : le prix se mesure sur les premières entreprises triées.
+ * Données : espaces, offres des dossiers, pays et limite d'activités passés par la page.
+ * Écritures : createCampaignAction / updateCampaignAction (campagne, offre, cible, lancement).
  */
 
 import { useMemo, useState } from 'react';
@@ -11,11 +14,11 @@ import { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
-import { useForm, useWatch } from 'react-hook-form';
+import { type FieldErrors, useForm, useWatch } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@kit/ui/alert';
 import { Button } from '@kit/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
+import { Card, CardContent } from '@kit/ui/card';
 import {
   Form,
   FormControl,
@@ -34,23 +37,18 @@ import type { CountryOption } from '~/lib/leadmaker/countries';
 
 import { CountrySelect } from '../../_components/leadmaker/country-select';
 import {
-  type CategoryRef,
-  CampaignFormSchema,
   type CampaignFormValues,
-  type CityRef,
   MAX_CITIES_LIMIT,
   RATING_FLOOR,
-  buildTargeting,
+  buildCampaignFormSchema,
 } from '../_lib/schema/campaign.schema';
 import {
   createCampaignAction,
   updateCampaignAction,
 } from '../_lib/server/campaign-lifecycle-actions';
-import { CampaignEstimate } from './campaign-estimate';
-import { CategoriesSection } from './campaign-form/categories-section';
 import { CitiesSection } from './campaign-form/cities-section';
 import { FiltersSection } from './campaign-form/filters-section';
-import { CampaignRecap } from './campaign-form/recap';
+import { WhoSection } from './campaign-form/who-section';
 
 interface SpaceOption {
   id: string;
@@ -58,12 +56,22 @@ interface SpaceOption {
   is_default: boolean;
 }
 
+/** Champs du pli « Plus de critères » : une erreur sur l'un d'eux ouvre le pli. */
+const CRITERIA_FIELDS = [
+  'ratingMin',
+  'ratingMax',
+  'minReviews',
+  'website',
+  'extraExclusions',
+] as const;
+
 export function CampaignForm(props: {
   accountId: string;
   accountSlug: string;
   spaces: SpaceOption[];
+  /** « Votre offre » enregistrée pour chaque dossier (vide si aucune) */
+  spaceOffers: Record<string, string>;
   countries: CountryOption[];
-  discoveryBalance: number;
   /** activités au plus (1 000, davantage pour les utilisateurs sans limite) */
   categoryLimit: number;
   /** campagne existante : le formulaire la modifie au lieu d'en créer une */
@@ -76,9 +84,20 @@ export function CampaignForm(props: {
 }) {
   const t = useTranslations('campaigns');
   const locale = useLocale();
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState({
+    error: null as string | null,
+    criteriaOpen: false,
+  });
+
+  const setError = (error: string | null) =>
+    setState((current) => ({ ...current, error }));
 
   const editing = Boolean(props.campaign);
+  const launched = props.campaign?.launched ?? false;
+  const initialTarget = props.campaign?.values.sortTarget ?? '';
+
+  // Cible obligatoire, sauf pour une ancienne campagne déjà lancée sans cible (ancien parcours)
+  const targetRequired = !launched || initialTarget.length > 0;
 
   // Une seule entrée = l'espace par défaut : le choix du dossier client est masqué.
   const defaultSpace =
@@ -102,9 +121,16 @@ export function CampaignForm(props: {
 
   const isPending = create.isPending || update.isPending;
 
+  const schema = useMemo(
+    () => buildCampaignFormSchema(targetRequired),
+    [targetRequired],
+  );
+
   const form = useForm({
-    resolver: zodResolver(CampaignFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: props.campaign?.values ?? {
+      sortTarget: '',
+      offer: props.spaceOffers[defaultSpace?.id ?? ''] ?? '',
       name: '',
       spaceId: defaultSpace?.id ?? '',
       countryCode: locale.startsWith('fr') ? 'FR' : 'US',
@@ -114,8 +140,8 @@ export function CampaignForm(props: {
       radiusKm: 30,
       cities: [],
       maxCities: MAX_CITIES_LIMIT,
-      // aucune activité présélectionnée : l'utilisateur choisit (une campagne
-      // « Restauration » lancée sur les activités courantes ramenait des pharmacies)
+      // aucune activité présélectionnée à l'ouverture : elles sont proposées d'après la phrase, et le client
+      // choisit (une campagne « Restauration » lancée sur les activités courantes ramenait des pharmacies)
       categoriesMode: 'list' as const,
       categories: [],
       ratingMin: RATING_FLOOR,
@@ -128,64 +154,8 @@ export function CampaignForm(props: {
     },
   });
 
-  const values = useWatch({ control: form.control });
-
-  const countryCode = values.countryCode ?? 'FR';
-
-  const targeting = useMemo(
-    () =>
-      buildTargeting({
-        citiesMode: values.citiesMode ?? 'country',
-        minPopulation: values.minPopulation ?? 0,
-        radiusCity: (values.radiusCity as CityRef | null) ?? null,
-        radiusKm: values.radiusKm ?? 30,
-        cities: (values.cities ?? []) as CityRef[],
-        maxCities: MAX_CITIES_LIMIT,
-        categoriesMode: 'list' as const,
-        categories: (values.categories ?? []) as CategoryRef[],
-      }),
-    [
-      values.citiesMode,
-      values.minPopulation,
-      values.radiusCity,
-      values.radiusKm,
-      values.cities,
-      values.categories,
-    ],
-  );
-
-  // L'estimation dépend aussi des filtres (note, site web, avis).
-  const estimateFilters = useMemo(
-    () => ({
-      rating_min: Math.max(
-        RATING_FLOOR,
-        finiteOr(values.ratingMin, RATING_FLOOR),
-      ),
-      rating_max: finiteOr(values.ratingMax, 5),
-      min_reviews: finiteOr(values.minReviews, 0),
-      website: values.website ?? 'all',
-    }),
-    [values.ratingMin, values.ratingMax, values.minReviews, values.website],
-  );
-
-  // Estimation réelle : mêmes filtres que la campagne, exclusions comprises
-  const realEstimateFilters = useMemo(
-    () => ({
-      ...estimateFilters,
-      exclude_public: values.excludePublic ?? true,
-      main_category_only: values.mainCategoryOnly ?? true,
-      extra_exclusions: (values.extraExclusions ?? '')
-        .split(',')
-        .map((word) => word.trim())
-        .filter(Boolean),
-    }),
-    [
-      estimateFilters,
-      values.excludePublic,
-      values.mainCategoryOnly,
-      values.extraExclusions,
-    ],
-  );
+  const countryCode = useWatch({ control: form.control, name: 'countryCode' });
+  const sortTarget = useWatch({ control: form.control, name: 'sortTarget' });
 
   // Les villes appartiennent à un pays : on les oublie quand il change.
   const changeCountry = (code: string) => {
@@ -198,187 +168,201 @@ export function CampaignForm(props: {
     form.setValue('cities', []);
   };
 
+  // L'offre appartient au dossier : on reprend celle du dossier choisi.
+  const changeSpace = (spaceId: string) => {
+    form.setValue('spaceId', spaceId, { shouldValidate: true });
+    form.setValue('offer', props.spaceOffers[spaceId] ?? '');
+  };
+
+  const onInvalid = (errors: FieldErrors<CampaignFormValues>) => {
+    if (CRITERIA_FIELDS.some((name) => errors[name])) {
+      setState((current) => ({ ...current, criteriaOpen: true }));
+    }
+  };
+
   const disabled = isPending || form.formState.isSubmitting;
+
+  // « Lancer la recherche » : nouvelle campagne ou brouillon ; campagne lancée : enregistrer les changements
+  const launches = !launched;
+  const retargets =
+    launched &&
+    initialTarget.length > 0 &&
+    (sortTarget ?? '').trim() !== initialTarget;
 
   return (
     <Form {...form}>
       <form
         data-test={'campaign-form'}
-        className={'grid grid-cols-1 gap-6 pb-32 lg:grid-cols-3'}
-        onSubmit={form.handleSubmit((data) =>
-          props.campaign
-            ? update.execute({
-                ...data,
-                campaignId: props.campaign.id,
-                accountSlug: props.accountSlug,
-              })
-            : create.execute({
-                ...data,
-                accountId: props.accountId,
-                accountSlug: props.accountSlug,
-              }),
+        className={'flex max-w-3xl flex-col gap-6 pb-32'}
+        onSubmit={form.handleSubmit(
+          (data) =>
+            props.campaign
+              ? update.execute({
+                  ...data,
+                  campaignId: props.campaign.id,
+                  accountSlug: props.accountSlug,
+                })
+              : create.execute({
+                  ...data,
+                  accountId: props.accountId,
+                  accountSlug: props.accountSlug,
+                }),
+          onInvalid,
         )}
       >
-        <div className={'flex flex-col gap-6 lg:col-span-2'}>
-          <If condition={props.campaign?.launched}>
-            <Alert data-test={'campaign-edit-launched-alert'}>
-              <AlertDescription>
-                <Trans i18nKey={'campaigns.form.editLaunchedHint'} />
-              </AlertDescription>
-            </Alert>
-          </If>
+        <If condition={launched}>
+          <Alert data-test={'campaign-edit-launched-alert'}>
+            <AlertDescription>
+              <Trans i18nKey={'campaigns.form.editLaunchedHint'} />
+            </AlertDescription>
+          </Alert>
+        </If>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <Trans i18nKey={'campaigns.form.generalTitle'} />
-              </CardTitle>
-            </CardHeader>
+        <WhoSection
+          categoryLimit={props.categoryLimit}
+          spaceOffers={props.spaceOffers}
+          autoName={!editing}
+        />
 
-            <CardContent className={'flex flex-col gap-4'}>
+        <CitiesSection countryCode={countryCode ?? 'FR'}>
+          <FormField
+            name={'countryCode'}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <Trans i18nKey={'campaigns.form.countryLabel'} />
+                </FormLabel>
+
+                <FormControl>
+                  <CountrySelect
+                    data-test={'campaign-country-select'}
+                    countries={props.countries}
+                    value={field.value}
+                    onChange={changeCountry}
+                    disabled={launched}
+                  />
+                </FormControl>
+
+                <If condition={launched}>
+                  <FormDescription>
+                    <Trans i18nKey={'campaigns.form.countryLocked'} />
+                  </FormDescription>
+                </If>
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </CitiesSection>
+
+        <FiltersSection
+          open={state.criteriaOpen}
+          onOpenChange={(criteriaOpen) =>
+            setState((current) => ({ ...current, criteriaOpen }))
+          }
+        />
+
+        <Card>
+          <CardContent className={'grid grid-cols-1 gap-4 md:grid-cols-2'}>
+            <FormField
+              name={'name'}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <Trans i18nKey={'campaigns.form.nameLabel'} />
+                  </FormLabel>
+
+                  <FormControl>
+                    <Input
+                      data-test={'campaign-name-input'}
+                      maxLength={255}
+                      placeholder={t('form.namePlaceholder')}
+                      {...field}
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <If condition={showSpaceSelect}>
               <FormField
-                name={'name'}
+                name={'spaceId'}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      <Trans i18nKey={'campaigns.form.nameLabel'} />
+                      <Trans i18nKey={'campaigns.form.folderLabel'} />
                     </FormLabel>
 
                     <FormControl>
-                      <Input
-                        data-test={'campaign-name-input'}
-                        maxLength={255}
-                        placeholder={t('form.namePlaceholder')}
-                        {...field}
-                      />
+                      <NativeSelect
+                        className={'w-full'}
+                        data-test={'campaign-folder-select'}
+                        disabled={editing}
+                        value={field.value}
+                        onChange={(event) => changeSpace(event.target.value)}
+                      >
+                        {props.spaces.map((space) => (
+                          <NativeSelectOption key={space.id} value={space.id}>
+                            {space.label}
+                          </NativeSelectOption>
+                        ))}
+                      </NativeSelect>
                     </FormControl>
 
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </If>
+          </CardContent>
+        </Card>
 
-              <div className={'grid grid-cols-1 gap-4 md:grid-cols-2'}>
-                <If condition={showSpaceSelect}>
-                  <FormField
-                    name={'spaceId'}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          <Trans i18nKey={'campaigns.form.folderLabel'} />
-                        </FormLabel>
+        <If condition={state.error}>
+          {(message) => (
+            <Alert variant={'destructive'}>
+              <AlertDescription>
+                <Trans i18nKey={message} />
+              </AlertDescription>
+            </Alert>
+          )}
+        </If>
 
-                        <FormControl>
-                          <NativeSelect
-                            className={'w-full'}
-                            data-test={'campaign-folder-select'}
-                            disabled={editing}
-                            value={field.value}
-                            onChange={(event) =>
-                              field.onChange(event.target.value)
-                            }
-                          >
-                            {props.spaces.map((space) => (
-                              <NativeSelectOption
-                                key={space.id}
-                                value={space.id}
-                              >
-                                {space.label}
-                              </NativeSelectOption>
-                            ))}
-                          </NativeSelect>
-                        </FormControl>
+        <div className={'flex flex-col items-end gap-2'}>
+          <Button
+            type={'submit'}
+            size={'lg'}
+            data-test={'campaign-save-button'}
+            loading={disabled}
+          >
+            <Trans
+              i18nKey={
+                disabled
+                  ? launches
+                    ? 'campaigns.form.launching'
+                    : 'campaigns.form.saving'
+                  : launches
+                    ? 'campaigns.form.launch'
+                    : 'campaigns.form.saveChanges'
+              }
+            />
+          </Button>
 
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </If>
-
-                <FormField
-                  name={'countryCode'}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <Trans i18nKey={'campaigns.form.countryLabel'} />
-                      </FormLabel>
-
-                      <FormControl>
-                        <CountrySelect
-                          data-test={'campaign-country-select'}
-                          countries={props.countries}
-                          value={field.value}
-                          onChange={changeCountry}
-                          disabled={props.campaign?.launched}
-                        />
-                      </FormControl>
-
-                      <If condition={props.campaign?.launched}>
-                        <FormDescription>
-                          <Trans i18nKey={'campaigns.form.countryLocked'} />
-                        </FormDescription>
-                      </If>
-
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <CitiesSection countryCode={countryCode} />
-
-          <CategoriesSection limit={props.categoryLimit} />
-
-          <FiltersSection />
-
-          <If condition={error}>
-            {(message) => (
-              <Alert variant={'destructive'}>
-                <AlertDescription>
-                  <Trans i18nKey={message} />
-                </AlertDescription>
-              </Alert>
-            )}
-          </If>
-
-          <CampaignRecap />
-
-          <div className={'flex justify-end'}>
-            <Button
-              type={'submit'}
-              data-test={'campaign-save-button'}
-              loading={disabled}
-            >
-              <Trans
-                i18nKey={
-                  disabled
-                    ? 'campaigns.form.saving'
-                    : editing
-                      ? 'campaigns.form.saveChanges'
-                      : 'campaigns.form.save'
-                }
-              />
-            </Button>
-          </div>
-        </div>
-
-        <div className={'lg:sticky lg:top-16 lg:self-start'}>
-          <CampaignEstimate
-            accountId={props.accountId}
-            countryCode={countryCode}
-            targeting={targeting}
-            filters={estimateFilters}
-            realFilters={realEstimateFilters}
-            balance={props.discoveryBalance}
-          />
+          <p
+            className={'text-muted-foreground text-sm'}
+            data-test={'campaign-launch-hint'}
+          >
+            <Trans
+              i18nKey={
+                retargets
+                  ? 'campaigns.form.who.retargetHint'
+                  : 'campaigns.form.payKeptOnly'
+              }
+            />
+          </p>
         </div>
       </form>
     </Form>
   );
-}
-
-function finiteOr(value: number | undefined, fallback: number) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }

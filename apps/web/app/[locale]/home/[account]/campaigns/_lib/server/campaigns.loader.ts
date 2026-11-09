@@ -66,7 +66,7 @@ export async function loadCampaignForEdit(
   const { data, error } = await client
     .from('lm_campaigns')
     .select(
-      'id, account_id, space_id, name, status, country_code, targeting, filters, zones:lm_campaign_zones(count)',
+      'id, account_id, space_id, name, status, country_code, targeting, filters, sort_target, zones:lm_campaign_zones(count)',
     )
     .eq('id', campaignId)
     .maybeSingle();
@@ -133,6 +133,25 @@ export async function loadCampaignForEdit(
     cities: geonameIds.flatMap((id) => cityById.get(id) ?? []),
     categories: gcids.flatMap((gcid) => categoryById.get(gcid) ?? []),
   };
+}
+
+/**
+ * « Votre offre » de chaque dossier de l'organisation (lm_spaces.offer, écran « Qui ? »). En cas d'erreur de
+ * lecture, aucune offre : le formulaire la demande, sans casser la page.
+ */
+export async function loadSpaceOffers(client: Client, accountId: string) {
+  const { data, error } = await client
+    .from('lm_spaces')
+    .select('id, offer')
+    .eq('account_id', accountId);
+
+  if (error) {
+    return {} as Record<string, string>;
+  }
+
+  return Object.fromEntries(
+    (data ?? []).map((space) => [space.id, space.offer ?? '']),
+  ) as Record<string, string>;
 }
 
 /** Activités par requête : la liste va dans l'adresse de la requête, qui doit rester courte. */

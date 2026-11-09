@@ -83,58 +83,13 @@ export function DiscoverStep(props: {
 
   useCampaignRealtime(props.campaignId, queryKey);
 
-  const noCredits =
-    data.status === 'paused' && data.pausedReason === 'no_credits';
-  // tri IA : moins de 6 % des entreprises trouvées correspondent à la cible (crédit unique, 9/11)
-  const tooHard = data.status === 'paused' && data.pausedReason === 'too_hard';
-
   return (
     <div className={'flex flex-col gap-4'} data-test={'campaign-step-discover'}>
-      {noCredits ? (
-        <Alert className={alertExtras.warning} data-test={'no-credits-alert'}>
-          <TriangleAlert className={'h-4'} />
-
-          <AlertTitle>
-            <Trans i18nKey={'campaigns.detail.noCreditsTitle'} />
-          </AlertTitle>
-
-          <AlertDescription>
-            <Trans
-              i18nKey={'campaigns.detail.noCreditsDescription'}
-              components={{
-                link: (chunks: React.ReactNode) => (
-                  <Link className={'underline'} href={props.billingPath}>
-                    {chunks}
-                  </Link>
-                ),
-              }}
-            />
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
-      {tooHard ? (
-        <Alert className={alertExtras.warning} data-test={'too-hard-alert'}>
-          <TriangleAlert className={'h-4'} />
-
-          <AlertTitle>
-            <Trans i18nKey={'campaigns.detail.tooHardTitle'} />
-          </AlertTitle>
-
-          <AlertDescription>
-            <Trans
-              i18nKey={'campaigns.detail.tooHardDescription'}
-              components={{
-                link: (chunks: React.ReactNode) => (
-                  <Link className={'underline'} href={props.targetHref}>
-                    {chunks}
-                  </Link>
-                ),
-              }}
-            />
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      <PauseAlerts
+        live={data}
+        billingPath={props.billingPath}
+        targetHref={props.targetHref}
+      />
 
       <ProgressCard live={data}>
         <div className={'flex flex-wrap items-center gap-2'}>
@@ -220,7 +175,71 @@ export function DiscoverStep(props: {
   );
 }
 
-function CampaignActions(props: {
+/** Pause faute de crédits, ou cible trop difficile (tri : moins de 6 % des entreprises correspondent). */
+export function PauseAlerts(props: {
+  live: CampaignLive;
+  billingPath: string;
+  /** où préciser la cible quand la campagne est en pause « too_hard » */
+  targetHref: string;
+}) {
+  const noCredits =
+    props.live.status === 'paused' && props.live.pausedReason === 'no_credits';
+  // tri IA : moins de 6 % des entreprises trouvées correspondent à la cible (crédit unique, 9/11)
+  const tooHard =
+    props.live.status === 'paused' && props.live.pausedReason === 'too_hard';
+
+  return (
+    <>
+      {noCredits ? (
+        <Alert className={alertExtras.warning} data-test={'no-credits-alert'}>
+          <TriangleAlert className={'h-4'} />
+
+          <AlertTitle>
+            <Trans i18nKey={'campaigns.detail.noCreditsTitle'} />
+          </AlertTitle>
+
+          <AlertDescription>
+            <Trans
+              i18nKey={'campaigns.detail.noCreditsDescription'}
+              components={{
+                link: (chunks: React.ReactNode) => (
+                  <Link className={'underline'} href={props.billingPath}>
+                    {chunks}
+                  </Link>
+                ),
+              }}
+            />
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {tooHard ? (
+        <Alert className={alertExtras.warning} data-test={'too-hard-alert'}>
+          <TriangleAlert className={'h-4'} />
+
+          <AlertTitle>
+            <Trans i18nKey={'campaigns.detail.tooHardTitle'} />
+          </AlertTitle>
+
+          <AlertDescription>
+            <Trans
+              i18nKey={'campaigns.detail.tooHardDescription'}
+              components={{
+                link: (chunks: React.ReactNode) => (
+                  <Link className={'underline'} href={props.targetHref}>
+                    {chunks}
+                  </Link>
+                ),
+              }}
+            />
+          </AlertDescription>
+        </Alert>
+      ) : null}
+    </>
+  );
+}
+
+export function CampaignActions(props: {
   campaignId: string;
   status: CampaignLive['status'];
   queryKey: unknown[];
@@ -541,7 +560,7 @@ function Stat(props: {
  *
  * useEffect justifié : un abonnement temps réel doit être ouvert au montage et fermé au démontage.
  */
-function useCampaignRealtime(campaignId: string, queryKey: unknown[]) {
+export function useCampaignRealtime(campaignId: string, queryKey: unknown[]) {
   const client = useSupabase();
   const queryClient = useQueryClient();
 

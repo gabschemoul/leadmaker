@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Rôle : section « Villes » du formulaire de campagne (tout le pays, une ville et ses alentours, liste de villes).
+ * Rôle : section « Où ? » du formulaire de campagne (pays passé en enfant) (tout le pays, une ville et ses alentours, liste de villes).
  * Données : autocomplétion par searchCitiesAction (lm_geo_cities) ; valeurs dans le formulaire react-hook-form parent.
  * Écritures : aucune en base (modifie seulement les champs du formulaire).
  */
@@ -45,7 +45,9 @@ import {
   SelectedChip,
 } from './form-controls';
 
-export function CitiesSection(props: { countryCode: string }) {
+export function CitiesSection(
+  props: React.PropsWithChildren<{ countryCode: string }>,
+) {
   const t = useTranslations('campaigns');
   const format = useFormatter();
   const mode = useWatch({ name: 'citiesMode' });
@@ -80,7 +82,7 @@ export function CitiesSection(props: { countryCode: string }) {
     <Card className={'overflow-visible'}>
       <CardHeader>
         <CardTitle>
-          <Trans i18nKey={'campaigns.form.citiesTitle'} />
+          <Trans i18nKey={'campaigns.form.whereTitle'} />
         </CardTitle>
 
         <CardDescription>
@@ -89,6 +91,9 @@ export function CitiesSection(props: { countryCode: string }) {
       </CardHeader>
 
       <CardContent className={'flex flex-col gap-4'}>
+        {/* écran « Qui ? » : le pays, en tête de « Où ? » */}
+        {props.children}
+
         <FormField
           name={'citiesMode'}
           render={({ field }) => (

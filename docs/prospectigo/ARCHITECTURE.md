@@ -72,7 +72,7 @@ Navigateur ──► Next.js (Vercel : prospectigo.com = main, staging.prospecti
 
 | Où | Quoi |
 |---|---|
-| `apps/web/app/[locale]/home/[account]/campaigns` | Campagnes : création (`new`), page à étapes `[id]` (Cibler / Trouver / Rédiger / Contacter), messages, pilote automatique |
+| `apps/web/app/[locale]/home/[account]/campaigns` | Campagnes : écran « Qui ? » (`new`, `[id]/edit` : cible en une phrase, activités, offre, zone, « Plus de critères », lancement direct sans estimation), page à étapes `[id]` (Qui ? / Vos entreprises / Votre message / Envoi ; « Vos entreprises » = onglets Gardées / À vérifier pour une campagne triée, ancien écran de recherche sinon), messages, pilote automatique |
 | `apps/web/app/[locale]/home/[account]/prospects` | Liste des prospects, filtres, import CSV, export, actions groupées |
 | `apps/web/app/[locale]/home/[account]/forms` | Formulaires préparés (mode avancé) |
 | `apps/web/app/[locale]/home/[account]/sender`, `spaces` | Expéditeurs ; dossiers clients (espaces) |
@@ -195,7 +195,7 @@ Toujours `pnpm exec supabase` depuis `apps/web` (la CLI globale est trop vieille
 | Dossier client | `lm_spaces` (espace) |
 | Expéditeur | `lm_sender_profiles` |
 | Campagne | `lm_campaigns` |
-| Cibler / Trouver / Rédiger / Contacter | étapes `target` / `discover` / `write` / `contact` |
+| Qui ? / Vos entreprises / Votre message / Envoi (ex-Cibler / Trouver / Rédiger / Contacter) | étapes `cibler` / `trouver` / `rediger` / `contacter` (`?etape=`) |
 | Prise de contact, formulaire | `lm_attempts` |
 | Pilote automatique | `lm_autopilots` |
 | Liste d'opposition (« ne plus contacter ») | `lm_suppressions` |

@@ -160,7 +160,29 @@
     },
     "categoriesSelectAll": "Select all",
     "categoriesDeselectAll": "Deselect all",
-    "categoriesMore": "+ {count, plural, one {# more trade} other {# more trades}}"
+    "categoriesMore": "+ {count, plural, one {# more trade} other {# more trades}}",
+    "whereTitle": "Where?",
+    "moreCriteriaTitle": "More criteria",
+    "launch": "Launch the search",
+    "launching": "Launching…",
+    "payKeptOnly": "You only pay for the companies kept.",
+    "who": {
+      "title": "Who do you want to contact?",
+      "description": "Describe them in one sentence, as you would to a colleague. Every company found is sorted against this sentence.",
+      "placeholder": "For example: marketing agencies",
+      "updating": "Updating…",
+      "searchLabel": "We'll search for",
+      "offerLabel": "Your offer",
+      "offerPlaceholder": "For example: white-label websites for agencies",
+      "offerHint": "In one sentence, what you sell. Companies that don't need it are set aside.",
+      "offerLine": "Sorted by your offer:",
+      "offerEdit": "Edit",
+      "targetRequired": "Describe in one sentence who you want to contact.",
+      "targetTooLong": "Sentence too long (500 characters max).",
+      "offerRequired": "Describe your offer in one sentence: it is used to sort the companies.",
+      "offerTooLong": "Offer too long (1,000 characters max).",
+      "retargetHint": "The target changes: every company already found will be sorted again."
+    }
   },
   "estimate": {
     "title": "Estimate",
@@ -276,10 +298,10 @@
   },
   "steps": {
     "tabsLabel": "Campaign steps",
-    "cibler": "Target",
-    "trouver": "Find",
-    "rediger": "Write",
-    "contacter": "Reach out",
+    "cibler": "Who?",
+    "trouver": "Your companies",
+    "rediger": "Your message",
+    "contacter": "Sending",
     "sub": {
       "cibler": "{country} · {zones, plural, one {# city} other {# cities}} · {categories, plural, one {# trade} other {# trades}}",
       "ciblerDraft": "{country} · targeting ready",
@@ -296,7 +318,8 @@
       "contacterValidated": "{count} validated, sending",
       "contacterSent": "{count} sent",
       "contacterAutopilot": "Autopilot · {sent, number} / {target, number} sent",
-      "contacterAutopilotPaused": "Autopilot paused · {sent, number} / {target, number}"
+      "contacterAutopilotPaused": "Autopilot paused · {sent, number} / {target, number}",
+      "trouverSorted": "{count, plural, =0 {No company kept yet} one {# company kept} other {# companies kept}}"
     },
     "target": {
       "whereTitle": "Where to search?",
@@ -316,7 +339,8 @@
       "excludePublic": "Public services excluded",
       "mainCategoryOnly": "Main trade only",
       "edit": "Edit targeting",
-      "launchedHint": "The campaign is launched: added cities and trades join the search, removed ones are no longer scanned."
+      "launchedHint": "The campaign is launched: added cities and trades join the search, removed ones are no longer scanned.",
+      "whoTitle": "Who do you want to contact?"
     },
     "discover": {
       "title": "Business search",
@@ -612,5 +636,38 @@
     "backToList": "Back to campaigns",
     "listDescription": "Archived campaigns: nothing runs on them.",
     "listEmpty": "No archived campaigns."
+  },
+  "launchErrors": {
+    "offerFailed": "Your offer couldn't be saved, so the search hasn't started. Click “Edit” to try again.",
+    "sortFailed": "The target couldn't be saved, so the search hasn't started. Click “Edit” to try again.",
+    "noCredits": "The campaign is saved, but you have no credits left: choose a plan (Billing menu), then launch the search.",
+    "campaignLimit": "The campaign is saved, but your plan doesn't allow more running campaigns. Pause one or change your plan, then launch the search.",
+    "noCities": "The campaign is saved, but no city matches your criteria. Click “Edit” to widen the area.",
+    "archived": "This campaign is archived: unarchive it first.",
+    "startFailed": "The campaign is saved, but the search couldn't start. Please try again in a moment."
+  },
+  "companies": {
+    "title": "Your companies",
+    "editTarget": "Edit",
+    "examined": "{count, plural, =0 {No listing examined yet} one {{value} listing examined} other {{value} listings examined}}",
+    "sorted": "{done} / {total} sorted",
+    "sortedLabel": "Companies sorted",
+    "tabKept": "Kept",
+    "tabToCheck": "To check",
+    "price": "{count, plural, one {# credit per company kept} other {# credits per company kept}}",
+    "pricePending": "Price being measured",
+    "keep": "Keep",
+    "drop": "Set aside",
+    "selectAll": "Select all",
+    "selected": "{count, plural, one {# selected} other {# selected}}",
+    "keptToast": "{count, plural, =0 {Nothing to keep} one {# company kept} other {# companies kept}}",
+    "droppedToast": "{count, plural, =0 {Nothing to set aside} one {# company set aside} other {# companies set aside}}",
+    "chooseFailed": "Your choice couldn't be saved. Please try again in a moment.",
+    "loadFailed": "The list couldn't be loaded. Reload the page.",
+    "emptyWaiting": "Nothing yet: the first sorted companies arrive within a few minutes.",
+    "emptyKept": "No company kept.",
+    "emptyToCheck": "No company to check.",
+    "more": "Show more",
+    "next": "Next: the message"
   }
 }

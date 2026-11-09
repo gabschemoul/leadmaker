@@ -42,11 +42,13 @@ export function CampaignStepsRail(props: {
     trouver:
       facts.status === 'draft'
         ? t('sub.trouverTodo')
-        : facts.status === 'running'
-          ? t('sub.trouverRunning', { count: facts.prospects })
-          : facts.status === 'paused'
-            ? t('sub.trouverPaused', { count: facts.prospects })
-            : t('sub.trouverDone', { count: facts.prospects }),
+        : typeof facts.kept === 'number'
+          ? t('sub.trouverSorted', { count: facts.kept })
+          : facts.status === 'running'
+            ? t('sub.trouverRunning', { count: facts.prospects })
+            : facts.status === 'paused'
+              ? t('sub.trouverPaused', { count: facts.prospects })
+              : t('sub.trouverDone', { count: facts.prospects }),
     rediger: !facts.hasSender
       ? t('sub.redigerNoSender')
       : facts.messagesCount === 0

@@ -23,8 +23,8 @@ type CampaignForEdit = NonNullable<
 >;
 
 /**
- * Étape 1, Cibler : le résumé du ciblage (où, quelles entreprises, quels
- * filtres) et le bouton vers le formulaire de modification.
+ * Étape 1, « Qui ? » : le résumé du ciblage (cible en mots, où, quelles
+ * activités, quels filtres) et le bouton vers le formulaire de modification.
  */
 export async function TargetStep(props: {
   campaign: CampaignForEdit;
@@ -90,6 +90,17 @@ export async function TargetStep(props: {
 
   return (
     <div className={'flex flex-col gap-4'} data-test={'campaign-step-target'}>
+      {campaign.sort_target ? (
+        <Card data-test={'campaign-target-phrase'}>
+          <CardHeader>
+            <CardTitle>{t('whoTitle')}</CardTitle>
+            <CardDescription className={'text-foreground'}>
+              {campaign.sort_target}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>{t('whereTitle')}</CardTitle>

@@ -1,0 +1,564 @@
+'use client';
+
+/**
+ * Rôle : écran « Vos entreprises » d'une campagne triée (CDC-PARCOURS-TRI-ANNUAIRE §6) : cible, avancement,
+ * onglets Gardées / À vérifier, choix du client sur les entreprises à vérifier.
+ * Données : fetchCampaignLive (dont lm_campaign_sort_summary) + temps réel, fetchSortedCompanies
+ * (lm_campaign_prospects) page par page, dans le navigateur.
+ * Écritures : chooseProspectsAction (lm_choose_prospects), startCampaignAction / pauseCampaignAction.
+ */
+
+import { useState } from 'react';
+
+import Link from 'next/link';
+
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { ArrowRight, Check, Pencil, X } from 'lucide-react';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { useAction } from 'next-safe-action/hooks';
+
+import { useSupabase } from '@kit/supabase/hooks/use-supabase';
+import { Button } from '@kit/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
+import { Checkbox } from '@kit/ui/checkbox';
+import { Progress } from '@kit/ui/progress';
+import { toast } from '@kit/ui/sonner';
+import { Spinner } from '@kit/ui/spinner';
+import { Tabs, TabsList, TabsTrigger } from '@kit/ui/tabs';
+import { Trans } from '@kit/ui/trans';
+
+import {
+  COMPANIES_PAGE_SIZE,
+  type CompaniesTab,
+  type SortedCompany,
+  fetchSortedCompanies,
+} from '~/lib/leadmaker/sorted-companies-query';
+
+import { CampaignStatusBadge } from '../../../_components/leadmaker/campaign-status-badge';
+import { type CampaignLive, fetchCampaignLive } from '../../_lib/campaign-live';
+import { chooseProspectsAction } from '../../_lib/server/sort-actions';
+import {
+  CampaignActions,
+  PauseAlerts,
+  useCampaignRealtime,
+} from './discover-step';
+
+const REFRESH_INTERVAL = 10_000;
+
+type SortState = NonNullable<CampaignLive['sort']>;
+
+/**
+ * Étape 2, « Vos entreprises » : les entreprises trouvées et triées selon la cible. Gardées sans bouton ;
+ * À vérifier avec « Garder » et « Écarter ». Les écartées ne sont jamais montrées.
+ */
+export function CompaniesStep(props: {
+  campaignId: string;
+  /** retour à l'écran « Qui ? » de la campagne (changer la cible relance le tri) */
+  editHref: string;
+  writeHref: string;
+  billingPath: string;
+  initialData: CampaignLive;
+}) {
+  const client = useSupabase();
+  const queryKey = ['lm-campaign-live', props.campaignId];
+  const [tab, setTab] = useState<CompaniesTab>('kept');
+
+  const { data } = useQuery({
+    queryKey,
+    queryFn: () => fetchCampaignLive(client, props.campaignId),
+    initialData: props.initialData,
+    staleTime: 5_000,
+    // les nombres avancent tant que la recherche tourne ou que des entreprises attendent leur tri
+    refetchInterval: (query) =>
+      query.state.data?.status === 'running' ||
+      (query.state.data?.sort?.pending ?? 0) > 0
+        ? REFRESH_INTERVAL
+        : false,
+  });
+
+  useCampaignRealtime(props.campaignId, queryKey);
+
+  // page ouverte avant un changement de cible ailleurs : rien à trier, l'écran reste lisible
+  const sort: SortState = data.sort ?? {
+    target: '',
+    version: 0,
+    total: 0,
+    kept: 0,
+    toCheck: 0,
+    pending: 0,
+    examined: 0,
+    creditsPerProspect: 1,
+    pricePending: true,
+  };
+
+  const live = data.status === 'running' || sort.pending > 0;
+
+  return (
+    <div
+      className={'flex flex-col gap-4'}
+      data-test={'campaign-step-companies'}
+    >
+      <PauseAlerts
+        live={data}
+        billingPath={props.billingPath}
+        targetHref={props.editHref}
+      />
+
+      <Card data-test={'campaign-companies'}>
+        <CardHeader>
+          <div
+            className={
+              'flex flex-col gap-3 md:flex-row md:items-start md:justify-between'
+            }
+          >
+            <div className={'flex min-w-0 flex-col gap-1.5'}>
+              <CardTitle className={'flex items-center gap-3'}>
+                <Trans i18nKey={'campaigns.companies.title'} />
+                <CampaignStatusBadge status={data.status} />
+              </CardTitle>
+
+              <CardDescription
+                className={'flex flex-wrap items-baseline gap-x-2'}
+                data-test={'campaign-companies-target'}
+              >
+                <span className={'text-foreground'}>{sort.target}</span>
+
+                <span aria-hidden>·</span>
+
+                <Link
+                  href={props.editHref}
+                  className={'text-brand inline-flex items-center gap-1'}
+                  data-test={'campaign-companies-edit-target'}
+                >
+                  <Pencil className={'size-3'} />
+                  <Trans i18nKey={'campaigns.companies.editTarget'} />
+                </Link>
+              </CardDescription>
+            </div>
+
+            <div className={'flex shrink-0 items-center gap-2'}>
+              <CampaignActions
+                campaignId={props.campaignId}
+                status={data.status}
+                queryKey={queryKey}
+              />
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className={'flex flex-col gap-5'}>
+          <SortProgress sort={sort} live={live} />
+
+          <Tabs
+            value={tab}
+            onValueChange={(value) => setTab(value as CompaniesTab)}
+            className={'flex-col gap-4'}
+          >
+            <div className={'flex flex-wrap items-center gap-x-4 gap-y-2'}>
+              <TabsList data-test={'campaign-companies-tabs'}>
+                <TabsTrigger
+                  value={'kept'}
+                  className={'px-3'}
+                  data-test={'campaign-companies-tab-kept'}
+                >
+                  <Trans i18nKey={'campaigns.companies.tabKept'} />
+                  <TabCount value={sort.kept} />
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value={'toCheck'}
+                  className={'px-3'}
+                  data-test={'campaign-companies-tab-to-check'}
+                >
+                  <Trans i18nKey={'campaigns.companies.tabToCheck'} />
+                  <TabCount value={sort.toCheck} />
+                </TabsTrigger>
+              </TabsList>
+
+              <span
+                className={'text-muted-foreground text-sm'}
+                data-test={'campaign-companies-price'}
+              >
+                {sort.pricePending ? (
+                  <Trans i18nKey={'campaigns.companies.pricePending'} />
+                ) : (
+                  <Trans
+                    i18nKey={'campaigns.companies.price'}
+                    values={{ count: sort.creditsPerProspect }}
+                  />
+                )}
+              </span>
+            </div>
+
+            <CompaniesList
+              key={`${tab}:${sort.version}`}
+              campaignId={props.campaignId}
+              version={sort.version}
+              tab={tab}
+              live={live}
+              waiting={sort.pending > 0 || data.status === 'running'}
+            />
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      <div className={'flex justify-end'}>
+        <Button
+          nativeButton={false}
+          data-test={'campaign-step-next'}
+          render={<Link href={props.writeHref} />}
+        >
+          <span>
+            <Trans i18nKey={'campaigns.companies.next'} />
+          </span>
+          <ArrowRight className={'w-4'} />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function TabCount(props: { value: number }) {
+  const format = useFormatter();
+
+  return (
+    <span className={'text-muted-foreground tabular-nums'}>
+      {format.number(props.value)}
+    </span>
+  );
+}
+
+/** Avancement discret : fiches examinées par la recherche, part des entreprises déjà triées. */
+function SortProgress(props: { sort: SortState; live: boolean }) {
+  const format = useFormatter();
+  const locale = useLocale();
+  const t = useTranslations('campaigns.companies');
+  const { sort } = props;
+  const sorted = Math.max(0, sort.total - sort.pending);
+  const percent =
+    sort.total > 0 ? Math.min(100, Math.round((sorted / sort.total) * 100)) : 0;
+
+  return (
+    <div className={'flex flex-col gap-2'} data-test={'campaign-sort-progress'}>
+      <div
+        className={
+          'text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm'
+        }
+      >
+        <span className={'flex items-center gap-2'}>
+          {props.live ? <Spinner className={'size-3.5'} /> : null}
+          <Trans
+            i18nKey={'campaigns.companies.examined'}
+            values={{
+              count: sort.examined,
+              value: format.number(sort.examined),
+            }}
+          />
+        </span>
+
+        {sort.total > 0 ? (
+          <span className={'tabular-nums'}>
+            <Trans
+              i18nKey={'campaigns.companies.sorted'}
+              values={{
+                done: format.number(sorted),
+                total: format.number(sort.total),
+              }}
+            />
+          </span>
+        ) : null}
+      </div>
+
+      <Progress value={percent} locale={locale} aria-label={t('sortedLabel')} />
+    </div>
+  );
+}
+
+/** Liste d'un onglet, page par page ; dans « À vérifier », sélection et boutons « Garder » / « Écarter ». */
+function CompaniesList(props: {
+  campaignId: string;
+  version: number;
+  tab: CompaniesTab;
+  /** recherche ou tri en cours : la liste se relit d'elle-même */
+  live: boolean;
+  /** des entreprises vont encore arriver (texte de la liste vide) */
+  waiting: boolean;
+}) {
+  const t = useTranslations();
+  const client = useSupabase();
+  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<string[]>([]);
+  const choosable = props.tab === 'toCheck';
+
+  const listKey = [
+    'lm-sorted-companies',
+    props.campaignId,
+    props.version,
+    props.tab,
+  ];
+
+  const query = useInfiniteQuery({
+    queryKey: listKey,
+    queryFn: ({ pageParam }) =>
+      fetchSortedCompanies(client, {
+        campaignId: props.campaignId,
+        version: props.version,
+        tab: props.tab,
+        page: pageParam,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.length === COMPANIES_PAGE_SIZE ? pages.length : undefined,
+    staleTime: 5_000,
+    refetchInterval: props.live ? REFRESH_INTERVAL * 1.5 : false,
+  });
+
+  const choose = useAction(chooseProspectsAction, {
+    onSuccess: ({ data }) => {
+      if (data) {
+        toast.success(
+          t(
+            data.choice === 'gardee'
+              ? 'campaigns.companies.keptToast'
+              : 'campaigns.companies.droppedToast',
+            { count: data.count },
+          ),
+        );
+      }
+
+      setSelected([]);
+
+      void queryClient.invalidateQueries({
+        queryKey: ['lm-sorted-companies', props.campaignId],
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey: ['lm-campaign-live', props.campaignId],
+      });
+    },
+    onError: ({ error }) => {
+      toast.error(t(error.serverError ?? 'campaigns.companies.chooseFailed'));
+    },
+  });
+
+  const rows = query.data?.pages.flat() ?? [];
+  const visibleIds = rows.map((row) => row.id);
+  const allSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
+
+  const pendingIds = choose.isPending ? (choose.input?.prospectIds ?? []) : [];
+
+  const execute = (prospectIds: string[], choice: 'gardee' | 'ecartee') =>
+    choose.execute({ campaignId: props.campaignId, prospectIds, choice });
+
+  const toggle = (id: string, checked: boolean) =>
+    setSelected((current) =>
+      checked
+        ? [...new Set([...current, id])]
+        : current.filter((item) => item !== id),
+    );
+
+  if (query.isPending) {
+    return (
+      <div className={'flex justify-center py-10'}>
+        <Spinner className={'size-5'} />
+      </div>
+    );
+  }
+
+  if (query.isError) {
+    return (
+      <p className={'text-destructive py-6 text-sm'}>
+        <Trans i18nKey={'campaigns.companies.loadFailed'} />
+      </p>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <p
+        className={'text-muted-foreground py-10 text-center text-sm'}
+        data-test={'campaign-companies-empty'}
+      >
+        <Trans
+          i18nKey={
+            props.waiting
+              ? 'campaigns.companies.emptyWaiting'
+              : props.tab === 'kept'
+                ? 'campaigns.companies.emptyKept'
+                : 'campaigns.companies.emptyToCheck'
+          }
+        />
+      </p>
+    );
+  }
+
+  return (
+    <div className={'flex flex-col gap-3'}>
+      {choosable ? (
+        <div
+          className={
+            'flex min-h-8 flex-wrap items-center justify-between gap-2 text-sm'
+          }
+        >
+          <label
+            className={
+              'text-muted-foreground flex cursor-pointer items-center gap-2'
+            }
+          >
+            <Checkbox
+              data-test={'campaign-companies-select-all'}
+              checked={allSelected}
+              onCheckedChange={(checked) =>
+                setSelected(checked ? visibleIds : [])
+              }
+            />
+
+            {selected.length > 0 ? (
+              <Trans
+                i18nKey={'campaigns.companies.selected'}
+                values={{ count: selected.length }}
+              />
+            ) : (
+              <Trans i18nKey={'campaigns.companies.selectAll'} />
+            )}
+          </label>
+
+          {selected.length > 0 ? (
+            <div className={'flex items-center gap-2'}>
+              <Button
+                size={'sm'}
+                disabled={choose.isPending}
+                data-test={'campaign-companies-keep-selected'}
+                onClick={() => execute(selected, 'gardee')}
+              >
+                <Check className={'size-3.5'} />
+                <Trans i18nKey={'campaigns.companies.keep'} />
+              </Button>
+
+              <Button
+                size={'sm'}
+                variant={'outline'}
+                disabled={choose.isPending}
+                data-test={'campaign-companies-drop-selected'}
+                onClick={() => execute(selected, 'ecartee')}
+              >
+                <X className={'size-3.5'} />
+                <Trans i18nKey={'campaigns.companies.drop'} />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <ul
+        className={'divide-border divide-y rounded-lg border'}
+        data-test={'campaign-companies-list'}
+      >
+        {rows.map((row) => (
+          <CompanyRow
+            key={row.id}
+            row={row}
+            choosable={choosable}
+            checked={selected.includes(row.id)}
+            onCheckedChange={(checked) => toggle(row.id, checked)}
+            pending={pendingIds.includes(row.id)}
+            disabled={choose.isPending}
+            onChoose={(choice) => execute([row.id], choice)}
+          />
+        ))}
+      </ul>
+
+      {query.hasNextPage ? (
+        <div className={'flex justify-center'}>
+          <Button
+            variant={'outline'}
+            size={'sm'}
+            loading={query.isFetchingNextPage}
+            data-test={'campaign-companies-more'}
+            onClick={() => void query.fetchNextPage()}
+          >
+            <Trans i18nKey={'campaigns.companies.more'} />
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CompanyRow(props: {
+  row: SortedCompany;
+  choosable: boolean;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  pending: boolean;
+  disabled: boolean;
+  onChoose: (choice: 'gardee' | 'ecartee') => void;
+}) {
+  const { row } = props;
+
+  return (
+    <li
+      className={'flex items-start gap-3 px-4 py-3'}
+      data-test={'campaign-company-row'}
+    >
+      {props.choosable ? (
+        <Checkbox
+          className={'mt-0.5'}
+          aria-label={row.name}
+          checked={props.checked}
+          onCheckedChange={(checked) => props.onCheckedChange(checked)}
+        />
+      ) : null}
+
+      <div className={'flex min-w-0 flex-1 flex-col gap-0.5'}>
+        <div className={'flex flex-wrap items-baseline gap-x-2'}>
+          <span className={'font-medium'}>{row.name}</span>
+
+          {row.city ? (
+            <span className={'text-muted-foreground text-sm'}>{row.city}</span>
+          ) : null}
+        </div>
+
+        {row.reason ? (
+          <p className={'text-muted-foreground text-sm'}>{row.reason}</p>
+        ) : null}
+      </div>
+
+      {props.choosable ? (
+        <div className={'flex shrink-0 items-center gap-1.5'}>
+          <Button
+            size={'sm'}
+            variant={'outline'}
+            disabled={props.disabled}
+            loading={props.pending}
+            data-test={'campaign-company-keep'}
+            onClick={() => props.onChoose('gardee')}
+          >
+            <Trans i18nKey={'campaigns.companies.keep'} />
+          </Button>
+
+          <Button
+            size={'sm'}
+            variant={'ghost'}
+            disabled={props.disabled}
+            data-test={'campaign-company-drop'}
+            onClick={() => props.onChoose('ecartee')}
+          >
+            <Trans i18nKey={'campaigns.companies.drop'} />
+          </Button>
+        </div>
+      ) : null}
+    </li>
+  );
+}

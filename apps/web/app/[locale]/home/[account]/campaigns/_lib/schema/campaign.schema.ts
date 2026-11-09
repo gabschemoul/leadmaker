@@ -64,7 +64,26 @@ export const MAX_CATEGORIES = 1000;
  */
 export const MAX_CATEGORIES_UNLIMITED = 10_000;
 
+/** Cible en mots (lm_campaigns.sort_target, coupée à 500 caractères par la base). */
+export const SORT_TARGET_MAX = 500;
+
+/** « Votre offre » du dossier (lm_spaces.offer). */
+export const OFFER_MAX = 1000;
+
 const CampaignFieldsSchema = z.object({
+  /**
+   * Écran « Qui ? » (CDC-PARCOURS-TRI-ANNUAIRE §3) : la cible en une phrase, envoyée au tri. Vide seulement
+   * pour une ancienne campagne lancée sans cible (elle garde l'ancien parcours).
+   */
+  sortTarget: z
+    .string()
+    .trim()
+    .max(SORT_TARGET_MAX, { error: 'campaigns.form.who.targetTooLong' }),
+  /** « Votre offre » du dossier choisi : obligatoire dès qu'il y a une cible. */
+  offer: z
+    .string()
+    .trim()
+    .max(OFFER_MAX, { error: 'campaigns.form.who.offerTooLong' }),
   name: z
     .string()
     .trim()
@@ -98,6 +117,14 @@ const CampaignFieldsSchema = z.object({
 type CampaignFields = z.infer<typeof CampaignFieldsSchema>;
 
 function refineCampaign(values: CampaignFields, ctx: z.RefinementCtx) {
+  if (values.sortTarget.length > 0 && values.offer.length === 0) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['offer'],
+      message: 'campaigns.form.who.offerRequired',
+    });
+  }
+
   if (values.citiesMode === 'radius' && !values.radiusCity) {
     ctx.addIssue({
       code: 'custom',
@@ -131,15 +158,39 @@ function refineCampaign(values: CampaignFields, ctx: z.RefinementCtx) {
   }
 }
 
-export const CampaignFormSchema =
-  CampaignFieldsSchema.superRefine(refineCampaign);
+function requireTarget(values: { sortTarget: string }, ctx: z.RefinementCtx) {
+  if (values.sortTarget.length === 0) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['sortTarget'],
+      message: 'campaigns.form.who.targetRequired',
+    });
+  }
+}
 
-export type CampaignFormValues = z.infer<typeof CampaignFormSchema>;
+/**
+ * Formulaire de campagne. La cible est obligatoire, sauf pour une ancienne campagne déjà lancée sans cible
+ * (`targetRequired` faux) : lui en donner une la fait passer au tri.
+ */
+export function buildCampaignFormSchema(targetRequired: boolean) {
+  return CampaignFieldsSchema.superRefine((values, ctx) => {
+    refineCampaign(values, ctx);
+
+    if (targetRequired) {
+      requireTarget(values, ctx);
+    }
+  });
+}
+
+export type CampaignFormValues = z.infer<typeof CampaignFieldsSchema>;
 
 export const CreateCampaignSchema = CampaignFieldsSchema.extend({
   accountId: z.string().uuid(),
   accountSlug: z.string().min(1),
-}).superRefine(refineCampaign);
+}).superRefine((values, ctx) => {
+  refineCampaign(values, ctx);
+  requireTarget(values, ctx);
+});
 
 export const UpdateCampaignSchema = CampaignFieldsSchema.extend({
   campaignId: z.string().uuid(),
@@ -355,6 +406,9 @@ const StoredFiltersSchema = z
  * leurs identifiants.
  */
 export function campaignToFormValues(campaign: {
+  sort_target: string | null;
+  /** offre actuelle du dossier de la campagne */
+  offer: string | null;
   name: string;
   space_id: string;
   country_code: string;
@@ -376,6 +430,8 @@ export function campaignToFormValues(campaign: {
       : null;
 
   return {
+    sortTarget: campaign.sort_target ?? '',
+    offer: campaign.offer ?? '',
     name: campaign.name,
     spaceId: campaign.space_id,
     countryCode: campaign.country_code,
@@ -396,3 +452,35 @@ export function campaignToFormValues(campaign: {
     extraExclusions: (f.extra_exclusions ?? []).join(', '),
   };
 }
+
+/**
+ * Lancement depuis l'écran « Qui ? » qui n'a pas pu aller au bout : la campagne est enregistrée, sa page
+ * l'ouvre avec ce code (`?erreur=`), traduit par `campaigns.launchErrors.<code>`.
+ */
+export const LAUNCH_ERRORS = [
+  'offerFailed',
+  'sortFailed',
+  'noCredits',
+  'campaignLimit',
+  'noCities',
+  'archived',
+  'startFailed',
+] as const;
+
+export type LaunchError = (typeof LAUNCH_ERRORS)[number];
+
+export function isLaunchError(value: unknown): value is LaunchError {
+  return (
+    typeof value === 'string' &&
+    (LAUNCH_ERRORS as readonly string[]).includes(value)
+  );
+}
+
+/** Entreprises choisies d'un coup au plus (« Garder » / « Écarter » la sélection). */
+export const MAX_CHOSEN_PROSPECTS = 500;
+
+/** Écran « Vos entreprises » : le client garde ou écarte des entreprises « À vérifier ». */
+export const ChooseProspectsSchema = CampaignIdSchema.extend({
+  prospectIds: z.array(z.string().uuid()).min(1).max(MAX_CHOSEN_PROSPECTS),
+  choice: z.enum(['gardee', 'ecartee']),
+});

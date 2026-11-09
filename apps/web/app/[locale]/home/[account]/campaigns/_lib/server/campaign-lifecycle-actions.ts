@@ -8,8 +8,11 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 import { authActionClient } from '@kit/next/safe-action';
 import { getLogger } from '@kit/shared/logger';
+import type { Database } from '@kit/supabase/database';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
@@ -23,6 +26,7 @@ import {
   CampaignIdSchema,
   CreateCampaignSchema,
   DuplicateCampaignSchema,
+  type LaunchError,
   LocalDiscoverySchema,
   MAX_CATEGORIES,
   UpdateCampaignSchema,
@@ -38,7 +42,122 @@ async function assertCategoryLimit(count: number, userId: string) {
   }
 }
 
-/** Enregistre la campagne en brouillon puis ouvre sa page. */
+type Client = SupabaseClient<Database>;
+
+/** Refus de lm_start_campaign → code affiché sur la page de la campagne (`?erreur=`). */
+const START_LAUNCH_ERRORS: Record<string, LaunchError> = {
+  no_credits: 'noCredits',
+  campaign_limit: 'campaignLimit',
+  no_cities: 'noCities',
+  archived: 'archived',
+};
+
+async function logLaunchError(
+  name: string,
+  context: Record<string, unknown>,
+  error: unknown,
+) {
+  const logger = await getLogger();
+  logger.error(
+    { name: `leadmaker.campaigns.${name}`, ...context, error },
+    'Campaign launch step failed',
+  );
+}
+
+/**
+ * Écran « Qui ? » : enregistre l'offre du dossier si elle a changé (lm_set_space_offer), puis la cible si
+ * elle a changé (lm_set_sort_target : nouvelle cible = tout est retrié). Renvoie un code d'erreur, ou null.
+ * Ne lève pas : la campagne existe déjà, la page l'ouvre avec le message.
+ */
+async function saveOfferAndTarget(
+  client: Client,
+  params: {
+    campaignId: string;
+    spaceId: string;
+    offer: string;
+    sortTarget: string;
+    previousTarget: string | null;
+    userId: string;
+  },
+): Promise<LaunchError | null> {
+  const context = { campaignId: params.campaignId, userId: params.userId };
+
+  const { data: space } = await client
+    .from('lm_spaces')
+    .select('offer')
+    .eq('id', params.spaceId)
+    .maybeSingle();
+
+  if ((space?.offer ?? '').trim() !== params.offer) {
+    const { error } = await client.rpc('lm_set_space_offer', {
+      p_space_id: params.spaceId,
+      p_offer: params.offer,
+    });
+
+    if (error) {
+      await logLaunchError('offer', context, error);
+
+      return 'offerFailed';
+    }
+  }
+
+  if ((params.previousTarget ?? '').trim() !== params.sortTarget) {
+    const { error } = await client.rpc('lm_set_sort_target', {
+      p_campaign_id: params.campaignId,
+      p_target: params.sortTarget,
+    });
+
+    if (error) {
+      await logLaunchError('sortTarget', context, error);
+
+      return 'sortFailed';
+    }
+  }
+
+  return null;
+}
+
+/** Démarre la campagne tout de suite (lm_start_campaign, sans attendre d'estimation). Code d'erreur ou null. */
+async function startNow(
+  client: Client,
+  campaignId: string,
+  userId: string,
+): Promise<LaunchError | null> {
+  const { error } = await client.rpc('lm_start_campaign', {
+    p_campaign_id: campaignId,
+  });
+
+  if (!error) {
+    return null;
+  }
+
+  const known = error.hint ? START_LAUNCH_ERRORS[error.hint] : undefined;
+
+  if (known) {
+    return known;
+  }
+
+  await logLaunchError('start', { campaignId, userId }, error);
+
+  return 'startFailed';
+}
+
+function companiesHref(
+  accountSlug: string,
+  campaignId: string,
+  launchError: LaunchError | null,
+) {
+  const base = `/home/${accountSlug}/campaigns/${campaignId}?etape=trouver`;
+
+  return launchError ? `${base}&erreur=${launchError}` : base;
+}
+
+/**
+ * Écran « Qui ? », « Lancer la recherche » : enregistre la campagne, l'offre du dossier et la cible, puis
+ * démarre la recherche sans écran d'estimation (le prix se mesure sur les premières entreprises triées).
+ * Ouvre ensuite « Vos entreprises ». Si une étape échoue, la campagne reste en brouillon et sa page affiche
+ * pourquoi (jamais de lancement sans cible : elle serait payée à l'ancienne).
+ */
 export const createCampaignAction = authActionClient
   .inputSchema(CreateCampaignSchema)
   .action(async ({ parsedInput: values, ctx }) => {
@@ -80,15 +199,27 @@ export const createCampaignAction = authActionClient
       throw new Error('campaigns.errors.createFailed');
     }
 
-    revalidatePath('/home/[account]/campaigns', 'page');
+    const launchError =
+      (await saveOfferAndTarget(client, {
+        campaignId: data.id,
+        spaceId: values.spaceId,
+        offer: values.offer,
+        sortTarget: values.sortTarget,
+        previousTarget: null,
+        userId: ctx.user.id,
+      })) ?? (await startNow(client, data.id, ctx.user.id));
 
-    redirect(`/home/${values.accountSlug}/campaigns/${data.id}`);
+    revalidatePath('/home/[account]/campaigns', 'layout');
+
+    redirect(companiesHref(values.accountSlug, data.id, launchError));
   });
 
 /**
  * Modifie une campagne, même lancée : les villes et activités ajoutées
  * rejoignent la file de scan, celles retirées sont sautées. Une campagne
  * terminée qui reçoit du travail est relancée.
+ * Écran « Qui ? » : une nouvelle cible relance le tri de toutes ses entreprises ; un brouillon avec une
+ * cible est lancé tout de suite (« Lancer la recherche »).
  */
 export const updateCampaignAction = authActionClient
   .inputSchema(UpdateCampaignSchema)
@@ -107,9 +238,17 @@ export const updateCampaignAction = authActionClient
     // d'office ; une campagne mise en pause par l'utilisateur reste en pause
     const { data: before } = await client
       .from('lm_campaigns')
-      .select('status')
+      .select('status, sort_target, space_id')
       .eq('id', values.campaignId)
       .maybeSingle();
+
+    // Cible obligatoire, sauf pour une ancienne campagne déjà lancée sans cible (ancien parcours)
+    if (
+      values.sortTarget.length === 0 &&
+      (Boolean(before?.sort_target?.trim()) || before?.status === 'draft')
+    ) {
+      throw new Error('campaigns.form.who.targetRequired');
+    }
 
     const { data: status, error } = await client.rpc('lm_update_campaign', {
       p_campaign_id: values.campaignId,
@@ -129,10 +268,28 @@ export const updateCampaignAction = authActionClient
       });
     }
 
+    let launchError: LaunchError | null = null;
+
+    if (values.sortTarget.length > 0 && before) {
+      launchError = await saveOfferAndTarget(client, {
+        campaignId: values.campaignId,
+        spaceId: before.space_id,
+        offer: values.offer,
+        sortTarget: values.sortTarget,
+        previousTarget: before.sort_target,
+        userId: ctx.user.id,
+      });
+
+      // Brouillon : « Lancer la recherche » le démarre (jamais sans sa cible)
+      if (!launchError && before.status === 'draft') {
+        launchError = await startNow(client, values.campaignId, ctx.user.id);
+      }
+    }
+
     // Terminée puis complétée : on la relance tout de suite. Si la reprise est
     // refusée (crédits, forfait), la campagne reste en pause avec « Reprendre ».
     // Une campagne déjà en pause avant la modification n'est jamais relancée.
-    if (before?.status === 'completed' && status === 'paused') {
+    if (!launchError && before?.status === 'completed' && status === 'paused') {
       await client.rpc('lm_start_campaign', {
         p_campaign_id: values.campaignId,
       });
@@ -140,7 +297,11 @@ export const updateCampaignAction = authActionClient
 
     revalidatePath('/home/[account]/campaigns', 'layout');
 
-    redirect(`/home/${values.accountSlug}/campaigns/${values.campaignId}`);
+    redirect(
+      values.sortTarget.length > 0
+        ? companiesHref(values.accountSlug, values.campaignId, launchError)
+        : `/home/${values.accountSlug}/campaigns/${values.campaignId}`,
+    );
   });
 
 /** Copie une campagne en brouillon et ouvre le formulaire de la copie. */

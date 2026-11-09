@@ -4,8 +4,8 @@ import type { AttemptGroup } from '~/lib/leadmaker/attempts';
 
 /**
  * Le parcours d'une campagne, en quatre étapes dans l'ordre :
- * Cibler → Trouver → Rédiger → Contacter. Chaque étape est un onglet de la
- * page de campagne (`?etape=`), avec son propre bouton d'action.
+ * Qui ? → Vos entreprises → Votre message → Envoi (codes historiques : cibler, trouver, rediger, contacter).
+ * Chaque étape est un onglet de la page de campagne (`?etape=`), avec son propre bouton d'action.
  */
 export const CAMPAIGN_STEPS = [
   'cibler',
@@ -24,6 +24,8 @@ type CampaignStatus = Database['public']['Enums']['lm_campaign_status'];
 export interface CampaignStepFacts {
   status: CampaignStatus;
   prospects: number;
+  /** Campagne triée (cible en mots) : entreprises gardées ; null pour une campagne sans cible */
+  kept?: number | null;
   messagesCount: number;
   hasSender: boolean;
   attempts: Record<AttemptGroup, number>;

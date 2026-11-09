@@ -18,13 +18,15 @@ import {
 import { TeamAccountLayoutPageHeader } from '../../../_components/team-account-layout-page-header';
 import {
   loadCountryOptions,
-  loadDiscoveryBalance,
   loadSpaces,
 } from '../../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../../_lib/server/team-account-workspace.loader';
 import { CampaignForm } from '../../_components/campaign-form';
 import { campaignToFormValues } from '../../_lib/schema/campaign.schema';
-import { loadCampaignForEdit } from '../../_lib/server/campaigns.loader';
+import {
+  loadCampaignForEdit,
+  loadSpaceOffers,
+} from '../../_lib/server/campaigns.loader';
 import { getCategoryLimit } from '../../_lib/server/power-user';
 
 interface EditCampaignPageProps {
@@ -53,13 +55,9 @@ function EditCampaignPage({ params }: EditCampaignPageProps) {
           <>
             <PageHeaderSkeleton />
 
-            <Delayed className={'grid grid-cols-1 gap-6 lg:grid-cols-3'}>
-              <div className={'flex flex-col gap-6 lg:col-span-2'}>
-                <CardSkeleton rows={3} />
-                <CardSkeleton rows={4} />
-              </div>
-
+            <Delayed className={'flex max-w-3xl flex-col gap-6'}>
               <CardSkeleton rows={4} />
+              <CardSkeleton rows={3} />
             </Delayed>
           </>
         }
@@ -83,12 +81,12 @@ async function EditCampaignContent({ params }: { params: Params }) {
   const client = getSupabaseServerClient();
   const locale = await getLocale();
 
-  const [campaign, spaces, countries, balance, categoryLimit] =
+  const [campaign, spaces, spaceOffers, countries, categoryLimit] =
     await Promise.all([
       loadCampaignForEdit(client, id, locale),
       loadSpaces(client, account.id),
+      loadSpaceOffers(client, account.id),
       loadCountryOptions(client),
-      loadDiscoveryBalance(client, account.id),
       getCategoryLimit(user.id),
     ]);
 
@@ -112,12 +110,15 @@ async function EditCampaignContent({ params }: { params: Params }) {
           label,
           is_default,
         }))}
+        spaceOffers={spaceOffers}
         countries={countries}
-        discoveryBalance={balance}
         categoryLimit={categoryLimit}
         campaign={{
           id: campaign.id,
-          values: campaignToFormValues(campaign),
+          values: campaignToFormValues({
+            ...campaign,
+            offer: spaceOffers[campaign.space_id] ?? null,
+          }),
           launched: campaign.launched,
         }}
       />

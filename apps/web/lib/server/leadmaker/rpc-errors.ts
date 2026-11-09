@@ -41,6 +41,16 @@ export const START_ERRORS: RpcHintMap = {
   archived: 'campaigns.errors.archived',
 };
 
+/** Cible en mots d'une campagne (lm_set_sort_target, écran « Qui ? »). */
+export const SORT_TARGET_ERRORS: RpcHintMap = {
+  sort_target_required: 'campaigns.form.who.targetRequired',
+};
+
+/** Choix du client sur les entreprises « À vérifier » (lm_choose_prospects). */
+export const CHOOSE_PROSPECTS_ERRORS: RpcHintMap = {
+  invalid_choice: 'campaigns.companies.chooseFailed',
+};
+
 /** Modification d'une campagne (lm_update_campaign) : pays figé après lancement. */
 export const UPDATE_CAMPAIGN_ERRORS: RpcHintMap = {
   country_locked: 'campaigns.errors.countryLocked',

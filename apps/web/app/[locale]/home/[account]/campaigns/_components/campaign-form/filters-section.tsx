@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * Rôle : section « Filtres » du formulaire de campagne (note moyenne, nombre d'avis, site web, exclusions).
+ * Rôle : pli « Plus de critères » du formulaire de campagne, fermé par défaut (note moyenne, nombre d'avis,
+ * site web, exclusions ; décision du 9/11 : ces filtres restent, sous « Où ? »).
  * Données : champs du formulaire react-hook-form parent.
  * Écritures : aucune en base.
  */
 
+import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import {
@@ -16,6 +18,11 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 import { Checkbox } from '@kit/ui/checkbox';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@kit/ui/collapsible';
 import {
   FormControl,
   FormDescription,
@@ -30,22 +37,49 @@ import { Trans } from '@kit/ui/trans';
 import { RATING_FLOOR } from '../../_lib/schema/campaign.schema';
 import { ChoiceGroup, NumberInput } from './form-controls';
 
-export function FiltersSection() {
+export function FiltersSection(props: {
+  /** fermé par défaut ; le formulaire l'ouvre quand un critère est invalide */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const t = useTranslations('campaigns');
 
   return (
-    <Card>
+    <Collapsible
+      render={<Card />}
+      open={props.open}
+      onOpenChange={(open) => props.onOpenChange(open)}
+      data-test={'campaign-more-criteria'}
+    >
       <CardHeader>
-        <CardTitle>
-          <Trans i18nKey={'campaigns.form.filtersTitle'} />
-        </CardTitle>
+        <CollapsibleTrigger
+          className={
+            'group/criteria flex w-full cursor-pointer items-start justify-between gap-3 text-left'
+          }
+          data-test={'campaign-more-criteria-toggle'}
+        >
+          <span className={'flex flex-col gap-1.5'}>
+            <CardTitle>
+              <Trans i18nKey={'campaigns.form.moreCriteriaTitle'} />
+            </CardTitle>
 
-        <CardDescription>
-          <Trans i18nKey={'campaigns.form.filtersDescription'} />
-        </CardDescription>
+            <CardDescription>
+              <Trans i18nKey={'campaigns.form.filtersDescription'} />
+            </CardDescription>
+          </span>
+
+          <ChevronDown
+            className={
+              'text-muted-foreground mt-0.5 size-4 shrink-0 transition-transform group-data-[panel-open]/criteria:rotate-180'
+            }
+          />
+        </CollapsibleTrigger>
       </CardHeader>
 
-      <CardContent className={'flex flex-col gap-4'}>
+      <CollapsibleContent
+        render={<CardContent />}
+        className={'flex flex-col gap-4'}
+      >
         <div className={'grid grid-cols-1 gap-4 md:grid-cols-3'}>
           <FormField
             name={'ratingMin'}
@@ -222,7 +256,7 @@ export function FiltersSection() {
             </FormItem>
           )}
         />
-      </CardContent>
-    </Card>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

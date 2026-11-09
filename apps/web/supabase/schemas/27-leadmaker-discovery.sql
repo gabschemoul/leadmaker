@@ -87,6 +87,13 @@ create table if not exists public.lm_discovery_settings (
   sort_abandon_rate numeric(4,3) not null default 0.03,
   -- Groupes (§4.3) : proposés une fois que la campagne a ce nombre d'entreprises gardées
   sort_groups_after integer not null default 100,
+  -- Annuaire commun, étape 2 (CDC §8.3) : une recherche (pays × activité × zone) faite il y a moins de ce nombre de
+  -- jours est reprise de l'annuaire, sans proxy
+  places_max_age_days integer not null default 90,
+  -- Arrivée progressive des fiches reprises de l'annuaire (CDC §8.4, décidé le 9/11) : premières fiches après
+  -- first_delay secondes (tirage), puis des paquets de batch fiches examinées toutes les pause secondes (tirage
+  -- à chaque paquet), une campagne entièrement reprise ne finissant jamais en moins de min_total secondes
+  replay_pacing jsonb not null default '{"first_delay": [20, 40], "batch": [10, 40], "pause": [3, 8], "min_total": 180}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (id),

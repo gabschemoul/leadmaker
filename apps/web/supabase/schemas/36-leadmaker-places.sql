@@ -245,3 +245,43 @@ comment on function public.lm_record_search_places(jsonb, jsonb) is 'Annuaire co
 revoke all on function public.lm_record_search_places(jsonb, jsonb) from public;
 
 grant execute on function public.lm_record_search_places(jsonb, jsonb) to service_role;
+
+-- Annuaire commun, étape 2 (CDC §8.3) : la recherche complète la plus récente de moins de places_max_age_days
+-- jours pour ce pays, cette activité et cette zone, avec ses fiches dans l'ordre de Google (fiches fermées
+-- exclues). null si aucune : il faut faire la vraie recherche. Rien sur qui l'a faite (jamais montré).
+-- Appelant : robots / serveur uniquement (rôle service).
+create or replace function public.lm_replay_search(
+  p_country_code text, p_gcid text, p_geoname_id integer, p_latitude double precision, p_longitude double precision,
+  p_zoom integer
+) returns jsonb
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  with s as (
+    select ps.id, ps.searched_at, ps.place_ids
+      from public.lm_place_searches ps
+     where ps.country_code = upper(p_country_code) and ps.gcid = p_gcid
+       and ps.zone_key = public.lm_place_zone_key(p_geoname_id, p_latitude, p_longitude, p_zoom)
+       and ps.complete
+       and ps.searched_at > now() - make_interval(days => (select places_max_age_days from public.lm_discovery_settings where id))
+     order by ps.searched_at desc
+     limit 1
+  )
+  select jsonb_build_object(
+           'search_id', s.id, 'searched_at', s.searched_at,
+           'places', coalesce((select jsonb_agg(jsonb_build_object(
+                         'place_id', p.google_place_id, 'name', p.name, 'category', p.category,
+                         'rating', p.rating, 'review_count', p.review_count, 'address', p.address, 'phone', p.phone,
+                         'website', p.website, 'website_known', p.website_known, 'maps_url', p.maps_url,
+                         'latitude', p.latitude, 'longitude', p.longitude, 'is_chain', p.is_chain) order by i.o)
+                                 from unnest(s.place_ids) with ordinality as i(id, o)
+                                 join public.lm_places p on p.google_place_id = i.id
+                                where p.closed_at is null), '[]'::jsonb))
+    from s;
+$$;
+
+revoke all on function public.lm_replay_search(text, text, integer, double precision, double precision, integer) from public;
+
+grant execute on function public.lm_replay_search(text, text, integer, double precision, double precision, integer) to service_role;

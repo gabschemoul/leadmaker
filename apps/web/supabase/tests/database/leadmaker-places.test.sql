@@ -96,6 +96,24 @@ select is((select count(*)::integer from public.lm_places where site_key = 'chai
 select is(public.lm_record_search_places('{"country_code":"Z"}', '[{"place_id":"bad:1","name":"X"}]'), 0, 'Pays invalide');
 select is(public.lm_record_search_places('{"country_code":"ZZ"}', '{"place_id":"bad:2"}'), 0, 'Liste invalide');
 
+-- 5 bis. Reprise d'une recherche (étape 2) : récente, complète, même zone ; fiches fermées retirées
+set local role service_role;
+select is(jsonb_array_length(public.lm_replay_search('zz', 'gcid:pl_plumber', 42, null, null, null) -> 'places'), 4,
+  'Recherche complète récente : reprise avec ses fiches dans l''ordre de Google (le doublon est retiré par le robot)');
+select is(public.lm_replay_search('ZZ', 'gcid:pl_plumber', 42, 45.123456, 4.987654, 15), null,
+  'Secteur dont la recherche était incomplète : pas de reprise');
+select is(public.lm_replay_search('ZZ', 'gcid:pl_plumber', 999, null, null, null), null, 'Autre zone : pas de reprise');
+set local role postgres;
+update public.lm_places set closed_at = now() where google_place_id = 'pl:2';
+set local role service_role;
+select ok(not (public.lm_replay_search('ZZ', 'gcid:pl_plumber', 42, null, null, null) -> 'places') @> '[{"place_id":"pl:2"}]',
+  'Entreprise fermée : retirée de la reprise');
+set local role postgres;
+update public.lm_place_searches set searched_at = now() - interval '91 days' where geoname_id = 42 and latitude is null;
+set local role service_role;
+select is(public.lm_replay_search('ZZ', 'gcid:pl_plumber', 42, null, null, null), null, 'Plus de 90 jours : vraie recherche');
+set local role postgres;
+
 -- 6. Jamais accessible aux clients
 set local role postgres;
 select makerkit.authenticate_as('pl_a');
@@ -106,6 +124,8 @@ select throws_ok(
   $$select public.lm_record_search_places('{"country_code":"ZZ"}', '[{"place_id":"evil","name":"X"}]')$$,
   '42501', null, 'Client : impossible d''écrire dans l''annuaire');
 select throws_ok($$delete from public.lm_places$$, '42501', null, 'Client : impossible d''effacer l''annuaire');
+select throws_ok($$select public.lm_replay_search('ZZ', 'gcid:pl_plumber', 42, null, null, null)$$, '42501', null,
+  'Client : ne lit pas l''annuaire par la reprise');
 
 set local role anon;
 select throws_ok('select count(*) from public.lm_places', '42501', null, 'Anonyme : annuaire illisible');

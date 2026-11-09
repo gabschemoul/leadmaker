@@ -567,14 +567,14 @@ isOneToOne: false
                   ]
                 },"lm_discovery_settings": {
                   Row: {
-                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"prior": number,"recent_weight": number,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
+                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"places_max_age_days": number,"prior": number,"recent_weight": number,"replay_pacing": NonNullable<Json>,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"prior"?: number,"recent_weight"?: number,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"prior"?: number,"recent_weight"?: number,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -1811,6 +1811,9 @@ isOneToOne: false
                            },
 "lm_release_search":
 { Args: { "p_campaign_id": string,"p_gcid": string }; Returns: undefined
+                           },
+"lm_replay_search":
+{ Args: { "p_country_code": string,"p_gcid": string,"p_geoname_id": number,"p_latitude": number,"p_longitude": number,"p_zoom": number }; Returns: Json
                            },
 "lm_request_campaign_estimate":
 { Args: { "p_campaign_id": string }; Returns: string

@@ -5,6 +5,7 @@ import hashlib
 import logging
 import math
 import os
+import random
 import re
 import time
 from typing import Any
@@ -15,7 +16,7 @@ from psycopg.types.json import Jsonb
 from .. import proxy_budget
 from ..queue import Task
 from .exclusions import exclusion_reason
-from .scraper import BlockedError, Filters, GMapsScraper, Place
+from .scraper import BlockedError, Filters, GMapsScraper, Place, _rating_ok, _website_ok
 from .text import normalize, site_key
 
 log = logging.getLogger("leadmaker.discovery")
@@ -165,7 +166,6 @@ class DiscoveryRunner:
 
     def run(self, task: Task, conn: psycopg.Connection) -> dict[str, Any]:
         p = task.payload
-        proxy_budget.check(conn)
         campaign = conn.execute(
             "select id, status, space_id, country_code, filters from public.lm_campaigns where id = %s",
             (p["campaign_id"],),
@@ -233,6 +233,20 @@ class DiscoveryRunner:
             pause_state["paused"] = bool(row) and row["status"] == "paused"
             return pause_state["paused"]
 
+        # Annuaire commun, étape 2 (CDC §8.3) : recherche déjà faite il y a moins de 3 mois → reprise sans proxy
+        replay = None
+        if os.environ.get("REPLAY", "on").lower() != "off":
+            try:
+                replay = conn.execute(
+                    "select public.lm_replay_search(%s, %s, %s, %s, %s, %s) as r",
+                    (p["country_code"], p["gcid"], geoname_id, p.get("latitude"), p.get("longitude"), p.get("zoom")),
+                ).fetchone()["r"]
+            except Exception as exc:  # fonction absente (base pas à jour), coupure : vraie recherche
+                log.warning("annuaire : reprise impossible (%s), vraie recherche", str(exc).splitlines()[0])
+        if replay is not None:
+            return self._replay(p, conn, campaign, replay, filters, paused)
+
+        proxy_budget.check(conn)
         started = time.monotonic()
         cards = new = kept = 0
         stopped = None
@@ -299,6 +313,130 @@ class DiscoveryRunner:
                  duration_ms / 1000, proxy_bytes / 1e6)
         return {"cards": cards, "new": new, "kept": kept, "opened": opened, "stopped": stopped,
                 "proxy_bytes": proxy_bytes, "places_stored": stored}
+
+    def _replay(self, p: dict[str, Any], conn: psycopg.Connection, campaign: dict, replay: dict,
+                filters: Filters, paused) -> dict[str, Any]:
+        """Reprend une recherche déjà faite (annuaire commun, CDC §8.3-8.4) : mêmes filtres que la vraie recherche,
+        appliqués aux fiches de l'annuaire, livrées progressivement (paquets irréguliers) pour avoir l'air d'une
+        vraie recherche. Aucun proxy. Une entreprise que l'équipe a déjà est rattachée à la campagne (sans être
+        repayée) au lieu d'être sautée."""
+        pacing = conn.execute("select replay_pacing from public.lm_discovery_settings where id").fetchone()["replay_pacing"] or {}
+        rnd = random.Random()
+
+        def draw(key: str, default: list[float]) -> float:
+            lo, hi = (pacing.get(key) or default)[:2]
+            return rnd.uniform(float(lo), float(hi))
+
+        def wait(seconds: float) -> None:
+            end = time.monotonic() + max(seconds, 0)
+            while time.monotonic() < end:
+                if paused():
+                    conn.execute("select public.lm_release_search(%s, %s)", (p["campaign_id"], p["gcid"]))
+                    raise CampaignPaused(f"campagne mise en pause : reprise « {p['query']} » arrêtée, reprise plus tard")
+                time.sleep(min(1.0, max(end - time.monotonic(), 0)))
+
+        started = time.monotonic()
+        state = conn.execute(
+            """select (select min(t.created_at) from public.lm_tasks t
+                        where t.kind = 'discovery' and t.payload ->> 'campaign_id' = %(c)s) as launched_at,
+                      not exists (select 1 from public.lm_campaign_prospects cp where cp.campaign_id = %(c)s::uuid) as first,
+                      (select coalesce(sum(greatest(z.n - cc.next_zone_idx, 0)), 0)
+                         from public.lm_campaign_categories cc,
+                              (select count(*) as n from public.lm_campaign_zones where campaign_id = %(c)s::uuid) z
+                        where cc.campaign_id = %(c)s::uuid and not cc.abandoned and not cc.removed) as todo,
+                      (select coalesce(sum(cc.in_flight), 0) from public.lm_campaign_categories cc
+                        where cc.campaign_id = %(c)s::uuid) as running,
+                      extract(epoch from now()) as now_epoch""",
+            {"c": str(p["campaign_id"])},
+        ).fetchone()
+        log.info("reprise %s : première=%s, recherches restantes=%s, en cours=%s", p["query"], state["first"],
+                 state["todo"], state["running"])
+        if state["first"]:
+            wait(draw("first_delay", [20, 40]))  # premières fiches d'une campagne : 20 à 40 s, comme une vraie recherche
+
+        seen, places = set(), []
+        for row in replay.get("places") or []:
+            if row.get("place_id") and row["place_id"] not in seen:
+                seen.add(row["place_id"])
+                places.append(row)
+
+        # Dernière recherche d'une campagne : jamais fini en moins de min_total secondes après le lancement
+        stretch_until = None
+        if state["launched_at"] and int(state["todo"]) == 0 and int(state["running"]) <= 1:
+            launched = state["launched_at"].timestamp()
+            stretch_until = time.monotonic() + max(launched + float(pacing.get("min_total", 180)) - float(state["now_epoch"]), 0)
+
+        space_id, account_id = str(campaign["space_id"]), None
+        cards = new = kept = 0
+        stopped = None
+        i = 0
+        while i < len(places) and not stopped:
+            size = int(draw("batch", [10, 40]))
+            batch, i = places[i:i + size], i + size
+            for row in batch:
+                cards += 1
+                place = Place(name=row.get("name") or "", category=row.get("category") or "",
+                              rating=float(row["rating"]) if row.get("rating") is not None else None,
+                              review_count=row.get("review_count"), address=row.get("address") or "",
+                              phone=row.get("phone") or "", website=row.get("website") or "",
+                              maps_url=row.get("maps_url") or "", place_id=row["place_id"],
+                              latitude=row.get("latitude"), longitude=row.get("longitude"))
+                if row.get("is_chain") or not place.name:
+                    continue
+                if filters.in_area and not filters.in_area(place):
+                    continue
+                if filters.category_ok and place.category and not filters.category_ok(place.category):
+                    continue
+                if filters.website != "all" and not row.get("website_known"):
+                    continue  # site inconnu (liste compacte jamais ouverte) : on ne peut pas savoir s'il passe le filtre
+                if not _rating_ok(place.rating, filters) or not _website_ok(place.website, filters):
+                    continue
+                if filters.min_reviews and (place.review_count or 0) < filters.min_reviews:
+                    continue
+                if filters.exclude and filters.exclude(place.name, place.category, place.website):
+                    continue
+                key = site_key(place.website) or f"maps:{place.place_id}"
+                first_time = conn.execute("select public.lm_mark_place_seen(%s, %s, %s) as first",
+                                          (space_id, place.place_id, site_key(place.website))).fetchone()["first"]
+                new += int(bool(first_time))
+                if account_id is None:
+                    account_id = conn.execute("select account_id from public.lm_campaigns where id = %s",
+                                              (p["campaign_id"],)).fetchone()["account_id"]
+                if place.website and conn.execute("select public.lm_site_suppressed(%s, %s, %s) as s",
+                                                  (account_id, space_id, key)).fetchone()["s"]:
+                    continue  # liste d'opposition
+                outcome = conn.execute(
+                    "select public.lm_record_prospect(%s, %s) as r",
+                    (p["campaign_id"], Jsonb({
+                        "place_id": place.place_id, "name": place.name, "category": place.category,
+                        "rating": place.rating, "review_count": place.review_count, "address": place.address,
+                        "phone": place.phone, "website": place.website, "site_key": key, "maps_url": place.maps_url,
+                        "city": p.get("city"), "gcid": p.get("gcid"),
+                    })),
+                ).fetchone()["r"]
+                if outcome == "kept":
+                    kept += 1
+                elif outcome == "no_credits":
+                    stopped = "no_credits"
+                    break
+            if i < len(places) and not stopped:
+                pause = draw("pause", [3, 8])
+                if stretch_until is not None:
+                    batches_left = max((len(places) - i) / 25, 1)
+                    pause = max(pause, (stretch_until - time.monotonic()) / batches_left)
+                wait(pause)
+        if stretch_until is not None and not stopped:
+            wait(stretch_until - time.monotonic())
+
+        duration_ms = int((time.monotonic() - started) * 1000)
+        conn.execute(
+            "select public.lm_finish_search(%s, %s, %s, %s, %s, %s, %s, %s)",
+            (p["campaign_id"], p["gcid"], p["zone_idx"], cards, new, kept, duration_ms, stopped),
+        )
+        log.info("%s | reprise de l'annuaire : %d fiches, %d nouvelles, %d retenues (%.1fs, sans proxy)",
+                 p["query"], cards, new, kept, duration_ms / 1000)
+        return {"cards": cards, "new": new, "kept": kept, "opened": 0, "stopped": stopped, "proxy_bytes": 0,
+                "replay": True, "search_id": replay.get("search_id")}
 
     def on_final_failure(self, task: Task, conn: psycopg.Connection) -> None:
         """Recherche abandonnée après plusieurs échecs : on libère sa place (campagne) ou on la compte vide (estimation)."""

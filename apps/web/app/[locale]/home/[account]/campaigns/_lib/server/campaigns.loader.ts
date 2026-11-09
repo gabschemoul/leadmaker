@@ -1,6 +1,6 @@
 /**
  * Rôle : chargeurs serveur des pages campagnes (liste, détail, formulaire de modification, aperçu, réglages).
- * Données : lm_campaigns, lm_geo_cities, lm_categories, lm_prospects ; RPC lm_local_discovery_state, lm_auto_validation_allowed.
+ * Données : lm_campaigns, lm_geo_cities, lm_categories, lm_prospects, lm_campaign_prospects (aperçu des gardées) ; RPC lm_local_discovery_state, lm_auto_validation_allowed.
  * Écritures : aucune (lecture seule, client Supabase de l'utilisateur).
  */
 
@@ -8,6 +8,8 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@kit/supabase/database';
+
+import { keptCompaniesFilter } from '~/lib/leadmaker/sorted-companies-query';
 
 type Client = SupabaseClient<Database>;
 
@@ -41,7 +43,7 @@ export async function loadCampaign(client: Client, campaignId: string) {
   const { data, error } = await client
     .from('lm_campaigns')
     .select(
-      'id, account_id, space_id, name, status, country_code, created_at, templates, auto_validation, daily_limit, sender_id',
+      'id, account_id, space_id, name, status, country_code, created_at, templates, auto_validation, daily_limit, sender_id, sort_target, sort_version',
     )
     .eq('id', campaignId)
     .maybeSingle();
@@ -206,6 +208,34 @@ export async function loadPreviewProspects(client: Client, spaceId: string) {
   }
 
   return data ?? [];
+}
+
+/**
+ * Aperçu de « Votre message » pour une campagne triée : jusqu'à 20 entreprises gardées (pour la cible en cours
+ * `version`, ou gardées par le client), les plus récemment triées d'abord, avec ce qu'il faut pour remplacer les
+ * variables. Liste vide tant qu'aucune entreprise n'est gardée.
+ */
+export async function loadKeptPreviewProspects(
+  client: Client,
+  campaignId: string,
+  version: number,
+) {
+  const { data, error } = await client
+    .from('lm_campaign_prospects')
+    .select(
+      'prospect:lm_prospects(id, name, city, category, rating, review_count, website)',
+    )
+    .eq('campaign_id', campaignId)
+    .or(keptCompaniesFilter(version))
+    .order('sorted_at', { ascending: false, nullsFirst: false })
+    .order('prospect_id', { ascending: true })
+    .limit(20);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).flatMap((row) => (row.prospect ? [row.prospect] : []));
 }
 
 /**

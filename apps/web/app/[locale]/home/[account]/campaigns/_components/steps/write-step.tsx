@@ -12,16 +12,18 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 
-import type { CampaignTemplates } from '~/lib/leadmaker/templates';
+import type {
+  CampaignTemplates,
+  TemplateContext,
+} from '~/lib/leadmaker/templates';
 
 import type { SenderProfile } from '../../../sender/_lib/server/sender.loader';
-import type { loadPreviewProspects } from '../../_lib/server/campaigns.loader';
 import { CampaignMessagesForm } from '../campaign-messages-form';
 import { CampaignSenderSelect } from '../campaign-sender-select';
 
 /**
- * Étape 3, Rédiger : l'expéditeur (qui envoie) puis les messages de la
- * campagne et ses réglages d'envoi.
+ * Étape 3, « Votre message » (CDC-PARCOURS-TRI-ANNUAIRE §6) : les versions du message à gauche ; à droite
+ * l'expéditeur (qui envoie), l'aperçu sur une vraie entreprise et « Suivant : l'envoi ».
  */
 export async function WriteStep(props: {
   accountId: string;
@@ -29,7 +31,12 @@ export async function WriteStep(props: {
   templates: CampaignTemplates;
   sender: SenderProfile | null;
   senderHref: string;
-  prospects: Awaited<ReturnType<typeof loadPreviewProspects>>;
+  /** étape suivante (« Envoi ») */
+  nextHref: string;
+  /** campagne triée (cible en mots) : « Proposer avec l'IA », aperçu sur les entreprises gardées */
+  sorted: boolean;
+  /** entreprises de l'aperçu (gardées de la campagne triée, sinon derniers prospects du dossier) */
+  prospects: Array<TemplateContext['prospect'] & { id: string }>;
   sending: {
     dailyLimit: number;
     autoValidation: boolean;
@@ -50,94 +57,91 @@ export async function WriteStep(props: {
   const t = await getTranslations('campaigns.steps.write');
   const { sender } = props;
 
-  // Relooking du 8/11/2026 : l'éditeur de messages à gauche, l'expéditeur dans un
-  // panneau qui reste visible à droite (comme le panneau de réglages d'ElevenLabs).
-  return (
-    <div
-      className={'grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]'}
-      data-test={'campaign-step-write'}
-    >
-      <div className={'order-2 min-w-0 lg:order-1'}>
-        <CampaignMessagesForm
-          accountId={props.accountId}
-          campaignId={props.campaignId}
-          templates={props.templates}
-          sender={
-            sender
-              ? {
-                  first_name: sender.first_name,
-                  last_name: sender.last_name,
-                  company: sender.company,
-                  email: sender.email,
-                  phone: sender.phone,
-                  website: sender.website,
-                }
-              : null
-          }
-          senderHref={props.senderHref}
-          prospects={props.prospects}
-          sending={props.sending}
-          companyOptional={props.companyOptional}
-        />
-      </div>
+  // Relooking du 8/11/2026 : l'éditeur de messages à gauche, l'expéditeur dans un panneau à droite
+  // (comme le panneau de réglages d'ElevenLabs), suivi de l'aperçu (écran 3 du nouveau parcours).
+  const senderCard = (
+    <Card data-test={'campaign-sender-card'}>
+      <CardHeader>
+        <CardTitle>{t('senderTitle')}</CardTitle>
+        <CardDescription>{t('senderIntro')}</CardDescription>
+      </CardHeader>
 
-      <Card
-        data-test={'campaign-sender-card'}
-        className={'order-1 lg:sticky lg:top-16 lg:order-2'}
-      >
-        <CardHeader>
-          <CardTitle>{t('senderTitle')}</CardTitle>
-          <CardDescription>{t('senderIntro')}</CardDescription>
-        </CardHeader>
+      <CardContent className={'flex flex-col gap-4 text-sm'}>
+        {sender ? (
+          <div className={'flex items-center gap-3'}>
+            <span
+              className={
+                'bg-accent text-accent-foreground inline-flex size-10 items-center justify-center rounded-full font-medium'
+              }
+            >
+              {initials(sender.first_name, sender.last_name)}
+            </span>
 
-        <CardContent className={'flex flex-col gap-4 text-sm'}>
-          {sender ? (
-            <div className={'flex items-center gap-3'}>
-              <span
-                className={
-                  'bg-accent text-accent-foreground inline-flex size-10 items-center justify-center rounded-full font-medium'
-                }
-              >
-                {initials(sender.first_name, sender.last_name)}
+            <div className={'flex flex-col'}>
+              <span className={'font-medium'}>
+                {sender.first_name} {sender.last_name} · {sender.company}
               </span>
-
-              <div className={'flex flex-col'}>
-                <span className={'font-medium'}>
-                  {sender.first_name} {sender.last_name} · {sender.company}
-                </span>
-                <span className={'text-muted-foreground'}>
-                  {[sender.email, sender.phone].filter(Boolean).join(' · ')}
-                </span>
-              </div>
+              <span className={'text-muted-foreground'}>
+                {[sender.email, sender.phone].filter(Boolean).join(' · ')}
+              </span>
             </div>
-          ) : (
-            <div className={'text-muted-foreground flex items-center gap-3'}>
-              <UserRound className={'size-5'} />
-              <span>{t('senderMissing')}</span>
-            </div>
-          )}
+          </div>
+        ) : (
+          <div className={'text-muted-foreground flex items-center gap-3'}>
+            <UserRound className={'size-5'} />
+            <span>{t('senderMissing')}</span>
+          </div>
+        )}
 
-          <Button
-            variant={sender ? 'outline' : 'default'}
-            size={'sm'}
-            nativeButton={false}
-            data-test={'campaign-sender-link'}
-            render={<Link href={props.senderHref} />}
-          >
-            {sender ? t('senderEdit') : t('senderFill')}
-          </Button>
+        <Button
+          variant={sender ? 'outline' : 'default'}
+          size={'sm'}
+          nativeButton={false}
+          data-test={'campaign-sender-link'}
+          render={<Link href={props.senderHref} />}
+        >
+          {sender ? t('senderEdit') : t('senderFill')}
+        </Button>
 
-          {props.senders.length > 1 ? (
-            <div className={'border-t pt-4'}>
-              <CampaignSenderSelect
-                campaignId={props.campaignId}
-                senders={props.senders}
-                chosenSenderId={props.chosenSenderId}
-              />
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+        {props.senders.length > 1 ? (
+          <div className={'border-t pt-4'}>
+            <CampaignSenderSelect
+              campaignId={props.campaignId}
+              senders={props.senders}
+              chosenSenderId={props.chosenSenderId}
+            />
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div data-test={'campaign-step-write'}>
+      <CampaignMessagesForm
+        accountId={props.accountId}
+        campaignId={props.campaignId}
+        templates={props.templates}
+        sender={
+          sender
+            ? {
+                first_name: sender.first_name,
+                last_name: sender.last_name,
+                company: sender.company,
+                email: sender.email,
+                phone: sender.phone,
+                website: sender.website,
+              }
+            : null
+        }
+        senderHref={props.senderHref}
+        senderCard={senderCard}
+        nextHref={props.nextHref}
+        sorted={props.sorted}
+        prospects={props.prospects}
+        sending={props.sending}
+        companyOptional={props.companyOptional}
+      />
     </div>
   );
 }

@@ -63,6 +63,7 @@ import {
   loadAutoValidationAllowed,
   loadCampaign,
   loadCampaignForEdit,
+  loadKeptPreviewProspects,
   loadLocalDiscoveryState,
   loadPreviewProspects,
 } from '../_lib/server/campaigns.loader';
@@ -313,6 +314,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
             templates={templates}
             sender={sender}
             senderHref={senderHref}
+            nextHref={stepHref('contacter')}
           />
         ) : null}
 
@@ -384,17 +386,32 @@ async function WriteStepContent(props: {
   templates: ReturnType<typeof parseTemplates>;
   sender: Awaited<ReturnType<typeof loadCampaignSender>>;
   senderHref: string;
+  nextHref: string;
 }) {
   const client = getSupabaseServerClient();
   const user = await requireUserInServerComponent();
+  // campagne triée (cible en mots) : l'aperçu se fait sur ses entreprises gardées
+  const sorted = Boolean(props.campaign.sort_target?.trim());
 
-  const [prospects, autoValidationAllowed, companyOptional, senders] =
-    await Promise.all([
-      loadPreviewProspects(client, props.campaign.space_id),
-      loadAutoValidationAllowed(client, props.accountId),
-      isPowerUser(user.id),
-      loadSenders(client, props.campaign.space_id),
-    ]);
+  const [
+    prospects,
+    keptProspects,
+    autoValidationAllowed,
+    companyOptional,
+    senders,
+  ] = await Promise.all([
+    loadPreviewProspects(client, props.campaign.space_id),
+    sorted
+      ? loadKeptPreviewProspects(
+          client,
+          props.campaign.id,
+          props.campaign.sort_version,
+        )
+      : Promise.resolve([]),
+    loadAutoValidationAllowed(client, props.accountId),
+    isPowerUser(user.id),
+    loadSenders(client, props.campaign.space_id),
+  ]);
 
   return (
     <WriteStep
@@ -403,7 +420,10 @@ async function WriteStepContent(props: {
       templates={props.templates}
       sender={props.sender}
       senderHref={props.senderHref}
-      prospects={prospects}
+      nextHref={props.nextHref}
+      sorted={sorted}
+      // entreprises gardées d'abord ; sinon (aucune encore) les derniers prospects du dossier, comme avant
+      prospects={keptProspects.length > 0 ? keptProspects : prospects}
       sending={{
         dailyLimit: props.campaign.daily_limit,
         autoValidation: props.campaign.auto_validation,

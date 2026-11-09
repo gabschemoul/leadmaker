@@ -669,5 +669,43 @@
     "emptyToCheck": "Aucune entreprise à vérifier.",
     "more": "Afficher plus",
     "next": "Suivant : le message"
+  },
+  "messages": {
+    "title": "Votre message",
+    "intro": "Écrivez une ou plusieurs versions (jusqu'à 4) : elles sont envoyées à tour de rôle pour voir laquelle marche le mieux. Les variables entre accolades sont remplacées pour chaque entreprise ; si une info manque, la phrase qui la contient est retirée.",
+    "versionsLabel": "Versions du message",
+    "versionTab": "Version {letter}",
+    "addVersion": "Ajouter une version",
+    "bodyLabel": "Texte du message",
+    "insert": "Insérer :",
+    "insertVariables": {
+      "company": "Entreprise",
+      "city": "Ville",
+      "category": "Activité"
+    },
+    "insertMore": "Autres",
+    "insertMyCompany": "Insérer « Votre société »",
+    "previewTitle": "Aperçu",
+    "previewOther": "Autre",
+    "previewWaitingKept": "L'aperçu s'affichera dès les premières entreprises gardées.",
+    "previewFields": {
+      "name": "Nom",
+      "company": "Société",
+      "email": "E-mail",
+      "phone": "Téléphone",
+      "subject": "Objet",
+      "message": "Message"
+    },
+    "next": "Suivant : l'envoi",
+    "ai": {
+      "propose": "Proposer avec l'IA",
+      "proposing": "Rédaction…",
+      "proposed": "Message proposé par l'IA, relisez-le avant d'enregistrer",
+      "remaining": "{count, plural, =0 {plus aucune proposition aujourd'hui} one {# proposition restante aujourd'hui} other {# propositions restantes aujourd'hui}}",
+      "undo": "Annuler",
+      "quotaReached": "Vous avez utilisé vos 30 propositions du jour. Réessayez demain.",
+      "unavailable": "La proposition par l'IA n'est pas disponible pour le moment.",
+      "failed": "La proposition n'a pas pu être rédigée. Réessayez dans un instant."
+    }
   }
 }

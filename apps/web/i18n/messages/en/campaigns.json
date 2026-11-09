@@ -669,5 +669,43 @@
     "emptyToCheck": "No company to check.",
     "more": "Show more",
     "next": "Next: the message"
+  },
+  "messages": {
+    "title": "Your message",
+    "intro": "Write one or more versions (up to 4): they are sent in turn to see which one works best. Variables in braces are replaced for each company; if a piece of information is missing, the sentence containing it is removed.",
+    "versionsLabel": "Message versions",
+    "versionTab": "Version {letter}",
+    "addVersion": "Add a version",
+    "bodyLabel": "Message text",
+    "insert": "Insert:",
+    "insertVariables": {
+      "company": "Company",
+      "city": "City",
+      "category": "Category"
+    },
+    "insertMore": "More",
+    "insertMyCompany": "Insert “Your company”",
+    "previewTitle": "Preview",
+    "previewOther": "Another",
+    "previewWaitingKept": "The preview will appear as soon as the first companies are kept.",
+    "previewFields": {
+      "name": "Name",
+      "company": "Company",
+      "email": "E-mail",
+      "phone": "Phone",
+      "subject": "Subject",
+      "message": "Message"
+    },
+    "next": "Next: sending",
+    "ai": {
+      "propose": "Suggest with AI",
+      "proposing": "Writing…",
+      "proposed": "Message suggested by AI, read it before saving",
+      "remaining": "{count, plural, =0 {no suggestions left today} one {# suggestion left today} other {# suggestions left today}}",
+      "undo": "Undo",
+      "quotaReached": "You have used your 30 suggestions for today. Try again tomorrow.",
+      "unavailable": "AI suggestions are not available at the moment.",
+      "failed": "The suggestion could not be written. Please try again in a moment."
+    }
   }
 }

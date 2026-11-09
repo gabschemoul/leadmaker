@@ -11,6 +11,15 @@ export type CompaniesTab = 'kept' | 'toCheck';
 export const COMPANIES_PAGE_SIZE = 50;
 
 /**
+ * Filtre PostgREST (`.or(...)` sur lm_campaign_prospects) des entreprises gardées : gardées par le client, ou par
+ * le tri pour la cible en cours (`version`) sans choix du client. Partagé par « Vos entreprises » et l'aperçu de
+ * « Votre message ».
+ */
+export function keptCompaniesFilter(version: number) {
+  return `client_choice.eq.gardee,and(client_choice.is.null,verdict.eq.gardee,sorted_version.eq.${Math.trunc(version)})`;
+}
+
+/**
  * Une page d'entreprises triées d'une campagne (lm_campaign_prospects, lisible par les membres grâce à la
  * RLS), les plus récemment triées d'abord, avec le nom et la ville de l'entreprise et la raison courte du tri.
  * - Gardées : gardées par le client, ou par le tri pour la cible en cours (`version`) sans choix du client.
@@ -37,9 +46,7 @@ export async function fetchSortedCompanies(
 
   query =
     params.tab === 'kept'
-      ? query.or(
-          `client_choice.eq.gardee,and(client_choice.is.null,verdict.eq.gardee,sorted_version.eq.${params.version})`,
-        )
+      ? query.or(keptCompaniesFilter(params.version))
       : query
           .is('client_choice', null)
           .eq('verdict', 'a_verifier')

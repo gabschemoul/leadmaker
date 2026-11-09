@@ -1,17 +1,34 @@
 'use client';
 
 /**
- * Rôle : étape Rédiger — édition des 1 à 4 messages d'une campagne, aperçu sur de vrais prospects, réglages d'envoi.
- * Données : modèles, expéditeur et prospects d'aperçu passés par la page ; variables dans ~/lib/leadmaker/templates.
- * Écritures : saveCampaignTemplatesAction (lm_campaigns.templates, daily_limit, auto_validation).
+ * Rôle : étape « Votre message » (CDC-PARCOURS-TRI-ANNUAIRE §6) — versions A à D du message (envoyées à tour de
+ * rôle), « Proposer avec l'IA » (campagne triée), boutons « Insérer : Entreprise / Ville / Activité », aperçu du
+ * formulaire rempli sur une vraie entreprise (« Autre » pour la suivante), « Suivant : l'envoi ».
+ * Données : modèles, expéditeur et entreprises d'aperçu passés par la page (gardées de la campagne triée, sinon
+ * derniers prospects du dossier) ; variables dans ~/lib/leadmaker/templates.
+ * Écritures : saveCampaignTemplatesAction (lm_campaigns.templates, daily_limit, auto_validation) ;
+ * proposeMessageAction (compteur du plafond quotidien seulement : la proposition n'est enregistrée qu'avec
+ * « Enregistrer les messages »).
  */
-
-import { useRef, useState } from 'react';
+import {
+  type BaseSyntheticEvent,
+  type ReactNode,
+  useRef,
+  useState,
+} from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TriangleAlert } from 'lucide-react';
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Sparkles,
+  TriangleAlert,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm, useWatch } from 'react-hook-form';
@@ -21,11 +38,21 @@ import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@kit/ui/dropdown-menu';
 import {
   Form,
   FormControl,
@@ -39,7 +66,6 @@ import { toast } from '@kit/ui/sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Trans } from '@kit/ui/trans';
-import { cn } from '@kit/ui/utils';
 
 import {
   BODY_MAX,
@@ -56,13 +82,22 @@ import {
 
 import { CampaignTemplatesFormSchema } from '../_lib/schema/templates.schema';
 import { saveCampaignTemplatesAction } from '../_lib/server/campaign-outreach-actions';
+import { proposeMessageAction } from '../_lib/server/message-ai-actions';
 
 type PreviewProspect = TemplateContext['prospect'] & { id: string };
 
-type Slot = `messages.${number}`;
+/** zone de texte d'une version : son objet, son texte ou sa version courte */
+type TextField = 'subject' | 'body' | 'short';
 
-/** zone de texte d'un message : le message complet ou sa version courte */
-type TextField = 'body' | 'short';
+type MessageText = Record<TextField, string>;
+
+/** variables mises en avant (« Insérer : Entreprise / Ville / Activité ») ; les autres sont dans « Autres » */
+const MAIN_VARIABLES = ['company', 'city', 'category'] as const;
+
+const AI_ERRORS = ['quotaReached', 'unavailable', 'failed'] as const;
+
+/** lettre de la version (A, B, C, D) */
+const versionLetter = (index: number) => String.fromCharCode(65 + index);
 
 export function CampaignMessagesForm(props: {
   accountId: string;
@@ -70,6 +105,12 @@ export function CampaignMessagesForm(props: {
   templates: CampaignTemplates;
   sender: TemplateContext['sender'];
   senderHref: string;
+  /** carte de l'expéditeur, affichée en haut du panneau de droite */
+  senderCard: ReactNode;
+  /** étape suivante (« Envoi ») */
+  nextHref: string;
+  /** campagne triée (cible en mots) : « Proposer avec l'IA » */
+  sorted: boolean;
   prospects: PreviewProspect[];
   sending: {
     dailyLimit: number;
@@ -81,15 +122,18 @@ export function CampaignMessagesForm(props: {
   companyOptional: boolean;
 }) {
   const t = useTranslations('outreach.messages');
+  const tm = useTranslations('campaigns.messages');
+  const router = useRouter();
 
-  const { execute, isPending } = useAction(saveCampaignTemplatesAction, {
-    onSuccess: ({ data }) =>
-      toast.success(t('saved', { count: data?.count ?? 0 })),
-    onError: ({ error }) =>
-      toast.error(
-        t(error.serverError?.replace('outreach.messages.', '') ?? 'saveFailed'),
-      ),
-  });
+  // « Suivant : l'envoi » enregistre d'abord les changements, puis passe à l'étape suivante
+  // (la référence pour la logique des rappels, l'état pour savoir quel bouton tourne)
+  const goNextAfterSave = useRef(false);
+  const [goingNext, setGoingNext] = useState(false);
+
+  const setNextIntent = (value: boolean) => {
+    goNextAfterSave.current = value;
+    setGoingNext(value);
+  };
 
   const form = useForm({
     resolver: zodResolver(CampaignTemplatesFormSchema),
@@ -105,27 +149,124 @@ export function CampaignMessagesForm(props: {
     },
   });
 
-  const values = useWatch({ control: form.control });
-  const [previewIndex, setPreviewIndex] = useState(0);
-  const textareas = useRef<
-    Partial<Record<`${Slot}.${TextField}`, HTMLTextAreaElement | null>>
-  >({});
-  // zone de texte où vont les variables : la dernière où l'on a cliqué
-  const activeField = useRef<Partial<Record<Slot, TextField>>>({});
+  const save = useAction(saveCampaignTemplatesAction, {
+    onSuccess: ({ data }) => {
+      toast.success(t('saved', { count: data?.count ?? 0 }));
+      // les valeurs enregistrées deviennent la référence (plus de changement en attente)
+      form.reset(form.getValues());
 
-  const disabled = isPending || form.formState.isSubmitting;
+      if (goNextAfterSave.current) {
+        setNextIntent(false);
+        // l'action d'enregistrement est partagée et ne redirige pas : on navigue ici, une fois enregistré
+        router.push(props.nextHref);
+      }
+    },
+    onError: ({ error }) => {
+      setNextIntent(false);
+      toast.error(
+        t(error.serverError?.replace('outreach.messages.', '') ?? 'saveFailed'),
+      );
+    },
+  });
+
+  const values = useWatch({ control: form.control });
+
+  // versions affichées : au moins A et B, plus celles déjà remplies ; « + » en ajoute une (jusqu'à 4)
+  const [versionCount, setVersionCount] = useState(() => {
+    const lastFilled = props.templates.messages.reduce(
+      (last, message, index) => (message.body.trim() ? index + 1 : last),
+      0,
+    );
+
+    return Math.min(MAX_MESSAGES, Math.max(2, lastFilled));
+  });
+  const [active, setActive] = useState(0);
+  const [previewIndex, setPreviewIndex] = useState(0);
+
+  // dernière proposition de l'IA : de quoi revenir en arrière (« Annuler ») tant qu'elle n'a pas été modifiée
+  const [proposal, setProposal] = useState<{
+    index: number;
+    previous: MessageText;
+    proposed: MessageText;
+    remaining: number;
+  } | null>(null);
+  const proposingIndex = useRef(0);
+
+  const fields = useRef<
+    Partial<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>
+  >({});
+  // zone de texte où vont les variables : la dernière où l'on a cliqué (par version)
+  const activeField = useRef<Partial<Record<number, TextField>>>({});
+
+  const readText = (index: number): MessageText => ({
+    subject: form.getValues(`messages.${index}.subject`) ?? '',
+    body: form.getValues(`messages.${index}.body`) ?? '',
+    short: form.getValues(`messages.${index}.short`) ?? '',
+  });
+
+  const writeText = (index: number, text: MessageText) => {
+    for (const key of ['subject', 'body', 'short'] as const) {
+      form.setValue(`messages.${index}.${key}`, text[key], {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  };
+
+  const propose = useAction(proposeMessageAction, {
+    onSuccess: ({ data }) => {
+      if (!data) return;
+
+      const index = proposingIndex.current;
+      const proposed = {
+        subject: data.subject,
+        body: data.body,
+        short: data.short,
+      };
+
+      setProposal({
+        index,
+        previous: readText(index),
+        proposed,
+        remaining: data.remaining,
+      });
+      writeText(index, proposed);
+    },
+    onError: ({ error }) => {
+      const code = error.serverError?.replace('campaigns.messages.ai.', '');
+      const known = AI_ERRORS.find((item) => item === code) ?? 'failed';
+
+      toast.error(tm(`ai.${known}`));
+    },
+  });
+
+  const saving = save.isPending || form.formState.isSubmitting;
+  // lu pendant le rendu pour que react-hook-form suive l'état « modifié » (utilisé par « Suivant »)
+  const { isDirty } = form.formState;
   const company = props.sender?.company ?? null;
 
-  /** Insère une variable à l'endroit du curseur de la zone de texte active. */
-  const insertVariable = (slot: Slot, token: string) => {
-    const field = `${slot}.${activeField.current[slot] ?? 'body'}` as const;
-    const current = (form.getValues(field) as string) ?? '';
-    const element = textareas.current[field];
+  const submit = (event?: BaseSyntheticEvent) =>
+    form.handleSubmit(
+      (data) =>
+        save.execute({
+          ...data,
+          accountId: props.accountId,
+          campaignId: props.campaignId,
+        }),
+      () => setNextIntent(false),
+    )(event);
+
+  /** Insère une variable à l'endroit du curseur de la zone active (objet, texte ou version courte). */
+  const insertVariable = (index: number, token: string) => {
+    const name =
+      `messages.${index}.${activeField.current[index] ?? 'body'}` as const;
+    const current = form.getValues(name) ?? '';
+    const element = fields.current[name];
     const start = element?.selectionStart ?? current.length;
     const end = element?.selectionEnd ?? current.length;
     const next = `${current.slice(0, start)}{${token}}${current.slice(end)}`;
 
-    form.setValue(field, next, { shouldDirty: true });
+    form.setValue(name, next, { shouldDirty: true, shouldValidate: true });
 
     requestAnimationFrame(() => {
       element?.focus();
@@ -134,10 +275,44 @@ export function CampaignMessagesForm(props: {
     });
   };
 
-  const prospect = props.prospects[previewIndex] ?? props.prospects[0];
+  const addVersion = () => {
+    if (versionCount >= MAX_MESSAGES) return;
 
-  const renderSlot = (slot: Slot, max: number) => {
-    const slotValues = values.messages?.[Number(slot.split('.')[1])];
+    setActive(versionCount);
+    setVersionCount(versionCount + 1);
+  };
+
+  const proposeForActive = () => {
+    proposingIndex.current = active;
+    propose.execute({ campaignId: props.campaignId });
+  };
+
+  const goNext = () => {
+    if (isDirty) {
+      setNextIntent(true);
+      void submit();
+    } else {
+      router.push(props.nextHref);
+    }
+  };
+
+  const activeValues = values.messages?.[active];
+  const proposalVisible =
+    proposal !== null &&
+    proposal.index === active &&
+    (activeValues?.subject ?? '') === proposal.proposed.subject &&
+    (activeValues?.body ?? '') === proposal.proposed.body &&
+    (activeValues?.short ?? '') === proposal.proposed.short;
+
+  const registerField =
+    (index: number, key: TextField, fieldRef: (element: unknown) => void) =>
+    (element: HTMLInputElement | HTMLTextAreaElement | null) => {
+      fieldRef(element);
+      fields.current[`messages.${index}.${key}`] = element;
+    };
+
+  const renderVersion = (index: number) => {
+    const slotValues = values.messages?.[index];
     const body = slotValues?.body ?? '';
     const short = slotValues?.short ?? '';
     const subject = slotValues?.subject ?? '';
@@ -148,26 +323,9 @@ export function CampaignMessagesForm(props: {
         (short.trim() !== '' && !mentionsCompany(short, company)));
 
     return (
-      <div className={'flex flex-col gap-6'}>
+      <div className={'flex flex-col gap-5'}>
         <FormField
-          name={`${slot}.name`}
-          render={({ field }) => (
-            <FormItem className={'max-w-sm'}>
-              <FormLabel>
-                <Trans i18nKey={'outreach.messages.nameLabel'} />
-              </FormLabel>
-
-              <FormControl>
-                <Input data-test={`${slot}-name`} maxLength={100} {...field} />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          name={`${slot}.subject`}
+          name={`messages.${index}.subject`}
           render={({ field }) => (
             <FormItem>
               <FormLabel>
@@ -176,10 +334,12 @@ export function CampaignMessagesForm(props: {
 
               <FormControl>
                 <Input
-                  data-test={`${slot}-subject`}
+                  data-test={`messages.${index}-subject`}
                   maxLength={SUBJECT_MAX}
                   placeholder={t('subjectPlaceholder')}
                   {...field}
+                  onFocus={() => (activeField.current[index] = 'subject')}
+                  ref={registerField(index, 'subject', field.ref)}
                 />
               </FormControl>
 
@@ -189,25 +349,22 @@ export function CampaignMessagesForm(props: {
         />
 
         <FormField
-          name={`${slot}.body`}
+          name={`messages.${index}.body`}
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                <Trans i18nKey={'outreach.messages.bodyLabel'} />
+                <Trans i18nKey={'campaigns.messages.bodyLabel'} />
               </FormLabel>
 
               <FormControl>
                 <Textarea
-                  data-test={`${slot}-body`}
-                  className={'min-h-48'}
-                  maxLength={max}
+                  data-test={`messages.${index}-body`}
+                  className={'min-h-64'}
+                  maxLength={BODY_MAX}
                   placeholder={t('bodyPlaceholder')}
                   {...field}
-                  onFocus={() => (activeField.current[slot] = 'body')}
-                  ref={(element) => {
-                    field.ref(element);
-                    textareas.current[`${slot}.body`] = element;
-                  }}
+                  onFocus={() => (activeField.current[index] = 'body')}
+                  ref={registerField(index, 'body', field.ref)}
                 />
               </FormControl>
 
@@ -216,7 +373,7 @@ export function CampaignMessagesForm(props: {
                   'text-muted-foreground flex justify-end text-xs tabular-nums'
                 }
               >
-                {t('charCount', { count: body.length, max })}
+                {t('charCount', { count: body.length, max: BODY_MAX })}
               </div>
 
               <FormMessage />
@@ -224,8 +381,10 @@ export function CampaignMessagesForm(props: {
           )}
         />
 
+        <InsertButtons onInsert={(token) => insertVariable(index, token)} />
+
         <FormField
-          name={`${slot}.short`}
+          name={`messages.${index}.short`}
           render={({ field }) => (
             <FormItem
               className={'bg-muted/40 rounded-lg border border-dashed p-4'}
@@ -240,16 +399,13 @@ export function CampaignMessagesForm(props: {
 
               <FormControl>
                 <Textarea
-                  data-test={`${slot}-short`}
+                  data-test={`messages.${index}-short`}
                   className={'bg-background min-h-20'}
                   maxLength={SHORT_BODY_MAX}
                   placeholder={t('shortPlaceholder')}
                   {...field}
-                  onFocus={() => (activeField.current[slot] = 'short')}
-                  ref={(element) => {
-                    field.ref(element);
-                    textareas.current[`${slot}.short`] = element;
-                  }}
+                  onFocus={() => (activeField.current[index] = 'short')}
+                  ref={registerField(index, 'short', field.ref)}
                 />
               </FormControl>
 
@@ -266,16 +422,24 @@ export function CampaignMessagesForm(props: {
           )}
         />
 
-        <VariableButtons onInsert={(token) => insertVariable(slot, token)} />
-
         {companyMissing ? (
           <Alert
             className={alertExtras.warning}
-            data-test={`${slot}-company-warning`}
+            data-test={`messages.${index}-company-warning`}
           >
             <TriangleAlert className={'h-4'} />
-            <AlertDescription>
+            <AlertDescription className={'flex flex-col items-start gap-2'}>
               <Trans i18nKey={'outreach.messages.companyMissingWarning'} />
+              <Button
+                type={'button'}
+                size={'sm'}
+                variant={'outline'}
+                data-test={`messages.${index}-insert-my-company`}
+                onClick={() => insertVariable(index, 'my_company')}
+              >
+                <Plus />
+                <Trans i18nKey={'campaigns.messages.insertMyCompany'} />
+              </Button>
             </AlertDescription>
           </Alert>
         ) : null}
@@ -283,7 +447,7 @@ export function CampaignMessagesForm(props: {
         {unknown.length > 0 ? (
           <Alert
             className={alertExtras.warning}
-            data-test={`${slot}-unknown-warning`}
+            data-test={`messages.${index}-unknown-warning`}
           >
             <TriangleAlert className={'h-4'} />
             <AlertDescription>
@@ -295,212 +459,432 @@ export function CampaignMessagesForm(props: {
           </Alert>
         ) : null}
 
-        <Card data-test={`${slot}-preview`}>
-          <CardHeader>
-            <CardTitle className={'text-base'}>
-              <Trans i18nKey={'outreach.messages.previewTitle'} />
-            </CardTitle>
+        <FormField
+          name={`messages.${index}.name`}
+          render={({ field }) => (
+            <FormItem className={'max-w-sm'}>
+              <FormLabel>
+                <Trans i18nKey={'outreach.messages.nameLabel'} />
+              </FormLabel>
 
-            <CardDescription>
-              <Trans i18nKey={'outreach.messages.previewDescription'} />
-            </CardDescription>
-          </CardHeader>
+              <FormControl>
+                <Input
+                  data-test={`messages.${index}-name`}
+                  maxLength={100}
+                  {...field}
+                />
+              </FormControl>
 
-          <CardContent className={'flex flex-col gap-4'}>
-            {props.prospects.length === 0 ? (
-              <p className={'text-muted-foreground text-sm'}>
-                <Trans i18nKey={'outreach.messages.previewEmpty'} />
-              </p>
-            ) : (
-              <>
-                <div className={'flex flex-wrap gap-2'}>
-                  {props.prospects.map((item, index) => (
-                    <Button
-                      key={item.id}
-                      type={'button'}
-                      size={'sm'}
-                      variant={'secondary'}
-                      className={cn(
-                        'rounded-md',
-                        index === previewIndex &&
-                          'bg-foreground text-background hover:bg-foreground/90',
-                      )}
-                      data-test={`preview-prospect-${index}`}
-                      onClick={() => setPreviewIndex(index)}
-                    >
-                      {item.name}
-                    </Button>
-                  ))}
-                </div>
-
-                {body.trim() === '' ? (
-                  <p className={'text-muted-foreground text-sm'}>
-                    <Trans i18nKey={'outreach.messages.previewNoText'} />
-                  </p>
-                ) : prospect ? (
-                  <div
-                    className={
-                      'bg-muted/40 flex flex-col gap-2 rounded-lg border p-4 text-sm'
-                    }
-                  >
-                    {subject.trim() !== '' ? (
-                      <p className={'font-medium'}>
-                        <Trans i18nKey={'outreach.messages.previewSubject'} />{' '}
-                        {renderTemplate(subject, {
-                          prospect,
-                          sender: props.sender,
-                        })}
-                      </p>
-                    ) : null}
-
-                    <p className={'whitespace-pre-wrap'}>
-                      {renderTemplate(body, { prospect, sender: props.sender })}
-                    </p>
-
-                    {short.trim() !== '' ? (
-                      <div className={'mt-2 border-t border-dashed pt-3'}>
-                        <p className={'text-muted-foreground text-xs'}>
-                          <Trans i18nKey={'outreach.messages.shortLabel'} />
-                        </p>
-                        <p className={'whitespace-pre-wrap'}>
-                          {renderTemplate(short, {
-                            prospect,
-                            sender: props.sender,
-                          })}
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </>
-            )}
-          </CardContent>
-        </Card>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
     );
   };
 
+  const prospect =
+    props.prospects.length > 0
+      ? props.prospects[previewIndex % props.prospects.length]
+      : undefined;
+
   return (
     <Form {...form}>
-      <form
-        data-test={'campaign-messages-form'}
-        className={'flex flex-col gap-6'}
-        onSubmit={form.handleSubmit((data) =>
-          execute({
-            ...data,
-            accountId: props.accountId,
-            campaignId: props.campaignId,
-          }),
-        )}
+      <div
+        className={'grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]'}
       >
-        {props.sender ? null : (
-          <Alert
-            className={alertExtras.warning}
-            data-test={'messages-no-sender'}
-          >
-            <TriangleAlert className={'h-4'} />
-            <AlertDescription className={'flex flex-wrap gap-x-2'}>
-              <Trans i18nKey={'outreach.messages.noSenderWarning'} />
-              <Link className={'underline'} href={props.senderHref}>
-                <Trans i18nKey={'outreach.messages.noSenderLink'} />
-              </Link>
-            </AlertDescription>
-          </Alert>
-        )}
+        <form
+          data-test={'campaign-messages-form'}
+          className={'flex min-w-0 flex-col gap-4'}
+          onSubmit={(event) => {
+            setNextIntent(false);
+            void submit(event);
+          }}
+        >
+          {props.sender ? null : (
+            <Alert
+              className={alertExtras.warning}
+              data-test={'messages-no-sender'}
+            >
+              <TriangleAlert className={'h-4'} />
+              <AlertDescription className={'flex flex-wrap gap-x-2'}>
+                <Trans i18nKey={'outreach.messages.noSenderWarning'} />
+                <Link className={'underline'} href={props.senderHref}>
+                  <Trans i18nKey={'outreach.messages.noSenderLink'} />
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <Trans i18nKey={'outreach.messages.title'} />
-            </CardTitle>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Trans i18nKey={'campaigns.messages.title'} />
+              </CardTitle>
 
-            <CardDescription>
-              <Trans i18nKey={'outreach.messages.intro'} />
-            </CardDescription>
-          </CardHeader>
+              <CardDescription>
+                <Trans i18nKey={'campaigns.messages.intro'} />
+              </CardDescription>
+            </CardHeader>
 
-          <CardContent>
-            <Tabs defaultValue={'messages.0'} className={'flex-col'}>
-              <TabsList className={'flex-wrap'}>
-                {Array.from({ length: MAX_MESSAGES }, (_, index) => (
-                  <TabsTrigger
-                    key={index}
-                    value={`messages.${index}`}
-                    data-test={`messages-tab-${index}`}
-                  >
-                    {t('messageTab', { index: index + 1 })}
-                    {values.messages?.[index]?.body?.trim() ? ' •' : ''}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {Array.from({ length: MAX_MESSAGES }, (_, index) => (
-                <TabsContent
-                  key={index}
-                  value={`messages.${index}`}
-                  className={'pt-4'}
+            <CardContent>
+              <Tabs
+                value={String(active)}
+                onValueChange={(value) => setActive(Number(value))}
+                className={'flex-col'}
+              >
+                <div
+                  className={
+                    'flex flex-wrap items-center justify-between gap-3'
+                  }
                 >
-                  {renderSlot(`messages.${index}`, BODY_MAX)}
-                </TabsContent>
-              ))}
-            </Tabs>
-          </CardContent>
-        </Card>
+                  <div className={'flex items-center gap-1'}>
+                    <TabsList
+                      className={'flex-wrap'}
+                      aria-label={tm('versionsLabel')}
+                    >
+                      {Array.from({ length: versionCount }, (_, index) => (
+                        <TabsTrigger
+                          key={index}
+                          value={String(index)}
+                          data-test={`messages-tab-${index}`}
+                        >
+                          {tm('versionTab', { letter: versionLetter(index) })}
+                          {values.messages?.[index]?.body?.trim() ? ' •' : ''}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
 
-        {/* Réglages d'envoi (envois par jour, validation automatique) : dans Contacter → Avancé depuis le
-            5/11/2026 (audit E10). Le formulaire garde leurs valeurs pour les renvoyer telles quelles. */}
+                    {versionCount < MAX_MESSAGES ? (
+                      <Button
+                        type={'button'}
+                        size={'icon-sm'}
+                        variant={'ghost'}
+                        aria-label={tm('addVersion')}
+                        title={tm('addVersion')}
+                        data-test={'messages-add-version'}
+                        onClick={addVersion}
+                      >
+                        <Plus />
+                      </Button>
+                    ) : null}
+                  </div>
 
-        <div className={'flex justify-end'}>
+                  {props.sorted ? (
+                    <Button
+                      type={'button'}
+                      variant={'outline'}
+                      data-test={'messages-ai-propose'}
+                      loading={propose.isPending}
+                      disabled={saving}
+                      onClick={proposeForActive}
+                    >
+                      <Sparkles />
+                      <span>
+                        {propose.isPending ? (
+                          <Trans i18nKey={'campaigns.messages.ai.proposing'} />
+                        ) : (
+                          <Trans i18nKey={'campaigns.messages.ai.propose'} />
+                        )}
+                      </span>
+                    </Button>
+                  ) : null}
+                </div>
+
+                {proposalVisible && proposal ? (
+                  <div
+                    className={
+                      'text-muted-foreground mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm'
+                    }
+                    data-test={'messages-ai-proposed'}
+                  >
+                    <span>
+                      <Trans i18nKey={'campaigns.messages.ai.proposed'} />
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span>
+                      <Trans
+                        i18nKey={'campaigns.messages.ai.remaining'}
+                        values={{ count: proposal.remaining }}
+                      />
+                    </span>
+                    <span aria-hidden>·</span>
+                    <Button
+                      type={'button'}
+                      variant={'link'}
+                      size={'sm'}
+                      className={'h-auto px-0'}
+                      data-test={'messages-ai-undo'}
+                      onClick={() => {
+                        writeText(proposal.index, proposal.previous);
+                        setProposal(null);
+                      }}
+                    >
+                      <Trans i18nKey={'campaigns.messages.ai.undo'} />
+                    </Button>
+                  </div>
+                ) : null}
+
+                {Array.from({ length: versionCount }, (_, index) => (
+                  <TabsContent
+                    key={index}
+                    value={String(index)}
+                    className={'pt-4'}
+                  >
+                    {renderVersion(index)}
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Réglages d'envoi (envois par jour, validation automatique) : dans Contacter → Avancé depuis le
+              5/11/2026 (audit E10). Le formulaire garde leurs valeurs pour les renvoyer telles quelles. */}
+
+          <div className={'flex justify-end'}>
+            <Button
+              type={'submit'}
+              variant={'outline'}
+              data-test={'messages-save-button'}
+              loading={saving && !goingNext}
+              disabled={saving}
+            >
+              <Trans i18nKey={'outreach.messages.save'} />
+            </Button>
+          </div>
+        </form>
+
+        <div className={'flex min-w-0 flex-col gap-4 lg:sticky lg:top-16'}>
+          {props.senderCard}
+
+          <Card data-test={'messages-preview'}>
+            <CardHeader>
+              <CardTitle className={'min-w-0 truncate text-base'}>
+                <Trans i18nKey={'campaigns.messages.previewTitle'} />
+                {prospect ? (
+                  <span className={'text-muted-foreground font-normal'}>
+                    {' · '}
+                    {prospect.name}
+                  </span>
+                ) : null}
+              </CardTitle>
+
+              {props.prospects.length > 1 ? (
+                <CardAction>
+                  <Button
+                    type={'button'}
+                    size={'sm'}
+                    variant={'ghost'}
+                    data-test={'messages-preview-next'}
+                    onClick={() => setPreviewIndex(previewIndex + 1)}
+                  >
+                    <Trans i18nKey={'campaigns.messages.previewOther'} />
+                    <ChevronRight />
+                  </Button>
+                </CardAction>
+              ) : null}
+            </CardHeader>
+
+            <CardContent className={'text-sm'}>
+              {!prospect ? (
+                <p
+                  className={'text-muted-foreground'}
+                  data-test={'messages-preview-empty'}
+                >
+                  {props.sorted ? (
+                    <Trans i18nKey={'campaigns.messages.previewWaitingKept'} />
+                  ) : (
+                    <Trans i18nKey={'outreach.messages.previewEmpty'} />
+                  )}
+                </p>
+              ) : (activeValues?.body ?? '').trim() === '' ? (
+                <p className={'text-muted-foreground'}>
+                  <Trans i18nKey={'outreach.messages.previewNoText'} />
+                </p>
+              ) : (
+                <MessagePreview
+                  prospect={prospect}
+                  sender={props.sender}
+                  subject={activeValues?.subject ?? ''}
+                  body={activeValues?.body ?? ''}
+                  short={activeValues?.short ?? ''}
+                />
+              )}
+            </CardContent>
+          </Card>
+
           <Button
-            type={'submit'}
-            data-test={'messages-save-button'}
-            loading={disabled}
+            type={'button'}
+            className={'self-end'}
+            data-test={'campaign-step-next'}
+            loading={saving && goingNext}
+            disabled={saving}
+            onClick={goNext}
           >
-            <Trans i18nKey={'outreach.messages.save'} />
+            <span>
+              <Trans i18nKey={'campaigns.messages.next'} />
+            </span>
+            <ArrowRight className={'w-4'} />
           </Button>
         </div>
-      </form>
+      </div>
     </Form>
   );
 }
 
-function VariableButtons(props: { onInsert: (token: string) => void }) {
+/** Le formulaire de contact tel qu'il sera rempli pour une entreprise : vos coordonnées, l'objet, le message. */
+function MessagePreview(props: {
+  prospect: TemplateContext['prospect'];
+  sender: TemplateContext['sender'];
+  subject: string;
+  body: string;
+  short: string;
+}) {
+  const ctx = { prospect: props.prospect, sender: props.sender };
+  const sender = props.sender;
+  const empty = '—';
+
+  const rows = [
+    {
+      key: 'name',
+      value: sender
+        ? `${sender.first_name} ${sender.last_name}`.trim() || empty
+        : empty,
+    },
+    { key: 'company', value: sender?.company || empty },
+    { key: 'email', value: sender?.email || empty },
+    { key: 'phone', value: sender?.phone || empty },
+  ] as const;
+
+  return (
+    <dl className={'flex flex-col gap-3'} data-test={'messages-preview-form'}>
+      {rows.map((row) => (
+        <div key={row.key} className={'grid grid-cols-[96px_1fr] gap-2'}>
+          <dt className={'text-muted-foreground'}>
+            <Trans i18nKey={`campaigns.messages.previewFields.${row.key}`} />
+          </dt>
+          <dd className={'min-w-0 break-words'}>{row.value}</dd>
+        </div>
+      ))}
+
+      {props.subject.trim() !== '' ? (
+        <div className={'grid grid-cols-[96px_1fr] gap-2'}>
+          <dt className={'text-muted-foreground'}>
+            <Trans i18nKey={'campaigns.messages.previewFields.subject'} />
+          </dt>
+          <dd className={'min-w-0 font-medium break-words'}>
+            {renderTemplate(props.subject, ctx)}
+          </dd>
+        </div>
+      ) : null}
+
+      <div className={'flex flex-col gap-1.5'}>
+        <dt className={'text-muted-foreground'}>
+          <Trans i18nKey={'campaigns.messages.previewFields.message'} />
+        </dt>
+        <dd
+          className={
+            'bg-muted/40 rounded-lg border p-3 break-words whitespace-pre-wrap'
+          }
+        >
+          {renderTemplate(props.body, ctx)}
+        </dd>
+      </div>
+
+      {props.short.trim() !== '' ? (
+        <div className={'flex flex-col gap-1.5'}>
+          <dt className={'text-muted-foreground'}>
+            <Trans i18nKey={'outreach.messages.shortLabel'} />
+          </dt>
+          <dd
+            className={
+              'rounded-lg border border-dashed p-3 break-words whitespace-pre-wrap'
+            }
+          >
+            {renderTemplate(props.short, ctx)}
+          </dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
+/** « Insérer : Entreprise / Ville / Activité », et les autres variables dans « Autres ». */
+function InsertButtons(props: { onInsert: (token: string) => void }) {
   const t = useTranslations('outreach.messages');
 
+  const others = TEMPLATE_VARIABLES.filter(
+    (variable) =>
+      !(MAIN_VARIABLES as readonly string[]).includes(variable.token),
+  );
   const groups = [
     { key: 'prospect', label: 'variablesProspect' },
     { key: 'sender', label: 'variablesSender' },
   ] as const;
 
   return (
-    <div className={'flex flex-col gap-2'}>
-      <span className={'text-sm font-medium'}>
-        <Trans i18nKey={'outreach.messages.variablesTitle'} />
+    <div
+      className={'flex flex-wrap items-center gap-2'}
+      data-test={'messages-insert'}
+    >
+      <span className={'text-muted-foreground text-sm'}>
+        <Trans i18nKey={'campaigns.messages.insert'} />
       </span>
 
-      {groups.map((group) => (
-        <div key={group.key} className={'flex flex-wrap items-center gap-2'}>
-          <span className={'text-muted-foreground w-40 text-xs'}>
-            {t(group.label)}
-          </span>
+      {MAIN_VARIABLES.map((token) => (
+        <Button
+          key={token}
+          type={'button'}
+          size={'sm'}
+          variant={'outline'}
+          className={'rounded-full'}
+          data-test={`insert-${token}`}
+          // garde le curseur dans la zone de texte : le clic ne lui retire pas le focus
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => props.onInsert(token)}
+        >
+          <Trans i18nKey={`campaigns.messages.insertVariables.${token}`} />
+        </Button>
+      ))}
 
-          {TEMPLATE_VARIABLES.filter(
-            (variable) => variable.group === group.key,
-          ).map((variable) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
             <Button
-              key={variable.token}
               type={'button'}
               size={'sm'}
-              variant={'secondary'}
-              className={'rounded-md'}
-              data-test={`insert-${variable.token}`}
-              onClick={() => props.onInsert(variable.token)}
-            >
-              {t(`var.${variable.token}`)}
-            </Button>
+              variant={'ghost'}
+              className={'rounded-full'}
+              data-test={'insert-more'}
+            />
+          }
+        >
+          <Trans i18nKey={'campaigns.messages.insertMore'} />
+          <ChevronDown />
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align={'start'} className={'min-w-52'}>
+          {groups.map((group, groupIndex) => (
+            <DropdownMenuGroup key={group.key}>
+              {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
+
+              <DropdownMenuLabel>{t(group.label)}</DropdownMenuLabel>
+
+              {others
+                .filter((variable) => variable.group === group.key)
+                .map((variable) => (
+                  <DropdownMenuItem
+                    key={variable.token}
+                    data-test={`insert-${variable.token}`}
+                    onClick={() => props.onInsert(variable.token)}
+                  >
+                    {t(`var.${variable.token}`)}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuGroup>
           ))}
-        </div>
-      ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

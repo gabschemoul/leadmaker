@@ -565,6 +565,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"lm_credit_packs": {
+                  Row: {
+                    "account_id": string,"credits": number,"expires_at": string,"id": string,"order_ref": string,"pack_id": string,"purchased_at": string,"remaining": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"credits": number,"expires_at"?: string,"id"?: string,"order_ref": string,"pack_id": string,"purchased_at"?: string,"remaining": number
+                  }
+                  Update: {
+                    "account_id"?: string,"credits"?: number,"expires_at"?: string,"id"?: string,"order_ref"?: string,"pack_id"?: string,"purchased_at"?: string,"remaining"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "lm_credit_packs_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_credit_packs_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_account_workspace"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "lm_credit_packs_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "user_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"lm_discovery_settings": {
                   Row: {
                     "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"places_max_age_days": number,"places_missed_to_close": number,"prior": number,"recent_weight": number,"replay_pacing": NonNullable<Json>,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
@@ -1533,6 +1565,9 @@ isOneToOne: false
 "lm_autopilot_validate_clean":
 { Args: { "p_autopilot_id": string }; Returns: number
                            },
+"lm_available_credits":
+{ Args: { "p_account_id": string }; Returns: number
+                           },
 "lm_campaign_group_results":
 { Args: { "p_campaign_id": string }; Returns: {
               "group_key": string,"kept": number,"sent": number,"to_verify": number
@@ -1736,6 +1771,9 @@ isOneToOne: false
 "lm_finish_sort_group":
 { Args: { "p_campaign_id": string,"p_group": string,"p_prospect_id": string,"p_version": number }; Returns: boolean
                            },
+"lm_grant_credit_pack":
+{ Args: { "p_account_id": string,"p_credits": number,"p_order_ref": string,"p_pack_id": string }; Returns: boolean
+                           },
 "lm_has_plan":
 { Args: { "p_account_id": string }; Returns: boolean
                            },
@@ -1769,6 +1807,9 @@ isOneToOne: false
 { Args: { "p_account_id": string }; Returns: number
                            },
 "lm_outreach_reserved":
+{ Args: { "p_account_id": string }; Returns: number
+                           },
+"lm_pack_credits":
 { Args: { "p_account_id": string }; Returns: number
                            },
 "lm_pause_autopilot":

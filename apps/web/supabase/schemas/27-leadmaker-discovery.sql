@@ -512,7 +512,7 @@ begin
     raise exception 'campaign archived' using errcode = 'P0001', hint = 'archived';
   end if;
 
-  select p.active_campaigns, c.discovery_balance into v_limit, v_balance
+  select p.active_campaigns, c.discovery_balance + public.lm_pack_credits(c.account_id) into v_limit, v_balance
     from public.lm_account_credits c left join public.lm_plans p on p.id = c.plan_id
    where c.account_id = v_campaign.account_id;
 
@@ -910,7 +910,7 @@ begin
   if nullif(trim(v_campaign.sort_target), '') is not null then
     -- Payée plus tard, si le tri la garde ; plus aucun crédit : la recherche s'arrête là
     if coalesce((select c.discovery_balance from public.lm_account_credits c
-                  where c.account_id = v_campaign.account_id), 0) <= 0 then
+                  where c.account_id = v_campaign.account_id), 0) + public.lm_pack_credits(v_campaign.account_id) <= 0 then
       delete from public.lm_prospects where id = v_id;
       perform public.lm_pause_campaign(p_campaign_id, 'no_credits');
       return 'no_credits';

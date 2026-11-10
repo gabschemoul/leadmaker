@@ -208,6 +208,9 @@ security definer
 as $$
 declare
   v_balance integer;
+  v_rest integer;
+  v_take integer;
+  v_pack record;
 begin
   if p_quantity <= 0 then
     raise exception 'quantity must be positive';
@@ -225,7 +228,16 @@ begin
       where account_id = p_account_id for update;
   end if;
 
-  if v_balance is null or v_balance < p_quantity then
+  -- Packs de crédits (10/11/2026) : utilisés seulement quand le forfait ne suffit plus
+  if p_kind = 'discovery' and v_balance is not null and v_balance < p_quantity then
+    perform 1 from public.lm_credit_packs p
+     where p.account_id = p_account_id and p.remaining > 0 and p.expires_at > now()
+       for update;
+
+    if v_balance + public.lm_pack_credits(p_account_id) < p_quantity then
+      return false;
+    end if;
+  elsif v_balance is null or v_balance < p_quantity then
     return false;
   end if;
 
@@ -239,8 +251,22 @@ begin
   end;
 
   if p_kind = 'discovery' then
-    update public.lm_account_credits set discovery_balance = discovery_balance - p_quantity
+    -- d'abord les crédits du forfait, puis les packs, le plus proche de son expiration d'abord
+    update public.lm_account_credits set discovery_balance = discovery_balance - least(v_balance, p_quantity)
       where account_id = p_account_id;
+
+    v_rest := p_quantity - least(v_balance, p_quantity);
+
+    for v_pack in
+      select p.id, p.remaining from public.lm_credit_packs p
+       where p.account_id = p_account_id and p.remaining > 0 and p.expires_at > now()
+       order by p.expires_at, p.purchased_at
+    loop
+      exit when v_rest <= 0;
+      v_take := least(v_pack.remaining, v_rest);
+      update public.lm_credit_packs set remaining = remaining - v_take where id = v_pack.id;
+      v_rest := v_rest - v_take;
+    end loop;
   else
     update public.lm_account_credits set outreach_balance = outreach_balance - p_quantity
       where account_id = p_account_id;

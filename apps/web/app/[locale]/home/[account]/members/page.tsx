@@ -23,6 +23,7 @@ import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
 import { TableLoading } from '~/components/skeletons/table-loading';
+import { timed } from '~/lib/server/timing';
 
 // local imports
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
@@ -178,7 +179,7 @@ async function MembersTable({ params }: { params: Params }) {
   const slug = (await params).account;
 
   const [members, { user, account }] = await Promise.all([
-    loadAccountMembers(client, slug),
+    timed('members list', loadAccountMembers(client, slug)),
     loadTeamWorkspace(slug),
   ]);
 

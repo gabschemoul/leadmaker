@@ -8,6 +8,7 @@ import { requireUser } from '@kit/supabase/require-user';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import pathsConfig from '~/config/paths.config.ts';
+import { timed } from '~/lib/server/timing';
 
 /**
  * @name requireUserInServerComponent
@@ -20,10 +21,13 @@ export const requireUserInServerComponent = cache(async () => {
 
   const client = getSupabaseServerClient();
 
-  const result = await requireUser(client, {
-    signInPath: pathsConfig.auth.signIn,
-    mfaVerifyPath: pathsConfig.auth.verifyMfa,
-  });
+  const result = await timed(
+    'page requireUser',
+    requireUser(client, {
+      signInPath: pathsConfig.auth.signIn,
+      mfaVerifyPath: pathsConfig.auth.verifyMfa,
+    }),
+  );
 
   if (result.error) {
     redirect(result.redirectTo);

@@ -21,6 +21,7 @@ import {
   buildProspectsHref,
   parseProspectsSearchParams,
 } from '~/lib/leadmaker/prospects-query';
+import { timed } from '~/lib/server/timing';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
@@ -85,7 +86,10 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
-  const spaces = await loadSpaces(client, account.id);
+  const spaces = await timed(
+    'prospects spaces',
+    loadSpaces(client, account.id),
+  );
 
   // l'espace par défaut vient en premier ; avec un seul dossier client, la
   // notion reste invisible (pas de filtre, pas de paramètre d'URL)
@@ -94,15 +98,18 @@ async function ProspectsContent(props: ProspectsPageProps) {
   const spaceParam = showFolders ? space.id : undefined;
 
   const [{ prospects, total }, facets, campaigns] = await Promise.all([
-    loadProspectsPage(client, {
-      spaceId: space.id,
-      page: state.page,
-      sort: state.sort,
-      dir: state.dir,
-      filters: state.filters,
-    }),
-    loadProspectFacets(client, space.id),
-    loadSpaceCampaigns(client, space.id),
+    timed(
+      'prospects page',
+      loadProspectsPage(client, {
+        spaceId: space.id,
+        page: state.page,
+        sort: state.sort,
+        dir: state.dir,
+        filters: state.filters,
+      }),
+    ),
+    timed('prospects facets', loadProspectFacets(client, space.id)),
+    timed('prospects campaigns', loadSpaceCampaigns(client, space.id)),
   ]);
 
   const pageCount = Math.max(1, Math.ceil(total / PROSPECTS_PAGE_SIZE));

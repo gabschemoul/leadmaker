@@ -13,6 +13,7 @@ import {
 import { createMiddlewareClient } from '@kit/supabase/middleware-client';
 
 import pathsConfig from '~/config/paths.config';
+import { timed } from '~/lib/server/timing';
 
 const NEXT_ACTION_HEADER = 'next-action';
 
@@ -47,9 +48,9 @@ export default async function proxy(request: NextRequest) {
 
   // if a pattern handler exists, call it
   if (handlePattern) {
-    const patternHandlerResponse = await handlePattern(
-      request,
-      secureHeadersResponse,
+    const patternHandlerResponse = await timed(
+      'proxy auth ' + request.nextUrl.pathname,
+      Promise.resolve(handlePattern(request, secureHeadersResponse)),
     );
 
     // if a pattern handler returns a response, return it

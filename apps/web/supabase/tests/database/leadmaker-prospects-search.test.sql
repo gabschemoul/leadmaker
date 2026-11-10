@@ -59,8 +59,24 @@ select is((select count(*)::integer from public.lm_search_prospects((select spac
 select is((select count(*)::integer from public.lm_search_prospects((select space_b from t_ps), 'menuis')), 1,
   'B voit les siennes');
 
+-- compteurs des filtres (lm_prospect_facets, security definer depuis le 10/11/2026) : seulement son dossier
+set local role postgres;
+update public.lm_prospects set category = 'Menuisier', city = 'Lyon' where name like 'Menuiserie%';
+select makerkit.authenticate_as('ps_a');
+select is((select total::integer from public.lm_prospect_facets((select space_a from t_ps)) where kind = 'category' and value = 'Menuisier'), 1,
+  'Compteurs : le membre voit ses activités');
+select is((select count(*)::integer from public.lm_prospect_facets((select space_b from t_ps))), 0,
+  'Compteurs : rien sur le dossier d''une autre organisation');
+select makerkit.authenticate_as('ps_b');
+select is((select total::integer from public.lm_prospect_facets((select space_b from t_ps)) where kind = 'city' and value = 'Lyon'), 1,
+  'Compteurs : B voit les siens');
+select is((select count(*)::integer from public.lm_prospect_facets((select space_a from t_ps))), 0,
+  'Compteurs : B ne voit rien de A');
+
 -- anonyme : refusé
 set local role anon;
+select throws_ok($$ select * from public.lm_prospect_facets((select space_a from t_ps)) $$, '42501', null,
+  'Compteurs : anonyme refusé');
 select throws_ok($$ select * from public.lm_search_prospects((select space_a from t_ps), 'menuis') $$, '42501', null,
   'Anonyme : refusé');
 

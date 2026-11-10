@@ -25,14 +25,14 @@ export const generateRootMetadata = (): Metadata => {
     },
     // Logo « i baguette » (10/11/2026) : icônes = l'étoile bleue seule sur carré
     // (62 % de la largeur). L'icône SVG, mise en premier pour que les navigateurs
-    // la préfèrent, passe d'un carré noir à un carré blanc quand l'ordinateur est
+    // la préfèrent, passe d'un carré noir (étoile blanche) à un carré blanc (étoile bleue) quand l'ordinateur est
     // en mode sombre ; les PNG/ICO (Safari, anciens navigateurs) restent noirs.
-    // « ?v=2 » force les navigateurs à oublier l'ancienne icône.
+    // « ?v=3 » force les navigateurs à oublier l'ancienne icône.
     // Anciennes icônes : public/images/favicon-archive-repere/.
     icons: {
       icon: [
-        { url: '/images/favicon/favicon.svg?v=2', type: 'image/svg+xml' },
-        { url: '/images/favicon/favicon.ico?v=2', sizes: '48x48' },
+        { url: '/images/favicon/favicon.svg?v=3', type: 'image/svg+xml' },
+        { url: '/images/favicon/favicon.ico?v=3', sizes: '48x48' },
       ],
       apple: '/images/favicon/apple-touch-icon.png',
     },

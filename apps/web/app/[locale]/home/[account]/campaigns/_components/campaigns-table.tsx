@@ -30,6 +30,7 @@ import { cn } from '@kit/ui/utils';
 import type { Database } from '~/lib/database.types';
 
 import { CampaignStatusBadge } from '../../_components/leadmaker/campaign-status-badge';
+import { STATUS_FILTERS } from '../_lib/status-filters';
 
 type CampaignStatus = Database['public']['Enums']['lm_campaign_status'];
 
@@ -42,15 +43,6 @@ export interface CampaignRow {
   countryLabel: string;
   prospectsLabel: string;
 }
-
-/** Pastilles de statut, dans l'ordre d'affichage. */
-export const STATUS_FILTERS: CampaignStatus[] = [
-  'running',
-  'paused',
-  'draft',
-  'completed',
-  'archived',
-];
 
 export function CampaignsTable(props: {
   campaigns: CampaignRow[];

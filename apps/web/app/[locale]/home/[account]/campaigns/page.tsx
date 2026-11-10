@@ -36,8 +36,9 @@ import {
   loadSpaces,
 } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
-import { STATUS_FILTERS, CampaignsTable } from './_components/campaigns-table';
+import { CampaignsTable } from './_components/campaigns-table';
 import { loadCampaigns } from './_lib/server/campaigns.loader';
+import { STATUS_FILTERS } from './_lib/status-filters';
 
 type CampaignStatus = Database['public']['Enums']['lm_campaign_status'];
 

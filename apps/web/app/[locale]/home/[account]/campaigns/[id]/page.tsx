@@ -10,6 +10,7 @@
 import { Suspense } from 'react';
 
 import { notFound } from 'next/navigation';
+import { connection } from 'next/server';
 
 import { getLocale, getTranslations } from 'next-intl/server';
 import * as z from 'zod';
@@ -139,6 +140,10 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
   if (!z.string().uuid().safeParse(id).success) {
     notFound();
   }
+
+  // les requêtes partent toutes en même temps, avant le contrôle de session qui lisait l'heure : on marque la
+  // page « à la demande » d'abord (sinon erreur « Date.now() while prerendering » dans les journaux)
+  await connection();
 
   const client = getSupabaseServerClient();
 

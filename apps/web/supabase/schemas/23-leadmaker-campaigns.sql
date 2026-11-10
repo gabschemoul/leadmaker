@@ -107,23 +107,30 @@ grant update (name, templates, daily_limit, auto_validation, sender_id)
   on table public.lm_campaigns to authenticated;
 
 -- Consommation des crédits par jour et par campagne (page Facturation, audit E23). Appelant : appli.
--- security invoker : la RLS du journal et des campagnes s'applique (membres de l'organisation seulement).
+-- Sécurité : security definer (10/11/2026 : la règle d'accès évaluée sur chaque ligne du journal coûtait 2,5 s) ;
+-- l'appartenance est vérifiée une fois avec lm_member(p_account_id) : sinon aucune ligne. Le journal est d'abord
+-- agrégé (index ix_lm_credit_ledger_usage), le nom des campagnes ajouté ensuite sur ~30 lignes.
 create or replace function public.lm_credit_usage(p_account_id uuid, p_days integer default 30)
 returns table (day date, campaign_id uuid, campaign_name text, kind public.lm_credit_kind, used integer, added integer)
 set search_path = ''
 language sql
 stable
+security definer
 as $$
-  select (l.created_at at time zone 'UTC')::date, l.campaign_id, c.name::text, l.kind,
-         coalesce(sum(-l.delta) filter (where l.delta < 0), 0)::integer,
-         coalesce(sum(l.delta) filter (where l.delta > 0), 0)::integer
-    from public.lm_credit_ledger l
-    left join public.lm_campaigns c on c.id = l.campaign_id
-   where l.account_id = p_account_id
-     and l.created_at > now() - make_interval(days => least(greatest(coalesce(p_days, 30), 1), 365))
-   group by 1, 2, 3, 4
+  select d.day, d.campaign_id, c.name::text, d.kind, d.used, d.added
+    from (select (l.created_at at time zone 'UTC')::date as day, l.campaign_id, l.kind,
+                 coalesce(sum(-l.delta) filter (where l.delta < 0), 0)::integer as used,
+                 coalesce(sum(l.delta) filter (where l.delta > 0), 0)::integer as added
+            from public.lm_credit_ledger l
+           where l.account_id = p_account_id
+             and public.lm_member(p_account_id)
+             and l.created_at > now() - make_interval(days => least(greatest(coalesce(p_days, 30), 1), 365))
+           group by 1, 2, 3) d
+    left join public.lm_campaigns c on c.id = d.campaign_id and c.account_id = p_account_id
    order by 1 desc, 3 nulls first, 4;
 $$;
+
+revoke all on function public.lm_credit_usage(uuid, integer) from public;
 
 grant execute on function public.lm_credit_usage(uuid, integer) to authenticated, service_role;
 

@@ -17,6 +17,7 @@ import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
 
+import { CardLoading } from '~/components/skeletons/card-loading';
 import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 import billingConfig from '~/config/billing.config';
 import { currencyFor } from '~/lib/leadmaker/billing-currency';
@@ -54,17 +55,38 @@ function TeamAccountBillingPage({ params }: TeamAccountBillingPageProps) {
         title={<Trans i18nKey={'common.routes.billing'} />}
       />
 
-      <Suspense
-        fallback={
-          <Delayed className={'flex w-full flex-col'}>
-            <CardSkeleton rows={4} />
-          </Delayed>
-        }
-      >
-        <TeamAccountBillingContent params={params} />
-      </Suspense>
+      <div className={'flex flex-col gap-4 pb-32'}>
+        {/* les crédits d'abord, sans attendre l'abonnement (qui peut interroger Stripe) : 10/11/2026 */}
+        <Suspense
+          fallback={
+            <CardLoading titleKey={'billing.usage.title'} content={'area'} />
+          }
+        >
+          <CreditsSection params={params} />
+        </Suspense>
+
+        <Suspense
+          fallback={
+            <Delayed className={'flex w-full flex-col'}>
+              <CardSkeleton rows={4} />
+            </Delayed>
+          }
+        >
+          <TeamAccountBillingContent params={params} />
+        </Suspense>
+      </div>
     </PageBody>
   );
+}
+
+async function CreditsSection({
+  params,
+}: {
+  params: TeamAccountBillingPageProps['params'];
+}) {
+  const workspace = await loadTeamWorkspace((await params).account);
+
+  return <CreditUsageCard accountId={workspace.account.id} />;
 }
 
 async function TeamAccountBillingContent({
@@ -113,11 +135,7 @@ async function TeamAccountBillingContent({
   return (
     <>
       {/* relooking du 8/11/2026 : les crédits d'abord (jauges), puis le forfait sur toute la largeur */}
-      <div className={cn('flex flex-col gap-4 pb-32')}>
-        <Suspense fallback={null}>
-          <CreditUsageCard accountId={accountId} />
-        </Suspense>
-
+      <div className={cn('flex flex-col gap-4')}>
         <If condition={!hasBillingData}>
           <If
             condition={canManageBilling}

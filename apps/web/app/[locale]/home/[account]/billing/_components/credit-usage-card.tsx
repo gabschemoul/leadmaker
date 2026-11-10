@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+
 import { connection } from 'next/server';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -13,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -21,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@kit/ui/table';
+import { Trans } from '@kit/ui/trans';
 
 type UsageRow = {
   day: string;
@@ -43,7 +47,7 @@ export async function CreditUsageCard(props: { accountId: string }) {
   const t = await getTranslations('billing.usage');
   const format = await getFormatter();
 
-  const [credits, usage, packRows, available] = await Promise.all([
+  const [credits, packRows, available] = await Promise.all([
     client
       .from('lm_account_credits')
       .select(
@@ -51,10 +55,6 @@ export async function CreditUsageCard(props: { accountId: string }) {
       )
       .eq('account_id', props.accountId)
       .maybeSingle(),
-    client.rpc('lm_credit_usage', {
-      p_account_id: props.accountId,
-      p_days: 30,
-    }),
     loadActivePacks(client, props.accountId),
     client.rpc('lm_available_credits', { p_account_id: props.accountId }),
   ]);
@@ -68,28 +68,6 @@ export async function CreditUsageCard(props: { accountId: string }) {
   const packCredits = packs.reduce((sum, pack) => sum + pack.remaining, 0);
   const nextExpiry = packs[0]?.expires_at ?? null;
   const total = available.data ?? planBalance + packCredits;
-
-  // une ligne par jour et par campagne ; les recharges du forfait (sans campagne) à part
-  const rows = new Map<string, UsageRow>();
-
-  for (const row of usage.data ?? []) {
-    // anciens mouvements « prise de contact » : plus un solde, on ne les montre pas
-    if (row.kind !== 'discovery') continue;
-
-    const key = `${row.day}|${row.campaign_id ?? ''}`;
-    const current = rows.get(key) ?? {
-      day: row.day,
-      campaignName: row.campaign_name,
-      used: 0,
-      added: 0,
-    };
-
-    current.used += row.used;
-    current.added += row.added;
-    rows.set(key, current);
-  }
-
-  const lines = [...rows.values()];
 
   return (
     <Card data-test={'credit-usage-card'}>
@@ -154,40 +132,10 @@ export async function CreditUsageCard(props: { accountId: string }) {
           </div>
         )}
 
-        {usage.error ? null : lines.length === 0 ? (
-          <p className={'text-muted-foreground text-sm'}>{t('empty')}</p>
-        ) : (
-          <Table data-test={'credit-usage-table'}>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('dateColumn')}</TableHead>
-                <TableHead>{t('campaignColumn')}</TableHead>
-                <TableHead className={'text-right'}>
-                  {t('creditsColumn')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {lines.map((line) => (
-                <TableRow key={`${line.day}-${line.campaignName ?? ''}`}>
-                  <TableCell>
-                    {format.dateTime(new Date(line.day), {
-                      dateStyle: 'medium',
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    {line.campaignName ??
-                      (line.added > 0 ? t('refill') : t('other'))}
-                  </TableCell>
-                  <TableCell className={'text-right tabular-nums'}>
-                    {movement(line.used, line.added, format)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        {/* consommation : envoyée après le solde, elle ne le retarde pas (10/11/2026) */}
+        <Suspense fallback={<UsageTableLoading />}>
+          <CreditUsageTable accountId={props.accountId} />
+        </Suspense>
       </CardContent>
     </Card>
   );
@@ -272,5 +220,112 @@ function Balance(props: {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Consommation des 30 derniers jours, par jour et par campagne (lm_credit_usage). */
+async function CreditUsageTable(props: { accountId: string }) {
+  const client = getSupabaseServerClient();
+  const t = await getTranslations('billing.usage');
+  const format = await getFormatter();
+
+  const usage = await client.rpc('lm_credit_usage', {
+    p_account_id: props.accountId,
+    p_days: 30,
+  });
+
+  // une ligne par jour et par campagne ; les recharges du forfait (sans campagne) à part
+  const rows = new Map<string, UsageRow>();
+
+  for (const row of usage.data ?? []) {
+    // anciens mouvements « prise de contact » : plus un solde, on ne les montre pas
+    if (row.kind !== 'discovery') continue;
+
+    const key = `${row.day}|${row.campaign_id ?? ''}`;
+    const current = rows.get(key) ?? {
+      day: row.day,
+      campaignName: row.campaign_name,
+      used: 0,
+      added: 0,
+    };
+
+    current.used += row.used;
+    current.added += row.added;
+    rows.set(key, current);
+  }
+
+  const lines = [...rows.values()];
+
+  if (usage.error) {
+    return null;
+  }
+
+  return lines.length === 0 ? (
+    <p className={'text-muted-foreground text-sm'}>{t('empty')}</p>
+  ) : (
+    <Table data-test={'credit-usage-table'}>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t('dateColumn')}</TableHead>
+          <TableHead>{t('campaignColumn')}</TableHead>
+          <TableHead className={'text-right'}>{t('creditsColumn')}</TableHead>
+        </TableRow>
+      </TableHeader>
+
+      <TableBody>
+        {lines.map((line) => (
+          <TableRow key={`${line.day}-${line.campaignName ?? ''}`}>
+            <TableCell>
+              {format.dateTime(new Date(line.day), {
+                dateStyle: 'medium',
+              })}
+            </TableCell>
+            <TableCell>
+              {line.campaignName ?? (line.added > 0 ? t('refill') : t('other'))}
+            </TableCell>
+            <TableCell className={'text-right tabular-nums'}>
+              {movement(line.used, line.added, format)}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+/** Tableau de consommation pendant son chargement : vrais titres de colonnes, lignes en silhouette. */
+function UsageTableLoading() {
+  return (
+    <Table aria-busy={true}>
+      <TableHeader>
+        <TableRow>
+          <TableHead>
+            <Trans i18nKey={'billing.usage.dateColumn'} />
+          </TableHead>
+          <TableHead>
+            <Trans i18nKey={'billing.usage.campaignColumn'} />
+          </TableHead>
+          <TableHead className={'text-right'}>
+            <Trans i18nKey={'billing.usage.creditsColumn'} />
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+
+      <TableBody>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <TableRow key={index}>
+            <TableCell>
+              <Skeleton className={'h-4 w-24'} />
+            </TableCell>
+            <TableCell>
+              <Skeleton className={'h-4 w-40'} />
+            </TableCell>
+            <TableCell>
+              <Skeleton className={'ml-auto h-4 w-16'} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

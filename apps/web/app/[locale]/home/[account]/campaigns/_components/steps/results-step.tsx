@@ -141,7 +141,7 @@ export async function ResultsStep(props: {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className={'pl-4'}>{t('byGroup.group')}</TableHead>
+                <TableHead className={'pl-5'}>{t('byGroup.group')}</TableHead>
                 <TableHead className={'text-right'}>
                   {t('byGroup.kept')}
                 </TableHead>
@@ -151,7 +151,7 @@ export async function ResultsStep(props: {
                 <TableHead className={'text-right'}>
                   {t('byGroup.toVerify')}
                 </TableHead>
-                <TableHead className={'w-48 pr-4'}>
+                <TableHead className={'w-48 pr-5'}>
                   {t('byGroup.progress')}
                 </TableHead>
               </TableRow>
@@ -168,7 +168,7 @@ export async function ResultsStep(props: {
                   >
                     <TableCell
                       className={cn(
-                        'max-w-[22rem] truncate pl-4 font-medium',
+                        'max-w-[22rem] truncate pl-5 font-medium',
                         group.label === null && 'text-muted-foreground',
                       )}
                     >
@@ -201,7 +201,7 @@ export async function ResultsStep(props: {
                       {format.number(group.toVerify)}
                     </TableCell>
 
-                    <TableCell className={'pr-4'}>
+                    <TableCell className={'pr-5'}>
                       <ShareBar
                         value={groupShare}
                         label={percent(groupShare)}
@@ -224,13 +224,13 @@ export async function ResultsStep(props: {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className={'pl-4'}>
+                <TableHead className={'pl-5'}>
                   {t('versions.version')}
                 </TableHead>
                 <TableHead className={'text-right'}>
                   {t('versions.contacted')}
                 </TableHead>
-                <TableHead className={'pr-4 text-right'}>
+                <TableHead className={'pr-5 text-right'}>
                   {t('versions.toVerify')}
                 </TableHead>
               </TableRow>
@@ -239,7 +239,7 @@ export async function ResultsStep(props: {
             <TableBody>
               {versionRows.map((row) => (
                 <TableRow key={row.key}>
-                  <TableCell className={'max-w-[32rem] pl-4'}>
+                  <TableCell className={'max-w-[32rem] pl-5'}>
                     <span className={'flex min-w-0 flex-col'}>
                       <span className={'font-medium'}>{row.label}</span>
 
@@ -262,7 +262,7 @@ export async function ResultsStep(props: {
 
                   <TableCell
                     className={cn(
-                      'pr-4 text-right tabular-nums',
+                      'pr-5 text-right tabular-nums',
                       row.toVerify === 0 && 'text-muted-foreground',
                     )}
                   >

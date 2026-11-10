@@ -2,8 +2,6 @@ import {
   Contact,
   CreditCard,
   FolderKanban,
-  Inbox,
-  Radar,
   Settings,
   UserSearch,
   Users,
@@ -11,13 +9,19 @@ import {
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
+import { CampaignsIcon } from '~/components/icons/campaigns-icon';
 import { DashboardIcon } from '~/components/icons/dashboard-icon';
+import { FormsIcon } from '~/components/icons/forms-icon';
 import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 
-// icônes au gabarit d'ElevenLabs (8/11/2026) : 18 px, trait 1,5 px, bouts arrondis
-const iconClasses = 'size-[18px]';
-const iconProps = { className: iconClasses, strokeWidth: 1.5 } as const;
+// Icônes au gabarit d'ElevenLabs : 20 px (10/11/2026, un peu plus grandes qu'avant), trait de 1,5 px à
+// l'écran pour toutes. « ! » : le bouton de menu impose 16 px à ses icônes ([&_svg]:size-4).
+// Lucide est dessiné sur 24 : 1,8 × 20/24 = 1,5 px. Nos icônes sur 18 : 1,35 × 20/18 = 1,5 px.
+// barre repliée : le bouton ne laisse que 16 px, l'icône déborde de 2 px sur la marge intérieure
+const iconClasses = 'size-5! group-data-[collapsible=icon]:-m-0.5';
+const iconProps = { className: iconClasses, strokeWidth: 1.8 } as const;
+const customIconProps = { className: iconClasses, strokeWidth: 1.35 } as const;
 
 /**
  * `showSpaces` : l'entrée « Dossiers clients » n'apparaît que quand
@@ -31,18 +35,18 @@ const getRoutes = (account: string, showSpaces: boolean) => [
       {
         label: 'common.routes.dashboard',
         path: pathsConfig.app.accountHome.replace('[account]', account),
-        Icon: <DashboardIcon {...iconProps} />,
+        Icon: <DashboardIcon {...customIconProps} />,
         highlightMatch: `${pathsConfig.app.home}$`,
       },
       {
         label: 'common.routes.campaigns',
         path: createPath(pathsConfig.app.accountCampaigns, account),
-        Icon: <Radar {...iconProps} />,
+        Icon: <CampaignsIcon {...customIconProps} />,
       },
       {
         label: 'common.routes.forms',
         path: createPath(pathsConfig.app.accountForms, account),
-        Icon: <Inbox {...iconProps} />,
+        Icon: <FormsIcon {...customIconProps} />,
       },
       {
         label: 'common.routes.prospects',

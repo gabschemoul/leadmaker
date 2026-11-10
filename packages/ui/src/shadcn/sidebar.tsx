@@ -6,7 +6,6 @@ import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from 'cn';
-import { PanelLeftIcon } from 'lucide-react';
 
 import { Button } from '#components/button';
 import { Input } from '#components/input';
@@ -268,7 +267,33 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      {/* Prospectigo (10/11/2026) : icône fournie par Gabriel (cadre arrondi et barre à gauche), 20 px */}
+      <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        className="size-5"
+      >
+        <rect
+          x="7"
+          y="6.5"
+          width="7"
+          height="1.5"
+          rx="0.75"
+          transform="rotate(90 7 6.5)"
+          fill="currentColor"
+        />
+        <rect
+          x="3"
+          y="4"
+          width="14"
+          height="12"
+          rx="2.8"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+      </svg>
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

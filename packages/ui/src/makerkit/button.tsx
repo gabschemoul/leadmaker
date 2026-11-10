@@ -1,7 +1,7 @@
 /**
  * Prospectigo — boutons de l'appli. Depuis le 10/11/2026, le style vient tout entier de la primitive
  * shadcn (gabarits relevés sur ElevenLabs : voir `../shadcn/button.tsx`) ; cette enveloppe ne fait plus
- * que choisir la taille « pastille » pour la variante `chip`.
+ * que choisir la taille par défaut : « Create Voice » (36 px) pour le bouton noir, « pastille » pour `chip`.
  * Le site vitrine a ses propres boutons en pilule (`PillLink`), il n'est pas concerné.
  */
 import * as React from 'react';
@@ -14,7 +14,11 @@ function Button({ variant = 'default', size, ...props }: ButtonProps) {
   return (
     <ShadcnButton
       variant={variant}
-      size={size ?? (variant === 'chip' ? 'chip' : 'default')}
+      // le bouton noir prend le gabarit « Create Voice » (36 px), les autres celui de « Feedback » (32 px)
+      size={
+        size ??
+        (variant === 'chip' ? 'chip' : variant === 'default' ? 'lg' : 'default')
+      }
       {...props}
     />
   );

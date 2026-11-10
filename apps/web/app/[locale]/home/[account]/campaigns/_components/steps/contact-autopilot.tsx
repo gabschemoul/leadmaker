@@ -394,7 +394,7 @@ function AutopilotSetup(props: {
   const sectionTitle = (section: (typeof messageSections)[number]) => {
     const title = section.heading ?? t('messages.othersHeading');
 
-    return section.messages.every((message) => message.name === title)
+    return section.messages.every((message) => sameLabel(message.name, title))
       ? null
       : title;
   };
@@ -1238,4 +1238,17 @@ function feedLine(row: AutopilotFeedRow): {
     default:
       return { key: 'unreachable', kind: 'warn' };
   }
+}
+
+/** Compare deux libellés sans tenir compte des apostrophes typographiques, de la casse ni des espaces. */
+function sameLabel(a: string, b: string) {
+  const normalize = (value: string) =>
+    value
+      .normalize('NFC')
+      .replace(/[\u2018\u2019\u02bc`]/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+
+  return normalize(a) === normalize(b);
 }

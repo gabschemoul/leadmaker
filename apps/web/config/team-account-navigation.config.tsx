@@ -2,7 +2,6 @@ import {
   Contact,
   CreditCard,
   FolderKanban,
-  House,
   Inbox,
   Radar,
   Settings,
@@ -12,6 +11,7 @@ import {
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
+import { DashboardIcon } from '~/components/icons/dashboard-icon';
 import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 
@@ -31,7 +31,7 @@ const getRoutes = (account: string, showSpaces: boolean) => [
       {
         label: 'common.routes.dashboard',
         path: pathsConfig.app.accountHome.replace('[account]', account),
-        Icon: <House {...iconProps} />,
+        Icon: <DashboardIcon {...iconProps} />,
         highlightMatch: `${pathsConfig.app.home}$`,
       },
       {

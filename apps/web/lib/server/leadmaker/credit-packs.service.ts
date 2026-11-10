@@ -34,7 +34,7 @@ export function createCreditPacksService(client: Client) {
 
       const { data, error } = await client.rpc('lm_grant_credit_pack', {
         p_account_id: params.accountId,
-        p_pack_id: pack.planId,
+        p_pack_id: pack.packId,
         p_credits: credits,
         p_order_ref: `${params.orderId}:${line.variant_id}`,
       });
@@ -44,7 +44,7 @@ export function createCreditPacksService(client: Client) {
         throw error;
       }
 
-      granted.push({ packId: pack.planId, credits, added: data === true });
+      granted.push({ packId: pack.packId, credits, added: data === true });
     }
 
     return granted;

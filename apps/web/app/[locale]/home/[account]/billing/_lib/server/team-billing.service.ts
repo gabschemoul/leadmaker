@@ -18,7 +18,7 @@ import appConfig from '~/config/app.config';
 import billingConfig from '~/config/billing.config';
 import pathsConfig from '~/config/paths.config';
 import { Database } from '~/lib/database.types';
-import { CREDIT_PACKS_PRODUCT_ID } from '~/lib/leadmaker/credit-packs';
+import { isCreditPacksProduct } from '~/lib/leadmaker/credit-packs';
 
 import { TeamCheckoutSchema } from '../schema/team-billing.schema';
 
@@ -88,7 +88,7 @@ class TeamBillingService {
     const { plan, product } = getPlanDetails(params.productId, params.planId);
 
     // Packs de crédits (10/11/2026) : réservés aux organisations dont l'abonnement est en cours
-    if (product.id === CREDIT_PACKS_PRODUCT_ID) {
+    if (isCreditPacksProduct(product.id)) {
       const subscription = await api.getSubscription(accountId);
 
       if (!subscription?.active) {

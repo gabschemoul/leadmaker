@@ -19,6 +19,45 @@ const provider = BillingProviderSchema.parse(
 const price = (envName: string, fallback: string) =>
   process.env[envName] || fallback;
 
+/** Packs de crédits S / M / L dans une devise (ids de plan suffixés « -eur » pour l'euro). */
+function creditPacksProduct(
+  id: string,
+  currency: 'USD' | 'EUR',
+  envSuffix: string,
+) {
+  const planSuffix = envSuffix ? '-eur' : '';
+  const packs = [
+    { key: 'S', name: 'Pack S', cost: 99 },
+    { key: 'M', name: 'Pack M', cost: 279 },
+    { key: 'L', name: 'Pack L', cost: 549 },
+  ];
+
+  return {
+    id,
+    name: 'Packs de crédits',
+    description: 'billing.creditPacks.description',
+    currency,
+    hidden: true,
+    plans: packs.map((pack) => ({
+      name: pack.name,
+      id: `pack-${pack.key.toLowerCase()}${planSuffix}`,
+      paymentType: 'one-time' as const,
+      lineItems: [
+        {
+          id: price(
+            `NEXT_PUBLIC_STRIPE_PRICE_PACK_${pack.key}${envSuffix}`,
+            `price_pack_${pack.key.toLowerCase()}${planSuffix.replace('-', '_')}`,
+          ),
+          name: pack.name,
+          cost: pack.cost,
+          type: 'flat' as const,
+        },
+      ],
+    })),
+    features: ['billing.creditPacks.validity'],
+  };
+}
+
 export default createBillingSchema({
   provider,
   products: [
@@ -171,55 +210,9 @@ export default createBillingSchema({
         'billing.plans.scale.features.support',
       ],
     },
-    {
-      // Packs de crédits : paiement unique, achetés depuis la page Facturation (jamais dans le choix de forfait)
-      id: 'credit-packs',
-      name: 'Packs de crédits',
-      description: 'billing.creditPacks.description',
-      currency: 'USD',
-      hidden: true,
-      plans: [
-        {
-          name: 'Pack S',
-          id: 'pack-s',
-          paymentType: 'one-time',
-          lineItems: [
-            {
-              id: price('NEXT_PUBLIC_STRIPE_PRICE_PACK_S', 'price_pack_s'),
-              name: 'Pack S',
-              cost: 99,
-              type: 'flat' as const,
-            },
-          ],
-        },
-        {
-          name: 'Pack M',
-          id: 'pack-m',
-          paymentType: 'one-time',
-          lineItems: [
-            {
-              id: price('NEXT_PUBLIC_STRIPE_PRICE_PACK_M', 'price_pack_m'),
-              name: 'Pack M',
-              cost: 279,
-              type: 'flat' as const,
-            },
-          ],
-        },
-        {
-          name: 'Pack L',
-          id: 'pack-l',
-          paymentType: 'one-time',
-          lineItems: [
-            {
-              id: price('NEXT_PUBLIC_STRIPE_PRICE_PACK_L', 'price_pack_l'),
-              name: 'Pack L',
-              cost: 549,
-              type: 'flat' as const,
-            },
-          ],
-        },
-      ],
-      features: ['billing.creditPacks.validity'],
-    },
+    // Packs de crédits : paiement unique, achetés depuis la page Facturation (jamais dans le choix de forfait).
+    // Deux produits : en euros pour les clients européens, en dollars pour les autres (choix de Gabriel, 10/11).
+    creditPacksProduct('credit-packs', 'USD', ''),
+    creditPacksProduct('credit-packs-eur', 'EUR', '_EUR'),
   ],
 });

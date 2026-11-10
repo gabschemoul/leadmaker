@@ -14,7 +14,6 @@ import { If } from '@kit/ui/if';
 import { Trans } from '@kit/ui/trans';
 
 import billingConfig from '~/config/billing.config';
-import { CREDIT_PACKS_PRODUCT_ID } from '~/lib/leadmaker/credit-packs';
 
 import { createTeamAccountCheckoutSession } from '../_lib/server/server-actions';
 
@@ -33,6 +32,7 @@ const EmbeddedCheckout = dynamic(
 
 type PackTile = {
   planId: string;
+  productId: string;
   credits: string;
   price: string;
   perThousand: string;
@@ -68,7 +68,7 @@ export function CreditPacksPicker(props: {
     },
   });
 
-  const buy = (planId: string) => {
+  const buy = (planId: string, productId: string) => {
     setState({ selected: planId, checkoutToken: null, error: false });
 
     appEvents.emit({
@@ -78,7 +78,7 @@ export function CreditPacksPicker(props: {
 
     execute({
       planId,
-      productId: CREDIT_PACKS_PRODUCT_ID,
+      productId,
       slug: props.slug,
       accountId: props.accountId,
     });
@@ -124,7 +124,7 @@ export function CreditPacksPicker(props: {
               data-test={`credit-pack-buy-${pack.planId}`}
               loading={isPending && state.selected === pack.planId}
               disabled={isPending}
-              onClick={() => buy(pack.planId)}
+              onClick={() => buy(pack.planId, pack.productId)}
             >
               <Trans i18nKey={'billing.creditPacks.buy'} />
             </Button>

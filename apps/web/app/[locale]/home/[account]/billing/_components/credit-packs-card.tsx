@@ -1,4 +1,6 @@
-import { getFormatter, getTranslations } from 'next-intl/server';
+import { headers } from 'next/headers';
+
+import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
 
 import {
   Card,
@@ -8,7 +10,7 @@ import {
   CardTitle,
 } from '@kit/ui/card';
 
-import { CREDIT_PACKS } from '~/lib/leadmaker/credit-packs';
+import { creditPacksFor, packCurrencyFor } from '~/lib/leadmaker/credit-packs';
 
 import { CreditPacksPicker } from './credit-packs-picker';
 
@@ -21,8 +23,18 @@ export async function CreditPacksCard(props: {
   accountId: string;
   slug: string;
 }) {
-  const t = await getTranslations('billing.creditPacks');
-  const format = await getFormatter();
+  const [t, format, locale, requestHeaders] = await Promise.all([
+    getTranslations('billing.creditPacks'),
+    getFormatter(),
+    getLocale(),
+    headers(),
+  ]);
+
+  // euros pour les clients européens, dollars pour les autres (pays donné par Vercel)
+  const currency = packCurrencyFor({
+    country: requestHeaders.get('x-vercel-ip-country'),
+    locale,
+  });
 
   const money = (value: number, currency: string) =>
     format.number(value, {
@@ -32,8 +44,9 @@ export async function CreditPacksCard(props: {
       maximumFractionDigits: 2,
     });
 
-  const packs = CREDIT_PACKS.map((pack) => ({
+  const packs = creditPacksFor(currency).map((pack) => ({
     planId: pack.planId,
+    productId: pack.productId,
     credits: t('credits', { count: format.number(pack.credits) }),
     price: money(pack.price, pack.currency),
     perThousand: t('perThousand', {

@@ -111,7 +111,9 @@ export function MobileSiteNavigation({
                 }
               >
                 {t('marketing.theme')}
-                <MobileModeToggle className={'size-10 border'} />
+                <MobileModeToggle
+                  className={'hover:bg-muted size-10 rounded-lg border'}
+                />
               </div>
 
               <div className={'mt-auto flex flex-col gap-3 pt-8'}>

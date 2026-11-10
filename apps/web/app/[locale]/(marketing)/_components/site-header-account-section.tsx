@@ -82,14 +82,14 @@ function AuthButtons() {
     >
       <div className={'hidden md:flex'}>
         <If condition={features.enableThemeToggle}>
-          <ModeToggle />
+          <ModeToggle className={'hover:bg-muted rounded-lg'} />
         </If>
       </div>
 
       {/* sur téléphone, le thème se change depuis le menu (manque de place) */}
       <div className={'hidden sm:flex md:hidden'}>
         <If condition={features.enableThemeToggle}>
-          <MobileModeToggle />
+          <MobileModeToggle className={'hover:bg-muted rounded-lg'} />
         </If>
       </div>
 

@@ -139,7 +139,7 @@ export function ContactForm() {
           type={'submit'}
           size="lg"
           className={
-            'h-11 self-start rounded-full px-5 text-[0.9375rem] font-normal'
+            'bg-brand text-brand-foreground hover:bg-brand-hover h-11 self-start rounded-full px-5 text-[0.9375rem] font-normal'
           }
         >
           <Trans i18nKey={'marketing.sendMessage'} />

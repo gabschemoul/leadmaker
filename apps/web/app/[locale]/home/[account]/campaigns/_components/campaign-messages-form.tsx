@@ -1074,7 +1074,6 @@ function InsertButtons(props: {
           type={'button'}
           size={'sm'}
           variant={'outline'}
-          className={'rounded-full'}
           data-test={`insert-${token}`}
           // garde le curseur dans la zone de texte : le clic ne lui retire pas le focus
           onMouseDown={(event) => event.preventDefault()}
@@ -1091,7 +1090,6 @@ function InsertButtons(props: {
               type={'button'}
               size={'sm'}
               variant={'ghost'}
-              className={'rounded-full'}
               data-test={'insert-more'}
             />
           }

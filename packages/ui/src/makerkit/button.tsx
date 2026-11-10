@@ -1,28 +1,20 @@
 /**
- * Prospectigo (8/11/2026) — boutons de l'appli dans la charte du site (fenêtre d'appli de la page
- * d'accueil) : toujours en pilule, bleu Klein pour l'action (`default`), blanc avec un contour de
- * 0,5 px et une ombre très douce pour le secondaire (`outline`).
- * Enveloppe la primitive shadcn (laissée intacte) ; `cn()` fait gagner le `className` du point d'appel.
+ * Prospectigo — boutons de l'appli. Depuis le 10/11/2026, le style vient tout entier de la primitive
+ * shadcn (gabarits relevés sur ElevenLabs : voir `../shadcn/button.tsx`) ; cette enveloppe ne fait plus
+ * que choisir la taille « pastille » pour la variante `chip`.
+ * Le site vitrine a ses propres boutons en pilule (`PillLink`), il n'est pas concerné.
  */
 import * as React from 'react';
 
-import { cn } from '../lib/utils';
 import { Button as ShadcnButton, buttonVariants } from '../shadcn/button';
 
 type ButtonProps = React.ComponentProps<typeof ShadcnButton>;
 
-function Button({ className, variant = 'default', ...props }: ButtonProps) {
+function Button({ variant = 'default', size, ...props }: ButtonProps) {
   return (
     <ShadcnButton
       variant={variant}
-      className={cn(
-        'rounded-full',
-        variant === 'default' &&
-          'bg-brand text-brand-foreground hover:bg-brand-hover',
-        variant === 'outline' &&
-          'ring-pill-ring shadow-soft hover:bg-background dark:bg-card dark:hover:bg-secondary border-transparent ring-[0.5px] dark:border-transparent',
-        className,
-      )}
+      size={size ?? (variant === 'chip' ? 'chip' : 'default')}
       {...props}
     />
   );
@@ -30,10 +22,10 @@ function Button({ className, variant = 'default', ...props }: ButtonProps) {
 
 /** Variantes propres au projet, à appliquer par `className`. */
 export const buttonExtras = {
-  /** L'action principale de la page, en bleu Klein (une seule par écran). */
-  brand: 'bg-brand text-brand-foreground hover:bg-brand-hover',
-  /** Pilule un peu plus haute pour l'action principale d'une page. */
-  pill: 'h-9 px-4 text-sm',
+  /** L'action principale de la page (noire, comme « Create Voice » d'ElevenLabs). */
+  brand: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+  /** Gabarit « Create Voice » pour l'action principale d'une page : 36 px, 14 px, arrondi 10 px. */
+  pill: "h-9 gap-1.5 rounded-[10px] px-3 text-[14px] [&_svg:not([class*='size-'])]:size-[18px]",
 } as const;
 
 export type ButtonExtraVariant = keyof typeof buttonExtras;

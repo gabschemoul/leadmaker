@@ -1,6 +1,7 @@
 /**
- * Rôle : pastille de filtre cliquable (relooking du 8/11/2026, charte du site) — blanche avec un
- * contour fin, bleu pâle avec le texte bleu quand elle est active, compteur discret à droite.
+ * Rôle : pastille de filtre cliquable, calquée le 10/11/2026 sur les filtres d'ElevenLabs
+ * (« Conversational », « Narration ») : 40 px, arrondi 12 px, fond transparent et filet à 10 % ;
+ * active = filet noir renforcé (comme le filtre de langue choisi). Compteur discret à droite.
  * Composant serveur (lien). Écritures : aucune.
  */
 import Link from 'next/link';
@@ -20,21 +21,16 @@ export function FilterChip(props: {
       aria-current={props.active ? 'page' : undefined}
       data-test={props.testId}
       className={cn(
-        'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[14px] font-medium whitespace-nowrap transition-colors',
+        'text-foreground flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-[14px] font-medium whitespace-nowrap transition-colors duration-75',
         props.active
-          ? 'bg-brand-pale text-brand-hover dark:text-brand'
-          : 'bg-card text-foreground ring-pill-ring shadow-soft hover:bg-muted ring-[0.5px]',
+          ? 'border-foreground ring-foreground bg-foreground/[0.02] hover:bg-foreground/[0.043] ring-[0.5px]'
+          : 'border-foreground/10 hover:bg-foreground/[0.043] active:bg-foreground/10',
       )}
     >
       <span>{props.label}</span>
 
       {props.count !== undefined ? (
-        <span
-          className={cn(
-            'text-xs tabular-nums',
-            props.active ? 'opacity-70' : 'text-muted-foreground',
-          )}
-        >
+        <span className={cn('text-xs tabular-nums', 'text-muted-foreground')}>
           {props.count}
         </span>
       ) : null}

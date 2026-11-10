@@ -559,7 +559,7 @@ function AutopilotSetup(props: {
               type={'button'}
               variant={'outline'}
               size={'icon'}
-              className={'size-12 rounded-xl'}
+              className={'size-12'}
               aria-label={t('less')}
               disabled={target <= min}
               onClick={() => setTarget(target - STEP)}
@@ -596,7 +596,7 @@ function AutopilotSetup(props: {
               type={'button'}
               variant={'outline'}
               size={'icon'}
-              className={'size-12 rounded-xl'}
+              className={'size-12'}
               aria-label={t('more')}
               disabled={target >= max}
               onClick={() => setTarget(target + STEP)}
@@ -689,7 +689,6 @@ function AutopilotSetup(props: {
             <Button
               type={'submit'}
               size={'lg'}
-              className={'h-12 rounded-xl px-6 text-base font-medium'}
               disabled={!props.ready}
               loading={pending}
               data-test={'autopilot-launch'}
@@ -927,7 +926,6 @@ function AutopilotPreview(props: {
         {rows.length > 0 ? (
           <Button
             size={'lg'}
-            className={'h-12 rounded-xl px-6 font-medium'}
             disabled={cancel.isPending}
             loading={confirm.isPending}
             data-test={'autopilot-confirm'}
@@ -940,7 +938,6 @@ function AutopilotPreview(props: {
         <Button
           variant={'outline'}
           size={'lg'}
-          className={'h-12 rounded-xl'}
           nativeButton={false}
           render={<Link href={props.writeHref} />}
         >

@@ -131,9 +131,11 @@ export function PageBody(
     className?: string;
   }>,
 ) {
-  // Prospectigo (8/11/2026) : contenu centré avec de l'air, comme les pages ElevenLabs
+  // Prospectigo (8/11/2026) : contenu centré avec de l'air, comme les pages ElevenLabs.
+  // scroll-mt-12 (10/11/2026) : à chaque changement de page, Next.js aligne ce bloc en haut de l'écran ; sans
+  // cette marge il passait sous la barre du haut (48 px) et la page semblait défiler toute seule.
   const className = cn(
-    'mx-auto flex w-full max-w-[1200px] min-w-0 flex-1 flex-col lg:px-10',
+    'mx-auto flex w-full max-w-[1200px] min-w-0 flex-1 scroll-mt-12 flex-col lg:px-10',
     props.className,
   );
 

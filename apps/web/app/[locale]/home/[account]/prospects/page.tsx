@@ -97,7 +97,14 @@ async function ProspectsContent(props: ProspectsPageProps) {
   const space = spaces.find((item) => item.id === state.space) ?? spaces[0]!;
   const spaceParam = showFolders ? space.id : undefined;
 
-  const [{ prospects, total }, facets, campaigns] = await Promise.all([
+  // compteurs des filtres (0,5 s sur 229 000 fiches) : lancés tout de suite mais pas attendus, les lignes
+  // s'affichent sans eux ; les listes Activité / Ville se remplissent dès qu'ils arrivent
+  const facets = timed(
+    'prospects facets',
+    loadProspectFacets(client, space.id),
+  ).catch(() => ({ categories: [], cities: [], campaigns: [] }));
+
+  const [{ prospects, total }, campaigns] = await Promise.all([
     timed(
       'prospects page',
       loadProspectsPage(client, {
@@ -108,7 +115,6 @@ async function ProspectsContent(props: ProspectsPageProps) {
         filters: state.filters,
       }),
     ),
-    timed('prospects facets', loadProspectFacets(client, space.id)),
     timed('prospects campaigns', loadSpaceCampaigns(client, space.id)),
   ]);
 
@@ -131,11 +137,6 @@ async function ProspectsContent(props: ProspectsPageProps) {
     ? spaces.map(({ id, label }) => ({ id, label }))
     : [];
 
-  // nombre de prospects par campagne, pour le filtre
-  const campaignTotals = new Map(
-    facets.campaigns.map((facet) => [facet.value, facet.total]),
-  );
-
   // campagnes archivées cachées (filtre et choix de campagne à la préparation),
   // sauf celle déjà choisie dans le filtre (lien gardé)
   const campaignOptions = campaigns
@@ -147,7 +148,6 @@ async function ProspectsContent(props: ProspectsPageProps) {
     .map((campaign) => ({
       id: campaign.id,
       name: campaign.name,
-      total: campaignTotals.get(campaign.id) ?? 0,
     }));
 
   return (
@@ -160,8 +160,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
       spaceId={space.id}
       folders={folderOptions}
       campaigns={campaignOptions}
-      categories={facets.categories}
-      cities={facets.cities}
+      facets={facets}
       initialProspects={prospects}
       initialTotal={total}
       accountId={account.id}

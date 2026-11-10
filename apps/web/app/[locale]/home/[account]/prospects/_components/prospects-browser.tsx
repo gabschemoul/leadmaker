@@ -8,7 +8,7 @@
  * L'adresse (?q=, ?page=…) suit en silence pour qu'un lien ou un rechargement garde la vue.
  * Écritures : aucune ici (actions groupées dans ProspectsTable).
  */
-import { useState } from 'react';
+import { Suspense, use, useState } from 'react';
 
 import {
   keepPreviousData,
@@ -51,6 +51,16 @@ const SEARCH_DELAY_MS = 250;
 
 type ListState = Pick<ProspectsListState, 'page' | 'sort' | 'dir' | 'filters'>;
 
+type Facet = { value: string; total: number };
+
+interface ProspectFacets {
+  categories: Facet[];
+  cities: Facet[];
+  campaigns: Facet[];
+}
+
+const NO_FACETS: ProspectFacets = { categories: [], cities: [], campaigns: [] };
+
 export function ProspectsBrowser(props: {
   basePath: string;
   initialState: ListState;
@@ -58,9 +68,9 @@ export function ProspectsBrowser(props: {
   spaceParam: string | undefined;
   spaceId: string;
   folders: Array<{ id: string; label: string }>;
-  campaigns: Array<{ id: string; name: string; total: number }>;
-  categories: Array<{ value: string; total: number }>;
-  cities: Array<{ value: string; total: number }>;
+  campaigns: Array<{ id: string; name: string }>;
+  /** compteurs des filtres, envoyés après les lignes (pas attendus pour afficher la liste) */
+  facets: Promise<ProspectFacets>;
   initialProspects: ProspectListRow[];
   initialTotal: number;
   accountId: string;
@@ -165,6 +175,30 @@ export function ProspectsBrowser(props: {
 
   const hasFilters = countActiveFilters(query.filters) > 0;
 
+  const renderFilters = (facets: ProspectFacets) => {
+    // nombre de prospects par campagne, pour le filtre
+    const totals = new Map(
+      facets.campaigns.map((facet) => [facet.value, facet.total]),
+    );
+
+    return (
+      <ProspectsFilters
+        basePath={props.basePath}
+        filters={state.filters}
+        onChange={changeFilters}
+        onReset={resetFilters}
+        folders={props.folders}
+        spaceId={props.spaceId}
+        campaigns={props.campaigns.map((campaign) => ({
+          ...campaign,
+          total: totals.get(campaign.id) ?? 0,
+        }))}
+        categories={facets.categories}
+        cities={facets.cities}
+      />
+    );
+  };
+
   return (
     <Card className={'gap-0 py-0'}>
       <CardHeader
@@ -172,17 +206,11 @@ export function ProspectsBrowser(props: {
           'flex flex-col gap-3 border-b px-4 py-3 xl:flex-row xl:items-start xl:justify-between'
         }
       >
-        <ProspectsFilters
-          basePath={props.basePath}
-          filters={state.filters}
-          onChange={changeFilters}
-          onReset={resetFilters}
-          folders={props.folders}
-          spaceId={props.spaceId}
-          campaigns={props.campaigns}
-          categories={props.categories}
-          cities={props.cities}
-        />
+        {/* filtres utilisables tout de suite ; listes Activité / Ville et totaux par campagne à l'arrivée des
+            compteurs */}
+        <Suspense fallback={renderFilters(NO_FACETS)}>
+          <WithFacets facets={props.facets} render={renderFilters} />
+        </Suspense>
 
         <div className={'flex shrink-0 gap-2'}>
           {props.importDialog}
@@ -231,7 +259,7 @@ export function ProspectsBrowser(props: {
             onSortingChange={onSortingChange}
             onMutated={refetch}
             onLiveChange={refetch}
-            campaigns={props.campaigns.map(({ id, name }) => ({ id, name }))}
+            campaigns={props.campaigns}
             formsHref={props.formsHref}
             liveSpaceId={props.spaceId}
             noResultsMessage={
@@ -309,4 +337,11 @@ export function ProspectsBrowser(props: {
       </CardContent>
     </Card>
   );
+}
+
+function WithFacets(props: {
+  facets: Promise<ProspectFacets>;
+  render: (facets: ProspectFacets) => React.ReactNode;
+}) {
+  return props.render(use(props.facets));
 }

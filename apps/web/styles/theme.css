@@ -14,8 +14,34 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Lisibilité (décision de Gabriel, 10/11/2026) : tout le texte est en gris, comme « France · 16 395 villes · 90
+     activités » sous le titre d'une campagne ; seuls les titres, libellés, en-têtes de tableau, mots en gras et
+     champs de saisie restent en noir. :where() = aucune priorité : une couleur donnée par une classe l'emporte. */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-muted-foreground;
+  }
+
+  :where(
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      b,
+      strong,
+      label,
+      th,
+      dt,
+      input,
+      textarea,
+      select,
+      [data-slot='card-title'],
+      .font-medium,
+      .font-semibold,
+      .font-bold
+    ) {
+    color: var(--foreground);
   }
 
   /* cases et boutons radio natifs (hors @kit/ui) : coche bleu Klein comme sur le site */

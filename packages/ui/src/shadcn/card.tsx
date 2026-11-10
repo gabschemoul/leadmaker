@@ -12,7 +12,8 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        'group/card bg-card text-card-foreground ring-foreground/10 flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl py-(--card-spacing) text-sm ring-1 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-2xl *:[img:last-child]:rounded-b-2xl',
+        // Prospectigo (10/11/2026) : texte des cartes en gris, titres en noir (voir styles/theme.css)
+        'group/card bg-card text-muted-foreground ring-foreground/10 flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl py-(--card-spacing) text-sm ring-1 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-2xl *:[img:last-child]:rounded-b-2xl',
         className,
       )}
       {...props}
@@ -39,7 +40,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
       data-slot="card-title"
       className={cn(
         // Prospectigo (10/11/2026) : titre nettement plus grand que le texte (20 px contre 15) pour la lisibilité
-        'text-[1.25rem] leading-tight font-medium tracking-[-0.01em] group-data-[size=sm]/card:text-base',
+        'text-foreground text-[1.25rem] leading-tight font-medium tracking-[-0.01em] group-data-[size=sm]/card:text-base',
         className,
       )}
       {...props}

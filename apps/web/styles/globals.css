@@ -27,7 +27,7 @@
 
 @layer base {
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-muted-foreground;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;

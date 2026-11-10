@@ -32,12 +32,10 @@ create table if not exists public.lm_campaigns (
   sort_target text,
   sort_groups jsonb not null default '[]'::jsonb,
   sort_version integer not null default 0,
-  -- Encart des groupes (§4.3) : null = pas encore répondu, 'single' = « Un seul message », 'split' = « Créer N
-  -- campagnes » déjà fait
+  -- Encart des groupes (§4.3) : null = pas encore répondu, 'single' = « Un seul message », 'per_group' = « Un
+  -- message par groupe » dans la même campagne (10/11/2026 : chaque entreprise reçoit le message de son groupe,
+  -- lm_campaign_message_names). 'split' = ancienne version « Créer N campagnes », plus proposée.
   groups_choice text,
-  -- Campagne d'un groupe, créée par « Créer N campagnes » : campagne d'origine. Tant que l'origine cherche,
-  -- chaque nouvelle entreprise gardée de ce groupe y est ajoutée (lm_forward_split_kept, 10/11/2026).
-  split_source_id uuid references public.lm_campaigns(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -48,7 +46,7 @@ create table if not exists public.lm_campaigns (
   constraint lm_campaigns_daily_limit_positive check (daily_limit > 0),
   constraint lm_campaigns_daily_limit_max check (daily_limit <= 100000),
   constraint lm_campaigns_credits_per_prospect check (credits_per_prospect between 1 and 10),
-  constraint lm_campaigns_groups_choice check (groups_choice is null or groups_choice in ('single', 'split'))
+  constraint lm_campaigns_groups_choice check (groups_choice is null or groups_choice in ('single', 'per_group', 'split'))
 );
 
 comment on table public.lm_campaigns is 'Campagnes de prospection d''un espace';
@@ -180,9 +178,6 @@ create trigger lm_campaigns_set_user_tracking
 
 create index if not exists ix_lm_campaigns_space_id_created_at
   on public.lm_campaigns (space_id, created_at desc);
-
-create index if not exists ix_lm_campaigns_split_source_id on public.lm_campaigns (split_source_id)
-  where split_source_id is not null;
 
 create index if not exists ix_lm_campaigns_account_id
   on public.lm_campaigns (account_id);

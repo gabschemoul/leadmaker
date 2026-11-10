@@ -83,6 +83,22 @@ def run_site_job(job: dict, timeout: int) -> dict | None:
     return json.loads(lines[-1])
 
 
+def _group_message_names(conn: psycopg.Connection, campaign_id: Any, prospect_id: Any) -> list[str] | None:
+    """Messages utilisables pour cette entreprise selon son groupe (lm_campaign_message_names) ; None si la base
+    n'a pas encore la fonction ou si la campagne n'a aucun message : on garde alors tous les messages."""
+    try:
+        row = conn.execute(
+            """select public.lm_campaign_message_names(%s,
+                      (select cp.group_key from public.lm_campaign_prospects cp
+                        where cp.campaign_id = %s and cp.prospect_id = %s)) as names""",
+            (campaign_id, campaign_id, prospect_id),
+        ).fetchone()
+    except psycopg.Error as exc:
+        log.warning("messages par groupe non lus (%s) : tous les messages restent possibles", str(exc).splitlines()[0])
+        return None
+    return list(row["names"]) if row and row["names"] else None
+
+
 def _load_context(conn: psycopg.Connection, row: dict):
     """Prospect, expéditeur, campagne et expéditeur prêt pour le navigateur (None si incomplet)."""
     prospect = conn.execute(
@@ -204,7 +220,8 @@ class PrepareRunner:
                          (attempt_id, Jsonb({"status": "failed", "detail": "prospect, expéditeur ou campagne introuvable"})))
             return {"status": "failed"}
 
-        messages, short = parse_templates(campaign["templates"])
+        all_messages, short = parse_templates(campaign["templates"])
+        messages = all_messages
         counts = {r["template_name"]: r["n"] for r in conn.execute(
             "select template_name, count(*) as n from public.lm_attempts where campaign_id = %s and template_name is not null group by 1",
             (row["campaign_id"],))}
@@ -217,7 +234,15 @@ class PrepareRunner:
                                  (row["autopilot_id"],)).fetchone()
             chosen = set(pilot["messages"]) if pilot else set()
             messages = [m for m in messages if m["name"] in chosen]
-        preset = next((m for m in messages if m["name"] == row.get("template_name")), None)
+        # message choisi à l'avance (pilote) : cherché parmi TOUS les messages, il peut venir du groupe de
+        # l'entreprise sans être coché (lm_autopilot_tick)
+        preset = next((m for m in all_messages if m["name"] == row.get("template_name")), None)
+        if not preset:
+            # « Un message par groupe » (10/11/2026) : seulement les messages du groupe de l'entreprise
+            names = _group_message_names(conn, row["campaign_id"], row["prospect_id"])
+            if names:
+                messages = ([m for m in messages if m["name"] in names]
+                            or [m for m in all_messages if m["name"] in names] or messages)
         template = preset or pick_balanced(messages, counts)
         if not template:
             detail = ("les messages choisis pour le pilote automatique n'existent plus (étape Rédiger)"

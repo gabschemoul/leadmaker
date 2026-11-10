@@ -86,7 +86,6 @@ begin
   if v_count > 0 and p_choice = 'gardee' then
     perform public.lm_measure_sort_price(p_campaign_id);
     perform public.lm_settle_kept(p_campaign_id, null);
-    perform public.lm_forward_split_kept(p_campaign_id, p_prospect_ids);
   end if;
 
   return v_count;
@@ -256,14 +255,7 @@ begin
      and c.sort_version = p_version
      and (p_group = 'autre' or exists (select 1 from jsonb_array_elements(c.sort_groups) g where g ->> 'key' = p_group));
 
-  if not found then
-    return false;
-  end if;
-
-  -- campagne déjà découpée par groupes : l'entreprise rejoint aussi la campagne de son groupe
-  perform public.lm_forward_split_kept(p_campaign_id, array[p_prospect_id]);
-
-  return true;
+  return found;
 end;
 $$;
 
@@ -318,7 +310,7 @@ language plpgsql
 security definer
 as $$
 begin
-  if p_choice is not null and p_choice <> 'single' then
+  if p_choice is not null and p_choice not in ('single', 'per_group') then
     raise exception 'invalid choice' using errcode = 'P0001', hint = 'invalid_choice';
   end if;
 
@@ -335,45 +327,80 @@ revoke all on function public.lm_set_groups_choice(uuid, text) from public;
 
 grant execute on function public.lm_set_groups_choice(uuid, text) to authenticated, service_role;
 
--- Campagne découpée par groupes (« Créer N campagnes ») qui continue de chercher : chaque entreprise gardée,
--- payée et classée dans un groupe rejoint la campagne de ce groupe, avec son avis et sa raison, sans nouveau
--- débit (credits = 0) ni nouveau tri. p_prospect_ids null = toutes. Renvoie le nombre d'entreprises ajoutées.
--- Une entreprise n'est contactée qu'une fois par espace (lm_attempts_prospect_unique_per_space).
--- Appelant : lm_finish_sort, lm_finish_sort_group, lm_choose_prospects (rôle du propriétaire de la fonction).
-create or replace function public.lm_forward_split_kept(p_campaign_id uuid, p_prospect_ids uuid[] default null)
-returns integer
+
+-- « Un message par groupe » (10/11/2026) : noms des messages de l'étape Message utilisables pour une entreprise
+-- de ce groupe. Chaque message peut porter « group » (clé du groupe) ; sans « group » = « Pour les autres ».
+--  * campagne en « Un message par groupe » : les messages du groupe, sinon ceux « Pour les autres », sinon tous ;
+--  * sinon : les messages sans groupe, sinon tous.
+-- Même règle de nom que le robot (« Message N » sans nom, texte non vide). null si aucun message.
+-- Appelants : robots (préparation), lm_autopilot_tick ; rôle service.
+create or replace function public.lm_campaign_message_names(p_campaign_id uuid, p_group text) returns text[]
 set search_path = ''
-language plpgsql
+language sql
+stable
 security definer
 as $$
-declare
-  v_count integer;
-begin
-  if not exists (select 1 from public.lm_campaigns c where c.id = p_campaign_id and c.groups_choice = 'split') then
-    return 0;
-  end if;
-
-  insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, verdict, group_key, reason,
-                                            sorted_at, sorted_version, client_choice, decided_at, credits, paid_at, gcid)
-  select ch.id, cp.prospect_id, cp.account_id, cp.space_id, coalesce(cp.verdict, 'gardee'), cp.group_key, cp.reason,
-         cp.sorted_at, ch.sort_version, cp.client_choice, cp.decided_at, 0, cp.paid_at, cp.gcid
-    from public.lm_campaign_prospects cp
-    join public.lm_campaigns src on src.id = cp.campaign_id
-    join public.lm_campaigns ch on ch.split_source_id = src.id and ch.sort_groups -> 0 ->> 'key' = cp.group_key
-   where cp.campaign_id = p_campaign_id
-     and (p_prospect_ids is null or cp.prospect_id = any (p_prospect_ids))
-     and cp.paid_at is not null
-     and coalesce(cp.client_choice, case when cp.sorted_version = src.sort_version then cp.verdict end) = 'gardee'
-  on conflict (campaign_id, prospect_id) do nothing;
-
-  get diagnostics v_count = row_count;
-
-  return v_count;
-end;
+  with c as (
+    select c.groups_choice,
+           case when jsonb_typeof(c.templates) = 'array' then c.templates
+                when jsonb_typeof(c.templates -> 'messages') = 'array' then c.templates -> 'messages'
+                else '[]'::jsonb end as messages
+      from public.lm_campaigns c where c.id = p_campaign_id
+  ), m as (
+    select coalesce(nullif(x ->> 'name', ''), 'Message ' || pos) as name, nullif(trim(x ->> 'group'), '') as grp, pos
+      from c, jsonb_array_elements(c.messages) with ordinality as t(x, pos)
+     where pos <= 24 and length(trim(coalesce(x ->> 'body', ''))) > 0
+  )
+  select case
+           when (select groups_choice from c) = 'per_group' then
+             coalesce((select array_agg(m.name order by m.pos) from m where m.grp = p_group),
+                      (select array_agg(m.name order by m.pos) from m where m.grp is null),
+                      (select array_agg(m.name order by m.pos) from m))
+           else
+             coalesce((select array_agg(m.name order by m.pos) from m where m.grp is null),
+                      (select array_agg(m.name order by m.pos) from m))
+         end;
 $$;
 
-revoke all on function public.lm_forward_split_kept(uuid, uuid[]) from public, anon, authenticated;
+revoke all on function public.lm_campaign_message_names(uuid, text) from public, anon, authenticated;
 
+grant execute on function public.lm_campaign_message_names(uuid, text) to service_role;
+
+
+-- Écran « Résultats » d'une campagne en « Un message par groupe » (10/11/2026) : par groupe, les entreprises
+-- gardées et payées, les prises de contact parties (sending, sent) et à vérifier (to_verify). group_key null =
+-- hors groupes (« autre » ou pas encore classée). Comptages en base : pas de limite de 1 000 lignes.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
+create or replace function public.lm_campaign_group_results(p_campaign_id uuid)
+returns table (group_key text, kept bigint, sent bigint, to_verify bigint)
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  with c as (
+    select c.id, c.sort_version, c.sort_groups from public.lm_campaigns c
+     where c.id = p_campaign_id and public.lm_member(c.account_id)
+  ), k as (
+    select case when exists (select 1 from c, jsonb_array_elements(c.sort_groups) g where g ->> 'key' = cp.group_key)
+                then cp.group_key end as group_key,
+           cp.prospect_id
+      from public.lm_campaign_prospects cp, c
+     where cp.campaign_id = c.id and cp.paid_at is not null
+       and coalesce(cp.client_choice, case when cp.sorted_version = c.sort_version then cp.verdict end) = 'gardee'
+  )
+  select k.group_key,
+         count(*),
+         count(*) filter (where a.status in ('sending', 'sent')),
+         count(*) filter (where a.status = 'to_verify')
+    from k
+    left join public.lm_attempts a on a.campaign_id = p_campaign_id and a.prospect_id = k.prospect_id
+   group by k.group_key;
+$$;
+
+revoke all on function public.lm_campaign_group_results(uuid) from public, anon;
+
+grant execute on function public.lm_campaign_group_results(uuid) to authenticated, service_role;
 
 -- « Créer N campagnes » (§4.3) : une campagne par groupe (copie des réglages et du message de la campagne, en
 -- brouillon, sans nouvelle recherche), qui reçoit les entreprises gardées de son groupe déjà trouvées (liens
@@ -425,8 +452,7 @@ begin
 
     update public.lm_campaigns
        set sort_target = v_source.sort_target, sort_version = 1, sort_groups = jsonb_build_array(v_group),
-           groups_choice = 'split', price_pending = false, credits_per_prospect = v_source.credits_per_prospect,
-           split_source_id = p_campaign_id
+           groups_choice = 'split', price_pending = false, credits_per_prospect = v_source.credits_per_prospect
      where id = v_id;
 
     campaign_id := v_id;

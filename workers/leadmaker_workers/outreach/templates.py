@@ -24,14 +24,17 @@ def parse_templates(raw: Any) -> tuple[list[dict], dict]:
     else:
         messages, short = [], {}
     out = []
-    for i, m in enumerate(messages[:4]):
+    # jusqu'à 24 messages depuis le 10/11/2026 : 4 versions par groupe, 6 onglets (« Un message par groupe »)
+    for i, m in enumerate(messages[:24]):
         if not isinstance(m, dict):
             continue
         body = str(m.get("body") or "")
         if body.strip():
             short_body = m.get("short")
+            group = m.get("group")
             out.append({"name": str(m.get("name") or f"Message {i + 1}"), "subject": str(m.get("subject") or ""),
-                        "body": body, "short": short_body if isinstance(short_body, str) else ""})
+                        "body": body, "short": short_body if isinstance(short_body, str) else "",
+                        "group": group.strip() if isinstance(group, str) and group.strip() else None})
     short = {"subject": str(short.get("subject") or ""), "body": str(short.get("body") or "")}
     return out, short
 

@@ -56,7 +56,8 @@ create table if not exists public.lm_autopilots (
   updated_by uuid references auth.users on delete set null,
   primary key (id),
   constraint lm_autopilots_target_positive check (target > 0),
-  constraint lm_autopilots_messages_not_empty check (cardinality(messages) between 1 and 4),
+  -- jusqu'à 4 versions par groupe et 6 onglets (5 groupes + « Pour les autres ») : 24 messages (10/11/2026)
+  constraint lm_autopilots_messages_not_empty check (cardinality(messages) between 1 and 24),
   constraint lm_autopilots_spread_days check (spread_days between 1 and 60)
 );
 
@@ -366,6 +367,7 @@ declare
   v_balance integer;
   v_want integer;
   v_template text;
+  v_candidates text[];
   v_attempt uuid;
   v_found integer;
   v_cursor_at timestamptz;
@@ -428,7 +430,7 @@ begin
 
     if v_want > 0 then
       for p in
-        select pr.id, pr.account_id, pr.space_id, pr.created_at
+        select pr.id, pr.account_id, pr.space_id, pr.created_at, cp.group_key
           from public.lm_campaign_prospects cp
           join public.lm_prospects pr on pr.id = cp.prospect_id
          where cp.campaign_id = ap.campaign_id
@@ -449,15 +451,32 @@ begin
         v_cursor_at := p.created_at;
         v_cursor_id := p.id;
 
-        -- Message le moins utilisé du passage (ex æquo : l'ordre de l'étape Rédiger)
+        -- Messages possibles pour cette entreprise : ceux de son groupe quand la campagne a « Un message par
+        -- groupe » (10/11/2026), sinon ceux de la campagne
+        v_candidates := public.lm_campaign_message_names(ap.campaign_id, p.group_key);
+
+        -- Message coché le moins utilisé du passage (ex æquo : l'ordre de l'étape Rédiger) ; si aucun message
+        -- coché ne convient au groupe, le moins utilisé des messages du groupe
         select m.name into v_template
           from unnest(ap.messages) with ordinality as m(name, pos)
+         where v_candidates is null or m.name = any (v_candidates)
          order by (select count(*) from public.lm_attempts a
                     where a.autopilot_id = ap.id and a.template_name = m.name
                       and (a.status in ('pending', 'preparing', 'validated', 'sending', 'sent', 'to_verify')
                            or public.lm_attempt_is_clean(a.status, a.detail, a.protection_type, a.missing))),
                   m.pos
          limit 1;
+
+        if v_template is null then
+          select m.name into v_template
+            from unnest(v_candidates) with ordinality as m(name, pos)
+           order by (select count(*) from public.lm_attempts a
+                      where a.autopilot_id = ap.id and a.template_name = m.name
+                        and (a.status in ('pending', 'preparing', 'validated', 'sending', 'sent', 'to_verify')
+                             or public.lm_attempt_is_clean(a.status, a.detail, a.protection_type, a.missing))),
+                    m.pos
+           limit 1;
+        end if;
 
         v_attempt := null;
 
@@ -548,9 +567,9 @@ begin
            case when jsonb_typeof(v_campaign.templates) = 'array' then v_campaign.templates
                 when jsonb_typeof(v_campaign.templates -> 'messages') = 'array' then v_campaign.templates -> 'messages'
                 else '[]'::jsonb end) with ordinality as t(m, pos)
-   where pos <= 4 and length(trim(coalesce(m ->> 'body', ''))) > 0;
+   where pos <= 24 and length(trim(coalesce(m ->> 'body', ''))) > 0;
 
-  if p_messages is null or cardinality(p_messages) = 0 or cardinality(p_messages) > 4
+  if p_messages is null or cardinality(p_messages) = 0 or cardinality(p_messages) > 24
      or not (p_messages <@ coalesce(v_names, '{}'::text[])) then
     raise exception 'unknown message' using errcode = 'P0001', hint = 'messages';
   end if;

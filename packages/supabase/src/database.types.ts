@@ -567,14 +567,14 @@ isOneToOne: false
                   ]
                 },"lm_discovery_settings": {
                   Row: {
-                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"places_max_age_days": number,"prior": number,"recent_weight": number,"replay_pacing": NonNullable<Json>,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
+                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"places_max_age_days": number,"places_missed_to_close": number,"prior": number,"recent_weight": number,"replay_pacing": NonNullable<Json>,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -787,14 +787,14 @@ isOneToOne: false
                   ]
                 },"lm_places": {
                   Row: {
-                    "address": string | null,"category": string | null,"city": string | null,"closed_at": string | null,"country_code": string,"details_at": string | null,"first_seen_at": string,"gcid": string | null,"geoname_id": number | null,"google_place_id": string,"is_chain": boolean,"last_seen_at": string,"latitude": number | null,"longitude": number | null,"maps_url": string | null,"name": string,"phone": string | null,"rating": number | null,"review_count": number | null,"site_key": string | null,"site_read_at": string | null,"site_status": string | null,"site_text": string | null,"updated_at": string,"website": string | null,"website_known": boolean
+                    "address": string | null,"category": string | null,"city": string | null,"closed_at": string | null,"country_code": string,"details_at": string | null,"first_seen_at": string,"gcid": string | null,"geoname_id": number | null,"google_place_id": string,"is_chain": boolean,"last_seen_at": string,"latitude": number | null,"longitude": number | null,"maps_url": string | null,"missed_searches": number,"name": string,"phone": string | null,"rating": number | null,"review_count": number | null,"site_dead_at": string | null,"site_key": string | null,"site_read_at": string | null,"site_status": string | null,"site_text": string | null,"updated_at": string,"website": string | null,"website_known": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "address"?: string | null,"category"?: string | null,"city"?: string | null,"closed_at"?: string | null,"country_code": string,"details_at"?: string | null,"first_seen_at"?: string,"gcid"?: string | null,"geoname_id"?: number | null,"google_place_id": string,"is_chain"?: boolean,"last_seen_at"?: string,"latitude"?: number | null,"longitude"?: number | null,"maps_url"?: string | null,"name": string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string | null,"site_read_at"?: string | null,"site_status"?: string | null,"site_text"?: string | null,"updated_at"?: string,"website"?: string | null,"website_known"?: boolean
+                    "address"?: string | null,"category"?: string | null,"city"?: string | null,"closed_at"?: string | null,"country_code": string,"details_at"?: string | null,"first_seen_at"?: string,"gcid"?: string | null,"geoname_id"?: number | null,"google_place_id": string,"is_chain"?: boolean,"last_seen_at"?: string,"latitude"?: number | null,"longitude"?: number | null,"maps_url"?: string | null,"missed_searches"?: number,"name": string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_dead_at"?: string | null,"site_key"?: string | null,"site_read_at"?: string | null,"site_status"?: string | null,"site_text"?: string | null,"updated_at"?: string,"website"?: string | null,"website_known"?: boolean
                   }
                   Update: {
-                    "address"?: string | null,"category"?: string | null,"city"?: string | null,"closed_at"?: string | null,"country_code"?: string,"details_at"?: string | null,"first_seen_at"?: string,"gcid"?: string | null,"geoname_id"?: number | null,"google_place_id"?: string,"is_chain"?: boolean,"last_seen_at"?: string,"latitude"?: number | null,"longitude"?: number | null,"maps_url"?: string | null,"name"?: string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_key"?: string | null,"site_read_at"?: string | null,"site_status"?: string | null,"site_text"?: string | null,"updated_at"?: string,"website"?: string | null,"website_known"?: boolean
+                    "address"?: string | null,"category"?: string | null,"city"?: string | null,"closed_at"?: string | null,"country_code"?: string,"details_at"?: string | null,"first_seen_at"?: string,"gcid"?: string | null,"geoname_id"?: number | null,"google_place_id"?: string,"is_chain"?: boolean,"last_seen_at"?: string,"latitude"?: number | null,"longitude"?: number | null,"maps_url"?: string | null,"missed_searches"?: number,"name"?: string,"phone"?: string | null,"rating"?: number | null,"review_count"?: number | null,"site_dead_at"?: string | null,"site_key"?: string | null,"site_read_at"?: string | null,"site_status"?: string | null,"site_text"?: string | null,"updated_at"?: string,"website"?: string | null,"website_known"?: boolean
                   }
                   Relationships: [
                     
@@ -1531,10 +1531,18 @@ isOneToOne: false
 "lm_autopilot_validate_clean":
 { Args: { "p_autopilot_id": string }; Returns: number
                            },
+"lm_campaign_group_results":
+{ Args: { "p_campaign_id": string }; Returns: {
+              "group_key": string,"kept": number,"sent": number,"to_verify": number
+            }[]
+                           },
 "lm_campaign_groups":
 { Args: { "p_campaign_id": string }; Returns: {
               "choice": string,"group_key": string,"kept": number,"label": string,"total_kept": number
             }[]
+                           },
+"lm_campaign_message_names":
+{ Args: { "p_campaign_id": string,"p_group": string }; Returns: (string)[]
                            },
 "lm_campaign_pricing":
 { Args: { "p_campaign_id": string }; Returns: {

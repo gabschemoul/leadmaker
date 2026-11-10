@@ -83,52 +83,12 @@ select is(public.lm_autopilot_contactable((select campaign_id from t_split where
   'La copie « Marketing » peut contacter ses 2 gardées');
 select throws_ok($$ select * from public.lm_split_campaign_by_groups('e3000000-0000-4000-8000-0000000000a1') $$, 'P0001', null, 'Une seule fois');
 
--- 5 bis. L'origine continue de chercher (10/11/2026) : chaque nouvelle gardée rejoint la campagne de son groupe,
--- déjà payée, sans nouveau tri ni nouveau débit pour la copie
-set local role service_role;
-select public.lm_record_prospect('e3000000-0000-4000-8000-0000000000a1',
-  format('{"place_id":"gr:%s","name":"Agence %s","site_key":"%s.fr","website":"https://%s.fr"}', n, n, n, n)::jsonb)
-  from unnest(array['m3', 'b2', 'v1']) n;
-select ok(public.lm_finish_sort('e3000000-0000-4000-8000-0000000000a1', pg_temp.pid('m3.fr'), 1, 'gardee', 'marketing', 'raison m3'),
-  'Nouvelle gardée dans l''origine, classée Marketing');
-select is((select count(*)::integer from public.lm_campaign_prospects cp join t_split s on s.campaign_id = cp.campaign_id
-            where s.group_key = 'marketing' and cp.prospect_id = pg_temp.pid('m3.fr') and cp.verdict = 'gardee'
-              and cp.credits = 0 and cp.paid_at is not null and cp.reason = 'raison m3'), 1,
-  'Elle rejoint la campagne « Marketing », déjà payée, avec sa raison');
-select is((select count(*)::integer from public.lm_campaign_prospects cp join t_split s on s.campaign_id = cp.campaign_id
-            where s.group_key = 'branding' and cp.prospect_id = pg_temp.pid('m3.fr')), 0, 'Pas dans les autres groupes');
-
--- gardée sans groupe, classée ensuite (file de classement)
-select public.lm_finish_sort('e3000000-0000-4000-8000-0000000000a1', pg_temp.pid('b2.fr'), 1, 'gardee', null, 'raison b2');
-select ok(public.lm_finish_sort_group('e3000000-0000-4000-8000-0000000000a1', pg_temp.pid('b2.fr'), 1, 'branding'), 'b2 classée Branding ensuite');
-select is((select count(*)::integer from public.lm_campaign_prospects cp join t_split s on s.campaign_id = cp.campaign_id
-            where s.group_key = 'branding' and cp.prospect_id = pg_temp.pid('b2.fr')), 1, 'Elle rejoint « Branding » une fois classée');
-
--- « À vérifier » gardée par le client, avec un groupe
-select public.lm_finish_sort('e3000000-0000-4000-8000-0000000000a1', pg_temp.pid('v1.fr'), 1, 'a_verifier', 'marketing', 'à voir');
-select is((select count(*)::integer from public.lm_campaign_prospects cp join t_split s on s.campaign_id = cp.campaign_id
-            where cp.prospect_id = pg_temp.pid('v1.fr')), 0, 'À vérifier : pas encore dans un groupe');
-select makerkit.authenticate_as('gr_owner');
-select is(public.lm_choose_prospects('e3000000-0000-4000-8000-0000000000a1', array[pg_temp.pid('v1.fr')], 'gardee'), 1, 'Le client la garde');
-set local role service_role;
-select is((select count(*)::integer from public.lm_campaign_prospects cp join t_split s on s.campaign_id = cp.campaign_id
-            where s.group_key = 'marketing' and cp.prospect_id = pg_temp.pid('v1.fr')), 1, 'Gardée par le client : elle rejoint « Marketing »');
-
-set local role postgres;
-select is((select count(*)::integer from public.lm_tasks t join t_split s on t.payload ->> 'campaign_id' = s.campaign_id::text), 0,
-  'Toujours aucun tri ni recherche pour les copies');
-select is((select count(*)::integer from public.lm_credit_ledger l join t_split s on s.campaign_id = l.campaign_id), 0,
-  'Aucun débit sur les copies');
-select makerkit.authenticate_as('gr_owner');
-
 -- 6. Autre utilisateur : rien
 select makerkit.authenticate_as('gr_other');
 select is((select count(*)::integer from public.lm_campaign_groups('e3000000-0000-4000-8000-0000000000a1')), 0, 'Autre utilisateur : aucun groupe visible');
 select throws_ok($$ select public.lm_set_groups_choice('e3000000-0000-4000-8000-0000000000a1', 'single') $$, 'P0002', null, 'Autre utilisateur : choix refusé');
 select throws_ok($$ select * from public.lm_split_campaign_by_groups('e3000000-0000-4000-8000-0000000000a1') $$, 'P0002', null, 'Autre utilisateur : découpage refusé');
 select throws_ok($$ select public.lm_set_sort_groups('e3000000-0000-4000-8000-0000000000a1', 1, '[]') $$, '42501', null, 'Client : ne pose pas les groupes');
-select throws_ok($$ select public.lm_forward_split_kept('e3000000-0000-4000-8000-0000000000a1') $$, '42501', null,
-  'Client : n''appelle pas le transfert vers les groupes');
 
 select * from finish();
 

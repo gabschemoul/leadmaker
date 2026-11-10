@@ -6,6 +6,7 @@
  */
 import Link from 'next/link';
 
+import { chipClasses } from '@kit/ui/button-extras';
 import { cn } from '@kit/ui/utils';
 
 export function FilterChip(props: {
@@ -20,12 +21,7 @@ export function FilterChip(props: {
       href={props.href}
       aria-current={props.active ? 'page' : undefined}
       data-test={props.testId}
-      className={cn(
-        'text-foreground flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-[14px] font-medium whitespace-nowrap transition-colors duration-75',
-        props.active
-          ? 'border-foreground ring-foreground bg-foreground/[0.02] hover:bg-foreground/[0.043] ring-[0.5px]'
-          : 'border-foreground/10 hover:bg-foreground/[0.043] active:bg-foreground/10',
-      )}
+      className={chipClasses(props.active)}
     >
       <span>{props.label}</span>
 

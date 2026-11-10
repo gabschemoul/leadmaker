@@ -15,6 +15,7 @@ import { ArrowRight, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@kit/ui/button';
+import { chipClasses } from '@kit/ui/button-extras';
 import { Card } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import { Skeleton } from '@kit/ui/skeleton';
@@ -288,12 +289,7 @@ function StatusChip(props: {
       onClick={props.onClick}
       aria-pressed={props.active}
       data-test={props.testId}
-      className={cn(
-        'flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[14px] font-medium whitespace-nowrap transition-colors',
-        props.active
-          ? 'bg-brand-pale text-brand-hover dark:text-brand'
-          : 'bg-card text-foreground ring-pill-ring shadow-soft hover:bg-muted ring-[0.5px]',
-      )}
+      className={chipClasses(props.active)}
     >
       <span>{props.label}</span>
 
@@ -337,12 +333,7 @@ export function CampaignsTableLoading() {
           {[null, ...STATUS_FILTERS].map((status) => (
             <span
               key={status ?? 'all'}
-              className={cn(
-                'flex h-8 shrink-0 items-center rounded-full px-3 text-[14px] font-medium whitespace-nowrap',
-                status === null
-                  ? 'bg-brand-pale text-brand-hover dark:text-brand'
-                  : 'bg-card text-foreground ring-pill-ring shadow-soft ring-[0.5px]',
-              )}
+              className={chipClasses(status === null)}
             >
               {status ? t(`status.${status}`) : t('list.filterAll')}
             </span>

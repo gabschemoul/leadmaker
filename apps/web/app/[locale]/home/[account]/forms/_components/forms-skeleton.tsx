@@ -3,6 +3,7 @@
  * suite ») : vrai texte d'introduction, vrais noms des onglets toujours présents, vrais titres de colonnes ;
  * seuls les nombres et les lignes attendent la base. Composant serveur, sans données.
  */
+import { chipClasses } from '@kit/ui/button-extras';
 import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
 import { Skeleton } from '@kit/ui/skeleton';
 import {
@@ -38,14 +39,7 @@ export function FormsSkeleton({ rows = 8 }: { rows?: number }) {
 
         <div className={'flex flex-wrap items-center gap-2'}>
           {ALWAYS_VISIBLE_GROUPS.map((group, index) => (
-            <span
-              key={group}
-              className={
-                index === 0
-                  ? 'bg-brand-pale text-brand-hover dark:text-brand flex h-8 items-center rounded-full px-3 text-[14px] font-medium whitespace-nowrap'
-                  : 'bg-card text-foreground ring-pill-ring shadow-soft flex h-8 items-center rounded-full px-3 text-[14px] font-medium whitespace-nowrap ring-[0.5px]'
-              }
-            >
+            <span key={group} className={chipClasses(index === 0)}>
               <Trans i18nKey={`outreach.forms.groups.${group}`} />
             </span>
           ))}

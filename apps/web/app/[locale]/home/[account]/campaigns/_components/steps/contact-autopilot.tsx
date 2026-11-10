@@ -22,6 +22,7 @@ import { useForm } from 'react-hook-form';
 
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { Button } from '@kit/ui/button';
+import { chipClasses } from '@kit/ui/button-extras';
 import { Input } from '@kit/ui/input';
 import { toast } from '@kit/ui/sonner';
 import { cn } from '@kit/ui/utils';
@@ -781,12 +782,7 @@ function Chip(
       aria-pressed={props.selected}
       data-test={props.testId}
       onClick={props.onClick}
-      className={cn(
-        'flex h-8 items-center rounded-full px-3.5 text-[14px] font-medium tabular-nums transition-colors',
-        props.selected
-          ? 'bg-brand-pale text-brand-hover dark:text-brand'
-          : 'bg-card ring-pill-ring shadow-soft hover:bg-muted ring-[0.5px]',
-      )}
+      className={cn(chipClasses(props.selected), 'tabular-nums')}
     >
       {props.children}
     </button>

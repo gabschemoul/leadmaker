@@ -32,6 +32,20 @@ export const buttonExtras = {
   pill: "h-9 gap-1.5 rounded-[10px] px-3 text-[14px] [&_svg:not([class*='size-'])]:size-[18px]",
 } as const;
 
+/**
+ * Pastille de filtre façon ElevenLabs (« Conversational », « Narration ») pour les éléments qui ne sont
+ * pas des `<Button>` (liens, boutons maison) : 40 px, arrondi 12 px, filet à 10 % ; active = filet noir
+ * renforcé, comme le filtre de langue choisi.
+ */
+export function chipClasses(active: boolean) {
+  return [
+    'text-foreground flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border px-3 text-[14px] font-medium whitespace-nowrap transition-colors duration-75',
+    active
+      ? 'border-foreground ring-foreground bg-foreground/[0.02] hover:bg-foreground/[0.043] ring-[0.5px]'
+      : 'border-foreground/10 hover:bg-foreground/[0.043] active:bg-foreground/10',
+  ].join(' ');
+}
+
 export type ButtonExtraVariant = keyof typeof buttonExtras;
 
 export { Button, buttonVariants };

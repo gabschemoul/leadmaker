@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
+import { chipClasses } from '@kit/ui/button-extras';
 import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
 
@@ -100,12 +101,7 @@ export function FormsGroupsPanel(props: {
             onClick={() => select(item)}
             aria-pressed={item === group}
             data-test={`forms-group-${item}`}
-            className={cn(
-              'flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[14px] font-medium whitespace-nowrap transition-colors',
-              item === group
-                ? 'bg-brand-pale text-brand-hover dark:text-brand'
-                : 'bg-card text-foreground ring-pill-ring shadow-soft hover:bg-muted ring-[0.5px]',
-            )}
+            className={chipClasses(item === group)}
           >
             <span>
               <Trans i18nKey={`outreach.forms.groups.${item}`} />

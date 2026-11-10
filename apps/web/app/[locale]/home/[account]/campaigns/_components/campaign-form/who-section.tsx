@@ -35,7 +35,6 @@ import { Input } from '@kit/ui/input';
 import { Spinner } from '@kit/ui/spinner';
 import { Textarea } from '@kit/ui/textarea';
 import { Trans } from '@kit/ui/trans';
-import { cn } from '@kit/ui/utils';
 
 import {
   type CampaignFormValues,
@@ -197,15 +196,9 @@ export function WhoSection(props: {
                 <Button
                   key={item}
                   type={'button'}
-                  size={'sm'}
-                  variant={'outline'}
+                  variant={'chip'}
                   aria-pressed={on}
                   data-test={'campaign-target-refinement'}
-                  className={cn(
-                    'rounded-full font-normal',
-                    on &&
-                      'border-brand/30 bg-brand-pale text-brand hover:bg-brand-pale hover:text-brand',
-                  )}
                   onClick={() => toggleChip(item)}
                 >
                   {on ? <Check /> : <Plus />}

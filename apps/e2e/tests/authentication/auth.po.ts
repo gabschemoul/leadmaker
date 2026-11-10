@@ -33,9 +33,16 @@ export class AuthPageObject {
     // Scoped to :visible because the route we navigated away from is still
     // mounted at zero size, so these selectors would otherwise match both its
     // chrome and the current page's.
-    const trigger = this.page.locator(
-      '[data-test="workspace-dropdown-trigger"]:visible, [data-test="account-dropdown-trigger"]:visible',
+    // Dans une équipe, la déconnexion est dans le menu du compte (pas dans celui de l'équipe)
+    const account = this.page.locator(
+      '[data-test="account-dropdown-trigger"]:visible',
     );
+
+    const trigger = (await account.count())
+      ? account.first()
+      : this.page
+          .locator('[data-test="workspace-dropdown-trigger"]:visible')
+          .first();
 
     await trigger.click();
 

@@ -1,7 +1,7 @@
 /**
  * Rôle : en-tête de 48 px présent sur toutes les pages de l'organisation (relooking du 8/11/2026,
  * façon ElevenLabs) — bouton pour replier la barre latérale, fil d'Ariane, accès à la recherche,
- * crédits restants, notifications et menu du compte.
+ * crédits restants et notifications. Le menu du compte est en bas de la barre latérale (pas en double ici, 10/11).
  * Données : workspace (passé par le layout) ; solde de crédits (loadDiscoveryBalance) derrière un Suspense.
  * Écritures : aucune.
  */
@@ -17,7 +17,6 @@ import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { PageSidebarTrigger } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import { ProfileAccountDropdownContainer } from '~/components/personal-account-dropdown-container';
 import pathsConfig from '~/config/paths.config';
 
 import { loadDiscoveryBalance } from '../_lib/server/leadmaker.loader';
@@ -79,12 +78,6 @@ export function TeamAccountTopBar(props: {
         <TeamAccountNotifications
           userId={props.workspace.user.id}
           accountId={props.workspace.account.id}
-        />
-
-        <ProfileAccountDropdownContainer
-          user={props.workspace.user}
-          accountSlug={props.account}
-          showProfileName={false}
         />
       </div>
     </header>

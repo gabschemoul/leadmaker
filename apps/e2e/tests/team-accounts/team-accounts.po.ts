@@ -103,7 +103,15 @@ export class TeamAccountsPageObject {
   openAccountsSelector() {
     return expect(async () => {
       await this.page.click(this.visible('workspace-dropdown-trigger'));
-      await this.page.click(this.visible('workspace-switch-submenu'));
+
+      // Dans une équipe, les équipes sont listées directement dans le menu ; ailleurs, dans un sous-menu
+      const submenu = this.page.locator(
+        this.visible('workspace-switch-submenu'),
+      );
+
+      if (await submenu.count()) {
+        await submenu.click();
+      }
 
       return expect(
         this.page.locator(this.visible('workspace-switch-content')),

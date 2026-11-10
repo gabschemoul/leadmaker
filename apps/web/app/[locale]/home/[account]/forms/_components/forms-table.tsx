@@ -307,13 +307,15 @@ export function FormsTable(props: {
       <Table data-test={'forms-table'}>
         <TableHeader>
           <TableRow>
+            {/* 10/11/2026 : capture en vignette devant le nom, statut et alertes dans une seule colonne —
+                le tableau tient dans la largeur de la page */}
             <TableHead className={'w-8'} />
             <TableHead>{t('columns.company')}</TableHead>
             <TableHead>{t('columns.status')}</TableHead>
             <TableHead>{t('columns.message')}</TableHead>
-            <TableHead>{t('columns.detail')}</TableHead>
-            <TableHead>{t('columns.screenshot')}</TableHead>
-            <TableHead>{t('columns.preparedAt')}</TableHead>
+            <TableHead className={'text-right'}>
+              {t('columns.preparedAt')}
+            </TableHead>
           </TableRow>
         </TableHeader>
 
@@ -321,7 +323,7 @@ export function FormsTable(props: {
           {props.rows.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={7}
+                colSpan={5}
                 className={'text-muted-foreground py-8 text-center'}
                 data-test={'forms-empty'}
               >
@@ -356,36 +358,51 @@ export function FormsTable(props: {
                   />
                 </TableCell>
 
-                <TableCell className={'max-w-72'}>
-                  <div className={'flex flex-col'}>
-                    <span className={'truncate font-medium'}>
-                      {row.prospect.name}
-                    </span>
-
-                    {row.prospect.website ? (
-                      <ProspectSiteLink
-                        website={row.prospect.website}
-                        formUrl={row.form_url}
+                <TableCell className={'max-w-80'}>
+                  <div className={'flex min-w-0 items-center gap-3'}>
+                    {(row.screenshotAfterUrl ?? row.screenshotUrl) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={row.screenshotAfterUrl ?? row.screenshotUrl ?? ''}
+                        alt={''}
+                        className={
+                          'h-9 w-14 shrink-0 rounded-md border object-cover object-top'
+                        }
+                        loading={'lazy'}
                       />
-                    ) : null}
+                    ) : (
+                      <span
+                        aria-hidden
+                        className={
+                          'bg-muted h-9 w-14 shrink-0 rounded-md border'
+                        }
+                      />
+                    )}
+
+                    <div className={'flex min-w-0 flex-col'}>
+                      <span className={'truncate font-medium'}>
+                        {row.prospect.name}
+                      </span>
+
+                      {row.prospect.website ? (
+                        <ProspectSiteLink
+                          website={row.prospect.website}
+                          formUrl={row.form_url}
+                        />
+                      ) : null}
+                    </div>
                   </div>
                 </TableCell>
 
-                <TableCell>
-                  <Badge
-                    variant={'outline'}
-                    className={cn(STATUS_STYLE[row.status])}
-                  >
-                    <Trans i18nKey={`outreach.forms.status.${row.status}`} />
-                  </Badge>
-                </TableCell>
+                <TableCell className={'max-w-72'}>
+                  <div className={'flex flex-col items-start gap-1'}>
+                    <Badge
+                      variant={'outline'}
+                      className={cn(STATUS_STYLE[row.status])}
+                    >
+                      <Trans i18nKey={`outreach.forms.status.${row.status}`} />
+                    </Badge>
 
-                <TableCell className={'text-sm'}>
-                  {row.template_used ?? '–'}
-                </TableCell>
-
-                <TableCell className={'max-w-80 text-xs'}>
-                  <div className={'flex flex-col gap-1'}>
                     {missing.length > 0 ? (
                       <Badge
                         variant={'outline'}
@@ -406,7 +423,7 @@ export function FormsTable(props: {
                     ) : null}
 
                     {row.detail ? (
-                      <span className={'text-muted-foreground line-clamp-2'}>
+                      <span className={'text-muted-foreground line-clamp-2 text-xs'}>
                         {alert &&
                         missing.length === 0 &&
                         !row.protection_type ? (
@@ -418,26 +435,14 @@ export function FormsTable(props: {
                   </div>
                 </TableCell>
 
-                <TableCell>
-                  {(row.screenshotAfterUrl ?? row.screenshotUrl) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={row.screenshotAfterUrl ?? row.screenshotUrl ?? ''}
-                      alt={''}
-                      className={
-                        'h-12 w-20 rounded border object-cover object-top'
-                      }
-                      loading={'lazy'}
-                    />
-                  ) : (
-                    <span className={'text-muted-foreground text-xs'}>
-                      {t('noScreenshot')}
-                    </span>
-                  )}
+                <TableCell className={'text-muted-foreground'}>
+                  {row.template_used ?? '–'}
                 </TableCell>
 
                 <TableCell
-                  className={'text-muted-foreground text-xs tabular-nums'}
+                  className={
+                    'text-muted-foreground text-right text-xs whitespace-nowrap tabular-nums'
+                  }
                 >
                   <LocalDateTime
                     value={row.updated_at}

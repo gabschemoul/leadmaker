@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { ArrowRight, ArrowUpRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { getFormatter, getTranslations } from 'next-intl/server';
 
 import { Button } from '@kit/ui/button';
@@ -15,6 +15,7 @@ import {
 } from '@kit/ui/table';
 import { cn } from '@kit/ui/utils';
 
+import { Kpi, KpiStrip } from '../../../_components/leadmaker/kpi-strip';
 import type { CampaignResults } from '../../_lib/server/results.loader';
 
 const versionLetter = (index: number) => String.fromCharCode(65 + index);
@@ -88,7 +89,7 @@ export async function ResultsStep(props: {
   return (
     <div className={'flex flex-col gap-4'} data-test={'campaign-step-results'}>
       <Card className={'gap-0 py-0'} data-test={'campaign-results-contacted'}>
-        <div className={'bg-border grid grid-cols-2 gap-px sm:grid-cols-4'}>
+        <KpiStrip>
           <Kpi
             label={t('kpi.contacted')}
             value={format.number(results.sent)}
@@ -108,7 +109,7 @@ export async function ResultsStep(props: {
             label={t('kpi.progress')}
             value={percent(share(results.sent, results.total))}
           />
-        </div>
+        </KpiStrip>
 
         {nothingYet ? (
           <div
@@ -275,52 +276,6 @@ export async function ResultsStep(props: {
         </Card>
       ) : null}
     </div>
-  );
-}
-
-/** Tuile de chiffre clé, comme celles d'ElevenLabs : libellé gris 13 px, chiffre 18 px. */
-function Kpi(props: {
-  label: string;
-  value: string;
-  href?: string;
-  testId?: string;
-}) {
-  const content = (
-    <>
-      <span
-        className={
-          'text-muted-foreground flex items-center gap-1 text-[13px] font-medium'
-        }
-      >
-        {props.label}
-        {props.href ? <ArrowUpRight className={'size-3.5'} /> : null}
-      </span>
-
-      <span
-        className={
-          'text-foreground text-[18px] leading-[26px] font-medium tabular-nums'
-        }
-        data-test={props.testId}
-      >
-        {props.value}
-      </span>
-    </>
-  );
-
-  const className = 'bg-card flex flex-col items-start gap-0.5 p-4';
-
-  return props.href ? (
-    <Link
-      href={props.href}
-      className={cn(
-        className,
-        'transition-colors duration-75 hover:bg-[color-mix(in_oklab,var(--card),var(--foreground)_2%)]',
-      )}
-    >
-      {content}
-    </Link>
-  ) : (
-    <div className={className}>{content}</div>
   );
 }
 

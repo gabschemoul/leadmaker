@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
 import { Button } from '@kit/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { Trans } from '@kit/ui/trans';
-import { cn } from '@kit/ui/utils';
 
 import {
   ALWAYS_VISIBLE_GROUPS,
@@ -19,6 +18,7 @@ import {
 } from '~/lib/leadmaker/attempts';
 import { type AttemptRow, fetchAttempts } from '~/lib/leadmaker/attempts-query';
 
+import { Kpi, KpiStrip } from '../../../_components/leadmaker/kpi-strip';
 import { FormsTable } from '../../../forms/_components/forms-table';
 
 /**
@@ -34,8 +34,11 @@ export function CampaignFormsPanel(props: {
   initialGroup: AttemptGroup;
   initialRows: AttemptRow[];
   total: number;
+  /** boutons en haut à droite de la carte (réglages, préparer) */
+  actions?: React.ReactNode;
 }) {
   const t = useTranslations('campaigns.steps.contact');
+  const format = useFormatter();
   const client = useSupabase();
   const queryClient = useQueryClient();
   const [group, setGroup] = useState(props.initialGroup);
@@ -94,13 +97,20 @@ export function CampaignFormsPanel(props: {
     window.history.replaceState(null, '', url);
   };
 
-  const visibleGroups = ATTEMPT_GROUP_ORDER.filter(
+  const tab = tabOf(group);
+  const asideGroups = ASIDE_GROUPS.filter(
     (item) => ALWAYS_VISIBLE_GROUPS.includes(item) || props.counts[item] > 0,
+  );
+  const asideCount = ASIDE_GROUPS.reduce(
+    (sum, item) => sum + props.counts[item],
+    0,
   );
 
   return (
-    <Card>
-      <CardHeader className={'flex flex-col gap-4'}>
+    <Card className={'gap-0 pb-0'}>
+      <CardHeader
+        className={'flex flex-row flex-wrap items-center justify-between gap-3'}
+      >
         <CardTitle className={'flex items-center gap-2'}>
           {t('formsTitle')}
           {isFetching ? (
@@ -108,42 +118,65 @@ export function CampaignFormsPanel(props: {
           ) : null}
         </CardTitle>
 
-        <nav className={'flex flex-wrap gap-2'} data-test={'forms-groups'}>
-          {visibleGroups.map((item) => (
-            <Button
-              key={item}
-              size={'sm'}
-              variant={item === group ? 'default' : 'outline'}
-              data-test={`forms-group-${item}`}
-              onClick={() => select(item)}
-            >
-              <Trans i18nKey={`outreach.forms.groups.${item}`} />
-
-              <span
-                className={cn(
-                  'tabular-nums',
-                  item === group ? 'opacity-80' : 'text-muted-foreground',
-                )}
-              >
-                {props.counts[item]}
-              </span>
-            </Button>
-          ))}
-        </nav>
-
-        <p
-          className={'text-muted-foreground text-sm'}
-          data-test={'forms-group-hint'}
-        >
-          {props.total === 0 ? (
-            t('formsEmpty')
-          ) : (
-            <Trans i18nKey={`outreach.forms.groupHints.${group}`} />
-          )}
-        </p>
+        {props.actions ? (
+          <div className={'flex flex-wrap items-center gap-2'}>
+            {props.actions}
+          </div>
+        ) : null}
       </CardHeader>
 
-      <CardContent>
+      {/* onglets façon ElevenLabs : une tuile par étape, « Mis de côté » regroupe les cas sans envoi */}
+      <div className={'mt-4 border-y'} data-test={'forms-groups'}>
+        <KpiStrip>
+          {MAIN_TABS.map((item) => (
+            <Kpi
+              key={item}
+              label={t(`tabs.${item}`)}
+              value={format.number(props.counts[item])}
+              active={tab === item}
+              onClick={() => select(item)}
+              testId={`forms-group-${item}`}
+            />
+          ))}
+
+          <Kpi
+            label={t('tabs.aside')}
+            value={format.number(asideCount)}
+            active={tab === 'aside'}
+            onClick={() =>
+              select(
+                asideGroups.find((item) => props.counts[item] > 0) ??
+                  'incomplete',
+              )
+            }
+            testId={'forms-group-aside'}
+          />
+        </KpiStrip>
+      </div>
+
+      <CardContent className={'flex flex-col gap-3 pt-4'}>
+        {tab === 'aside' ? (
+          <nav
+            className={'flex flex-wrap gap-2'}
+            data-test={'forms-aside-groups'}
+          >
+            {asideGroups.map((item) => (
+              <Button
+                key={item}
+                variant={'chip'}
+                aria-pressed={item === group}
+                data-test={`forms-group-${item}`}
+                onClick={() => select(item)}
+              >
+                <Trans i18nKey={`outreach.forms.groups.${item}`} />
+                <span className={'text-muted-foreground tabular-nums'}>
+                  {format.number(props.counts[item])}
+                </span>
+              </Button>
+            ))}
+          </nav>
+        ) : null}
+
         <FormsTable
           key={`${props.campaignId}:${group}`}
           rows={data ?? []}
@@ -156,4 +189,21 @@ export function CampaignFormsPanel(props: {
       </CardContent>
     </Card>
   );
+}
+
+/** Les quatre étapes affichées en onglets ; tout le reste (pas envoyable en l'état) va dans « Mis de côté ». */
+const MAIN_TABS = ['ready', 'validated', 'sent', 'to_verify'] as const;
+const ASIDE_GROUPS: AttemptGroup[] = [
+  'incomplete',
+  'intervention_required',
+  'no_form',
+  'unreachable',
+  'skipped',
+  'excluded',
+];
+
+function tabOf(group: AttemptGroup) {
+  return (MAIN_TABS as readonly AttemptGroup[]).includes(group)
+    ? (group as (typeof MAIN_TABS)[number])
+    : 'aside';
 }

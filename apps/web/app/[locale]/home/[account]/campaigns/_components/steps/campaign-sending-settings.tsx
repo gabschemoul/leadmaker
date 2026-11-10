@@ -89,19 +89,10 @@ export function CampaignSendingSettings(props: {
     <Form {...form}>
       <form
         onSubmit={submit}
-        className={'bg-card flex flex-col gap-5 rounded-2xl border p-6'}
+        // rangé dans la fenêtre « Réglages d'envoi » depuis le 10/11/2026 : plus de carte ni de texte d'intro
+        className={'flex flex-col gap-5'}
         data-test={'sending-settings'}
       >
-        <div className={'flex flex-col gap-1'}>
-          <h3 className={'font-medium'}>
-            <Trans i18nKey={'outreach.messages.sending.title'} />
-          </h3>
-
-          <p className={'text-muted-foreground text-sm'}>
-            <Trans i18nKey={'outreach.messages.sending.intro'} />
-          </p>
-        </div>
-
         <FormField
           control={form.control}
           name={'dailyLimit'}
@@ -136,10 +127,6 @@ export function CampaignSendingSettings(props: {
                   </span>
                 ) : null}
               </div>
-
-              <FormDescription>
-                <Trans i18nKey={'outreach.messages.sending.dailyLimitHint'} />
-              </FormDescription>
             </FormItem>
           )}
         />
@@ -149,7 +136,7 @@ export function CampaignSendingSettings(props: {
           name={'autoValidation'}
           render={({ field }) => (
             <FormItem className={'flex flex-col gap-3 border-t pt-5'}>
-              <div className={'flex items-start gap-3'}>
+              <div className={'flex items-center gap-3'}>
                 <FormControl
                   render={
                     <Switch
@@ -168,15 +155,15 @@ export function CampaignSendingSettings(props: {
                     />
                   </FormLabel>
 
-                  <FormDescription>
-                    <Trans
-                      i18nKey={
-                        props.autoValidationAllowed
-                          ? 'outreach.messages.sending.autoValidationHint'
-                          : 'outreach.messages.sending.autoValidationPlanHint'
-                      }
-                    />
-                  </FormDescription>
+                  {props.autoValidationAllowed ? null : (
+                    <FormDescription>
+                      <Trans
+                        i18nKey={
+                          'outreach.messages.sending.autoValidationPlanHint'
+                        }
+                      />
+                    </FormDescription>
+                  )}
                 </div>
               </div>
 
@@ -203,7 +190,7 @@ export function CampaignSendingSettings(props: {
             disabled={!limitValid || !form.formState.isDirty}
             loading={save.isPending}
           >
-            <Trans i18nKey={'outreach.messages.save'} />
+            <Trans i18nKey={'campaigns.steps.contact.settings.save'} />
           </Button>
         </div>
       </form>

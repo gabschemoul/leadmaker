@@ -388,8 +388,21 @@
       "sendAuto": "Validated forms are sent automatically, at most {limit, number} per day.",
       "sendAutoValidation": "Automatic validation is on: ready forms without alerts are sent without your click.",
       "sendSettings": "Sending settings",
-      "formsTitle": "Forms of this campaign",
-      "formsEmpty": "Nothing to review yet. Click “Prepare the forms”: results will show up here as they come."
+      "formsTitle": "Forms",
+      "formsEmpty": "Nothing to review yet. Click “Prepare the forms”: results will show up here as they come.",
+      "tabs": {
+        "ready": "To approve",
+        "validated": "Approved, waiting",
+        "sent": "Sent",
+        "to_verify": "To check",
+        "aside": "Set aside"
+      },
+      "settings": {
+        "open": "Settings",
+        "title": "Sending settings",
+        "save": "Save"
+      },
+      "preparingShort": "{count, plural, one {# being prepared} other {# being prepared}}"
     }
   },
   "nextAction": {
@@ -575,7 +588,8 @@
       "inFlight": "In progress",
       "aside": "Set aside",
       "asideHint": "Set aside: no form, captcha or unknown field.",
-      "seeAdvanced": "See them in Advanced mode"
+      "seeAdvanced": "See them in Advanced mode",
+      "progress": "Progress"
     },
     "feed": {
       "title": "Live",

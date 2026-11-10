@@ -388,8 +388,21 @@
       "sendAuto": "Les formulaires validés partent automatiquement, {limit, number} par jour au plus.",
       "sendAutoValidation": "Validation automatique activée : les formulaires prêts sans alerte partent sans votre clic.",
       "sendSettings": "Réglages d'envoi",
-      "formsTitle": "Formulaires de cette campagne",
-      "formsEmpty": "Rien à vérifier pour l'instant. Cliquez sur « Préparer les formulaires » : les résultats apparaîtront ici au fur et à mesure."
+      "formsTitle": "Formulaires",
+      "formsEmpty": "Rien à vérifier pour l'instant. Cliquez sur « Préparer les formulaires » : les résultats apparaîtront ici au fur et à mesure.",
+      "tabs": {
+        "ready": "À valider",
+        "validated": "Validés, en attente",
+        "sent": "Envoyés",
+        "to_verify": "À vérifier",
+        "aside": "Mis de côté"
+      },
+      "settings": {
+        "open": "Réglages",
+        "title": "Réglages d'envoi",
+        "save": "Enregistrer"
+      },
+      "preparingShort": "{count, plural, one {# en préparation} other {# en préparation}}"
     }
   },
   "nextAction": {
@@ -575,7 +588,8 @@
       "inFlight": "En cours",
       "aside": "Mis de côté",
       "asideHint": "Mis de côté : sans formulaire, captcha ou champ inconnu.",
-      "seeAdvanced": "Les voir en mode Avancé"
+      "seeAdvanced": "Les voir en mode Avancé",
+      "progress": "Avancement"
     },
     "feed": {
       "title": "En direct",

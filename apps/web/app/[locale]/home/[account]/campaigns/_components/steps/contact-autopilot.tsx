@@ -15,12 +15,22 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Minus, Pause, Play, Plus } from 'lucide-react';
+import {
+  Clock,
+  Loader2,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  TriangleAlert,
+} from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
+import { Alert, AlertDescription } from '@kit/ui/alert';
+import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
 import { chipClasses } from '@kit/ui/button-extras';
 import { Input } from '@kit/ui/input';
@@ -39,6 +49,7 @@ import {
 } from '~/lib/leadmaker/autopilot-query';
 import { MAX_MESSAGES } from '~/lib/leadmaker/templates';
 
+import { Kpi, KpiStrip } from '../../../_components/leadmaker/kpi-strip';
 import type { AutopilotSchedule } from '../../_lib/schema/autopilot.schema';
 import {
   cancelAutopilotAction,
@@ -904,7 +915,6 @@ function AutopilotRunning(props: {
   const done = summary.status === 'done';
   const paused = summary.status === 'paused';
   const target = summary.target ?? 0;
-  const pct = target > 0 ? Math.min(100, (summary.sent / target) * 100) : 0;
 
   const onError = ({
     error,
@@ -934,14 +944,6 @@ function AutopilotRunning(props: {
     nextSend.getTime() - props.checkedAt > 60_000;
   // sans forfait le pilote attend (les envois ne coûtent pas de crédit, mais il faut un forfait)
   const noPlan = !done && !props.hasPlan;
-  // juste après le lancement, tant que rien n'est parti ni mis de côté. Jamais de délai chiffré : il faut
-  // quelques minutes pour préparer un formulaire (CDC-PARCOURS-TRI-ANNUAIRE §6, écran 4)
-  const justLaunched =
-    summary.status === 'running' &&
-    summary.sent === 0 &&
-    summary.aside === 0 &&
-    !waitingWindow &&
-    !noPlan;
 
   const title = done
     ? summary.finished_reason === 'no_prospects'
@@ -951,88 +953,150 @@ function AutopilotRunning(props: {
       ? t('paused')
       : t('running');
 
+  const progress = target > 0 ? Math.min(1, summary.sent / target) : 0;
+
   return (
-    <div
-      className={'flex flex-col items-start gap-5 lg:flex-row'}
-      data-test={'autopilot-running'}
-    >
-      <div
-        className={
-          'bg-card flex w-full min-w-0 flex-col gap-5 rounded-2xl border p-6 lg:flex-[2]'
-        }
-      >
-        <div className={'flex flex-wrap items-center justify-between gap-3'}>
-          <div className={'flex items-center gap-2.5'}>
-            <span
-              aria-hidden
-              className={cn(
-                'size-3 rounded-full',
-                done
-                  ? 'bg-ok'
-                  : paused
-                    ? 'bg-muted-foreground/50'
-                    : 'bg-brand animate-pulse',
-              )}
-            />
-
-            <span
-              className={'text-lg font-medium'}
-              data-test={'autopilot-title'}
-            >
-              {title}
-            </span>
-          </div>
-
-          <div className={'flex flex-wrap gap-2'}>
-            {done ? null : paused ? (
-              <Button
-                variant={'outline'}
-                loading={resume.isPending}
-                data-test={'autopilot-resume'}
-                onClick={() => resume.execute({ autopilotId })}
-              >
-                <Play className={'size-4'} />
-                {t('resume')}
-              </Button>
-            ) : (
-              <Button
-                variant={'outline'}
-                loading={pause.isPending}
-                data-test={'autopilot-pause'}
-                onClick={() => pause.execute({ autopilotId })}
-              >
-                <Pause className={'size-4'} />
-                {t('pause')}
-              </Button>
+    <div className={'flex flex-col gap-4'} data-test={'autopilot-running'}>
+      <div className={'flex flex-wrap items-center justify-between gap-3'}>
+        <div className={'flex items-center gap-2.5'}>
+          <span
+            aria-hidden
+            className={cn(
+              'size-2.5 rounded-full',
+              done
+                ? 'bg-ok'
+                : paused
+                  ? 'bg-muted-foreground/50'
+                  : 'bg-ok animate-pulse',
             )}
+          />
 
+          <span
+            className={'text-[15px] font-medium'}
+            data-test={'autopilot-title'}
+          >
+            {title}
+          </span>
+        </div>
+
+        <div className={'flex flex-wrap gap-2'}>
+          {done ? null : paused ? (
             <Button
               variant={'outline'}
-              data-test={'autopilot-edit'}
-              onClick={props.onEdit}
+              loading={resume.isPending}
+              data-test={'autopilot-resume'}
+              onClick={() => resume.execute({ autopilotId })}
             >
-              {done ? t('again') : t('edit')}
+              <Play />
+              {t('resume')}
             </Button>
-          </div>
-        </div>
+          ) : (
+            <Button
+              variant={'outline'}
+              loading={pause.isPending}
+              data-test={'autopilot-pause'}
+              onClick={() => pause.execute({ autopilotId })}
+            >
+              <Pause />
+              {t('pause')}
+            </Button>
+          )}
 
-        <div className={'flex items-baseline gap-2.5'}>
-          <span
-            className={
-              'font-heading text-primary text-5xl font-light tracking-[-0.02em] tabular-nums'
-            }
-            data-test={'autopilot-sent'}
+          <Button
+            variant={'outline'}
+            data-test={'autopilot-edit'}
+            onClick={props.onEdit}
           >
-            {format.number(summary.sent)}
-          </span>
-
-          <span className={'text-muted-foreground text-xl'}>
-            {t('ofSent', { count: target })}
-          </span>
+            {done ? t('again') : t('edit')}
+          </Button>
         </div>
+      </div>
+
+      {noPlan ? (
+        <Alert className={alertExtras.warning} data-test={'autopilot-no-plan'}>
+          <TriangleAlert className={'h-4'} />
+          <AlertDescription
+            className={'flex flex-wrap items-center justify-between gap-2'}
+          >
+            <span>{t('noPlan')}</span>
+
+            <Button
+              nativeButton={false}
+              render={<Link href={props.billingHref} />}
+            >
+              {t('billing')}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {waitingWindow && nextSend ? (
+        <p
+          className={'text-muted-foreground flex items-center gap-2 text-sm'}
+          data-test={'autopilot-next-send'}
+        >
+          <Clock className={'size-4 shrink-0'} />
+          {t('nextSend', {
+            when: format.dateTime(nextSend, {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: summary.timezone ?? undefined,
+            }),
+            // « Europe/Paris » → « Paris »
+            zone: (
+              (summary.timezone ?? 'UTC').split('/').pop() ?? 'UTC'
+            )?.replaceAll('_', ' '),
+          })}
+        </p>
+      ) : null}
+
+      <div
+        className={
+          'bg-card ring-foreground/10 overflow-hidden rounded-2xl ring-1'
+        }
+      >
+        <KpiStrip>
+          <Kpi
+            label={t('sent')}
+            value={
+              <>
+                {format.number(summary.sent)}
+                <span className={'text-muted-foreground'}>
+                  {' '}
+                  / {format.number(target)}
+                </span>
+              </>
+            }
+            testId={'autopilot-sent'}
+          />
+
+          <Kpi
+            label={t('inFlight')}
+            value={format.number(done || paused ? 0 : summary.in_flight)}
+            testId={'autopilot-in-flight'}
+          />
+
+          <Kpi
+            label={t('aside')}
+            value={format.number(summary.aside)}
+            href={summary.aside > 0 ? props.advancedHref : undefined}
+            testId={'autopilot-aside'}
+          />
+
+          <Kpi
+            label={t('progress')}
+            value={format.number(progress, {
+              style: 'percent',
+              maximumFractionDigits: progress > 0 && progress < 0.1 ? 1 : 0,
+            })}
+          />
+        </KpiStrip>
 
         <div
-          className={'bg-muted h-2 overflow-hidden rounded-full'}
+          className={'bg-foreground/[0.06] h-1 overflow-hidden'}
           role={'progressbar'}
           aria-valuemin={0}
           aria-valuemax={target}
@@ -1040,105 +1104,13 @@ function AutopilotRunning(props: {
           aria-label={t('progressLabel')}
         >
           <div
-            className={'bg-brand h-full rounded-full transition-all'}
-            style={{ width: `${pct}%` }}
+            className={'bg-foreground h-full transition-all'}
+            style={{ width: `${Math.round(progress * 1000) / 10}%` }}
           />
         </div>
-
-        {justLaunched ? (
-          <p
-            className={'bg-brand-pale rounded-lg px-3 py-2.5 text-sm'}
-            data-test={'autopilot-launched'}
-          >
-            <span className={'font-medium'}>
-              {tAll('outreach.sendStep.launchedTitle')}
-            </span>{' '}
-            {tAll('outreach.sendStep.launchedText')}
-          </p>
-        ) : null}
-
-        {waitingWindow && nextSend ? (
-          <p
-            className={'bg-muted rounded-lg px-3 py-2.5 text-sm'}
-            data-test={'autopilot-next-send'}
-          >
-            {t('nextSend', {
-              when: format.dateTime(nextSend, {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZone: summary.timezone ?? undefined,
-              }),
-              // « Europe/Paris » → « Paris »
-              zone: (
-                (summary.timezone ?? 'UTC').split('/').pop() ?? 'UTC'
-              )?.replaceAll('_', ' '),
-            })}
-          </p>
-        ) : null}
-
-        {noPlan ? (
-          <p
-            className={'bg-brand/10 rounded-lg px-3 py-2.5 text-sm'}
-            data-test={'autopilot-no-plan'}
-          >
-            {t('noPlan')}{' '}
-            <Link href={props.billingHref} className={'text-primary underline'}>
-              {t('billing')}
-            </Link>
-          </p>
-        ) : null}
-
-        <div className={'grid grid-cols-3 gap-2 sm:gap-3'}>
-          <Tile label={t('sent')} value={format.number(summary.sent)} />
-          <Tile
-            label={t('inFlight')}
-            value={format.number(done || paused ? 0 : summary.in_flight)}
-            testId={'autopilot-in-flight'}
-          />
-          <Tile
-            label={t('aside')}
-            value={format.number(summary.aside)}
-            warm
-            testId={'autopilot-aside'}
-          />
-        </div>
-
-        <p className={'text-muted-foreground text-sm'}>
-          {t('asideHint')}{' '}
-          <Link href={props.advancedHref} className={'text-primary underline'}>
-            {t('seeAdvanced')}
-          </Link>
-        </p>
       </div>
 
       <AutopilotFeed autopilotId={autopilotId} live={!done && !paused} />
-    </div>
-  );
-}
-
-function Tile(props: {
-  label: string;
-  value: string;
-  warm?: boolean;
-  testId?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        'rounded-xl p-3.5',
-        props.warm ? 'bg-brand/10' : 'bg-muted/60',
-      )}
-    >
-      <div className={'text-muted-foreground text-sm'}>{props.label}</div>
-      <div
-        className={'text-2xl font-medium tabular-nums'}
-        data-test={props.testId}
-      >
-        {props.value}
-      </div>
     </div>
   );
 }
@@ -1157,24 +1129,43 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
   });
 
   return (
-    <aside
+    <section
       className={
-        'flex w-full min-w-0 flex-col gap-3 rounded-2xl bg-[#0e2a27] p-5 text-[#e8f0ee] lg:flex-1'
+        'bg-card ring-foreground/10 flex flex-col overflow-hidden rounded-2xl ring-1'
       }
       data-test={'autopilot-feed'}
     >
-      <h3 className={'font-medium'}>{t('title')}</h3>
+      <h3
+        className={
+          'flex items-center gap-2 px-5 pt-4 pb-2 text-[15px] font-medium'
+        }
+      >
+        {t('title')}
+        {props.live ? (
+          <span
+            aria-hidden
+            className={'bg-ok size-1.5 animate-pulse rounded-full'}
+          />
+        ) : null}
+      </h3>
 
-      <ol className={'flex flex-col gap-2 font-mono text-[14px] leading-snug'}>
+      <ol className={'flex flex-col text-sm'}>
         {rows.length === 0 ? (
-          <li className={'text-[#8fb3ac]'}>{t('empty')}</li>
+          <li className={'text-muted-foreground px-5 pt-1 pb-4'}>
+            {t('empty')}
+          </li>
         ) : (
           rows.map((row) => {
             const line = feedLine(row);
 
             return (
-              <li key={row.id} className={'flex gap-2.5'}>
-                <span className={'shrink-0 text-[#8fb3ac]'}>
+              <li
+                key={row.id}
+                className={'flex items-center gap-3 border-t px-5 py-2.5'}
+              >
+                <span
+                  className={'text-muted-foreground w-11 shrink-0 tabular-nums'}
+                >
                   {format.dateTime(new Date(row.updated_at), {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -1184,12 +1175,16 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
                 </span>
 
                 <span
+                  aria-hidden
                   className={cn(
-                    'min-w-0 break-words',
-                    line.kind === 'ok' && 'text-[#9be0c6]',
-                    line.kind === 'warn' && 'text-[#f2c66b]',
+                    'size-1.5 shrink-0 rounded-full',
+                    line.kind === 'ok' && 'bg-ok',
+                    line.kind === 'warn' && 'bg-amber-500',
+                    line.kind === 'info' && 'bg-foreground/25',
                   )}
-                >
+                />
+
+                <span className={'min-w-0 truncate'}>
                   {t(line.key, {
                     name: row.prospect.name,
                     site: displayHost(row.form_url ?? row.prospect.website),
@@ -1200,7 +1195,7 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
           })
         )}
       </ol>
-    </aside>
+    </section>
   );
 }
 

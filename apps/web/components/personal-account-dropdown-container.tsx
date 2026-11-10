@@ -16,6 +16,7 @@ export function ProfileAccountDropdownContainer(props: {
   user?: JWTUserData | null;
   showProfileName?: boolean;
   accountSlug?: string;
+  variant?: 'default' | 'sidebar';
 
   account?: {
     id: string | null;
@@ -53,6 +54,7 @@ export function ProfileAccountDropdownContainer(props: {
       account={props.account}
       signOutRequested={() => signOut.mutateAsync()}
       showProfileName={props.showProfileName}
+      variant={props.variant}
     />
   );
 }

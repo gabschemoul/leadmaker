@@ -56,7 +56,7 @@ export function TeamAccountLayoutSidebar({ account }: { account: string }) {
 
       <SidebarFooter
         className={
-          'border-t px-2 py-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0'
+          'gap-0.5 border-t px-2 py-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0'
         }
       >
         <Suspense fallback={<SidebarHeaderSkeleton />}>
@@ -110,6 +110,7 @@ async function TeamAccountSidebarUser({ account }: { account: string }) {
       user={data.user}
       accountSlug={account}
       showProfileName
+      variant={'sidebar'}
     />
   );
 }

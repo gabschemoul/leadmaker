@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { JWTUserData } from '@kit/supabase/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@kit/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ export function PersonalAccountDropdown({
   user,
   signOutRequested,
   showProfileName = true,
+  variant = 'default',
   paths,
   features,
   account,
@@ -60,6 +62,12 @@ export function PersonalAccountDropdown({
 
   showProfileName?: boolean;
 
+  /**
+   * Prospectigo (10/11/2026) : « sidebar » = ligne compacte identique au sélecteur d'équipe posé juste
+   * au-dessus (même hauteur, même avatar, nom seul ; l'e-mail est dans le menu).
+   */
+  variant?: 'default' | 'sidebar';
+
   className?: string;
 }) {
   const { data: personalAccountData } = usePersonalAccountData(
@@ -84,57 +92,100 @@ export function PersonalAccountDropdown({
     return hasAdminRole && isAal2;
   }, [user]);
 
-  return (
-    <DropdownMenu>
+  const trigger =
+    variant === 'sidebar' ? (
       <DropdownMenuTrigger
         aria-label="Open your profile menu"
         data-test={'account-dropdown-trigger'}
         className={cn(
-          'group/trigger fade-in focus:outline-primary flex cursor-pointer items-center group-data-[collapsible=icon]:px-0',
+          'hover:bg-sidebar-accent active:bg-sidebar-accent focus-visible:ring-ring flex h-9 w-full cursor-pointer items-center gap-x-2 rounded-lg px-2 text-left text-sm font-medium transition-colors outline-none group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 focus-visible:ring-2',
           className ?? '',
-          {
-            ['active:bg-secondary/50 group-data-[collapsible=none]:hover:bg-secondary items-center gap-4 rounded-md border-dashed p-2 transition-colors group-data-[collapsible=none]:border']:
-              showProfileName,
-          },
         )}
       >
-        <ProfileAvatar
+        <span
           className={
-            'group-hover/trigger:border-background/50 border border-transparent transition-colors'
+            'flex aspect-square size-6 shrink-0 items-center justify-center'
           }
-          fallbackClassName={'border'}
-          displayName={displayName ?? user?.email ?? ''}
-          pictureUrl={personalAccountData?.picture_url}
+        >
+          <Avatar className={'size-5 text-[11px]'}>
+            <AvatarImage src={personalAccountData?.picture_url || undefined} />
+
+            <AvatarFallback className={'uppercase'}>
+              {(displayName || user?.email || '').slice(0, 1)}
+            </AvatarFallback>
+          </Avatar>
+        </span>
+
+        <span
+          data-test={'account-dropdown-display-name'}
+          className={
+            'min-w-0 flex-1 truncate group-data-[collapsible=icon]:hidden'
+          }
+        >
+          {displayName}
+        </span>
+
+        <ChevronsUpDown
+          className={
+            'text-muted-foreground ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden'
+          }
         />
-
-        <If condition={showProfileName}>
-          <div
-            className={
-              'fade-in flex w-full flex-col truncate text-left group-data-[collapsible=icon]:hidden'
-            }
-          >
-            <span
-              data-test={'account-dropdown-display-name'}
-              className={'truncate text-sm'}
-            >
-              {displayName}
-            </span>
-
-            <span
-              data-test={'account-dropdown-email'}
-              className={'text-muted-foreground truncate text-xs'}
-            >
-              {signedInAsLabel}
-            </span>
-          </div>
-
-          <ChevronsUpDown
-            className={
-              'text-muted-foreground mr-1 h-8 group-data-[collapsible=icon]:hidden'
-            }
-          />
-        </If>
       </DropdownMenuTrigger>
+    ) : null;
+
+  return (
+    <DropdownMenu>
+      {trigger ?? (
+        <DropdownMenuTrigger
+          aria-label="Open your profile menu"
+          data-test={'account-dropdown-trigger'}
+          className={cn(
+            'group/trigger fade-in focus:outline-primary flex cursor-pointer items-center group-data-[collapsible=icon]:px-0',
+            className ?? '',
+            {
+              ['active:bg-secondary/50 group-data-[collapsible=none]:hover:bg-secondary items-center gap-4 rounded-md border-dashed p-2 transition-colors group-data-[collapsible=none]:border']:
+                showProfileName,
+            },
+          )}
+        >
+          <ProfileAvatar
+            className={
+              'group-hover/trigger:border-background/50 border border-transparent transition-colors'
+            }
+            fallbackClassName={'border'}
+            displayName={displayName ?? user?.email ?? ''}
+            pictureUrl={personalAccountData?.picture_url}
+          />
+
+          <If condition={showProfileName}>
+            <div
+              className={
+                'fade-in flex w-full flex-col truncate text-left group-data-[collapsible=icon]:hidden'
+              }
+            >
+              <span
+                data-test={'account-dropdown-display-name'}
+                className={'truncate text-sm'}
+              >
+                {displayName}
+              </span>
+
+              <span
+                data-test={'account-dropdown-email'}
+                className={'text-muted-foreground truncate text-xs'}
+              >
+                {signedInAsLabel}
+              </span>
+            </div>
+
+            <ChevronsUpDown
+              className={
+                'text-muted-foreground mr-1 h-8 group-data-[collapsible=icon]:hidden'
+              }
+            />
+          </If>
+        </DropdownMenuTrigger>
+      )}
 
       <DropdownMenuContent className={'xl:min-w-[15rem]!'}>
         <DropdownMenuItem

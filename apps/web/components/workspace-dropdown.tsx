@@ -159,7 +159,7 @@ export function WorkspaceDropdown({
                   size="icon"
                 >
                   <WorkspaceAvatar
-                    className="size-8"
+                    className="size-5 rounded-md text-[11px]"
                     isTeam={isTeamContext}
                     pictureUrl={currentAvatar}
                     label={currentLabel}
@@ -189,7 +189,7 @@ export function WorkspaceDropdown({
                   <span className="max-w-md truncate">{currentLabel}</span>
                 </span>
 
-                <ChevronsUpDown className="ml-auto size-4 transition-opacity duration-300" />
+                <ChevronsUpDown className="text-muted-foreground ml-auto size-4 transition-opacity duration-300" />
               </Button>
             }
           />

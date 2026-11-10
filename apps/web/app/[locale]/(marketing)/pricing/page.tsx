@@ -1,4 +1,4 @@
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import { PricingTable } from '@kit/billing-gateway/marketing';
 
@@ -9,8 +9,11 @@ import {
   DisplayTitle,
 } from '~/(marketing)/_components/el';
 import { SitePageHeader } from '~/(marketing)/_components/site-page-header';
-import billingConfig from '~/config/billing.config';
 import pathsConfig from '~/config/paths.config';
+import {
+  billingConfigFor,
+  currencyFor,
+} from '~/lib/leadmaker/billing-currency';
 
 export const generateMetadata = async () => {
   const t = await getTranslations('marketing');
@@ -28,6 +31,8 @@ const paths = {
 async function PricingPage() {
   const t = await getTranslations('marketing');
   const tCommon = await getTranslations('common');
+  // page préparée à l'avance : pas de pays du visiteur, la langue décide (français → euros)
+  const config = billingConfigFor(currencyFor({ locale: await getLocale() }));
 
   // Comment les crédits fonctionnent (crédit unique, 9/11) : 1 crédit par entreprise gardée, prise de
   // contact comprise ; 2 ou 4 pour les cibles difficiles ; aucun plafond par jour ; prix en dollars.
@@ -42,7 +47,7 @@ async function PricingPage() {
 
       <Band>
         <div className={'py-10 sm:-mx-4 md:py-14'}>
-          <PricingTable paths={paths} config={billingConfig} />
+          <PricingTable paths={paths} config={config} />
         </div>
       </Band>
 

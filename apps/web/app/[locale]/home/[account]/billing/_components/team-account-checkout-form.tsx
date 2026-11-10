@@ -22,6 +22,10 @@ import { If } from '@kit/ui/if';
 import { Trans } from '@kit/ui/trans';
 
 import billingConfig from '~/config/billing.config';
+import {
+  type BillingCurrency,
+  billingConfigFor,
+} from '~/lib/leadmaker/billing-currency';
 
 import { createTeamAccountCheckoutSession } from '../_lib/server/server-actions';
 
@@ -41,6 +45,8 @@ const EmbeddedCheckout = dynamic(
 export function TeamAccountCheckoutForm(params: {
   accountId: string;
   customerId: string | null | undefined;
+  /** euros pour les clients européens, dollars pour les autres (billing-currency.ts) */
+  currency: BillingCurrency;
 }) {
   const routeParams = useParams();
   const appEvents = useAppEvents();
@@ -105,7 +111,7 @@ export function TeamAccountCheckoutForm(params: {
 
         <PlanPicker
           pending={isPending}
-          config={billingConfig}
+          config={billingConfigFor(params.currency)}
           canStartTrial={canStartTrial}
           onSubmit={({ planId, productId }) => {
             const slug = routeParams.account as string;

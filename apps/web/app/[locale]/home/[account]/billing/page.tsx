@@ -1,7 +1,9 @@
 import { Suspense } from 'react';
 
+import { headers } from 'next/headers';
+
 import { TriangleAlert } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, getLocale } from 'next-intl/server';
 
 import { resolveProductPlan } from '@kit/billing-gateway';
 import {
@@ -22,6 +24,7 @@ import {
   PageHeaderSkeleton,
 } from '~/components/skeletons/page-skeletons';
 import billingConfig from '~/config/billing.config';
+import { currencyFor } from '~/lib/leadmaker/billing-currency';
 
 // local imports
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
@@ -93,8 +96,18 @@ async function TeamAccountBillingContent({
   const workspace = await loadTeamWorkspace(account);
   const accountId = workspace.account.id;
 
-  const [subscription, order, customerId] =
-    await loadTeamAccountBillingPage(accountId);
+  const [[subscription, order, customerId], requestHeaders, locale] =
+    await Promise.all([
+      loadTeamAccountBillingPage(accountId),
+      headers(),
+      getLocale(),
+    ]);
+
+  // euros pour les clients européens, dollars pour les autres (pays donné par Vercel)
+  const currency = currencyFor({
+    country: requestHeaders.get('x-vercel-ip-country'),
+    locale,
+  });
 
   const variantId = subscription?.items[0]?.variant_id;
   const orderVariantId = order?.items[0]?.variant_id;
@@ -133,6 +146,7 @@ async function TeamAccountBillingContent({
             <TeamAccountCheckoutForm
               customerId={customerId}
               accountId={accountId}
+              currency={currency}
             />
           </If>
         </If>

@@ -6,6 +6,8 @@
  */
 import billingConfig from '~/config/billing.config';
 
+import { currencyFor } from './billing-currency';
+
 export type PackCurrency = 'USD' | 'EUR';
 
 /** Produit des packs selon la devise. */
@@ -82,25 +84,10 @@ export function findCreditPackByVariantId(variantId: string) {
   return null;
 }
 
-/** Pays européens (UE, EEE, Suisse, Royaume-Uni et micro-États) : packs proposés en euros. */
-const EUROPE = new Set(
-  (
-    'AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE ' +
-    'IS LI NO CH GB MC SM VA AD ME AL BA MK RS MD UA'
-  ).split(' '),
-);
-
-/**
- * Devise des packs pour un visiteur : euros s'il est en Europe (pays donné par Vercel, en-tête
- * x-vercel-ip-country), sinon dollars ; sans pays connu (en local), euros si l'appli est en français.
- */
+/** Devise des packs pour un visiteur (même règle que les abonnements, billing-currency.ts). */
 export function packCurrencyFor(params: {
   country: string | null;
   locale: string;
 }): PackCurrency {
-  if (params.country) {
-    return EUROPE.has(params.country.toUpperCase()) ? 'EUR' : 'USD';
-  }
-
-  return params.locale.startsWith('fr') ? 'EUR' : 'USD';
+  return currencyFor(params);
 }

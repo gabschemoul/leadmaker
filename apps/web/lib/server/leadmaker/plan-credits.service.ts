@@ -18,7 +18,8 @@ export function findPlanId(variantIds: string[]) {
   for (const product of billingConfig.products) {
     for (const plan of product.plans) {
       if (plan.lineItems.some((item) => variantIds.includes(item.id))) {
-        return product.id;
+        // abonnement en euros (« growth-eur ») : même forfait que la version en dollars
+        return product.id.replace(/-eur$/, '');
       }
     }
   }

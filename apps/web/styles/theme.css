@@ -15,8 +15,8 @@
   }
 
   /* Lisibilité (décision de Gabriel, 10/11/2026) : tout le texte est en gris, comme « France · 16 395 villes · 90
-     activités » sous le titre d'une campagne ; seuls les titres, libellés, en-têtes de tableau, mots en gras et
-     champs de saisie restent en noir. :where() = aucune priorité : une couleur donnée par une classe l'emporte. */
+     activités » sous le titre d'une campagne ; seuls les titres, libellés, en-têtes de tableau, mots en gras,
+     boutons, menus et champs de saisie restent en noir. :where() = aucune priorité : une couleur donnée par une classe l'emporte. */
   body {
     @apply bg-background text-muted-foreground;
   }
@@ -37,6 +37,11 @@
       textarea,
       select,
       [data-slot='card-title'],
+      button,
+      [data-slot='button'],
+      [role='button'],
+      [role='menuitem'],
+      [role='option'],
       .font-medium,
       .font-semibold,
       .font-bold

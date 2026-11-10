@@ -1887,6 +1887,40 @@ isOneToOne: false
 "lm_schedule_discovery":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"lm_search_prospects":
+{ Args: { "p_query": string,"p_space_id": string }; Returns: {
+              "account_id": string,
+"address": string | null,
+"campaign_id": string | null,
+"category": string | null,
+"city": string | null,
+"country_code": string | null,
+"created_at": string,
+"created_by": string | null,
+"email_checked_at": string | null,
+"excluded_at": string | null,
+"found_email": string | null,
+"google_place_id": string | null,
+"id": string,
+"is_chain": boolean,
+"maps_url": string | null,
+"name": string,
+"phone": string | null,
+"rating": number | null,
+"review_count": number | null,
+"site_key": string,
+"source": Database["public"]['Enums']["lm_prospect_source"],
+"space_id": string,
+"updated_at": string,
+"updated_by": string | null,
+"website": string | null
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "lm_prospects"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "lm_seat_limit":
 { Args: { "p_account_id": string }; Returns: number
                            },

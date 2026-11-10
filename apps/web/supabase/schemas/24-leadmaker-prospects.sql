@@ -93,6 +93,36 @@ create index if not exists ix_lm_prospects_site_key_trgm on public.lm_prospects
 create index if not exists ix_lm_prospects_phone_trgm on public.lm_prospects
   using gin (phone extensions.gin_trgm_ops);
 
+-- Recherche « contient » de la page Prospects, sur nom, adresse, site et téléphone (10/11/2026). Fonction et non
+-- simple filtre : sous RLS, PostgreSQL refuse d'utiliser les index trigrammes pour ILIKE (opérateur non
+-- « leakproof ») et relit les 228 000 fiches (3 s) ; ici l'accès est vérifié une fois (membre de l'organisation
+-- du dossier, MFA comprise via lm_member), puis la recherche passe par les index (quelques ms). L'appli ajoute
+-- ensuite ses autres filtres, le tri, la page et le total sur le résultat (PostgREST).
+-- Appelant : appli (utilisateur connecté). Sécurité : security definer, accès contrôlé par lm_member ;
+-- jokers LIKE du texte échappés.
+create or replace function public.lm_search_prospects(p_space_id uuid, p_query text)
+returns setof public.lm_prospects
+set search_path = ''
+language sql
+stable
+security definer
+rows 2000
+as $$
+  select p.*
+  from public.lm_prospects p,
+       -- texte cherché, jokers LIKE (%, _, \) échappés
+       (select '%' || replace(replace(replace(trim(p_query), '\', '\\'), '%', '\%'), '_', '\_') || '%' as pattern) q
+  where p.space_id = p_space_id
+    -- contrôle d'accès évalué une seule fois (pas par fiche)
+    and exists (select 1 from public.lm_spaces s where s.id = p_space_id and public.lm_member(s.account_id))
+    and length(trim(coalesce(p_query, ''))) > 0
+    and (p.name ilike q.pattern or p.address ilike q.pattern or p.site_key ilike q.pattern or p.phone ilike q.pattern);
+$$;
+
+revoke all on function public.lm_search_prospects(uuid, text) from public;
+
+grant execute on function public.lm_search_prospects(uuid, text) to authenticated, service_role;
+
 create policy "lm_prospects_read" on public.lm_prospects for select
   to authenticated using (account_id in (select public.lm_user_account_ids()));
 

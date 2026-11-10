@@ -278,6 +278,7 @@ async function ContactSender(props: {
   compact?: boolean;
 }) {
   const t = await getTranslations('campaigns.steps.write');
+  const tPanel = await getTranslations('campaigns.autopilot.panel');
   const client = getSupabaseServerClient();
 
   const [sender, senders] = await Promise.all([
@@ -323,7 +324,7 @@ async function ContactSender(props: {
             className={panelLinkClasses}
             data-test={'contact-sender-link'}
           >
-            {sender ? t('senderEdit') : t('senderFill')}
+            {sender ? tPanel('edit') : t('senderFill')}
           </Link>
         </div>
 

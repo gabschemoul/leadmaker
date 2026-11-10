@@ -343,7 +343,11 @@ function ShareBar(props: { value: number; label: string }) {
         />
       </span>
 
-      <span className={'text-muted-foreground w-16 shrink-0 text-right whitespace-nowrap tabular-nums'}>
+      <span
+        className={
+          'text-muted-foreground w-16 shrink-0 text-right whitespace-nowrap tabular-nums'
+        }
+      >
         {props.label}
       </span>
     </span>

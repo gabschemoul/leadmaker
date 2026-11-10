@@ -11,6 +11,7 @@
 import Link from 'next/link';
 
 import {
+  ChevronRight,
   Loader2,
   MessageSquareText,
   Search,
@@ -30,6 +31,11 @@ import type { AttemptGroup } from '~/lib/leadmaker/attempts';
 import type { AttemptRow } from '~/lib/leadmaker/attempts-query';
 import type { AutopilotSummary } from '~/lib/leadmaker/autopilot-query';
 
+import {
+  panelLabelClasses,
+  panelLinkClasses,
+  panelSelectorClasses,
+} from '../../../_components/leadmaker/panel-classes';
 import {
   loadCampaignSender,
   loadSenders,
@@ -87,6 +93,14 @@ export async function ContactStep(props: {
 
   const senderSection = (
     <ContactSender
+      campaignId={props.campaignId}
+      spaceId={props.spaceId}
+      basePath={props.basePath}
+    />
+  );
+  const senderRow = (
+    <ContactSender
+      compact
       campaignId={props.campaignId}
       spaceId={props.spaceId}
       basePath={props.basePath}
@@ -164,7 +178,7 @@ export async function ContactStep(props: {
           writeHref={props.writeHref}
           advancedHref={groupHref('intervention_required')}
           sendingSettingsHref={advancedHref}
-          senderSection={senderSection}
+          senderSection={senderRow}
           billingHref={props.billingHref}
           hasPlan={props.hasPlan}
           // le nombre de prospects contactables est vérifié par le pilote lui-même
@@ -260,6 +274,8 @@ async function ContactSender(props: {
   campaignId: string;
   spaceId: string;
   basePath: string;
+  /** panneau « Réglages » du pilote automatique : une ligne libellé + sélecteur, façon ElevenLabs */
+  compact?: boolean;
 }) {
   const t = await getTranslations('campaigns.steps.write');
   const client = getSupabaseServerClient();
@@ -282,6 +298,55 @@ async function ContactSender(props: {
     campaignsPath.length - after.length,
   );
   const senderHref = `${pathsConfig.app.accountSender.replace('[account]', slug)}?space=${props.spaceId}${sender ? `&sender=${sender.id}` : ''}`;
+
+  const senderOptions = senders.map(
+    ({ id, first_name, last_name, company, is_default }) => ({
+      id,
+      first_name,
+      last_name,
+      company,
+      is_default,
+    }),
+  );
+  // la page campagne passe lm_campaigns.sender_id ; ici on le déduit de l'expéditeur retenu
+  // (celui par défaut = « Par défaut », même affichage)
+  const chosenSenderId = sender && !sender.is_default ? sender.id : null;
+
+  if (props.compact) {
+    return (
+      <div className={'flex flex-col gap-2'} data-test={'contact-sender'}>
+        <div className={'flex items-center justify-between gap-2'}>
+          <span className={panelLabelClasses}>{t('senderTitle')}</span>
+
+          <Link
+            href={senderHref}
+            className={panelLinkClasses}
+            data-test={'contact-sender-link'}
+          >
+            {sender ? t('senderEdit') : t('senderFill')}
+          </Link>
+        </div>
+
+        {senders.length > 1 ? (
+          <CampaignSenderSelect
+            compact
+            campaignId={props.campaignId}
+            senders={senderOptions}
+            chosenSenderId={chosenSenderId}
+          />
+        ) : (
+          <Link href={senderHref} className={panelSelectorClasses}>
+            <span className={'min-w-0 truncate'}>
+              {sender
+                ? `${sender.first_name} ${sender.last_name} · ${sender.company}`
+                : t('senderMissing')}
+            </span>
+            <ChevronRight className={'text-muted-foreground size-4 shrink-0'} />
+          </Link>
+        )}
+      </div>
+    );
+  }
 
   return (
     <section
@@ -331,18 +396,8 @@ async function ContactSender(props: {
       {senders.length > 1 ? (
         <CampaignSenderSelect
           campaignId={props.campaignId}
-          senders={senders.map(
-            ({ id, first_name, last_name, company, is_default }) => ({
-              id,
-              first_name,
-              last_name,
-              company,
-              is_default,
-            }),
-          )}
-          // la page campagne passe lm_campaigns.sender_id ; ici on le déduit de l'expéditeur retenu
-          // (celui par défaut = « Par défaut », même affichage)
-          chosenSenderId={sender && !sender.is_default ? sender.id : null}
+          senders={senderOptions}
+          chosenSenderId={chosenSenderId}
         />
       ) : null}
     </section>

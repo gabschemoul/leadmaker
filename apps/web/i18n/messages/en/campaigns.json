@@ -620,6 +620,14 @@
       "target": "Pick at least one business.",
       "schedule": "Choose how many days to spread the sends over.",
       "notActive": "This autopilot run is already over: reload the page."
+    },
+    "panel": {
+      "title": "Settings",
+      "messages": "Messages",
+      "messagesCount": "{count, plural, one {# message} other {# messages}}",
+      "noMessage": "No message",
+      "edit": "Edit",
+      "done": "Done"
     }
   },
   "localDiscovery": {

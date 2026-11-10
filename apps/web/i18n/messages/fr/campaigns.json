@@ -620,6 +620,14 @@
       "target": "Choisissez au moins une entreprise.",
       "schedule": "Choisissez sur combien de jours étaler les envois.",
       "notActive": "Ce passage du pilote est déjà terminé : rechargez la page."
+    },
+    "panel": {
+      "title": "Réglages",
+      "messages": "Messages",
+      "messagesCount": "{count, plural, one {# message} other {# messages}}",
+      "noMessage": "Aucun message",
+      "edit": "Modifier",
+      "done": "Terminé"
     }
   },
   "localDiscovery": {

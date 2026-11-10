@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  ChevronRight,
   Clock,
   Loader2,
   Minus,
@@ -33,7 +34,17 @@ import { Alert, AlertDescription } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
 import { chipClasses } from '@kit/ui/button-extras';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@kit/ui/dialog';
 import { Input } from '@kit/ui/input';
+import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
 import { toast } from '@kit/ui/sonner';
 import { cn } from '@kit/ui/utils';
 
@@ -50,6 +61,11 @@ import {
 import { MAX_MESSAGES } from '~/lib/leadmaker/templates';
 
 import { Kpi, KpiStrip } from '../../../_components/leadmaker/kpi-strip';
+import {
+  panelLinkClasses,
+  panelSelectClasses,
+  panelSelectorClasses,
+} from '../../../_components/leadmaker/panel-classes';
 import type { AutopilotSchedule } from '../../_lib/schema/autopilot.schema';
 import {
   cancelAutopilotAction,
@@ -412,199 +428,129 @@ function AutopilotSetup(props: {
   const showSectionTitles =
     props.perGroup && messageSections.some((section) => sectionTitle(section));
 
+  const messagesList = showSectionTitles ? (
+    messageSections.map((section) => (
+      <div
+        key={section.heading ?? '-'}
+        className={'flex flex-col gap-2'}
+        data-test={'autopilot-message-section'}
+      >
+        {sectionTitle(section) ? (
+          <h4 className={'text-muted-foreground text-sm font-medium'}>
+            {sectionTitle(section)}
+          </h4>
+        ) : null}
+
+        <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
+          {section.messages.map(renderMessage)}
+        </div>
+      </div>
+    ))
+  ) : (
+    <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
+      {messageSections.flatMap((section) =>
+        section.messages.map(renderMessage),
+      )}
+    </div>
+  );
+
+  const messagesSummary =
+    props.messages.length === 0
+      ? t('panel.noMessage')
+      : values.messages.length === 1
+        ? values.messages[0]
+        : t('panel.messagesCount', { count: values.messages.length });
+
+  // Refait le 10/11/2026 sur le modèle de « Text to Speech » d'ElevenLabs : à gauche l'essentiel (combien
+  // d'entreprises, lancer), à droite un panneau « Réglages » en lignes compactes ; la liste des messages s'ouvre
+  // dans une fenêtre au lieu d'occuper la page.
   return (
     <form
       onSubmit={submit}
-      className={'flex flex-col'}
+      className={
+        'grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]'
+      }
       data-test={'autopilot-setup'}
     >
-      <div
+      <section
         className={
-          'bg-card flex w-full min-w-0 flex-col gap-6 rounded-2xl border p-6'
+          'bg-card ring-foreground/10 flex min-w-0 flex-col gap-5 rounded-2xl p-6 ring-1'
         }
       >
-        {/* 1. Planification */}
-        <section
-          className={'flex flex-col gap-3'}
-          data-test={'autopilot-schedule'}
-        >
-          <h2 className={'font-heading text-xl font-medium tracking-[-0.01em]'}>
-            {t('pace.title')}
-          </h2>
+        <h2 className={'font-heading text-xl font-medium tracking-[-0.01em]'}>
+          {t('question')}
+        </h2>
 
-          <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-3'}>
-            {(['office', 'spread', 'continuous'] as const).map((schedule) => (
-              <button
-                key={schedule}
-                type={'button'}
-                data-test={`autopilot-pace-${schedule}`}
-                aria-pressed={values.schedule === schedule}
-                onClick={() => form.setValue('schedule', schedule)}
-                className={cn(
-                  // même sélection que les pastilles : filet noir renforcé (10/11/2026)
-                  'rounded-xl border p-3 text-left transition-colors duration-75',
-                  values.schedule === schedule
-                    ? 'border-foreground ring-foreground bg-foreground/[0.02] ring-[0.5px]'
-                    : 'border-foreground/10 hover:bg-foreground/[0.043]',
-                )}
-              >
-                <span className={'block font-medium'}>
-                  {t(`pace.${schedule}`)}
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className={'flex items-center gap-3'}>
+          <Button
+            type={'button'}
+            variant={'outline'}
+            size={'icon'}
+            className={'size-12 rounded-xl'}
+            aria-label={t('less')}
+            disabled={target <= min}
+            onClick={() => setTarget(target - STEP)}
+          >
+            <Minus className={'size-5'} />
+          </Button>
 
-          {values.schedule === 'spread' ? (
-            <label className={'flex flex-wrap items-center gap-2 text-sm'}>
-              <span>{t('pace.spreadOver')}</span>
+          <input
+            type={'number'}
+            inputMode={'numeric'}
+            min={min}
+            max={max}
+            step={1}
+            aria-label={t('countLabel')}
+            data-test={'autopilot-count'}
+            className={
+              'font-heading text-primary border-foreground/10 bg-background h-12 w-44 rounded-xl border px-2 text-center text-4xl font-normal tabular-nums sm:w-56'
+            }
+            value={values.draft ?? String(target)}
+            onChange={(event) => {
+              const raw = event.target.value;
+              const parsed = Number.parseInt(raw, 10);
 
-              <Input
-                type={'number'}
-                inputMode={'numeric'}
-                min={SPREAD_MIN}
-                max={SPREAD_MAX}
-                step={1}
-                className={'w-20 tabular-nums'}
-                data-test={'autopilot-spread-days'}
-                value={values.spreadDraft ?? String(spreadDays)}
-                onChange={(event) => {
-                  const raw = event.target.value;
-                  const parsed = Number.parseInt(raw, 10);
+              form.setValue('draft', raw);
 
-                  form.setValue('spreadDraft', raw);
-
-                  if (Number.isFinite(parsed) && parsed >= SPREAD_MIN) {
-                    form.setValue('spreadDays', clampSpread(parsed));
-                  }
-                }}
-                onBlur={() => form.setValue('spreadDraft', null)}
-              />
-
-              <span>
-                {tAll('outreach.sendStep.spreadDaysUnit', {
-                  count: spreadDays,
-                })}
-              </span>
-            </label>
-          ) : null}
-        </section>
-
-        {/* 3. Expéditeur */}
-        <div className={'border-t pt-5'}>{props.senderSection}</div>
-
-        {/* 4. Messages (versions) */}
-        <section className={'flex flex-col gap-3 border-t pt-5'}>
-          <div className={'flex flex-wrap justify-between gap-2'}>
-            <h3 className={'text-base font-medium'}>{t('messages.title')}</h3>
-
-            <Link href={props.writeHref} className={'text-primary text-sm'}>
-              {t('messages.edit')}
-            </Link>
-          </div>
-
-          {showSectionTitles ? (
-            messageSections.map((section) => (
-              <div
-                key={section.heading ?? '-'}
-                className={'flex flex-col gap-2'}
-                data-test={'autopilot-message-section'}
-              >
-                {sectionTitle(section) ? (
-                  <h4 className={'text-muted-foreground text-sm font-medium'}>
-                    {sectionTitle(section)}
-                  </h4>
-                ) : null}
-
-                <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
-                  {section.messages.map(renderMessage)}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
-              {messageSections.flatMap((section) =>
-                section.messages.map(renderMessage),
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* 5. Nombre d'entreprises */}
-        <section className={'flex flex-col gap-3 border-t pt-5'}>
-          <h3 className={'text-base font-medium'}>{t('question')}</h3>
-
-          <div className={'flex items-center gap-3'}>
-            <Button
-              type={'button'}
-              variant={'outline'}
-              size={'icon'}
-              className={'size-12 rounded-xl'}
-              aria-label={t('less')}
-              disabled={target <= min}
-              onClick={() => setTarget(target - STEP)}
-            >
-              <Minus className={'size-5'} />
-            </Button>
-
-            <input
-              type={'number'}
-              inputMode={'numeric'}
-              min={min}
-              max={max}
-              step={1}
-              aria-label={t('countLabel')}
-              data-test={'autopilot-count'}
-              className={
-                'font-heading text-primary border-foreground/10 bg-background h-12 w-44 rounded-xl border px-2 text-center text-4xl font-normal tabular-nums sm:w-56'
+              if (Number.isFinite(parsed) && parsed >= 1) {
+                form.setValue('target', parsed);
               }
-              value={values.draft ?? String(target)}
-              onChange={(event) => {
-                const raw = event.target.value;
-                const parsed = Number.parseInt(raw, 10);
+            }}
+            onBlur={() => setTarget(values.target)}
+          />
 
-                form.setValue('draft', raw);
+          <Button
+            type={'button'}
+            variant={'outline'}
+            size={'icon'}
+            className={'size-12 rounded-xl'}
+            aria-label={t('more')}
+            disabled={target >= max}
+            onClick={() => setTarget(target + STEP)}
+          >
+            <Plus className={'size-5'} />
+          </Button>
+        </div>
 
-                if (Number.isFinite(parsed) && parsed >= 1) {
-                  form.setValue('target', parsed);
-                }
-              }}
-              onBlur={() => setTarget(values.target)}
-            />
-
-            <Button
-              type={'button'}
-              variant={'outline'}
-              size={'icon'}
-              className={'size-12 rounded-xl'}
-              aria-label={t('more')}
-              disabled={target >= max}
-              onClick={() => setTarget(target + STEP)}
-            >
-              <Plus className={'size-5'} />
-            </Button>
-          </div>
-
-          <div className={'flex flex-wrap gap-2'}>
-            {presets.map((value) => (
-              <Chip
-                key={value}
-                selected={target === value}
-                onClick={() => setTarget(value)}
-              >
-                {format.number(value)}
-              </Chip>
-            ))}
-
+        <div className={'flex flex-wrap gap-2'}>
+          {presets.map((value) => (
             <Chip
-              selected={target === max}
-              onClick={() => setTarget(max)}
-              testId={'autopilot-count-all'}
+              key={value}
+              selected={target === value}
+              onClick={() => setTarget(value)}
             >
-              {t('all', { count: max })}
+              {format.number(value)}
             </Chip>
-          </div>
-        </section>
+          ))}
+
+          <Chip
+            selected={target === max}
+            onClick={() => setTarget(max)}
+            testId={'autopilot-count-all'}
+          >
+            {t('all', { count: max })}
+          </Chip>
+        </div>
 
         {props.editing || !SHOW_PREVIEW_OPTION ? null : (
           <label
@@ -630,42 +576,149 @@ function AutopilotSetup(props: {
           </label>
         )}
 
-        {/* 6. Lancer, avec le résumé sur une ligne */}
         <div
           className={
             'flex flex-wrap items-center justify-end gap-3 border-t pt-5'
           }
         >
-          <div className={'flex flex-wrap items-center gap-3'}>
-            {props.onCancelEdit ? (
-              <Button
-                type={'button'}
-                variant={'ghost'}
-                size={'lg'}
-                onClick={props.onCancelEdit}
-              >
-                {t('cancelEdit')}
-              </Button>
-            ) : null}
-
+          {props.onCancelEdit ? (
             <Button
-              type={'submit'}
+              type={'button'}
+              variant={'ghost'}
               size={'lg'}
-              disabled={!props.ready}
-              loading={pending}
-              data-test={'autopilot-launch'}
+              onClick={props.onCancelEdit}
             >
-              {props.editing
-                ? t('update')
-                : values.preview
-                  ? t('launchPreview', {
-                      count: Math.min(3, target),
-                    })
-                  : t('launch')}
+              {t('cancelEdit')}
             </Button>
-          </div>
+          ) : null}
+
+          <Button
+            type={'submit'}
+            size={'lg'}
+            disabled={!props.ready}
+            loading={pending}
+            data-test={'autopilot-launch'}
+          >
+            {props.editing
+              ? t('update')
+              : values.preview
+                ? t('launchPreview', {
+                    count: Math.min(3, target),
+                  })
+                : t('launch')}
+          </Button>
         </div>
-      </div>
+      </section>
+
+      <aside
+        className={
+          'bg-card ring-foreground/10 flex flex-col gap-5 rounded-2xl p-5 ring-1'
+        }
+        data-test={'autopilot-settings'}
+      >
+        <h3 className={'text-[15px] font-medium'}>{t('panel.title')}</h3>
+
+        <div className={'flex flex-col gap-2'} data-test={'autopilot-schedule'}>
+          <span className={'text-sm font-medium'}>{t('pace.title')}</span>
+
+          <NativeSelect
+            className={panelSelectClasses}
+            data-test={'autopilot-pace'}
+            value={values.schedule}
+            onChange={(event) =>
+              form.setValue('schedule', event.target.value as AutopilotSchedule)
+            }
+          >
+            {(['office', 'spread', 'continuous'] as const).map((schedule) => (
+              <NativeSelectOption key={schedule} value={schedule}>
+                {t(`pace.${schedule}`)}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+
+          {values.schedule === 'spread' ? (
+            <label
+              className={
+                'text-muted-foreground flex items-center gap-2 text-sm'
+              }
+            >
+              <span>{t('pace.spreadOver')}</span>
+
+              <Input
+                type={'number'}
+                inputMode={'numeric'}
+                min={SPREAD_MIN}
+                max={SPREAD_MAX}
+                step={1}
+                className={'h-8 w-16 tabular-nums'}
+                data-test={'autopilot-spread-days'}
+                value={values.spreadDraft ?? String(spreadDays)}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  const parsed = Number.parseInt(raw, 10);
+
+                  form.setValue('spreadDraft', raw);
+
+                  if (Number.isFinite(parsed) && parsed >= SPREAD_MIN) {
+                    form.setValue('spreadDays', clampSpread(parsed));
+                  }
+                }}
+                onBlur={() => form.setValue('spreadDraft', null)}
+              />
+
+              <span>
+                {tAll('outreach.sendStep.spreadDaysUnit', {
+                  count: spreadDays,
+                })}
+              </span>
+            </label>
+          ) : null}
+        </div>
+
+        {props.senderSection}
+
+        <div className={'flex flex-col gap-2'}>
+          <div className={'flex items-center justify-between gap-2'}>
+            <span className={'text-sm font-medium'}>{t('panel.messages')}</span>
+
+            <Link href={props.writeHref} className={panelLinkClasses}>
+              {t('panel.edit')}
+            </Link>
+          </div>
+
+          <Dialog>
+            <DialogTrigger
+              disabled={props.messages.length === 0}
+              render={
+                <button
+                  type={'button'}
+                  className={panelSelectorClasses}
+                  data-test={'autopilot-messages-open'}
+                />
+              }
+            >
+              <span className={'min-w-0 truncate'}>{messagesSummary}</span>
+              <ChevronRight
+                className={'text-muted-foreground size-4 shrink-0'}
+              />
+            </DialogTrigger>
+
+            <DialogContent
+              className={'max-h-[85vh] overflow-y-auto sm:max-w-3xl'}
+            >
+              <DialogHeader>
+                <DialogTitle>{t('messages.title')}</DialogTitle>
+              </DialogHeader>
+
+              {messagesList}
+
+              <DialogFooter>
+                <DialogClose render={<Button />}>{t('panel.done')}</DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </aside>
     </form>
   );
 }

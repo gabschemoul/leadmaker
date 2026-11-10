@@ -7,6 +7,7 @@ import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
 import { toast } from '@kit/ui/sonner';
 import { Spinner } from '@kit/ui/spinner';
 
+import { panelSelectClasses } from '../../_components/leadmaker/panel-classes';
 import { senderLabel } from '../../sender/_lib/sender-label';
 import { setCampaignSenderAction } from '../_lib/server/campaign-outreach-actions';
 
@@ -25,6 +26,8 @@ export function CampaignSenderSelect(props: {
   }>;
   /** null = l'expéditeur par défaut */
   chosenSenderId: string | null;
+  /** panneau « Réglages » du pilote : sans libellé, au gabarit des sélecteurs du panneau */
+  compact?: boolean;
 }) {
   const t = useTranslations('campaigns.steps.write');
 
@@ -47,13 +50,16 @@ export function CampaignSenderSelect(props: {
 
   return (
     <label className={'flex flex-col gap-1.5 text-sm'}>
-      <span className={'flex items-center gap-2 font-medium'}>
-        {t('senderChoose')}
-        {save.isPending ? <Spinner className={'size-3.5'} /> : null}
-      </span>
+      {props.compact ? null : (
+        <span className={'flex items-center gap-2 font-medium'}>
+          {t('senderChoose')}
+          {save.isPending ? <Spinner className={'size-3.5'} /> : null}
+        </span>
+      )}
 
       <NativeSelect
-        className={'w-full max-w-sm'}
+        aria-label={t('senderChoose')}
+        className={props.compact ? panelSelectClasses : 'w-full max-w-sm'}
         data-test={'campaign-sender-select'}
         disabled={save.isPending}
         value={value}

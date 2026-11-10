@@ -17,6 +17,8 @@ const THROTTLE_MS = 4_000;
 export function ProspectsLiveRefresh(props: {
   spaceId: string;
   paused: boolean;
+  /** liste chargée dans le navigateur : la redemander aussi */
+  onChange?: () => void;
 }) {
   const router = useRouter();
 
@@ -26,7 +28,10 @@ export function ProspectsLiveRefresh(props: {
     filter: `space_id=eq.${props.spaceId}`,
     throttleMs: THROTTLE_MS,
     paused: props.paused,
-    onChange: () => router.refresh(),
+    onChange: () => {
+      router.refresh();
+      props.onChange?.();
+    },
   });
 
   return null;

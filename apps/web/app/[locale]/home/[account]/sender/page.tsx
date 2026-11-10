@@ -12,13 +12,6 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
 import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
@@ -36,8 +29,7 @@ import {
 } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { FolderSwitch } from './_components/folder-switch';
-import { SenderList } from './_components/sender-list';
-import { SenderProfileForm } from './_components/sender-profile-form';
+import { SendersWorkspace } from './_components/senders-workspace';
 import { CIVILITIES } from './_lib/schema/sender-profile.schema';
 import { senderLabel } from './_lib/sender-label';
 import { loadSenders } from './_lib/server/sender.loader';
@@ -117,33 +109,27 @@ async function SenderContent(props: SenderPageProps) {
   const space = spaces.find((item) => item.id === requested) ?? spaces[0]!;
   const senders = await loadSenders(client, space.id);
 
-  // ?sender=new : nouvel expéditeur ; ?sender=<id> : celui-là ; sinon celui par défaut
+  // ?sender=new : nouvel expéditeur ; ?sender=<id> : celui-là ; sinon celui par défaut (choix ensuite sur place)
   const requestedSender =
     typeof rawSearchParams.sender === 'string' ? rawSearchParams.sender : null;
 
-  const creating = requestedSender === 'new' || senders.length === 0;
+  const valuesOf = (profile: (typeof senders)[number] | null) => {
+    const civility = CIVILITIES.find((value) => value === profile?.civility);
 
-  const profile = creating
-    ? null
-    : (senders.find((sender) => sender.id === requestedSender) ??
-      senders[0] ??
-      null);
-
-  const civility = CIVILITIES.find((value) => value === profile?.civility);
-
-  const defaultValues = {
-    civility: civility ?? ('' as const),
-    firstName: profile?.first_name ?? '',
-    lastName: profile?.last_name ?? '',
-    jobTitle: profile?.job_title ?? '',
-    company: profile?.company ?? '',
-    email: profile?.email ?? '',
-    phone: profile?.phone ?? '',
-    website: profile?.website ?? '',
-    address: profile?.address ?? '',
-    zip: profile?.zip ?? '',
-    city: profile?.city ?? '',
-    countryCode: profile?.country_code ?? '',
+    return {
+      civility: civility ?? ('' as const),
+      firstName: profile?.first_name ?? '',
+      lastName: profile?.last_name ?? '',
+      jobTitle: profile?.job_title ?? '',
+      company: profile?.company ?? '',
+      email: profile?.email ?? '',
+      phone: profile?.phone ?? '',
+      website: profile?.website ?? '',
+      address: profile?.address ?? '',
+      zip: profile?.zip ?? '',
+      city: profile?.city ?? '',
+      countryCode: profile?.country_code ?? '',
+    };
   };
 
   const basePath = pathsConfig.app.accountSender.replace('[account]', slug);
@@ -162,64 +148,27 @@ async function SenderContent(props: SenderPageProps) {
         </Alert>
       )}
 
-      {senders.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <Trans i18nKey={'outreach.sender.listTitle'} />
-            </CardTitle>
-
-            <CardDescription className={'max-w-xl'}>
-              <Trans i18nKey={'outreach.sender.listIntro'} />
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            <SenderList
-              basePath={basePath}
-              senders={senders.map(
-                ({
-                  id,
-                  first_name,
-                  last_name,
-                  company,
-                  email,
-                  is_default,
-                }) => ({
-                  id,
-                  first_name,
-                  last_name,
-                  company,
-                  email,
-                  is_default,
-                }),
-              )}
-              selectedId={profile?.id ?? null}
-            />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card>
-        <CardHeader className={'flex flex-col gap-4'}>
-          <div className={'flex flex-col gap-1.5'}>
-            <CardTitle data-test={'sender-form-title'}>
-              {profile ? (
-                <Trans
-                  i18nKey={'outreach.sender.editTitle'}
-                  values={{ name: senderLabel(profile) }}
-                />
-              ) : (
-                <Trans i18nKey={'outreach.sender.newTitle'} />
-              )}
-            </CardTitle>
-
-            <CardDescription className={'max-w-xl'}>
-              <Trans i18nKey={'outreach.sender.intro'} />
-            </CardDescription>
-          </div>
-
-          {spaces.length > 1 ? (
+      <SendersWorkspace
+        // autre dossier, ou nouvel expéditeur enregistré (l'action renvoie vers ?sender=<id>) : on repart de là
+        key={`${space.id}:${requestedSender ?? ''}`}
+        senders={senders.map((sender) => ({
+          id: sender.id,
+          first_name: sender.first_name,
+          last_name: sender.last_name,
+          company: sender.company,
+          email: sender.email,
+          is_default: sender.is_default,
+          label: senderLabel(sender),
+          defaultValues: valuesOf(sender),
+        }))}
+        initialSelected={requestedSender}
+        emptyValues={valuesOf(null)}
+        accountId={account.id}
+        accountSlug={slug}
+        spaceId={space.id}
+        countries={countries}
+        folderSwitch={
+          spaces.length > 1 ? (
             <div className={'flex flex-col gap-1.5'}>
               <span className={'text-sm font-medium'}>
                 <Trans i18nKey={'outreach.sender.folderLabel'} />
@@ -231,22 +180,9 @@ async function SenderContent(props: SenderPageProps) {
                 value={space.id}
               />
             </div>
-          ) : null}
-        </CardHeader>
-
-        <CardContent>
-          <SenderProfileForm
-            // autre expéditeur ou autre dossier : le formulaire repart de ses valeurs
-            key={`${space.id}:${profile?.id ?? 'new'}`}
-            accountId={account.id}
-            accountSlug={slug}
-            spaceId={space.id}
-            senderId={profile?.id}
-            countries={countries}
-            defaultValues={defaultValues}
-          />
-        </CardContent>
-      </Card>
+          ) : null
+        }
+      />
     </div>
   );
 }

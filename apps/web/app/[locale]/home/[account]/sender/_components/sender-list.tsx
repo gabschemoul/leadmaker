@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 
-import Link from 'next/link';
-
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
@@ -43,9 +41,10 @@ interface SenderRow {
  * n'en choisissent pas. « Modifier » ouvre le formulaire en dessous.
  */
 export function SenderList(props: {
-  basePath: string;
   senders: SenderRow[];
   selectedId: string | null;
+  /** affiche le formulaire de cet expéditeur (ou d'un nouveau) sans recharger la page */
+  onSelect: (id: string | 'new') => void;
 }) {
   const t = useTranslations();
   const [deleting, setDeleting] = useState<SenderRow | null>(null);
@@ -114,11 +113,11 @@ export function SenderList(props: {
               )}
 
               <Button
+                type={'button'}
                 size={'sm'}
                 variant={'outline'}
-                nativeButton={false}
                 data-test={'sender-edit'}
-                render={<Link href={`${props.basePath}?sender=${sender.id}`} />}
+                onClick={() => props.onSelect(sender.id)}
               >
                 <Trans i18nKey={'outreach.sender.edit'} />
               </Button>
@@ -141,11 +140,11 @@ export function SenderList(props: {
 
       <div>
         <Button
+          type={'button'}
           size={'sm'}
           variant={'outline'}
-          nativeButton={false}
           data-test={'sender-add'}
-          render={<Link href={`${props.basePath}?sender=new`} />}
+          onClick={() => props.onSelect('new')}
         >
           <Plus className={'mr-1.5 size-4'} />
           <Trans i18nKey={'outreach.sender.add'} />

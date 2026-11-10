@@ -2,7 +2,8 @@
 
 /**
  * Rôle : barre de filtres de la page Prospects (dossier, campagne, recherche, activité, ville, note, avis, site web, statut, source).
- * Données : filtres et facettes passés par la page ; l'état vit dans l'URL (router.push).
+ * Données : filtres et facettes passés par la page ; l'état vit dans ProspectsBrowser (filtrage sur place,
+ * instantané depuis le 10/11/2026 ; l'adresse suit en silence). Seul le changement de dossier recharge la page.
  * Écritures : aucune.
  */
 
@@ -19,7 +20,6 @@ import { Trans } from '@kit/ui/trans';
 import { useProgressRouter } from '~/components/navigation-progress';
 import {
   type ProspectsFilters as Filters,
-  type ProspectsListState,
   buildProspectsHref,
   countActiveFilters,
 } from '~/lib/leadmaker/prospects-query';
@@ -35,13 +35,14 @@ interface Facet {
 }
 
 /**
- * Barre de filtres de la page Prospects. Tout passe par l'URL : chaque
- * changement navigue vers la nouvelle adresse (partageable), et les champs
- * reflètent l'état lu par le serveur.
+ * Barre de filtres de la page Prospects. Chaque changement est appliqué tout de suite (onChange) ; la
+ * recherche filtre pendant la frappe.
  */
 export function ProspectsFilters(props: {
   basePath: string;
-  state: ProspectsListState;
+  filters: Filters;
+  onChange: (patch: Partial<Filters>) => void;
+  onReset: () => void;
   /** vide quand l'organisation n'a qu'un dossier client : pas de sélecteur */
   folders: Array<{ id: string; label: string }>;
   spaceId: string;
@@ -51,24 +52,11 @@ export function ProspectsFilters(props: {
 }) {
   const t = useTranslations('prospects');
   const router = useProgressRouter();
-  const { filters } = props.state;
-  const space = props.folders.length > 1 ? props.spaceId : undefined;
+  const { filters } = props;
+  const navigate = props.onChange;
+  const reset = props.onReset;
 
-  const navigate = (patch: Partial<Filters>) => {
-    router.push(
-      buildProspectsHref(props.basePath, {
-        space,
-        sort: props.state.sort,
-        dir: props.state.dir,
-        page: 1,
-        filters: { ...filters, ...patch },
-      }),
-    );
-  };
-
-  const reset = () =>
-    router.push(buildProspectsHref(props.basePath, { space }));
-
+  // autre dossier : autres activités, villes et campagnes, la page est rechargée
   const changeFolder = (spaceId: string) =>
     router.push(buildProspectsHref(props.basePath, { space: spaceId }));
 
@@ -109,17 +97,9 @@ export function ProspectsFilters(props: {
         ) : null}
 
         <form
-          // remonte le champ quand l'URL change, pour resynchroniser sa valeur
-          key={filters.query ?? ''}
           className={'flex items-center gap-1'}
-          onSubmit={(event) => {
-            event.preventDefault();
-
-            const data = new FormData(event.currentTarget);
-            const query = String(data.get('q') ?? '').trim();
-
-            navigate({ query: query || undefined });
-          }}
+          role={'search'}
+          onSubmit={(event) => event.preventDefault()}
         >
           <div className={'relative'}>
             <Search
@@ -133,7 +113,11 @@ export function ProspectsFilters(props: {
               type={'search'}
               className={'h-8 w-56 pl-9 text-[14px] md:w-72'}
               data-test={'prospects-search-input'}
-              defaultValue={filters.query ?? ''}
+              value={filters.query ?? ''}
+              onChange={(event) =>
+                navigate({ query: event.target.value || undefined })
+              }
+              autoComplete={'off'}
               placeholder={t('filters.searchPlaceholder')}
               maxLength={100}
             />

@@ -98,6 +98,8 @@ export function ProspectsTable(props: {
   formsHref?: string;
   /** dossier à suivre en temps réel (e-mails trouvés, prospects ajoutés) */
   liveSpaceId?: string;
+  /** appelé à chaque changement en direct (liste chargée dans le navigateur) */
+  onLiveChange?: () => void;
   /** false : le tableau est posé à ras bord dans un panneau qui dessine déjà le cadre */
   framed?: boolean;
 }) {
@@ -149,6 +151,7 @@ export function ProspectsTable(props: {
         <ProspectsLiveRefresh
           spaceId={props.liveSpaceId}
           paused={selected.length > 0}
+          onChange={props.onLiveChange}
         />
       ) : null}
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -53,6 +53,26 @@ export function CampaignFormsPanel(props: {
     initialData: group === props.initialGroup ? props.initialRows : undefined,
     staleTime: 5_000,
   });
+
+  // chargement en avance des autres onglets non vides (10/11/2026) : un clic montre la liste tout de suite
+  // (effet justifié : lancer des requêtes après le premier affichage, une fois par campagne)
+  useEffect(() => {
+    for (const item of ATTEMPT_GROUP_ORDER) {
+      if (item === props.initialGroup || props.counts[item] === 0) continue;
+
+      void queryClient.prefetchQuery({
+        queryKey: ['lm-campaign-attempts', props.campaignId, item],
+        queryFn: () =>
+          fetchAttempts(client, {
+            spaceId: props.spaceId,
+            campaignId: props.campaignId,
+            group: item,
+          }),
+        staleTime: 5_000,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.campaignId]);
 
   const refetchRows = () =>
     void queryClient.invalidateQueries({

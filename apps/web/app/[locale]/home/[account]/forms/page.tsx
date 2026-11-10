@@ -23,18 +23,16 @@ import {
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import {
-  ALWAYS_VISIBLE_GROUPS,
   ATTEMPT_GROUP_ORDER,
   type AttemptGroup,
   isAttemptGroup,
 } from '~/lib/leadmaker/attempts';
 
-import { FilterChip } from '../_components/leadmaker/filter-chip';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { FolderSwitch } from '../sender/_components/folder-switch';
-import { FormsTable } from './_components/forms-table';
+import { FormsGroupsPanel } from './_components/forms-groups-panel';
 import { loadAttemptCounts, loadAttempts } from './_lib/server/forms.loader';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -120,19 +118,6 @@ async function FormsContent(props: FormsPageProps) {
 
   const basePath = pathsConfig.app.accountForms.replace('[account]', slug);
 
-  const href = (target: AttemptGroup) => {
-    const search = new URLSearchParams();
-    if (showFolders) search.set('space', space.id);
-    if (target !== 'ready') search.set('status', target);
-    const query = search.toString();
-
-    return query ? `${basePath}?${query}` : basePath;
-  };
-
-  const visibleGroups = ATTEMPT_GROUP_ORDER.filter(
-    (item) => ALWAYS_VISIBLE_GROUPS.includes(item) || counts[item] > 0,
-  );
-
   return (
     <Card>
       <CardHeader className={'flex flex-col gap-4'}>
@@ -166,36 +151,16 @@ async function FormsContent(props: FormsPageProps) {
             />
           </div>
         ) : null}
-
-        <nav className={'flex flex-wrap gap-2'} data-test={'forms-groups'}>
-          {visibleGroups.map((item) => (
-            <FilterChip
-              key={item}
-              href={href(item)}
-              active={item === group}
-              count={counts[item]}
-              testId={`forms-group-${item}`}
-              label={<Trans i18nKey={`outreach.forms.groups.${item}`} />}
-            />
-          ))}
-        </nav>
-
-        <p
-          className={'text-muted-foreground text-sm'}
-          data-test={'forms-group-hint'}
-        >
-          <Trans i18nKey={`outreach.forms.groupHints.${group}`} />
-        </p>
       </CardHeader>
 
       <CardContent>
-        <FormsTable
-          key={`${space.id}:${group}`}
-          rows={rows}
-          group={group}
-          accountId={account.id}
+        <FormsGroupsPanel
+          key={space.id}
           spaceId={space.id}
-          preparing={counts.preparing}
+          accountId={account.id}
+          counts={counts}
+          initialGroup={group}
+          initialRows={rows}
         />
       </CardContent>
     </Card>

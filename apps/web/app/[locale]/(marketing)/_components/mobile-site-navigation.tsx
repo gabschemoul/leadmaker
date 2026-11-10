@@ -8,9 +8,12 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { useUser } from '@kit/supabase/hooks/use-user';
 import { Button } from '@kit/ui/button';
 import { MobileModeToggle } from '@kit/ui/mobile-mode-toggle';
 import { cn } from '@kit/ui/utils';
+
+import pathsConfig from '~/config/paths.config';
 
 import { pillButtonClasses } from './el';
 
@@ -32,7 +35,20 @@ export function MobileSiteNavigation({
   const [open, setOpen] = useState(false);
 
   const pages = links.filter((item) => !item.variant);
-  const actions = links.filter((item) => item.variant);
+  // Connecté : un seul bouton vers l'espace, à la place de « Se connecter »
+  // et « S'inscrire » (la photo est déjà affichée dans l'en-tête).
+  const { data: user, isPending } = useUser();
+  const actions = isPending
+    ? []
+    : user
+      ? [
+          {
+            path: pathsConfig.app.home,
+            label: 'marketing.openApp',
+            variant: 'default' as const,
+          },
+        ]
+      : links.filter((item) => item.variant);
 
   return (
     <>

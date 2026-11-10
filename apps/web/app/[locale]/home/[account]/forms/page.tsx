@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import { Delayed, TableSkeleton } from '~/components/skeletons/page-skeletons';
+import { Delayed } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import {
   ATTEMPT_GROUP_ORDER,
@@ -28,6 +28,7 @@ import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { FolderSwitch } from '../sender/_components/folder-switch';
 import { FormsGroupsPanel } from './_components/forms-groups-panel';
+import { FormsSkeleton } from './_components/forms-skeleton';
 import { loadAttemptCounts, loadAttempts } from './_lib/server/forms.loader';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -57,7 +58,7 @@ function FormsPage({ params, searchParams }: FormsPageProps) {
         <Suspense
           fallback={
             <Delayed>
-              <TableSkeleton rows={8} />
+              <FormsSkeleton />
             </Delayed>
           }
         >

@@ -1,5 +1,4 @@
 import {
-  Contact,
   CreditCard,
   FolderKanban,
   Settings,
@@ -12,6 +11,7 @@ import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 import { CampaignsIcon } from '~/components/icons/campaigns-icon';
 import { DashboardIcon } from '~/components/icons/dashboard-icon';
 import { FormsIcon } from '~/components/icons/forms-icon';
+import { SendersIcon } from '~/components/icons/senders-icon';
 import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 
@@ -62,7 +62,7 @@ const getRoutes = (account: string, showSpaces: boolean) => [
       {
         label: 'common.routes.sender',
         path: createPath(pathsConfig.app.accountSender, account),
-        Icon: <Contact {...iconProps} />,
+        Icon: <SendersIcon {...customIconProps} />,
       },
       {
         label: 'common.routes.members',

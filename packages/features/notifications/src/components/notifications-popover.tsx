@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 
-import { Bell, CircleAlert, Info, TriangleAlert, XIcon } from 'lucide-react';
+import { CircleAlert, Info, TriangleAlert, XIcon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { Button } from '@kit/ui/button';
@@ -106,7 +106,22 @@ export function NotificationsPopover(params: {
         data-test={'notifications-trigger'}
         render={<Button size="icon-lg" variant="ghost" className="relative" />}
       >
-        <Bell className={'size-4 min-h-3 min-w-3'} />
+        {/* Prospectigo (10/11/2026) : cloche fournie par Gabriel, 20 px, trait de 1,5 px à l'écran */}
+        <svg
+          viewBox="0 0 18 18"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+          className={'size-5'}
+        >
+          <path
+            d="M12.0001 12.938C12.0001 13.7337 11.684 14.4967 11.1214 15.0593C10.5588 15.622 9.79571 15.938 9.00006 15.938C8.20441 15.938 7.44135 15.622 6.87874 15.0593C6.31613 14.4967 6.00006 13.7337 6.00006 12.938M15.1881 12.183C15.1882 12.2822 15.1688 12.3804 15.1309 12.4721C15.093 12.5638 15.0374 12.647 14.9672 12.7172C14.8971 12.7873 14.8138 12.8429 14.7221 12.8808C14.6305 12.9187 14.5322 12.9382 14.4331 12.938H3.56706C3.4377 12.938 3.3105 12.9048 3.19771 12.8414C3.08492 12.778 2.99033 12.6867 2.92304 12.5762C2.85574 12.4658 2.818 12.3398 2.81345 12.2105C2.80891 12.0812 2.8377 11.953 2.89706 11.838L3.75006 10.182C3.89684 9.89711 3.98105 9.58412 3.99706 9.26402L4.12706 6.68202C4.19123 5.43372 4.73291 4.25787 5.64 3.39788C6.54708 2.53789 7.75011 2.0596 9.00006 2.06202C10.2498 2.05986 11.4526 2.53826 12.3595 3.39823C13.2664 4.25819 13.8079 5.43389 13.8721 6.68202L14.0021 9.26402C14.0191 9.58402 14.1031 9.89702 14.2501 10.182L15.1041 11.837C15.1591 11.9441 15.1879 12.0627 15.1881 12.183Z"
+            stroke="currentColor"
+            strokeWidth={1.35}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
 
         <span
           className={cn(

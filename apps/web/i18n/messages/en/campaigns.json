@@ -519,7 +519,7 @@
     },
     "messages": {
       "title": "Which message to send?",
-      "edit": "Edit in Write",
+      "edit": "Edit message",
       "ab": "A/B test: {count, number} messages sent in equal shares (about {share, number}% each).",
       "single": "One message: everyone receives the same. Tick several to compare them (A/B test).",
       "othersHeading": "For the others",

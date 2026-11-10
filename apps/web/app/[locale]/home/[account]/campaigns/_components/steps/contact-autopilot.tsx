@@ -415,10 +415,11 @@ function AutopilotSetup(props: {
                 aria-pressed={values.schedule === schedule}
                 onClick={() => form.setValue('schedule', schedule)}
                 className={cn(
-                  'rounded-xl border p-3 text-left transition-colors',
+                  // même sélection que les pastilles : filet noir renforcé (10/11/2026)
+                  'rounded-xl border p-3 text-left transition-colors duration-75',
                   values.schedule === schedule
-                    ? 'border-brand bg-brand-pale/60 ring-brand ring-1'
-                    : 'hover:bg-muted/50',
+                    ? 'border-foreground ring-foreground bg-foreground/[0.02] ring-[0.5px]'
+                    : 'border-foreground/10 hover:bg-foreground/[0.043]',
                 )}
               >
                 <span className={'block font-medium'}>
@@ -504,7 +505,7 @@ function AutopilotSetup(props: {
               type={'button'}
               variant={'outline'}
               size={'icon'}
-              className={'size-12'}
+              className={'size-12 rounded-xl'}
               aria-label={t('less')}
               disabled={target <= min}
               onClick={() => setTarget(target - STEP)}
@@ -521,7 +522,7 @@ function AutopilotSetup(props: {
               aria-label={t('countLabel')}
               data-test={'autopilot-count'}
               className={
-                'font-heading text-primary border-input bg-background h-16 w-44 rounded-xl border px-2 text-center text-4xl font-normal tabular-nums sm:w-56 sm:text-5xl'
+                'font-heading text-primary border-foreground/10 bg-background h-12 w-44 rounded-xl border px-2 text-center text-4xl font-normal tabular-nums sm:w-56'
               }
               value={values.draft ?? String(target)}
               onChange={(event) => {
@@ -541,7 +542,7 @@ function AutopilotSetup(props: {
               type={'button'}
               variant={'outline'}
               size={'icon'}
-              className={'size-12'}
+              className={'size-12 rounded-xl'}
               aria-label={t('more')}
               disabled={target >= max}
               onClick={() => setTarget(target + STEP)}

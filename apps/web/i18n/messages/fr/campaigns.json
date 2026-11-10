@@ -519,7 +519,7 @@
     },
     "messages": {
       "title": "Quel message envoyer ?",
-      "edit": "Modifier dans Rédiger",
+      "edit": "Modifier le message",
       "ab": "Test A/B : {count, number} messages envoyés à parts égales (environ {share, number} % chacun).",
       "single": "Un seul message : tout le monde reçoit le même. Cochez-en plusieurs pour les comparer (test A/B).",
       "othersHeading": "Pour les autres",

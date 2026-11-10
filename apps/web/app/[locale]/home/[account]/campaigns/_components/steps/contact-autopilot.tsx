@@ -49,6 +49,10 @@ import {
   updateAutopilotAction,
 } from '../../_lib/server/autopilot-actions';
 
+// « Me montrer les 3 premiers formulaires avant d'envoyer » : option masquée pour l'instant (ménage du
+// 10/11/2026, choix de Gabriel) ; repasser à `true` pour la réafficher (et la recocher par défaut à la 1re campagne)
+const SHOW_PREVIEW_OPTION = false;
+
 const POLL_MS = 4_000;
 const STEP = 50;
 const PRESETS = [100, 250, 500, 1000];
@@ -242,7 +246,7 @@ function AutopilotSetup(props: {
       schedule: (summary.schedule as AutopilotSchedule | null) ?? 'office',
       spreadDays: summary.spread_days ?? 5,
       spreadDraft: null,
-      preview: !summary.contacted_before,
+      preview: SHOW_PREVIEW_OPTION && !summary.contacted_before,
     },
   });
 
@@ -316,8 +320,6 @@ function AutopilotSetup(props: {
   const target = clamp(values.target);
   const presets = PRESETS.filter((value) => value >= min && value < max);
   const spreadDays = clampSpread(values.spreadDays);
-  const perDay = Math.ceil(target / spreadDays);
-  const abCount = values.messages.length;
 
   const renderMessage = (message: AutopilotMessage) => {
     const checked = values.messages.includes(message.name);
@@ -384,22 +386,15 @@ function AutopilotSetup(props: {
         .filter((section) => section.messages.length > 0)
     : [{ heading: null, messages: props.messages }];
 
-  const paceText =
-    values.schedule === 'office'
-      ? t('pace.officeText')
-      : values.schedule === 'spread'
-        ? t('pace.spreadText', { perDay, days: spreadDays })
-        : t('pace.continuousText', { count: target });
-
   return (
     <form
       onSubmit={submit}
-      className={'flex flex-col items-start gap-5 lg:flex-row'}
+      className={'flex flex-col'}
       data-test={'autopilot-setup'}
     >
       <div
         className={
-          'bg-card flex w-full min-w-0 flex-col gap-6 rounded-2xl border p-6 lg:flex-[2]'
+          'bg-card flex w-full min-w-0 flex-col gap-6 rounded-2xl border p-6'
         }
       >
         {/* 1. Planification */}
@@ -428,14 +423,6 @@ function AutopilotSetup(props: {
               >
                 <span className={'block font-medium'}>
                   {t(`pace.${schedule}`)}
-                </span>
-
-                <span
-                  className={
-                    'text-muted-foreground mt-1 block text-sm leading-snug'
-                  }
-                >
-                  {t(`pace.${schedule}Sub`)}
                 </span>
               </button>
             ))}
@@ -474,26 +461,7 @@ function AutopilotSetup(props: {
               </span>
             </label>
           ) : null}
-
-          <p
-            className={'bg-brand-pale rounded-lg px-3 py-2.5 text-sm'}
-            data-test={'autopilot-pace-text'}
-          >
-            {paceText}
-          </p>
         </section>
-
-        {/* 2. Prises de contact par jour et validation automatique : réglages du mode Avancé (le pilote suit
-            sa planification et envoie seul les formulaires sans alerte, lm_queue_sends) */}
-        <p
-          className={'text-muted-foreground border-t pt-5 text-sm'}
-          data-test={'autopilot-advanced-settings-note'}
-        >
-          {tAll('outreach.sendStep.autopilotSettingsNote')}{' '}
-          <Link href={props.sendingSettingsHref} className={'text-primary'}>
-            {tAll('outreach.sendStep.autopilotSettingsLink')}
-          </Link>
-        </p>
 
         {/* 3. Expéditeur */}
         <div className={'border-t pt-5'}>{props.senderSection}</div>
@@ -525,35 +493,11 @@ function AutopilotSetup(props: {
               </div>
             </div>
           ))}
-
-          <p
-            className={cn(
-              'rounded-lg px-3 py-2.5 text-sm',
-              abCount >= 2 || props.perGroup
-                ? 'bg-brand-pale'
-                : 'bg-muted text-muted-foreground',
-            )}
-          >
-            {props.perGroup
-              ? t('messages.perGroup', { count: abCount })
-              : abCount >= 2
-                ? t('messages.ab', {
-                    count: abCount,
-                    share: Math.round(100 / abCount),
-                  })
-                : t('messages.single')}
-          </p>
         </section>
 
         {/* 5. Nombre d'entreprises */}
         <section className={'flex flex-col gap-3 border-t pt-5'}>
-          <div className={'flex flex-col gap-1'}>
-            <h3 className={'text-base font-medium'}>{t('question')}</h3>
-
-            <p className={'text-muted-foreground text-sm'}>
-              {t('questionHint')}
-            </p>
-          </div>
+          <h3 className={'text-base font-medium'}>{t('question')}</h3>
 
           <div className={'flex items-center gap-3'}>
             <Button
@@ -625,18 +569,9 @@ function AutopilotSetup(props: {
               {t('all', { count: max })}
             </Chip>
           </div>
-
-          <p className={'text-muted-foreground text-sm'}>
-            {props.editing
-              ? t('maxHintEdit', { min, max })
-              : t('maxHint', {
-                  max,
-                  prospects: summary.contactable,
-                })}
-          </p>
         </section>
 
-        {props.editing ? null : (
+        {props.editing || !SHOW_PREVIEW_OPTION ? null : (
           <label
             className={
               'border-brand/40 bg-brand/10 flex cursor-pointer items-start gap-3 rounded-xl border p-4'
@@ -663,19 +598,9 @@ function AutopilotSetup(props: {
         {/* 6. Lancer, avec le résumé sur une ligne */}
         <div
           className={
-            'flex flex-wrap items-center justify-between gap-3 border-t pt-5'
+            'flex flex-wrap items-center justify-end gap-3 border-t pt-5'
           }
         >
-          <span
-            className={'text-muted-foreground text-sm tabular-nums'}
-            data-test={'autopilot-launch-summary'}
-          >
-            {tAll('outreach.sendStep.launchSummary', {
-              companies: target,
-              versions: abCount,
-            })}
-          </span>
-
           <div className={'flex flex-wrap items-center gap-3'}>
             {props.onCancelEdit ? (
               <Button
@@ -706,30 +631,6 @@ function AutopilotSetup(props: {
           </div>
         </div>
       </div>
-
-      <aside
-        className={
-          'bg-card flex w-full flex-col gap-3.5 rounded-2xl border p-6 lg:flex-1'
-        }
-      >
-        <h3 className={'font-heading text-lg font-medium tracking-[-0.01em]'}>
-          {t('how.title')}
-        </h3>
-
-        {(['1', '2', '3', '4'] as const).map((step) => (
-          <div key={step} className={'flex gap-2.5'}>
-            <span className={'text-primary font-medium'}>{step}</span>
-
-            <span className={'leading-snug'}>
-              {t(`how.step${step}`, { count: target })}
-            </span>
-          </div>
-        ))}
-
-        <p className={'text-muted-foreground border-t pt-3.5 text-sm'}>
-          {t('how.credits', { count: target })}
-        </p>
-      </aside>
     </form>
   );
 }

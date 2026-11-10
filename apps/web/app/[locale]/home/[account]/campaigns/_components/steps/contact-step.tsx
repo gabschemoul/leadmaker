@@ -123,9 +123,11 @@ export async function ContactStep(props: {
           ))}
         </nav>
 
-        <p className={'text-muted-foreground text-sm'}>
-          {props.mode === 'auto' ? tMode('autoHint') : tMode('advancedHint')}
-        </p>
+        {props.mode === 'auto' ? null : (
+          <p className={'text-muted-foreground text-sm'}>
+            {tMode('advancedHint')}
+          </p>
+        )}
       </div>
       {props.prospects === 0 ? (
         <Hint

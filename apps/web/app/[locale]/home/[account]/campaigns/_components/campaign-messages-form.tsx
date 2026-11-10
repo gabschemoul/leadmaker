@@ -946,6 +946,7 @@ export function CampaignMessagesForm(props: {
 
           <Button
             type={'button'}
+            size={'lg'}
             className={'self-end'}
             data-test={'campaign-step-next'}
             loading={saving && goingNext}

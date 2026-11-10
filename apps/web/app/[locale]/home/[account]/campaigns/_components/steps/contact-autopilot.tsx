@@ -681,6 +681,7 @@ function AutopilotSetup(props: {
               <Button
                 type={'button'}
                 variant={'ghost'}
+                size={'lg'}
                 onClick={props.onCancelEdit}
               >
                 {t('cancelEdit')}
@@ -942,6 +943,7 @@ function AutopilotPreview(props: {
 
         <Button
           variant={'ghost'}
+          size={'lg'}
           disabled={confirm.isPending}
           loading={cancel.isPending}
           data-test={'autopilot-cancel'}

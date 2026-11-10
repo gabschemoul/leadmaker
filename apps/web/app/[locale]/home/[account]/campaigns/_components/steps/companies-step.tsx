@@ -230,6 +230,7 @@ export function CompaniesStep(props: {
 
       <div className={'flex justify-end'}>
         <Button
+          size={'lg'}
           nativeButton={false}
           data-test={'campaign-step-next'}
           render={<Link href={props.writeHref} />}

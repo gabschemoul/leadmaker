@@ -151,6 +151,7 @@ export async function TargetStep(props: {
 
         <Button
           variant={'outline'}
+          size={'lg'}
           nativeButton={false}
           data-test={'campaign-edit-button'}
           render={<Link href={props.editHref} />}
@@ -160,6 +161,7 @@ export async function TargetStep(props: {
         </Button>
 
         <Button
+          size={'lg'}
           nativeButton={false}
           data-test={'campaign-step-next'}
           render={<Link href={props.nextHref} />}

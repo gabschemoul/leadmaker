@@ -84,7 +84,8 @@
   --secondary: #f7f5f2;
   --secondary-foreground: #000000;
   --muted: #f7f5f2;
-  --muted-foreground: #736f6c;
+  /* gris des textes secondaires, assez foncé pour se lire (10/11/2026, avant #736f6c) */
+  --muted-foreground: #57524e;
   --accent: #f7f5f2;
   --accent-foreground: #000000;
   --destructive: oklch(0.58 0.22 27);
@@ -131,7 +132,7 @@
   --secondary: #292524;
   --secondary-foreground: #faf8f8;
   --muted: #1c1917;
-  --muted-foreground: #a59f97;
+  --muted-foreground: #bab4ac;
   --accent: #292524;
   --accent-foreground: #ffffff;
   --destructive: oklch(0.704 0.191 22.216);

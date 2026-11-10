@@ -94,7 +94,7 @@ export async function TargetStep(props: {
         <Card data-test={'campaign-target-phrase'}>
           <CardHeader>
             <CardTitle>{t('whoTitle')}</CardTitle>
-            <CardDescription className={'text-foreground'}>
+            <CardDescription>
               {campaign.sort_target}
             </CardDescription>
           </CardHeader>

@@ -245,7 +245,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
             data-test={'campaign-folder'}
           >
             <Trans i18nKey={'campaigns.detail.folder'} />{' '}
-            <span className={'text-foreground'}>{folderName}</span>
+            <span>{folderName}</span>
           </p>
         ) : null}
 

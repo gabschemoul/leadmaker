@@ -262,7 +262,7 @@ export function WhoSection(props: {
             data-test={'campaign-offer-line'}
           >
             <Trans i18nKey={'campaigns.form.who.offerLine'} />{' '}
-            <span className={'text-foreground'}>{offer}</span>
+            <span>{offer}</span>
             <span aria-hidden>{' · '}</span>
             <button
               type={'button'}

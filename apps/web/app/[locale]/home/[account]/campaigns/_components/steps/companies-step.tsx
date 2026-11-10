@@ -134,7 +134,7 @@ export function CompaniesStep(props: {
               {/* Texte en ligne (pas de flex) : « · Modifier » suit la fin de la cible au lieu de tomber
                   seul sur la ligne suivante quand la cible est longue */}
               <CardDescription data-test={'campaign-companies-target'}>
-                <span className={'text-foreground'}>{sort.target}</span>{' '}
+                <span>{sort.target}</span>{' '}
                 <span aria-hidden>·</span>{' '}
                 <Link
                   href={props.editHref}

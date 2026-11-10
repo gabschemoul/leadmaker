@@ -476,7 +476,7 @@ function AutopilotSetup(props: {
 
           <p
             className={
-              'bg-brand-pale text-foreground rounded-lg px-3 py-2.5 text-sm'
+              'bg-brand-pale rounded-lg px-3 py-2.5 text-sm'
             }
             data-test={'autopilot-pace-text'}
           >

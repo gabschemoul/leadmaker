@@ -91,23 +91,20 @@ export async function loadAvailableCredits(client: Client, accountId: string) {
 }
 
 /**
- * L'organisation a-t-elle un forfait (ou un reste de crédits, packs compris) ? Même règle que le bandeau
- * « Choisissez un forfait » ; sans forfait, le pilote automatique ne peut rien envoyer (les envois sont
- * gratuits mais réservés aux organisations avec forfait).
+ * L'organisation a-t-elle un forfait (ou un reste de crédits du forfait) ? Même règle que le bandeau
+ * « Choisissez un forfait » et que lm_has_plan : les packs ne comptent pas, ils sont réservés aux abonnés et
+ * les robots ne travaillent pas sans forfait.
  */
 export async function loadHasPlan(client: Client, accountId: string) {
-  const [{ data, error }, available] = await Promise.all([
-    client
-      .from('lm_account_credits')
-      .select('plan_id')
-      .eq('account_id', accountId)
-      .maybeSingle(),
-    loadAvailableCredits(client, accountId),
-  ]);
+  const { data, error } = await client
+    .from('lm_account_credits')
+    .select('plan_id, discovery_balance')
+    .eq('account_id', accountId)
+    .maybeSingle();
 
   if (error) {
     throw error;
   }
 
-  return Boolean(data?.plan_id) || available > 0;
+  return Boolean(data?.plan_id) || (data?.discovery_balance ?? 0) > 0;
 }

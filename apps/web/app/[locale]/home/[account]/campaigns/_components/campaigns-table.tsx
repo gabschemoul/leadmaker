@@ -114,7 +114,9 @@ export function CampaignsTable(props: {
             value={filters.search}
             onChange={(event) => update({ search: event.target.value })}
             placeholder={props.searchPlaceholder}
-            className={'h-8 rounded-full pl-10 text-[14px]'}
+            className={
+              'border-foreground/10 hover:border-foreground/25 focus-visible:border-foreground focus-visible:ring-foreground h-10 rounded-xl bg-transparent pl-10 text-[14px] focus-visible:ring-[0.5px]'
+            }
             data-test={'campaigns-search'}
             autoComplete={'off'}
           />
@@ -325,7 +327,9 @@ export function CampaignsTableLoading() {
           <Input
             disabled
             placeholder={t('list.searchPlaceholder')}
-            className={'h-8 rounded-full pl-10 text-[14px]'}
+            className={
+              'border-foreground/10 hover:border-foreground/25 focus-visible:border-foreground focus-visible:ring-foreground h-10 rounded-xl bg-transparent pl-10 text-[14px] focus-visible:ring-[0.5px]'
+            }
           />
         </div>
 

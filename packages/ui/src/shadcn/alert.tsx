@@ -55,7 +55,9 @@ function AlertDescription({
     <div
       data-slot="alert-description"
       className={cn(
-        'text-muted-foreground [&_a]:hover:text-foreground text-sm text-balance md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_p:not(:last-child)]:mb-4',
+        // les liens du texte sont soulignés, mais pas les boutons-liens (10/11/2026 : « Rédiger le message » était
+        // souligné et son texte devenait noir sur fond noir au survol)
+        'text-muted-foreground [&_a:not([data-slot=button])]:hover:text-foreground text-sm text-balance md:text-pretty [&_a:not([data-slot=button])]:underline [&_a:not([data-slot=button])]:underline-offset-3 [&_p:not(:last-child)]:mb-4',
         className,
       )}
       {...props}

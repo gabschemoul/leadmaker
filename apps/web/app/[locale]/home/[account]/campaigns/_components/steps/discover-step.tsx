@@ -572,10 +572,16 @@ export function useCampaignRealtime(campaignId: string, queryKey: unknown[]) {
         return;
       }
 
+      // 5 s au plus souvent (10/11/2026) : pendant un tri, chaque entreprise triée déclenche un événement ;
+      // à 1 s, chaque page ouverte relançait sans arrêt tous les calculs de la campagne dans la base
       timer = setTimeout(() => {
         timer = null;
-        void queryClient.invalidateQueries({ queryKey });
-      }, 1000);
+
+        // onglet caché : rien à rafraîchir, la page se met à jour quand on y revient
+        if (document.visibilityState === 'visible') {
+          void queryClient.invalidateQueries({ queryKey });
+        }
+      }, 5000);
     };
 
     const channel = client

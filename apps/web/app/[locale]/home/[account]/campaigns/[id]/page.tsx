@@ -27,7 +27,10 @@ import {
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import { type AttemptGroup, isAttemptGroup } from '~/lib/leadmaker/attempts';
-import { fetchAutopilotSummary } from '~/lib/leadmaker/autopilot-query';
+import {
+  fetchAutopilotFacts,
+  fetchAutopilotSummary,
+} from '~/lib/leadmaker/autopilot-query';
 import { buildProspectsHref } from '~/lib/leadmaker/prospects-query';
 import { parseTemplates, usableMessages } from '~/lib/leadmaker/templates';
 import { requireUserInServerComponent } from '~/lib/server/require-user-in-server-component';
@@ -49,6 +52,10 @@ import {
 } from '../../sender/_lib/server/sender.loader';
 import { CampaignHeaderActions } from '../_components/campaign-header-actions';
 import { CampaignLocalDiscovery } from '../_components/campaign-local-discovery';
+import {
+  CampaignStepContent,
+  CampaignStepNavigation,
+} from '../_components/steps/campaign-step-navigation';
 import { CampaignStepsRail } from '../_components/steps/campaign-steps-rail';
 import { CompaniesStep } from '../_components/steps/companies-step';
 import {
@@ -132,42 +139,38 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     notFound();
   }
 
-  // MESURE TEMPORAIRE (10/11/2026) : durée de chaque vague de chargement, lue dans les journaux Vercel
-  const t0 = performance.now();
-  const lap = (label: string) =>
-    console.info(`[perf campagne] ${label} ${Math.round(performance.now() - t0)} ms`);
-
-  // vérifie l'appartenance à l'organisation (et redirige sinon)
-  const { account } = await loadTeamWorkspace(slug);
-  lap('workspace');
   const client = getSupabaseServerClient();
 
-  const [campaign, countries, spaces] = await Promise.all([
+  // Une seule vague (10/11/2026, avant trois vagues qui s'attendaient : ~1,8 s avant l'étape). Les données sont
+  // protégées par la RLS ; loadTeamWorkspace vérifie en même temps l'appartenance à l'organisation (et
+  // redirige sinon).
+  const workspace = loadTeamWorkspace(slug);
+
+  const [
+    { account },
+    campaign,
+    countries,
+    spaces,
+    live,
+    counts,
+    sender,
+    autopilot,
+    localDiscovery,
+  ] = await Promise.all([
+    workspace,
     loadCampaign(client, id),
     loadCountryOptions(client),
-    loadSpaces(client, account.id),
+    workspace.then((ws) => loadSpaces(client, ws.account.id)),
+    fetchCampaignLive(client, id),
+    loadCampaignAttemptCounts(client, id),
+    loadCampaignSender(client, id),
+    fetchAutopilotFacts(client, id),
+    loadLocalDiscoveryState(client, id),
   ]);
-
-  lap('campagne+pays+dossiers');
 
   if (!campaign) {
     notFound();
   }
-
-  const timed = <T,>(label: string, p: Promise<T>) =>
-    p.then((v) => {
-      lap(label);
-      return v;
-    });
-
-  const [live, counts, sender, autopilot, localDiscovery] = await Promise.all([
-    timed('live', fetchCampaignLive(client, id)),
-    timed('compteurs', loadCampaignAttemptCounts(client, id)),
-    timed('expediteur', loadCampaignSender(client, campaign.id)),
-    timed('pilote', fetchAutopilotSummary(client, id)),
-    timed('ordinateur', loadLocalDiscoveryState(client, id)),
-  ]);
-  lap('vague 2 finie');
 
   const templates = parseTemplates(campaign.templates);
   // « Un message par groupe » (encart des groupes) : un jeu de versions par groupe, plus « Pour les autres »
@@ -264,134 +267,151 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
           </p>
         ) : null}
 
-        <CampaignStepsRail
-          basePath={basePath}
-          active={step}
-          facts={facts}
-          countryLabel={countryLabel}
-          zones={live.progress.zones}
-          categories={live.progress.categories}
-        />
-
-        {localDiscovery ? (
-          <CampaignLocalDiscovery
-            campaignId={id}
-            allowed={localDiscovery.allowed}
-            enabled={localDiscovery.enabled}
-            minutesAgo={localDiscovery.minutesAgo}
-          />
-        ) : null}
-
-        {step === 'cibler' ? (
-          <TargetStepContent
-            campaignId={id}
-            countryLabel={countryLabel}
-            editHref={`${basePath}/edit`}
-            nextHref={stepHref('trouver')}
-          />
-        ) : null}
-
-        {step === 'trouver' && live.sort ? (
-          <CompaniesStep
-            campaignId={id}
-            editHref={`${basePath}/edit`}
-            writeHref={stepHref('rediger')}
-            billingPath={pathsConfig.app.accountBilling.replace(
-              '[account]',
-              slug,
-            )}
-            campaignsPath={campaignsPath}
-            initialData={live}
-          />
-        ) : null}
-
-        {step === 'trouver' && !live.sort ? (
-          <DiscoverStep
-            campaignId={id}
-            accountId={account.id}
-            campaignsPath={campaignsPath}
-            allProspectsHref={buildProspectsHref(
-              pathsConfig.app.accountProspects.replace('[account]', slug),
-              {
-                space: spaces.length > 1 ? campaign.space_id : undefined,
-                filters: { campaign: id, status: 'all' },
-              },
-            )}
-            canDelete={account.permissions.includes('settings.manage')}
-            billingPath={pathsConfig.app.accountBilling.replace(
-              '[account]',
-              slug,
-            )}
-            formsHref={formsHref}
-            writeHref={stepHref('rediger')}
-            targetHref={stepHref('cibler')}
-            readyToWrite={messagesCount > 0 && sender !== null}
-            initialData={live}
-          />
-        ) : null}
-
-        {step === 'rediger' ? (
-          <WriteStepContent
-            accountId={account.id}
-            campaign={campaign}
-            templates={templates}
-            groups={perGroup ? groups : null}
-            sender={sender}
-            senderHref={senderHref}
-            nextHref={stepHref('contacter')}
-          />
-        ) : null}
-
-        {step === 'contacter' ? (
-          <ContactStepContent
-            campaign={campaign}
-            accountId={account.id}
+        <CampaignStepNavigation active={step}>
+          <CampaignStepsRail
             basePath={basePath}
+            active={step}
             facts={facts}
-            group={
-              isAttemptGroup(rawSearchParams.statut)
-                ? rawSearchParams.statut
-                : 'ready'
-            }
-            // mode Avancé : demandé dans l'adresse, ou lien direct vers un onglet de formulaires
-            mode={
-              rawSearchParams.mode === 'avance' ||
-              isAttemptGroup(rawSearchParams.statut)
-                ? 'advanced'
-                : 'auto'
-            }
-            autopilot={autopilot}
-            messages={groupOrdered(messages, groups).map((message) => ({
-              name: message.name,
-              preview: message.body.replace(/\s+/g, ' ').trim().slice(0, 120),
-              // « Un message par groupe » : rangés sous le nom de leur groupe (null = « Pour les autres »)
-              group:
-                perGroup && message.group
-                  ? (groupLabel.get(message.group) ?? null)
-                  : null,
-            }))}
-            perGroup={perGroup}
-            billingHref={pathsConfig.app.accountBilling.replace(
-              '[account]',
-              slug,
-            )}
-            writeHref={stepHref('rediger')}
-            discoverHref={stepHref('trouver')}
+            countryLabel={countryLabel}
+            zones={live.progress.zones}
+            categories={live.progress.categories}
           />
-        ) : null}
 
-        {step === 'resultats' ? (
-          <ResultsStepContent
-            campaignId={id}
-            templates={templates}
-            groups={perGroup ? groups : null}
-            kept={live.sort ? live.sort.kept : null}
-            senderEmail={sender?.email ?? null}
-            toVerifyHref={`${stepHref('contacter')}&statut=to_verify`}
-            sendingHref={stepHref('contacter')}
-            writeHref={stepHref('rediger')}
-          />
-        ) : null}
+          {localDiscovery ? (
+            <CampaignLocalDiscovery
+              campaignId={id}
+              allowed={localDiscovery.allowed}
+              enabled={localDiscovery.enabled}
+              minutesAgo={localDiscovery.minutesAgo}
+            />
+          ) : null}
+
+          {/* étape demandée : silhouette pendant son chargement (campaign-step-navigation.tsx) ; son contenu
+              arrive à part, sans retarder l'en-tête ni le rail */}
+          <CampaignStepContent>
+            <Suspense
+              fallback={
+                <div className={'flex flex-col gap-4'}>
+                  <CardSkeleton rows={2} />
+                  <CardSkeleton rows={6} />
+                </div>
+              }
+            >
+              {step === 'cibler' ? (
+                <TargetStepContent
+                  campaignId={id}
+                  countryLabel={countryLabel}
+                  editHref={`${basePath}/edit`}
+                  nextHref={stepHref('trouver')}
+                />
+              ) : null}
+
+              {step === 'trouver' && live.sort ? (
+                <CompaniesStep
+                  campaignId={id}
+                  editHref={`${basePath}/edit`}
+                  writeHref={stepHref('rediger')}
+                  billingPath={pathsConfig.app.accountBilling.replace(
+                    '[account]',
+                    slug,
+                  )}
+                  campaignsPath={campaignsPath}
+                  initialData={live}
+                />
+              ) : null}
+
+              {step === 'trouver' && !live.sort ? (
+                <DiscoverStep
+                  campaignId={id}
+                  accountId={account.id}
+                  campaignsPath={campaignsPath}
+                  allProspectsHref={buildProspectsHref(
+                    pathsConfig.app.accountProspects.replace('[account]', slug),
+                    {
+                      space: spaces.length > 1 ? campaign.space_id : undefined,
+                      filters: { campaign: id, status: 'all' },
+                    },
+                  )}
+                  canDelete={account.permissions.includes('settings.manage')}
+                  billingPath={pathsConfig.app.accountBilling.replace(
+                    '[account]',
+                    slug,
+                  )}
+                  formsHref={formsHref}
+                  writeHref={stepHref('rediger')}
+                  targetHref={stepHref('cibler')}
+                  readyToWrite={messagesCount > 0 && sender !== null}
+                  initialData={live}
+                />
+              ) : null}
+
+              {step === 'rediger' ? (
+                <WriteStepContent
+                  accountId={account.id}
+                  campaign={campaign}
+                  templates={templates}
+                  groups={perGroup ? groups : null}
+                  sender={sender}
+                  senderHref={senderHref}
+                  nextHref={stepHref('contacter')}
+                />
+              ) : null}
+
+              {step === 'contacter' ? (
+                <ContactStepContent
+                  campaign={campaign}
+                  accountId={account.id}
+                  basePath={basePath}
+                  facts={facts}
+                  group={
+                    isAttemptGroup(rawSearchParams.statut)
+                      ? rawSearchParams.statut
+                      : 'ready'
+                  }
+                  // mode Avancé : demandé dans l'adresse, ou lien direct vers un onglet de formulaires
+                  mode={
+                    rawSearchParams.mode === 'avance' ||
+                    isAttemptGroup(rawSearchParams.statut)
+                      ? 'advanced'
+                      : 'auto'
+                  }
+                  messages={groupOrdered(messages, groups).map((message) => ({
+                    name: message.name,
+                    preview: message.body
+                      .replace(/\s+/g, ' ')
+                      .trim()
+                      .slice(0, 120),
+                    // « Un message par groupe » : rangés sous le nom de leur groupe (null = « Pour les autres »)
+                    group:
+                      perGroup && message.group
+                        ? (groupLabel.get(message.group) ?? null)
+                        : null,
+                  }))}
+                  perGroup={perGroup}
+                  billingHref={pathsConfig.app.accountBilling.replace(
+                    '[account]',
+                    slug,
+                  )}
+                  writeHref={stepHref('rediger')}
+                  discoverHref={stepHref('trouver')}
+                />
+              ) : null}
+
+              {step === 'resultats' ? (
+                <ResultsStepContent
+                  campaignId={id}
+                  templates={templates}
+                  groups={perGroup ? groups : null}
+                  kept={live.sort ? live.sort.kept : null}
+                  senderEmail={sender?.email ?? null}
+                  toVerifyHref={`${stepHref('contacter')}&statut=to_verify`}
+                  sendingHref={stepHref('contacter')}
+                  writeHref={stepHref('rediger')}
+                />
+              ) : null}
+            </Suspense>
+          </CampaignStepContent>
+        </CampaignStepNavigation>
       </div>
     </>
   );
@@ -518,7 +538,6 @@ async function ContactStepContent(props: {
   facts: CampaignStepFacts;
   group: AttemptGroup;
   mode: ContactMode;
-  autopilot: Awaited<ReturnType<typeof fetchAutopilotSummary>>;
   messages: Array<{ name: string; preview: string; group: string | null }>;
   perGroup: boolean;
   billingHref: string;
@@ -527,8 +546,8 @@ async function ContactStepContent(props: {
 }) {
   const client = getSupabaseServerClient();
 
-  // la liste des formulaires n'est chargée qu'en mode Avancé
-  const [rows, hasPlan] = await Promise.all([
+  // la liste des formulaires n'est chargée qu'en mode Avancé ; le résumé complet du pilote, seulement ici
+  const [rows, hasPlan, autopilot] = await Promise.all([
     props.mode === 'advanced'
       ? loadAttempts(client, {
           spaceId: props.campaign.space_id,
@@ -537,12 +556,13 @@ async function ContactStepContent(props: {
         })
       : Promise.resolve([]),
     loadHasPlan(client, props.accountId),
+    fetchAutopilotSummary(client, props.campaign.id),
   ]);
 
   return (
     <ContactStep
       mode={props.mode}
-      autopilot={props.autopilot}
+      autopilot={autopilot}
       messages={props.messages}
       perGroup={props.perGroup}
       billingHref={props.billingHref}

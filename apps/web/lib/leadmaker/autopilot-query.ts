@@ -32,6 +32,41 @@ export async function fetchAutopilotSummary(
   return data?.[0] ?? null;
 }
 
+/**
+ * Les trois chiffres du pilote dont la barre des étapes a besoin (statut, envoyés, objectif) : deux petites
+ * requêtes au lieu du résumé complet (lm_autopilot_summary, ~1 s sur une grosse campagne), réservé à
+ * l'étape Envoi (10/11/2026).
+ */
+export async function fetchAutopilotFacts(client: Client, campaignId: string) {
+  const { data: pilot, error } = await client
+    .from('lm_autopilots')
+    .select('id, status, target')
+    .eq('campaign_id', campaignId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!pilot) {
+    return null;
+  }
+
+  const { count, error: countError } = await client
+    .from('lm_attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('autopilot_id', pilot.id)
+    .in('status', ['sending', 'sent']);
+
+  if (countError) {
+    throw countError;
+  }
+
+  return { status: pilot.status, sent: count ?? 0, target: pilot.target };
+}
+
 export type AutopilotSummary = NonNullable<
   Awaited<ReturnType<typeof fetchAutopilotSummary>>
 >;

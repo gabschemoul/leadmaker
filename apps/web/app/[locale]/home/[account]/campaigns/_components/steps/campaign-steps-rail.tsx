@@ -13,6 +13,7 @@ import {
   type CampaignStepFacts,
   stepStates,
 } from '../../_lib/steps';
+import { useStepNavigation } from './campaign-step-navigation';
 
 /**
  * Le rail : cinq onglets dans l'ordre du parcours, chacun avec son état
@@ -31,6 +32,9 @@ export function CampaignStepsRail(props: {
   const tr = useTranslations('results.step');
   const states = stepStates(props.facts);
   const { facts } = props;
+  // changement d'étape instantané : l'onglet demandé s'allume dès le clic (campaign-step-navigation.tsx)
+  const navigation = useStepNavigation();
+  const active = navigation?.shown ?? props.active;
 
   const subtitles: Record<CampaignStep, string> = {
     cibler:
@@ -98,12 +102,28 @@ export function CampaignStepsRail(props: {
       >
         {CAMPAIGN_STEPS.map((step, index) => {
           const state = states[step];
-          const isActive = step === props.active;
+          const isActive = step === active;
+          const href = `${props.basePath}?etape=${step}`;
 
           return (
             <Link
               key={step}
-              href={`${props.basePath}?etape=${step}`}
+              href={href}
+              onClick={(event) => {
+                // clic simple : navigation instantanée ; Cmd/Ctrl-clic : nouvel onglet comme avant
+                if (
+                  !navigation ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.button !== 0
+                ) {
+                  return;
+                }
+
+                event.preventDefault();
+                navigation.go(step, href);
+              }}
               aria-current={isActive ? 'page' : undefined}
               data-test={`campaign-step-${step}`}
               title={subtitles[step]}
@@ -133,7 +153,7 @@ export function CampaignStepsRail(props: {
         className={'text-muted-foreground text-sm'}
         data-test={'campaign-step-summary'}
       >
-        {subtitles[props.active]}
+        {subtitles[active]}
       </p>
     </div>
   );

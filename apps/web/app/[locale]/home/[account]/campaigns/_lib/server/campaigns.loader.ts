@@ -211,25 +211,33 @@ export async function loadPreviewProspects(client: Client, spaceId: string) {
 }
 
 /**
- * Aperçu de « Votre message » pour une campagne triée : jusqu'à 20 entreprises gardées (pour la cible en cours
+ * Aperçu de « Votre message » pour une campagne triée : jusqu'à `limit` entreprises gardées (pour la cible en cours
  * `version`, ou gardées par le client), les plus récemment triées d'abord, avec ce qu'il faut pour remplacer les
- * variables. Liste vide tant qu'aucune entreprise n'est gardée.
+ * variables. `groupKey` : seulement celles de ce groupe (onglets de « Un message par groupe »). Liste vide tant
+ * qu'aucune entreprise n'est gardée.
  */
 export async function loadKeptPreviewProspects(
   client: Client,
   campaignId: string,
   version: number,
+  options: { groupKey?: string; limit?: number } = {},
 ) {
-  const { data, error } = await client
+  let query = client
     .from('lm_campaign_prospects')
     .select(
       'prospect:lm_prospects(id, name, city, category, rating, review_count, website)',
     )
     .eq('campaign_id', campaignId)
-    .or(keptCompaniesFilter(version))
+    .or(keptCompaniesFilter(version));
+
+  if (options.groupKey !== undefined) {
+    query = query.eq('group_key', options.groupKey);
+  }
+
+  const { data, error } = await query
     .order('sorted_at', { ascending: false, nullsFirst: false })
     .order('prospect_id', { ascending: true })
-    .limit(20);
+    .limit(options.limit ?? 20);
 
   if (error) {
     throw error;

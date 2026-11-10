@@ -104,13 +104,15 @@ export const saveCampaignTemplatesAction = authActionClient
 
     if (sender.error) throw sender.error;
 
-    // seuls les messages remplis sont conservés ; les cases vides sont ignorées
+    // seuls les messages remplis sont conservés ; les cases vides sont ignorées. `group` (« Un message par
+    // groupe ») n'est écrit que s'il est renseigné : sans lui, le message est « Pour les autres »
     const messages = parsedInput.messages
       .map((message, index) => ({
         name: message.name || `Message ${index + 1}`,
         subject: message.subject,
         body: message.body,
         short: message.body.trim() ? message.short : '',
+        ...(message.group ? { group: message.group } : {}),
       }))
       .filter((message) => message.body.trim() !== '');
 

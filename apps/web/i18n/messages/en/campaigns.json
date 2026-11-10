@@ -521,7 +521,9 @@
       "title": "Which message to send?",
       "edit": "Edit in Write",
       "ab": "A/B test: {count, number} messages sent in equal shares (about {share, number}% each).",
-      "single": "One message: everyone receives the same. Tick several to compare them (A/B test)."
+      "single": "One message: everyone receives the same. Tick several to compare them (A/B test).",
+      "othersHeading": "For the others",
+      "perGroup": "{count, plural, one {# message ticked.} other {# messages ticked.}} Each company receives one of its group's messages, in turn; companies outside the groups receive a “For the others” message."
     },
     "preview": {
       "toggle": "Show me the first 3 forms before sending",
@@ -671,22 +673,21 @@
     "next": "Next: the message",
     "groups": {
       "title": "{count, plural, other {# groups found. One message per group?}}",
-      "description": "Each group can have its own campaign, with a message written for it. Its kept companies are carried over, with no new search and no extra credits.",
+      "description": "Each group can receive its own message, in this same campaign. You will write it at the Message step.",
       "kept": "{count, plural, one {# kept} other {# kept}}",
       "single": "One message",
-      "split": "{count, plural, other {Create # campaigns}}",
       "singleLine": "{count, plural, other {One message for all # groups}}",
       "change": "Change",
-      "createdTitle": "{count, plural, one {# campaign created} other {# campaigns created}}",
-      "createdDescription": "They are drafts, with their kept companies. Write the message for each one:",
-      "companies": "{count, plural, =0 {no companies} one {# company} other {# companies}}",
       "splitLine": "Campaigns created by group:",
       "splitLineFallback": "A campaign was created for each group · <link>See your campaigns</link>",
       "childLine": "Campaign for the “{label}” group",
       "choiceFailed": "Your choice could not be saved. Please try again in a moment.",
       "splitFailed": "The campaigns could not be created. Please try again in a moment.",
       "alreadySplit": "The campaigns by group have already been created.",
-      "noGroups": "This campaign has no groups yet."
+      "noGroups": "This campaign has no groups yet.",
+      "perGroup": "One message per group",
+      "perGroupLine": "One message per group",
+      "writeLink": "Write the messages"
     }
   },
   "messages": {
@@ -725,6 +726,14 @@
       "quotaReached": "You have used your 30 suggestions for today. Try again tomorrow.",
       "unavailable": "AI suggestions are not available at the moment.",
       "failed": "The suggestion could not be written. Please try again in a moment."
-    }
+    },
+    "groupsLabel": "Campaign groups",
+    "groupsHint": "Each company receives its group's message. Companies outside the groups receive “For the others”.",
+    "othersTab": "For the others",
+    "defaultName": "{group} · Version {letter}",
+    "groupEmpty": "No message: these companies will receive “For the others”.",
+    "othersEmpty": "No message yet: without it, companies outside the groups (and in a group with no message) will receive another group's message.",
+    "nameTaken": "This name is already used by another message in the campaign.",
+    "tooManyVersions": "At most 4 versions per group."
   }
 }

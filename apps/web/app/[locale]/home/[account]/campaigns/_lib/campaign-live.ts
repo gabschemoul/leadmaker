@@ -95,10 +95,15 @@ export async function fetchCampaignLive(
       : null,
     /**
      * Groupes de la campagne (encart « Un message par groupe ? » de « Vos entreprises ») : liste vide tant que
-     * le tri n'a pas proposé de groupes. choice : null (pas encore choisi), 'single' ou 'split'.
+     * le tri n'a pas proposé de groupes. choice : null (pas encore choisi), 'per_group' (un message par groupe,
+     * dans cette même campagne), 'single' ou 'split' (ancien choix : une campagne par groupe, plus proposé).
      */
     groups: {
-      choice: (groupRows[0]?.choice ?? null) as 'single' | 'split' | null,
+      choice: (groupRows[0]?.choice ?? null) as
+        | 'per_group'
+        | 'single'
+        | 'split'
+        | null,
       totalKept: groupRows[0]?.total_kept ?? 0,
       list: groupRows.map((row) => ({
         key: row.group_key,

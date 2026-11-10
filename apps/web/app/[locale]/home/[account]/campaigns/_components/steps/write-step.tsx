@@ -37,6 +37,13 @@ export async function WriteStep(props: {
   sorted: boolean;
   /** entreprises de l'aperçu (gardées de la campagne triée, sinon derniers prospects du dossier) */
   prospects: Array<TemplateContext['prospect'] & { id: string }>;
+  /** « Un message par groupe » : les groupes de la campagne (un onglet chacun) ; null sinon */
+  groups: Array<{ key: string; label: string; kept: number }> | null;
+  /** entreprises gardées de chaque groupe, pour l'aperçu de son onglet */
+  previewByGroup: Record<
+    string,
+    Array<TemplateContext['prospect'] & { id: string }>
+  >;
   sending: {
     dailyLimit: number;
     autoValidation: boolean;
@@ -139,6 +146,8 @@ export async function WriteStep(props: {
         nextHref={props.nextHref}
         sorted={props.sorted}
         prospects={props.prospects}
+        groups={props.groups}
+        previewByGroup={props.previewByGroup}
         sending={props.sending}
         companyOptional={props.companyOptional}
       />

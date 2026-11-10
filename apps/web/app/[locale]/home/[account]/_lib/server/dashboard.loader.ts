@@ -36,7 +36,7 @@ export async function loadDashboard(client: Client, accountId: string) {
       client
         .from('lm_campaigns')
         .select(
-          'id, name, status, space_id, templates, filters, created_at, prospects:lm_prospects!lm_prospects_campaign_id_fkey(count)',
+          'id, name, status, space_id, templates, groups_choice, filters, created_at, prospects:lm_prospects!lm_prospects_campaign_id_fkey(count)',
         )
         .eq('account_id', accountId)
         .neq('status', 'archived')
@@ -118,7 +118,10 @@ export async function loadDashboard(client: Client, accountId: string) {
     const facts: CampaignStepFacts = {
       status: campaign.status,
       prospects: campaign.prospects?.[0]?.count ?? 0,
-      messagesCount: usableMessages(parseTemplates(campaign.templates)).length,
+      messagesCount: usableMessages(
+        parseTemplates(campaign.templates),
+        campaign.groups_choice === 'per_group',
+      ).length,
       hasSender: spacesWithSender.has(campaign.space_id),
       attempts: countsByCampaign.get(campaign.id) ?? emptyCounts(),
       autopilot: autopilotByCampaign.get(campaign.id) ?? null,

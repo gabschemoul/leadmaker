@@ -59,6 +59,61 @@ async function contactableCount(client: Client, campaignId: string) {
 }
 
 /**
+ * « Un message par groupe » : par groupe, entreprises gardées (et payées), envois partis et à vérifier
+ * (lm_campaign_group_results), dans l'ordre des groupes ; « Hors groupes » (clé null) en dernier. En cas d'erreur
+ * (fonction absente en base…), pas de carte plutôt qu'une page cassée.
+ */
+async function groupResults(
+  client: Client,
+  campaignId: string,
+  groups: Array<{ key: string; label: string }>,
+) {
+  const { data, error } = await client.rpc('lm_campaign_group_results', {
+    p_campaign_id: campaignId,
+  });
+
+  if (error) return null;
+
+  const rows = (data ?? []).map((row) => ({
+    key: (row.group_key as string | null) ?? null,
+    kept: Number(row.kept ?? 0),
+    sent: Number(row.sent ?? 0),
+    toVerify: Number(row.to_verify ?? 0),
+  }));
+
+  const listed = groups.map((group) => {
+    const row = rows.find((item) => item.key === group.key);
+
+    return {
+      key: group.key as string | null,
+      label: group.label as string | null,
+      kept: row?.kept ?? 0,
+      sent: row?.sent ?? 0,
+      toVerify: row?.toVerify ?? 0,
+    };
+  });
+
+  // hors groupes : clé null, et groupes qui ne sont plus proposés
+  const outside = rows
+    .filter((row) => !groups.some((group) => group.key === row.key))
+    .reduce(
+      (sum, row) => ({
+        kept: sum.kept + row.kept,
+        sent: sum.sent + row.sent,
+        toVerify: sum.toVerify + row.toVerify,
+      }),
+      { kept: 0, sent: 0, toVerify: 0 },
+    );
+
+  return [
+    ...listed,
+    ...(outside.kept + outside.sent + outside.toVerify > 0
+      ? [{ key: null, label: null, ...outside }]
+      : []),
+  ];
+}
+
+/**
  * Écran « Résultats » d'une campagne : prises de contact parties sur le total à contacter, et envois par
  * version du message (`lm_attempts.template_name`). Comptages exacts (`count`, sans lire les lignes), avec le
  * client Supabase de l'utilisateur : la RLS filtre.
@@ -69,6 +124,8 @@ export async function loadCampaignResults(
   params: {
     campaignId: string;
     templates: CampaignTemplates;
+    /** « Un message par groupe » : les groupes de la campagne (carte « Par groupe ») ; null sinon */
+    groups: Array<{ key: string; label: string }> | null;
     /** entreprises gardées d'une campagne triée ; null pour une campagne sans cible en mots */
     kept: number | null;
   },
@@ -77,7 +134,7 @@ export async function loadCampaignResults(
     ...new Set(params.templates.messages.map((message) => message.name)),
   ];
 
-  const [sent, toVerify, contactable, perName] = await Promise.all([
+  const [sent, toVerify, contactable, perName, byGroup] = await Promise.all([
     attemptsCount(client, params.campaignId, SENT_STATUSES),
     attemptsCount(client, params.campaignId, TO_VERIFY_STATUSES),
     params.kept === null
@@ -93,15 +150,41 @@ export async function loadCampaignResults(
         return { name, sent: nameSent, toVerify: nameToVerify };
       }),
     ),
+    params.groups
+      ? groupResults(client, params.campaignId, params.groups)
+      : Promise.resolve(null),
   ]);
+
+  const groupLabel = new Map(
+    (params.groups ?? []).map((group) => [group.key, group.label]),
+  );
+  // lettre de chaque version : comptée dans son groupe (« Pour les autres » compris) avec « Un message par groupe »
+  const seenInGroup = new Map<string, number>();
 
   const versions = params.templates.messages.map((message, index) => {
     const counts = perName.find((row) => row.name === message.name);
+    const groupKey = params.groups ? (message.group ?? '') : '';
+    const position = seenInGroup.get(groupKey) ?? 0;
+
+    seenInGroup.set(groupKey, position + 1);
 
     return {
-      index,
+      index: params.groups ? position : index,
+      key: index,
       name: message.name,
-      usable: message.body.trim() !== '',
+      /**
+       * « Un message par groupe » : nom du groupe de la version ; '' = « Pour les autres » ; null sans groupes
+       * (ou groupe qui n'est plus proposé)
+       */
+      group: params.groups
+        ? message.group
+          ? (groupLabel.get(message.group) ?? null)
+          : ''
+        : null,
+      // sans « Un message par groupe », les messages réservés à un groupe ne partent pas
+      usable:
+        message.body.trim() !== '' &&
+        (params.groups !== null || !message.group),
       preview: message.body.replace(/\s+/g, ' ').trim().slice(0, 120),
       sent: counts?.sent ?? 0,
       toVerify: counts?.toVerify ?? 0,
@@ -117,6 +200,7 @@ export async function loadCampaignResults(
     toVerify,
     // une entreprise contactée reste comptée même si elle a été retirée de la liste depuis
     total: Math.max(contactable, sent),
+    byGroup,
     versions: versions.filter(
       (version) => version.usable || version.sent + version.toVerify > 0,
     ),

@@ -4,8 +4,11 @@
  * Rôle : étape « Votre message » (CDC-PARCOURS-TRI-ANNUAIRE §6) — versions A à D du message (envoyées à tour de
  * rôle), « Proposer avec l'IA » (campagne triée), boutons « Insérer : Entreprise / Ville / Activité », aperçu du
  * formulaire rempli sur une vraie entreprise (« Autre » pour la suivante), « Suivant : l'envoi ».
- * Données : modèles, expéditeur et entreprises d'aperçu passés par la page (gardées de la campagne triée, sinon
- * derniers prospects du dossier) ; variables dans ~/lib/leadmaker/templates.
+ * « Un message par groupe » (choix de l'encart des groupes, 10/11) : un onglet par groupe plus « Pour les autres »,
+ * chacun avec ses versions A à D ; un message rangé dans un groupe porte sa clé (`group`). Sans ce choix, seuls les
+ * messages sans groupe sont affichés ; ceux d'un groupe sont renvoyés tels quels à l'enregistrement.
+ * Données : modèles, expéditeur et entreprises d'aperçu passés par la page (gardées de la campagne triée, par
+ * groupe si besoin, sinon derniers prospects du dossier) ; variables dans ~/lib/leadmaker/templates.
  * Écritures : saveCampaignTemplatesAction (lm_campaigns.templates, daily_limit, auto_validation) ;
  * proposeMessageAction (compteur du plafond quotidien seulement : la proposition n'est enregistrée qu'avec
  * « Enregistrer les messages »).
@@ -70,7 +73,8 @@ import { Trans } from '@kit/ui/trans';
 import {
   BODY_MAX,
   type CampaignTemplates,
-  MAX_MESSAGES,
+  MAX_VERSIONS_PER_GROUP,
+  type MessageTemplate,
   SHORT_BODY_MAX,
   SUBJECT_MAX,
   TEMPLATE_VARIABLES,
@@ -99,6 +103,18 @@ const AI_ERRORS = ['quotaReached', 'unavailable', 'failed'] as const;
 /** lettre de la version (A, B, C, D) */
 const versionLetter = (index: number) => String.fromCharCode(65 + index);
 
+/** onglet de messages : un groupe de la campagne, ou « Pour les autres » / message unique (key null) */
+interface MessageTab {
+  key: string | null;
+  label: string;
+  /** entreprises gardées du groupe (null pour « Pour les autres ») */
+  kept: number | null;
+}
+
+/** case du formulaire : onglet × version (4 cases par onglet, les vides ne sont pas enregistrées) */
+const slotIndex = (tab: number, version: number) =>
+  tab * MAX_VERSIONS_PER_GROUP + version;
+
 export function CampaignMessagesForm(props: {
   accountId: string;
   campaignId: string;
@@ -112,6 +128,13 @@ export function CampaignMessagesForm(props: {
   /** campagne triée (cible en mots) : « Proposer avec l'IA » */
   sorted: boolean;
   prospects: PreviewProspect[];
+  /**
+   * « Un message par groupe » : les groupes de la campagne (un onglet chacun, puis « Pour les autres ») ; null sinon
+   * (un seul jeu de versions, messages sans groupe)
+   */
+  groups: Array<{ key: string; label: string; kept: number }> | null;
+  /** entreprises gardées de chaque groupe pour l'aperçu (sinon `prospects`) */
+  previewByGroup?: Record<string, PreviewProspect[]>;
   sending: {
     dailyLimit: number;
     autoValidation: boolean;
@@ -135,15 +158,47 @@ export function CampaignMessagesForm(props: {
     setGoingNext(value);
   };
 
+  const perGroup = props.groups !== null;
+
+  const othersLabel = tm('othersTab');
+  const tabs: MessageTab[] = props.groups
+    ? [
+        ...props.groups.map((group) => ({ ...group })),
+        { key: null, label: othersLabel, kept: null },
+      ]
+    : [{ key: null, label: othersLabel, kept: null }];
+
+  // messages d'aucun onglet (réservés à un groupe sans « Un message par groupe », ou à un groupe qui n'existe
+  // plus) : ni affichés ni modifiés, renvoyés tels quels à l'enregistrement
+  const [hidden] = useState(() =>
+    props.templates.messages.filter(
+      (message) => !tabs.some((tab) => tab.key === message.group),
+    ),
+  );
+
+  const tabMessages = (tab: MessageTab) =>
+    props.templates.messages.filter((message) => message.group === tab.key);
+
+  // nom par défaut d'une version : « Message 1 » comme avant, ou « Groupe · Version A » (unique dans la campagne)
+  const defaultName = (tab: MessageTab, version: number) =>
+    perGroup
+      ? tm('defaultName', { group: tab.label, letter: versionLetter(version) })
+      : `Message ${version + 1}`;
+
   const form = useForm({
     resolver: zodResolver(CampaignTemplatesFormSchema),
     defaultValues: {
-      messages: Array.from({ length: MAX_MESSAGES }, (_, index) => ({
-        name: props.templates.messages[index]?.name ?? `Message ${index + 1}`,
-        subject: props.templates.messages[index]?.subject ?? '',
-        body: props.templates.messages[index]?.body ?? '',
-        short: props.templates.messages[index]?.short ?? '',
-      })),
+      messages: tabs.flatMap((tab) => {
+        const own: Array<MessageTemplate | undefined> = tabMessages(tab);
+
+        return Array.from({ length: MAX_VERSIONS_PER_GROUP }, (_, version) => ({
+          name: own[version]?.name ?? defaultName(tab, version),
+          subject: own[version]?.subject ?? '',
+          body: own[version]?.body ?? '',
+          short: own[version]?.short ?? '',
+          group: tab.key,
+        }));
+      }),
       dailyLimit: props.sending.dailyLimit,
       autoValidation: props.sending.autoValidation,
     },
@@ -171,17 +226,53 @@ export function CampaignMessagesForm(props: {
 
   const values = useWatch({ control: form.control });
 
-  // versions affichées : au moins A et B, plus celles déjà remplies ; « + » en ajoute une (jusqu'à 4)
-  const [versionCount, setVersionCount] = useState(() => {
-    const lastFilled = props.templates.messages.reduce(
-      (last, message, index) => (message.body.trim() ? index + 1 : last),
-      0,
-    );
+  // par onglet, versions affichées : au moins A et B (A seule par groupe), plus celles déjà remplies ; « + » en
+  // ajoute une (jusqu'à 4). `tab` : onglet ouvert ; `versions` : version ouverte de chaque onglet
+  const [view, setView] = useState(() => ({
+    tab: 0,
+    versions: tabs.map(() => 0),
+    counts: tabs.map((tab) => {
+      const lastFilled = tabMessages(tab).reduce(
+        (last, message, index) => (message.body.trim() ? index + 1 : last),
+        0,
+      );
 
-    return Math.min(MAX_MESSAGES, Math.max(2, lastFilled));
-  });
-  const [active, setActive] = useState(0);
+      return Math.min(
+        MAX_VERSIONS_PER_GROUP,
+        Math.max(perGroup ? 1 : 2, lastFilled),
+      );
+    }),
+  }));
   const [previewIndex, setPreviewIndex] = useState(0);
+
+  const activeTab = tabs[view.tab] ?? tabs[0]!;
+  const versionCount = view.counts[view.tab] ?? 1;
+  const activeVersion = view.versions[view.tab] ?? 0;
+  const active = slotIndex(view.tab, activeVersion);
+
+  const setActiveVersion = (version: number) =>
+    setView((current) => ({
+      ...current,
+      versions: current.versions.map((value, index) =>
+        index === current.tab ? version : value,
+      ),
+    }));
+
+  // ouvre l'onglet et la version d'une case (par ex. la première en erreur)
+  const showSlot = (slot: number) => {
+    const tab = Math.floor(slot / MAX_VERSIONS_PER_GROUP);
+    const version = slot % MAX_VERSIONS_PER_GROUP;
+
+    setView((current) => ({
+      tab,
+      versions: current.versions.map((value, index) =>
+        index === tab ? version : value,
+      ),
+      counts: current.counts.map((value, index) =>
+        index === tab ? Math.max(value, version + 1) : value,
+      ),
+    }));
+  };
 
   // dernière proposition de l'IA : de quoi revenir en arrière (« Annuler ») tant qu'elle n'a pas été modifiée
   const [proposal, setProposal] = useState<{
@@ -247,13 +338,50 @@ export function CampaignMessagesForm(props: {
 
   const submit = (event?: BaseSyntheticEvent) =>
     form.handleSubmit(
-      (data) =>
+      (data) => {
+        const filled = data.messages.filter(
+          (message) => message.body.trim() !== '',
+        );
+
+        // les noms doivent aussi rester différents de ceux des messages non affichés
+        const hiddenNames = new Set(
+          hidden.map((message) => message.name.trim().toLowerCase()),
+        );
+        const taken = data.messages.findIndex(
+          (message) =>
+            message.body.trim() !== '' &&
+            hiddenNames.has(message.name.trim().toLowerCase()),
+        );
+
+        if (taken >= 0) {
+          form.setError(`messages.${taken}.name`, {
+            message: 'campaigns.messages.nameTaken',
+          });
+          showSlot(taken);
+          setNextIntent(false);
+
+          return;
+        }
+
         save.execute({
           ...data,
+          // cases vides retirées ; messages non affichés renvoyés tels quels
+          messages: [...filled, ...hidden],
           accountId: props.accountId,
           campaignId: props.campaignId,
-        }),
-      () => setNextIntent(false),
+        });
+      },
+      (errors) => {
+        setNextIntent(false);
+
+        // l'erreur peut être dans un autre onglet ou une autre version : on l'ouvre
+        const list = errors.messages;
+        const slot = Array.isArray(list) ? list.findIndex(Boolean) : -1;
+
+        if (slot >= 0) {
+          showSlot(slot);
+        }
+      },
     )(event);
 
   /** Insère une variable à l'endroit du curseur de la zone active (objet, texte ou version courte). */
@@ -276,16 +404,33 @@ export function CampaignMessagesForm(props: {
   };
 
   const addVersion = () => {
-    if (versionCount >= MAX_MESSAGES) return;
+    if (versionCount >= MAX_VERSIONS_PER_GROUP) return;
 
-    setActive(versionCount);
-    setVersionCount(versionCount + 1);
+    setView((current) => ({
+      ...current,
+      versions: current.versions.map((value, index) =>
+        index === current.tab ? versionCount : value,
+      ),
+      counts: current.counts.map((value, index) =>
+        index === current.tab ? versionCount + 1 : value,
+      ),
+    }));
   };
 
   const proposeForActive = () => {
     proposingIndex.current = active;
-    propose.execute({ campaignId: props.campaignId });
+    propose.execute({
+      campaignId: props.campaignId,
+      // onglet d'un groupe : message écrit pour ce groupe
+      ...(perGroup && activeTab.key ? { groupKey: activeTab.key } : {}),
+    });
   };
+
+  /** l'onglet a au moins une version avec un texte */
+  const tabFilled = (tab: number) =>
+    Array.from({ length: MAX_VERSIONS_PER_GROUP }, (_, version) =>
+      values.messages?.[slotIndex(tab, version)]?.body?.trim(),
+    ).some(Boolean);
 
   const goNext = () => {
     if (isDirty) {
@@ -483,9 +628,15 @@ export function CampaignMessagesForm(props: {
     );
   };
 
+  // aperçu sur une entreprise gardée du groupe ouvert, s'il y en a ; sinon sur celles de la campagne
+  const groupProspects = activeTab.key
+    ? (props.previewByGroup?.[activeTab.key] ?? [])
+    : [];
+  const previewProspects =
+    groupProspects.length > 0 ? groupProspects : props.prospects;
   const prospect =
-    props.prospects.length > 0
-      ? props.prospects[previewIndex % props.prospects.length]
+    previewProspects.length > 0
+      ? previewProspects[previewIndex % previewProspects.length]
       : undefined;
 
   return (
@@ -528,9 +679,60 @@ export function CampaignMessagesForm(props: {
             </CardHeader>
 
             <CardContent>
+              {perGroup ? (
+                <div
+                  className={'mb-4 flex flex-col gap-2'}
+                  data-test={'messages-groups'}
+                >
+                  <p className={'text-muted-foreground text-sm'}>
+                    <Trans i18nKey={'campaigns.messages.groupsHint'} />
+                  </p>
+
+                  <Tabs
+                    value={String(view.tab)}
+                    onValueChange={(value) =>
+                      setView((current) => ({ ...current, tab: Number(value) }))
+                    }
+                  >
+                    <TabsList
+                      className={
+                        'flex-wrap justify-start group-data-[orientation=horizontal]/tabs:h-auto'
+                      }
+                      aria-label={tm('groupsLabel')}
+                    >
+                      {tabs.map((tab, index) => (
+                        <TabsTrigger
+                          key={tab.key ?? '-'}
+                          value={String(index)}
+                          className={'flex-none'}
+                          data-test={`messages-group-tab-${tab.key ?? 'others'}`}
+                        >
+                          {tab.label}
+                          {tab.kept !== null ? (
+                            <span
+                              className={
+                                'text-muted-foreground font-normal tabular-nums'
+                              }
+                            >
+                              <Trans
+                                i18nKey={'campaigns.companies.groups.kept'}
+                                values={{ count: tab.kept }}
+                              />
+                            </span>
+                          ) : null}
+                          {tabFilled(index) ? ' •' : ''}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </div>
+              ) : null}
+
               <Tabs
                 value={String(active)}
-                onValueChange={(value) => setActive(Number(value))}
+                onValueChange={(value) =>
+                  setActiveVersion(Number(value) - slotIndex(view.tab, 0))
+                }
                 className={'flex-col'}
               >
                 <div
@@ -545,17 +747,21 @@ export function CampaignMessagesForm(props: {
                     >
                       {Array.from({ length: versionCount }, (_, index) => (
                         <TabsTrigger
-                          key={index}
-                          value={String(index)}
+                          key={slotIndex(view.tab, index)}
+                          value={String(slotIndex(view.tab, index))}
                           data-test={`messages-tab-${index}`}
                         >
                           {tm('versionTab', { letter: versionLetter(index) })}
-                          {values.messages?.[index]?.body?.trim() ? ' •' : ''}
+                          {values.messages?.[
+                            slotIndex(view.tab, index)
+                          ]?.body?.trim()
+                            ? ' •'
+                            : ''}
                         </TabsTrigger>
                       ))}
                     </TabsList>
 
-                    {versionCount < MAX_MESSAGES ? (
+                    {versionCount < MAX_VERSIONS_PER_GROUP ? (
                       <Button
                         type={'button'}
                         size={'icon-sm'}
@@ -625,13 +831,27 @@ export function CampaignMessagesForm(props: {
                   </div>
                 ) : null}
 
+                {perGroup && !tabFilled(view.tab) ? (
+                  <p
+                    className={
+                      'text-muted-foreground mt-3 flex items-start gap-2 text-sm'
+                    }
+                    data-test={'messages-group-empty'}
+                  >
+                    <TriangleAlert className={'mt-0.5 size-4 shrink-0'} />
+                    <span>
+                      {activeTab.key ? tm('groupEmpty') : tm('othersEmpty')}
+                    </span>
+                  </p>
+                ) : null}
+
                 {Array.from({ length: versionCount }, (_, index) => (
                   <TabsContent
-                    key={index}
-                    value={String(index)}
+                    key={slotIndex(view.tab, index)}
+                    value={String(slotIndex(view.tab, index))}
                     className={'pt-4'}
                   >
-                    {renderVersion(index)}
+                    {renderVersion(slotIndex(view.tab, index))}
                   </TabsContent>
                 ))}
               </Tabs>
@@ -669,7 +889,7 @@ export function CampaignMessagesForm(props: {
                 ) : null}
               </CardTitle>
 
-              {props.prospects.length > 1 ? (
+              {previewProspects.length > 1 ? (
                 <CardAction>
                   <Button
                     type={'button'}

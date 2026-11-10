@@ -71,6 +71,8 @@ export async function ContactStep(props: {
   hasPlan: boolean;
   autopilot: AutopilotSummary | null;
   messages: AutopilotMessage[];
+  /** « Un message par groupe » : messages rangés par groupe dans le pilote automatique */
+  perGroup: boolean;
 }) {
   const t = await getTranslations('campaigns.steps.contact');
   const tMode = await getTranslations('campaigns.autopilot.mode');
@@ -162,6 +164,7 @@ export async function ContactStep(props: {
           campaignId={props.campaignId}
           initialSummary={props.autopilot}
           messages={props.messages}
+          perGroup={props.perGroup}
           writeHref={props.writeHref}
           advancedHref={groupHref('intervention_required')}
           sendingSettingsHref={advancedHref}

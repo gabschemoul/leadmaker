@@ -485,7 +485,10 @@ export const ChooseProspectsSchema = CampaignIdSchema.extend({
   choice: z.enum(['gardee', 'ecartee']),
 });
 
-/** Encart des groupes : « Un seul message » ('single') ou « Changer » (null, l'encart revient). */
+/**
+ * Encart des groupes : « Un message par groupe » ('per_group'), « Un seul message » ('single') ou « Changer »
+ * (null, l'encart revient).
+ */
 export const SetGroupsChoiceSchema = CampaignIdSchema.extend({
-  choice: z.enum(['single']).nullable(),
+  choice: z.enum(['per_group', 'single']).nullable(),
 });

@@ -155,7 +155,11 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
   ]);
 
   const templates = parseTemplates(campaign.templates);
-  const messages = usableMessages(templates);
+  // « Un message par groupe » (encart des groupes) : un jeu de versions par groupe, plus « Pour les autres »
+  const groups = live.groups.choice === 'per_group' ? live.groups.list : [];
+  const perGroup = groups.length > 0;
+  const groupLabel = new Map(groups.map((group) => [group.key, group.label]));
+  const messages = usableMessages(templates, perGroup);
   const messagesCount = messages.length;
 
   const facts: CampaignStepFacts = {
@@ -316,6 +320,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
             accountId={account.id}
             campaign={campaign}
             templates={templates}
+            groups={perGroup ? groups : null}
             sender={sender}
             senderHref={senderHref}
             nextHref={stepHref('contacter')}
@@ -341,10 +346,16 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
                 : 'auto'
             }
             autopilot={autopilot}
-            messages={messages.map((message) => ({
+            messages={groupOrdered(messages, groups).map((message) => ({
               name: message.name,
               preview: message.body.replace(/\s+/g, ' ').trim().slice(0, 120),
+              // « Un message par groupe » : rangés sous le nom de leur groupe (null = « Pour les autres »)
+              group:
+                perGroup && message.group
+                  ? (groupLabel.get(message.group) ?? null)
+                  : null,
             }))}
+            perGroup={perGroup}
             billingHref={pathsConfig.app.accountBilling.replace(
               '[account]',
               slug,
@@ -358,6 +369,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
           <ResultsStepContent
             campaignId={id}
             templates={templates}
+            groups={perGroup ? groups : null}
             kept={live.sort ? live.sort.kept : null}
             senderEmail={sender?.email ?? null}
             toVerifyHref={`${stepHref('contacter')}&statut=to_verify`}
@@ -396,10 +408,14 @@ async function TargetStepContent(props: {
   );
 }
 
+type CampaignGroup = { key: string; label: string; kept: number };
+
 async function WriteStepContent(props: {
   accountId: string;
   campaign: Campaign;
   templates: ReturnType<typeof parseTemplates>;
+  /** « Un message par groupe » : les groupes de la campagne ; null sinon */
+  groups: CampaignGroup[] | null;
   sender: Awaited<ReturnType<typeof loadCampaignSender>>;
   senderHref: string;
   nextHref: string;
@@ -429,6 +445,24 @@ async function WriteStepContent(props: {
     loadSenders(client, props.campaign.space_id),
   ]);
 
+  // aperçu de chaque onglet de groupe sur ses propres entreprises gardées
+  const previewByGroup = Object.fromEntries(
+    await Promise.all(
+      (props.groups ?? []).map(
+        async (group) =>
+          [
+            group.key,
+            await loadKeptPreviewProspects(
+              client,
+              props.campaign.id,
+              props.campaign.sort_version,
+              { groupKey: group.key, limit: 5 },
+            ),
+          ] as const,
+      ),
+    ),
+  );
+
   return (
     <WriteStep
       accountId={props.accountId}
@@ -440,6 +474,8 @@ async function WriteStepContent(props: {
       sorted={sorted}
       // entreprises gardées d'abord ; sinon (aucune encore) les derniers prospects du dossier, comme avant
       prospects={keptProspects.length > 0 ? keptProspects : prospects}
+      groups={props.groups}
+      previewByGroup={previewByGroup}
       sending={{
         dailyLimit: props.campaign.daily_limit,
         autoValidation: props.campaign.auto_validation,
@@ -468,7 +504,8 @@ async function ContactStepContent(props: {
   group: AttemptGroup;
   mode: ContactMode;
   autopilot: Awaited<ReturnType<typeof fetchAutopilotSummary>>;
-  messages: Array<{ name: string; preview: string }>;
+  messages: Array<{ name: string; preview: string; group: string | null }>;
+  perGroup: boolean;
   billingHref: string;
   writeHref: string;
   discoverHref: string;
@@ -492,6 +529,7 @@ async function ContactStepContent(props: {
       mode={props.mode}
       autopilot={props.autopilot}
       messages={props.messages}
+      perGroup={props.perGroup}
       billingHref={props.billingHref}
       hasPlan={hasPlan}
       campaignId={props.campaign.id}
@@ -515,6 +553,7 @@ async function ContactStepContent(props: {
 async function ResultsStepContent(props: {
   campaignId: string;
   templates: ReturnType<typeof parseTemplates>;
+  groups: CampaignGroup[] | null;
   kept: number | null;
   senderEmail: string | null;
   toVerifyHref: string;
@@ -526,6 +565,7 @@ async function ResultsStepContent(props: {
   const results = await loadCampaignResults(client, {
     campaignId: props.campaignId,
     templates: props.templates,
+    groups: props.groups,
     kept: props.kept,
   });
 
@@ -539,4 +579,21 @@ async function ResultsStepContent(props: {
       writeHref={props.writeHref}
     />
   );
+}
+
+/**
+ * « Un message par groupe » : messages rangés dans l'ordre des groupes, ceux « Pour les autres » à la fin (ordre
+ * d'origine conservé à l'intérieur). Sans groupes, liste inchangée.
+ */
+function groupOrdered<T extends { group: string | null }>(
+  messages: T[],
+  groups: Array<{ key: string }>,
+) {
+  const rank = (message: T) => {
+    const index = groups.findIndex((group) => group.key === message.group);
+
+    return index === -1 ? groups.length : index;
+  };
+
+  return [...messages].sort((a, b) => rank(a) - rank(b));
 }

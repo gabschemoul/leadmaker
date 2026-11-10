@@ -36,6 +36,7 @@ import {
   isAutopilotActive,
   isCleanAttempt,
 } from '~/lib/leadmaker/autopilot-query';
+import { MAX_MESSAGES } from '~/lib/leadmaker/templates';
 
 import type { AutopilotSchedule } from '../../_lib/schema/autopilot.schema';
 import {
@@ -57,6 +58,8 @@ const SPREAD_MAX = 60;
 export interface AutopilotMessage {
   name: string;
   preview: string;
+  /** « Un message par groupe » : nom du groupe du message (null = « Pour les autres ») */
+  group: string | null;
 }
 
 interface SetupValues {
@@ -80,6 +83,8 @@ export function ContactAutopilot(props: {
   campaignId: string;
   initialSummary: AutopilotSummary | null;
   messages: AutopilotMessage[];
+  /** « Un message par groupe » : messages rangés par groupe, tous cochés par défaut */
+  perGroup: boolean;
   writeHref: string;
   advancedHref: string;
   /** mode Avancé, où se règlent les prises de contact par jour et la validation automatique */
@@ -146,6 +151,7 @@ export function ContactAutopilot(props: {
         summary={summary}
         editing={editing && active}
         messages={props.messages}
+        perGroup={props.perGroup}
         writeHref={props.writeHref}
         sendingSettingsHref={props.sendingSettingsHref}
         senderSection={props.senderSection}
@@ -193,6 +199,7 @@ function AutopilotSetup(props: {
   summary: AutopilotSummary;
   editing: boolean;
   messages: AutopilotMessage[];
+  perGroup: boolean;
   writeHref: string;
   sendingSettingsHref: string;
   senderSection: React.ReactNode;
@@ -224,10 +231,13 @@ function AutopilotSetup(props: {
         ? Math.min(Math.max(summary.target, min), max)
         : Math.min(500, Math.max(max, 1)),
       draft: null,
+      // « Un message par groupe » : tous cochés (chaque groupe garde ainsi ses messages) ; sinon le premier
       messages:
         previous.length > 0
           ? previous
-          : props.messages.slice(0, 1).map((message) => message.name),
+          : props.messages
+              .slice(0, props.perGroup ? MAX_MESSAGES : 1)
+              .map((message) => message.name),
       schedule: (summary.schedule as AutopilotSchedule | null) ?? 'office',
       spreadDays: summary.spread_days ?? 5,
       spreadDraft: null,
@@ -307,6 +317,71 @@ function AutopilotSetup(props: {
   const spreadDays = clampSpread(values.spreadDays);
   const perDay = Math.ceil(target / spreadDays);
   const abCount = values.messages.length;
+
+  const renderMessage = (message: AutopilotMessage) => {
+    const checked = values.messages.includes(message.name);
+
+    return (
+      <label
+        key={message.name}
+        className={cn(
+          'flex cursor-pointer items-start gap-2.5 rounded-xl border p-3',
+          checked ? 'border-brand bg-brand-pale/60' : 'bg-card',
+        )}
+      >
+        <input
+          type={'checkbox'}
+          className={'accent-primary mt-0.5 size-5 shrink-0'}
+          data-test={'autopilot-message'}
+          checked={checked}
+          onChange={() => {
+            const next = checked
+              ? values.messages.filter((name) => name !== message.name)
+              : [...values.messages, message.name];
+
+            // au moins un message reste coché
+            if (next.length > 0) {
+              form.setValue(
+                'messages',
+                props.messages
+                  .map((item) => item.name)
+                  .filter((name) => next.includes(name)),
+              );
+            }
+          }}
+        />
+
+        <span className={'min-w-0'}>
+          <span className={'block font-medium'}>{message.name}</span>
+
+          <span
+            className={'text-muted-foreground line-clamp-2 text-sm break-words'}
+          >
+            {message.preview}
+          </span>
+        </span>
+      </label>
+    );
+  };
+
+  // « Un message par groupe » : un bloc par groupe (dans l'ordre reçu), « Pour les autres » en dernier
+  const messageSections = props.perGroup
+    ? [
+        ...new Set(
+          props.messages.flatMap((message) =>
+            message.group === null ? [] : [message.group],
+          ),
+        ),
+        null,
+      ]
+        .map((heading) => ({
+          heading,
+          messages: props.messages.filter(
+            (message) => message.group === heading,
+          ),
+        }))
+        .filter((section) => section.messages.length > 0)
+    : [{ heading: null, messages: props.messages }];
 
   const paceText =
     values.schedule === 'office'
@@ -434,70 +509,40 @@ function AutopilotSetup(props: {
             </Link>
           </div>
 
-          <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
-            {props.messages.map((message) => {
-              const checked = values.messages.includes(message.name);
+          {messageSections.map((section) => (
+            <div
+              key={section.heading ?? '-'}
+              className={'flex flex-col gap-2'}
+              data-test={'autopilot-message-section'}
+            >
+              {props.perGroup ? (
+                <h4 className={'text-muted-foreground text-sm font-medium'}>
+                  {section.heading ?? t('messages.othersHeading')}
+                </h4>
+              ) : null}
 
-              return (
-                <label
-                  key={message.name}
-                  className={cn(
-                    'flex cursor-pointer items-start gap-2.5 rounded-xl border p-3',
-                    checked ? 'border-brand bg-brand-pale/60' : 'bg-card',
-                  )}
-                >
-                  <input
-                    type={'checkbox'}
-                    className={'accent-primary mt-0.5 size-5 shrink-0'}
-                    data-test={'autopilot-message'}
-                    checked={checked}
-                    onChange={() => {
-                      const next = checked
-                        ? values.messages.filter(
-                            (name) => name !== message.name,
-                          )
-                        : [...values.messages, message.name];
-
-                      // au moins un message reste coché
-                      if (next.length > 0) {
-                        form.setValue(
-                          'messages',
-                          props.messages
-                            .map((item) => item.name)
-                            .filter((name) => next.includes(name)),
-                        );
-                      }
-                    }}
-                  />
-
-                  <span className={'min-w-0'}>
-                    <span className={'block font-medium'}>{message.name}</span>
-
-                    <span
-                      className={
-                        'text-muted-foreground line-clamp-2 text-sm break-words'
-                      }
-                    >
-                      {message.preview}
-                    </span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
+              <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
+                {section.messages.map(renderMessage)}
+              </div>
+            </div>
+          ))}
 
           <p
             className={cn(
               'rounded-lg px-3 py-2.5 text-sm',
-              abCount >= 2 ? 'bg-brand-pale' : 'bg-muted text-muted-foreground',
+              abCount >= 2 || props.perGroup
+                ? 'bg-brand-pale'
+                : 'bg-muted text-muted-foreground',
             )}
           >
-            {abCount >= 2
-              ? t('messages.ab', {
-                  count: abCount,
-                  share: Math.round(100 / abCount),
-                })
-              : t('messages.single')}
+            {props.perGroup
+              ? t('messages.perGroup', { count: abCount })
+              : abCount >= 2
+                ? t('messages.ab', {
+                    count: abCount,
+                    share: Math.round(100 / abCount),
+                  })
+                : t('messages.single')}
           </p>
         </section>
 

@@ -23,10 +23,17 @@
     "sent": "{count, plural, =0 {Aucun envoi} one {# envoi} other {# envois}}",
     "toVerify": "{count, plural, one {# à vérifier} other {# à vérifier}}",
     "empty": "Pas encore de message pour cette campagne.",
-    "goToMessage": "Écrire le message"
+    "goToMessage": "Écrire le message",
+    "others": "Pour les autres"
   },
   "replies": {
     "withEmail": "Les entreprises vous répondent directement à l'adresse de l'expéditeur, {email}. Le suivi des réponses dans Prospectigo arrivera plus tard.",
     "withoutEmail": "Les entreprises vous répondent directement à l'adresse de l'expéditeur. Le suivi des réponses dans Prospectigo arrivera plus tard."
+  },
+  "byGroup": {
+    "title": "Par groupe",
+    "description": "Entreprises contactées dans chaque groupe, sur ses entreprises gardées.",
+    "outside": "Hors groupes",
+    "sentOf": "{sent, number} sur {kept, number}"
   }
 }

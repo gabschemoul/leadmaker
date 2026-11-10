@@ -521,7 +521,9 @@
       "title": "Quel message envoyer ?",
       "edit": "Modifier dans Rédiger",
       "ab": "Test A/B : {count, number} messages envoyés à parts égales (environ {share, number} % chacun).",
-      "single": "Un seul message : tout le monde reçoit le même. Cochez-en plusieurs pour les comparer (test A/B)."
+      "single": "Un seul message : tout le monde reçoit le même. Cochez-en plusieurs pour les comparer (test A/B).",
+      "othersHeading": "Pour les autres",
+      "perGroup": "{count, plural, one {# message coché.} other {# messages cochés.}} Chaque entreprise reçoit un message de son groupe, à tour de rôle ; les entreprises hors groupes, un message « Pour les autres »."
     },
     "preview": {
       "toggle": "Me montrer les 3 premiers formulaires avant d'envoyer",
@@ -671,22 +673,21 @@
     "next": "Suivant : le message",
     "groups": {
       "title": "{count, plural, other {# groupes repérés. Un message par groupe ?}}",
-      "description": "Chaque groupe peut avoir sa propre campagne, avec un message écrit pour lui. Ses entreprises gardées y sont reprises, sans nouvelle recherche ni crédit en plus.",
+      "description": "Chaque groupe peut recevoir son propre message, dans cette même campagne. Vous l'écrirez à l'étape Message.",
       "kept": "{count, plural, one {# gardée} other {# gardées}}",
       "single": "Un seul message",
-      "split": "{count, plural, other {Créer # campagnes}}",
       "singleLine": "{count, plural, other {Un seul message pour les # groupes}}",
       "change": "Changer",
-      "createdTitle": "{count, plural, one {# campagne créée} other {# campagnes créées}}",
-      "createdDescription": "Elles sont en brouillon, avec leurs entreprises gardées. Écrivez le message de chacune :",
-      "companies": "{count, plural, =0 {aucune entreprise} one {# entreprise} other {# entreprises}}",
       "splitLine": "Campagnes créées par groupe :",
       "splitLineFallback": "Une campagne a été créée pour chaque groupe · <link>Voir vos campagnes</link>",
       "childLine": "Campagne du groupe « {label} »",
       "choiceFailed": "Le choix n'a pas pu être enregistré. Réessayez dans un instant.",
       "splitFailed": "Les campagnes n'ont pas pu être créées. Réessayez dans un instant.",
       "alreadySplit": "Les campagnes par groupe ont déjà été créées.",
-      "noGroups": "Cette campagne n'a pas encore de groupes."
+      "noGroups": "Cette campagne n'a pas encore de groupes.",
+      "perGroup": "Un message par groupe",
+      "perGroupLine": "Un message par groupe",
+      "writeLink": "Écrire les messages"
     }
   },
   "messages": {
@@ -725,6 +726,14 @@
       "quotaReached": "Vous avez utilisé vos 30 propositions du jour. Réessayez demain.",
       "unavailable": "La proposition par l'IA n'est pas disponible pour le moment.",
       "failed": "La proposition n'a pas pu être rédigée. Réessayez dans un instant."
-    }
+    },
+    "groupsLabel": "Groupes de la campagne",
+    "groupsHint": "Chaque entreprise reçoit le message de son groupe. Les entreprises hors groupes reçoivent « Pour les autres ».",
+    "othersTab": "Pour les autres",
+    "defaultName": "{group} · Version {letter}",
+    "groupEmpty": "Pas de message : ces entreprises recevront « Pour les autres ».",
+    "othersEmpty": "Pas encore de message : sans lui, les entreprises hors groupes (et celles d'un groupe sans message) recevront le message d'un autre groupe.",
+    "nameTaken": "Ce nom est déjà pris par un autre message de la campagne.",
+    "tooManyVersions": "4 versions au plus par groupe."
   }
 }

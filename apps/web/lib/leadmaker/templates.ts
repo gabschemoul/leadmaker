@@ -1,11 +1,15 @@
 /**
- * Modèles de messages d'une campagne : jusqu'à quatre messages (objet + texte)
- * tirés en rotation équilibrée. Chaque message a sa propre version courte
+ * Modèles de messages d'une campagne : jusqu'à quatre versions (objet + texte)
+ * tirées en rotation équilibrée ; avec « Un message par groupe », jusqu'à quatre
+ * versions par groupe, plus « Pour les autres » (messages sans groupe). Chaque message a sa propre version courte
  * (facultative) pour les sites qui limitent la longueur. Stockés dans la colonne jsonb `templates` de
  * lm_campaigns ; le worker Python applique les mêmes variables.
  */
 
-export const MAX_MESSAGES = 4;
+/** 4 versions × 6 onglets au plus (5 groupes + « Pour les autres ») ; même plafond que le pilote automatique */
+export const MAX_MESSAGES = 24;
+/** versions d'un même onglet (un groupe, ou « Pour les autres ») */
+export const MAX_VERSIONS_PER_GROUP = 4;
 export const SHORT_BODY_MAX = 200;
 export const SUBJECT_MAX = 200;
 export const BODY_MAX = 5000;
@@ -16,6 +20,11 @@ export interface MessageTemplate {
   body: string;
   /** version courte du message (200 caractères au plus), facultative */
   short: string;
+  /**
+   * groupe de la campagne (clé de lm_campaigns.sort_groups) auquel ce message est réservé ; null = « Pour les
+   * autres » (et seul cas utilisé quand la campagne n'a pas choisi « Un message par groupe »)
+   */
+  group: string | null;
 }
 
 export interface CampaignTemplates {
@@ -94,6 +103,7 @@ export function parseTemplates(raw: unknown): CampaignTemplates {
       subject: asString(item.subject),
       body: asString(item.body),
       short: asString(item.short) || legacyShort,
+      group: asString(item.group).trim() || null,
     }));
 
   return { messages };
@@ -228,7 +238,13 @@ export function mentionsCompany(body: string, company: string | null) {
   return Boolean(name) && body.toLowerCase().includes(name!.toLowerCase());
 }
 
-/** Messages réellement utilisables pour la préparation (texte non vide). */
-export function usableMessages(templates: CampaignTemplates) {
-  return templates.messages.filter((message) => message.body.trim() !== '');
+/**
+ * Messages réellement utilisables pour la préparation (texte non vide). Sans « Un message par groupe »
+ * (`perGroup` faux), les robots ne prennent que les messages sans groupe : ceux réservés à un groupe sont ignorés.
+ */
+export function usableMessages(templates: CampaignTemplates, perGroup = false) {
+  return templates.messages.filter(
+    (message) =>
+      message.body.trim() !== '' && (perGroup || message.group === null),
+  );
 }

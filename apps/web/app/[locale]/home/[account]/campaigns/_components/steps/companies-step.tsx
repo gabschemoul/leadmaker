@@ -170,6 +170,7 @@ export function CompaniesStep(props: {
           <CampaignGroups
             campaignId={props.campaignId}
             campaignsPath={props.campaignsPath}
+            writeHref={props.writeHref}
             groups={data.groups}
             queryKey={queryKey}
           />

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Mail } from 'lucide-react';
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
 
+import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
 import {
   Card,
@@ -18,9 +19,9 @@ import type { CampaignResults } from '../../_lib/server/results.loader';
 const versionLetter = (index: number) => String.fromCharCode(65 + index);
 
 /**
- * Étape 5, « Résultats » : entreprises contactées sur le total à contacter, puis envois par version du
- * message. Pas de réponses pour l'instant (décision du 10/11 : elles arrivent dans la boîte de l'expéditeur,
- * l'appli ne les voit pas encore).
+ * Étape 5, « Résultats » : entreprises contactées sur le total à contacter, par groupe (« Un message par
+ * groupe »), puis envois par version du message. Pas de réponses pour l'instant (décision du 10/11 : elles
+ * arrivent dans la boîte de l'expéditeur, l'appli ne les voit pas encore).
  */
 export async function ResultsStep(props: {
   results: CampaignResults;
@@ -123,6 +124,70 @@ export async function ResultsStep(props: {
         </CardContent>
       </Card>
 
+      {results.byGroup && results.byGroup.length > 0 ? (
+        <Card data-test={'campaign-results-groups'}>
+          <CardHeader>
+            <CardTitle>{t('byGroup.title')}</CardTitle>
+            <CardDescription>{t('byGroup.description')}</CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <ul className={'divide-border flex flex-col divide-y'}>
+              {results.byGroup.map((group) => (
+                <li
+                  key={group.key ?? '-'}
+                  className={
+                    'flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-4'
+                  }
+                  data-test={'campaign-results-group'}
+                >
+                  <span className={'min-w-0 text-sm font-medium sm:w-48'}>
+                    {group.label ?? t('byGroup.outside')}
+                  </span>
+
+                  <div className={'flex min-w-0 flex-1 items-center gap-3'}>
+                    <Progress
+                      className={'flex-1'}
+                      value={
+                        group.kept > 0
+                          ? Math.min(
+                              100,
+                              Math.round((group.sent / group.kept) * 100),
+                            )
+                          : 0
+                      }
+                      locale={locale}
+                      aria-label={group.label ?? t('byGroup.outside')}
+                    />
+
+                    <span
+                      className={
+                        'shrink-0 text-sm font-medium whitespace-nowrap tabular-nums'
+                      }
+                    >
+                      {t('byGroup.sentOf', {
+                        sent: group.sent,
+                        kept: group.kept,
+                      })}
+                    </span>
+                  </div>
+
+                  {group.toVerify > 0 ? (
+                    <span
+                      className={
+                        'text-muted-foreground shrink-0 text-sm tabular-nums'
+                      }
+                    >
+                      {t('versions.toVerify', { count: group.toVerify })}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card data-test={'campaign-results-versions'}>
         <CardHeader>
           <CardTitle>{t('versions.title')}</CardTitle>
@@ -134,7 +199,12 @@ export async function ResultsStep(props: {
             <ul className={'divide-border flex flex-col divide-y'}>
               {results.versions.map((version) => (
                 <VersionRow
-                  key={version.index}
+                  key={version.key}
+                  group={
+                    version.group === null
+                      ? null
+                      : version.group || t('versions.others')
+                  }
                   label={t('versions.version', {
                     letter: versionLetter(version.index),
                   })}
@@ -201,6 +271,8 @@ export async function ResultsStep(props: {
 }
 
 function VersionRow(props: {
+  /** « Un message par groupe » : groupe de la version (petit badge devant son nom) */
+  group?: string | null;
   label: string;
   preview: string | null;
   sent: string;
@@ -213,7 +285,16 @@ function VersionRow(props: {
       }
     >
       <div className={'flex min-w-0 flex-col gap-0.5'}>
-        <span className={'text-sm font-medium'}>{props.label}</span>
+        <span
+          className={'flex flex-wrap items-center gap-1.5 text-sm font-medium'}
+        >
+          {props.group ? (
+            <Badge variant={'outline'} className={'font-normal'}>
+              {props.group}
+            </Badge>
+          ) : null}
+          {props.label}
+        </span>
 
         {props.preview ? (
           <span className={'text-muted-foreground truncate text-sm'}>

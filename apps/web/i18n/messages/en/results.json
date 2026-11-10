@@ -23,10 +23,17 @@
     "sent": "{count, plural, =0 {Nothing sent} one {# sent} other {# sent}}",
     "toVerify": "{count, plural, one {# to verify} other {# to verify}}",
     "empty": "No message yet for this campaign.",
-    "goToMessage": "Write the message"
+    "goToMessage": "Write the message",
+    "others": "For the others"
   },
   "replies": {
     "withEmail": "Companies reply directly to the sender's address, {email}. Reply tracking in Prospectigo will come later.",
     "withoutEmail": "Companies reply directly to the sender's address. Reply tracking in Prospectigo will come later."
+  },
+  "byGroup": {
+    "title": "By group",
+    "description": "Companies contacted in each group, out of its kept companies.",
+    "outside": "Outside the groups",
+    "sentOf": "{sent, number} of {kept, number}"
   }
 }

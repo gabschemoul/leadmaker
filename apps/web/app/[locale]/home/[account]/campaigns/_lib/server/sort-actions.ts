@@ -2,7 +2,8 @@
 
 /**
  * Rôle : actions de l'écran « Vos entreprises » (CDC-PARCOURS-TRI-ANNUAIRE §6) : garder ou écarter des
- * entreprises « À vérifier » ; encart des groupes (§4.3) : « Un seul message » / « Changer », « Créer N campagnes ».
+ * entreprises « À vérifier » ; encart des groupes (§4.3) : « Un message par groupe » / « Un seul message » /
+ * « Changer » ; « Créer N campagnes » (ancien choix, plus proposé par l'écran depuis le 10/11).
  * Données : fonctions SQL lm_choose_prospects, lm_set_groups_choice, lm_split_campaign_by_groups (contrôle d'accès
  * lm_member en base).
  * Écritures : lm_campaign_prospects.client_choice (une entreprise gardée est payée au prix de la campagne) ;
@@ -48,7 +49,10 @@ export const chooseProspectsAction = authActionClient
     return { count: data ?? 0, choice };
   });
 
-/** « Un seul message » pour tous les groupes ('single'), ou « Changer » (null) : l'encart des groupes revient. */
+/**
+ * « Un message par groupe » dans cette même campagne ('per_group'), « Un seul message » pour tous les groupes
+ * ('single'), ou « Changer » (null) : l'encart des groupes revient.
+ */
 export const setGroupsChoiceAction = authActionClient
   .inputSchema(SetGroupsChoiceSchema)
   .action(async ({ parsedInput: { campaignId, choice }, ctx }) => {

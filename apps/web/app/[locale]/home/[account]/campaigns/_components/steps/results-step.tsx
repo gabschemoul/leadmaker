@@ -1,27 +1,31 @@
 import Link from 'next/link';
 
-import { ArrowRight, Mail } from 'lucide-react';
-import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
+import { getFormatter, getTranslations } from 'next-intl/server';
 
-import { Badge } from '@kit/ui/badge';
 import { Button } from '@kit/ui/button';
+import { Card, CardHeader, CardTitle } from '@kit/ui/card';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
-import { Progress } from '@kit/ui/progress';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
+import { cn } from '@kit/ui/utils';
 
 import type { CampaignResults } from '../../_lib/server/results.loader';
 
 const versionLetter = (index: number) => String.fromCharCode(65 + index);
 
 /**
- * Étape 5, « Résultats » : entreprises contactées sur le total à contacter, par groupe (« Un message par
- * groupe »), puis envois par version du message. Pas de réponses pour l'instant (décision du 10/11 : elles
- * arrivent dans la boîte de l'expéditeur, l'appli ne les voit pas encore).
+ * Étape 5, « Résultats » — refaite le 10/11/2026 sur le modèle des pages de chiffres d'ElevenLabs :
+ * une bande de chiffres clés (petit libellé gris, chiffre), puis des tableaux sobres. Aucun texte d'aide.
+ * - Chiffres clés : contactées, à vérifier (lien vers les envois à vérifier), pas encore contactées, avancement.
+ * - « Un message par groupe » : un tableau par groupe (le message de chaque groupe y est déjà représenté).
+ * - Sinon, un tableau par version seulement s'il y a plusieurs versions à comparer.
+ * Pas de réponses pour l'instant : elles arrivent dans la boîte de l'expéditeur, l'appli ne les voit pas encore.
  */
 export async function ResultsStep(props: {
   results: CampaignResults;
@@ -32,286 +36,303 @@ export async function ResultsStep(props: {
   sendingHref: string;
   writeHref: string;
 }) {
-  const [t, format, locale] = await Promise.all([
+  const [t, format] = await Promise.all([
     getTranslations('results'),
     getFormatter(),
-    getLocale(),
   ]);
 
   const { results } = props;
-  const percent =
-    results.total > 0
-      ? Math.min(100, Math.round((results.sent / results.total) * 100))
-      : 0;
+  const share = (part: number, total: number) =>
+    total > 0 ? Math.min(1, part / total) : 0;
+  const percent = (value: number) =>
+    format.number(value, {
+      style: 'percent',
+      // une décimale sous 10 % : « 0,6 % » plutôt qu'un « 1 % » ou « 0 % » trompeur
+      maximumFractionDigits: value > 0 && value < 0.1 ? 1 : 0,
+    });
 
-  const hasVersions =
-    results.versions.length > 0 ||
-    results.other.sent + results.other.toVerify > 0;
+  const remaining = Math.max(
+    0,
+    results.total - results.sent - results.toVerify,
+  );
+  const nothingYet = results.sent === 0 && results.toVerify === 0;
+
+  // tableau des versions : sans groupes, et seulement s'il y a de quoi comparer
+  const versionRows = [
+    ...results.versions.map((version) => ({
+      key: String(version.key),
+      label: t('versions.versionLabel', {
+        letter: versionLetter(version.index),
+      }),
+      preview: version.preview,
+      sent: version.sent,
+      toVerify: version.toVerify,
+    })),
+    ...(results.other.sent + results.other.toVerify > 0
+      ? [
+          {
+            key: 'other',
+            label: t('versions.other'),
+            preview: null,
+            sent: results.other.sent,
+            toVerify: results.other.toVerify,
+          },
+        ]
+      : []),
+  ];
+  const showVersions = !results.byGroup && versionRows.length >= 2;
 
   return (
     <div className={'flex flex-col gap-4'} data-test={'campaign-step-results'}>
-      <Card data-test={'campaign-results-contacted'}>
-        <CardHeader>
-          <CardTitle>{t('contacted.title')}</CardTitle>
-          <CardDescription>
-            {props.sorted
-              ? t('contacted.keptHint')
-              : t('contacted.websiteHint')}
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className={'flex flex-col gap-3'}>
-          <div className={'flex flex-wrap items-baseline gap-x-2 gap-y-1'}>
-            <span
-              className={
-                'font-heading text-3xl font-normal tracking-[-0.02em] tabular-nums'
-              }
-              data-test={'campaign-results-sent'}
-            >
-              {format.number(results.sent)}
-            </span>
-
-            <span className={'text-muted-foreground text-sm'}>
-              {t('contacted.of', {
-                count: results.sent,
-                total: format.number(results.total),
-              })}
-            </span>
-          </div>
-
-          <Progress
-            value={percent}
-            locale={locale}
-            aria-label={t('contacted.progressLabel')}
+      <Card className={'gap-0 py-0'} data-test={'campaign-results-contacted'}>
+        <div className={'bg-border grid grid-cols-2 gap-px sm:grid-cols-4'}>
+          <Kpi
+            label={t('kpi.contacted')}
+            value={format.number(results.sent)}
+            testId={'campaign-results-sent'}
           />
 
-          {results.toVerify > 0 ? (
-            <p
-              className={'text-muted-foreground text-sm'}
-              data-test={'campaign-results-to-verify'}
-            >
-              {t('contacted.toVerify', { count: results.toVerify })}{' '}
-              <Link
-                href={props.toVerifyHref}
-                className={'text-brand whitespace-nowrap'}
-              >
-                {t('contacted.toVerifyLink')}
-              </Link>
+          <Kpi
+            label={t('kpi.toVerify')}
+            value={format.number(results.toVerify)}
+            href={results.toVerify > 0 ? props.toVerifyHref : undefined}
+            testId={'campaign-results-to-verify'}
+          />
+
+          <Kpi label={t('kpi.remaining')} value={format.number(remaining)} />
+
+          <Kpi
+            label={t('kpi.progress')}
+            value={percent(share(results.sent, results.total))}
+          />
+        </div>
+
+        {nothingYet ? (
+          <div
+            className={
+              'flex flex-wrap items-center justify-between gap-3 border-t p-4'
+            }
+          >
+            <p className={'text-muted-foreground text-sm'}>
+              {t('contacted.empty')}
             </p>
-          ) : null}
 
-          {results.sent === 0 && results.toVerify === 0 ? (
-            <div
-              className={
-                'flex flex-wrap items-center justify-between gap-3 pt-1'
-              }
+            <Button
+              variant={'outline'}
+              nativeButton={false}
+              render={<Link href={props.sendingHref} />}
             >
-              <p className={'text-muted-foreground text-sm'}>
-                {t('contacted.empty')}
-              </p>
-
-              <Button
-                variant={'outline'}
-                size={'sm'}
-                nativeButton={false}
-                render={<Link href={props.sendingHref} />}
-              >
-                <span>{t('contacted.goToSending')}</span>
-                <ArrowRight className={'w-4'} />
-              </Button>
-            </div>
-          ) : null}
-        </CardContent>
+              <span>{t('contacted.goToSending')}</span>
+              <ArrowRight />
+            </Button>
+          </div>
+        ) : null}
       </Card>
 
       {results.byGroup && results.byGroup.length > 0 ? (
-        <Card data-test={'campaign-results-groups'}>
-          <CardHeader>
+        <Card className={'gap-0 pb-0'} data-test={'campaign-results-groups'}>
+          <CardHeader className={'pb-3'}>
             <CardTitle>{t('byGroup.title')}</CardTitle>
-            <CardDescription>{t('byGroup.description')}</CardDescription>
           </CardHeader>
 
-          <CardContent>
-            <ul className={'divide-border flex flex-col divide-y'}>
-              {results.byGroup.map((group) => (
-                <li
-                  key={group.key ?? '-'}
-                  className={
-                    'flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-4'
-                  }
-                  data-test={'campaign-results-group'}
-                >
-                  <span className={'min-w-0 text-sm font-medium sm:w-48'}>
-                    {group.label ?? t('byGroup.outside')}
-                  </span>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className={'pl-4'}>{t('byGroup.group')}</TableHead>
+                <TableHead className={'text-right'}>
+                  {t('byGroup.kept')}
+                </TableHead>
+                <TableHead className={'text-right'}>
+                  {t('byGroup.contacted')}
+                </TableHead>
+                <TableHead className={'text-right'}>
+                  {t('byGroup.toVerify')}
+                </TableHead>
+                <TableHead className={'w-48 pr-4'}>
+                  {t('byGroup.progress')}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
 
-                  <div className={'flex min-w-0 flex-1 items-center gap-3'}>
-                    <Progress
-                      className={'flex-1'}
-                      value={
-                        group.kept > 0
-                          ? Math.min(
-                              100,
-                              Math.round((group.sent / group.kept) * 100),
-                            )
-                          : 0
-                      }
-                      locale={locale}
-                      aria-label={group.label ?? t('byGroup.outside')}
-                    />
+            <TableBody>
+              {results.byGroup.map((group) => {
+                const groupShare = share(group.sent, group.kept);
 
-                    <span
+                return (
+                  <TableRow
+                    key={group.key ?? '-'}
+                    data-test={'campaign-results-group'}
+                  >
+                    <TableCell
+                      className={cn(
+                        'max-w-[22rem] truncate pl-4 font-medium',
+                        group.label === null && 'text-muted-foreground',
+                      )}
+                    >
+                      {group.label ?? t('byGroup.outside')}
+                    </TableCell>
+
+                    <TableCell
                       className={
-                        'shrink-0 text-sm font-medium whitespace-nowrap tabular-nums'
+                        'text-muted-foreground text-right tabular-nums'
                       }
                     >
-                      {t('byGroup.sentOf', {
-                        sent: group.sent,
-                        kept: group.kept,
-                      })}
-                    </span>
-                  </div>
+                      {format.number(group.kept)}
+                    </TableCell>
 
-                  {group.toVerify > 0 ? (
-                    <span
-                      className={
-                        'text-muted-foreground shrink-0 text-sm tabular-nums'
-                      }
+                    <TableCell className={'text-right tabular-nums'}>
+                      {format.number(group.sent)}
+                    </TableCell>
+
+                    <TableCell
+                      className={cn(
+                        'text-right tabular-nums',
+                        group.toVerify === 0 && 'text-muted-foreground',
+                      )}
                     >
-                      {t('versions.toVerify', { count: group.toVerify })}
-                    </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
+                      {group.toVerify > 0 ? format.number(group.toVerify) : '–'}
+                    </TableCell>
+
+                    <TableCell className={'pr-4'}>
+                      <ShareBar
+                        value={groupShare}
+                        label={percent(groupShare)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </Card>
       ) : null}
 
-      <Card data-test={'campaign-results-versions'}>
-        <CardHeader>
-          <CardTitle>{t('versions.title')}</CardTitle>
-          <CardDescription>{t('versions.description')}</CardDescription>
-        </CardHeader>
+      {showVersions ? (
+        <Card className={'gap-0 pb-0'} data-test={'campaign-results-versions'}>
+          <CardHeader className={'pb-3'}>
+            <CardTitle>{t('versions.title')}</CardTitle>
+          </CardHeader>
 
-        <CardContent>
-          {hasVersions ? (
-            <ul className={'divide-border flex flex-col divide-y'}>
-              {results.versions.map((version) => (
-                <VersionRow
-                  key={version.key}
-                  group={
-                    version.group === null
-                      ? null
-                      : version.group || t('versions.others')
-                  }
-                  label={t('versions.version', {
-                    letter: versionLetter(version.index),
-                  })}
-                  preview={version.preview}
-                  sent={t('versions.sent', { count: version.sent })}
-                  toVerify={
-                    version.toVerify > 0
-                      ? t('versions.toVerify', { count: version.toVerify })
-                      : null
-                  }
-                />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className={'pl-4'}>
+                  {t('versions.version')}
+                </TableHead>
+                <TableHead className={'text-right'}>
+                  {t('versions.contacted')}
+                </TableHead>
+                <TableHead className={'pr-4 text-right'}>
+                  {t('versions.toVerify')}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {versionRows.map((row) => (
+                <TableRow key={row.key}>
+                  <TableCell className={'max-w-[32rem] pl-4'}>
+                    <span className={'flex min-w-0 flex-col'}>
+                      <span className={'font-medium'}>{row.label}</span>
+
+                      {row.preview ? (
+                        <span className={'text-muted-foreground truncate'}>
+                          {row.preview}
+                        </span>
+                      ) : null}
+                    </span>
+                  </TableCell>
+
+                  <TableCell className={'text-right tabular-nums'}>
+                    {format.number(row.sent)}
+                  </TableCell>
+
+                  <TableCell
+                    className={cn(
+                      'pr-4 text-right tabular-nums',
+                      row.toVerify === 0 && 'text-muted-foreground',
+                    )}
+                  >
+                    {row.toVerify > 0 ? format.number(row.toVerify) : '–'}
+                  </TableCell>
+                </TableRow>
               ))}
-
-              {results.other.sent + results.other.toVerify > 0 ? (
-                <VersionRow
-                  label={t('versions.other')}
-                  preview={null}
-                  sent={t('versions.sent', { count: results.other.sent })}
-                  toVerify={
-                    results.other.toVerify > 0
-                      ? t('versions.toVerify', {
-                          count: results.other.toVerify,
-                        })
-                      : null
-                  }
-                />
-              ) : null}
-            </ul>
-          ) : (
-            <div
-              className={'flex flex-wrap items-center justify-between gap-3'}
-            >
-              <p className={'text-muted-foreground text-sm'}>
-                {t('versions.empty')}
-              </p>
-
-              <Button
-                variant={'outline'}
-                size={'sm'}
-                nativeButton={false}
-                render={<Link href={props.writeHref} />}
-              >
-                <span>{t('versions.goToMessage')}</span>
-                <ArrowRight className={'w-4'} />
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <p
-        className={'text-muted-foreground flex items-start gap-2 text-sm'}
-        data-test={'campaign-results-replies-note'}
-      >
-        <Mail className={'mt-0.5 size-4 shrink-0'} />
-        <span>
-          {props.senderEmail
-            ? t('replies.withEmail', { email: props.senderEmail })
-            : t('replies.withoutEmail')}
-        </span>
-      </p>
+            </TableBody>
+          </Table>
+        </Card>
+      ) : null}
     </div>
   );
 }
 
-function VersionRow(props: {
-  /** « Un message par groupe » : groupe de la version (petit badge devant son nom) */
-  group?: string | null;
+/** Tuile de chiffre clé, comme celles d'ElevenLabs : libellé gris 13 px, chiffre 18 px. */
+function Kpi(props: {
   label: string;
-  preview: string | null;
-  sent: string;
-  toVerify: string | null;
+  value: string;
+  href?: string;
+  testId?: string;
 }) {
-  return (
-    <li
-      className={
-        'flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0'
-      }
+  const content = (
+    <>
+      <span
+        className={
+          'text-muted-foreground flex items-center gap-1 text-[13px] font-medium'
+        }
+      >
+        {props.label}
+        {props.href ? <ArrowUpRight className={'size-3.5'} /> : null}
+      </span>
+
+      <span
+        className={
+          'text-foreground text-[18px] leading-[26px] font-medium tabular-nums'
+        }
+        data-test={props.testId}
+      >
+        {props.value}
+      </span>
+    </>
+  );
+
+  const className = 'bg-card flex flex-col items-start gap-0.5 p-4';
+
+  return props.href ? (
+    <Link
+      href={props.href}
+      className={cn(
+        className,
+        'transition-colors duration-75 hover:bg-[color-mix(in_oklab,var(--card),var(--foreground)_2%)]',
+      )}
     >
-      <div className={'flex min-w-0 flex-col gap-0.5'}>
+      {content}
+    </Link>
+  ) : (
+    <div className={className}>{content}</div>
+  );
+}
+
+/** Fine barre d'avancement avec le pourcentage à droite. */
+function ShareBar(props: { value: number; label: string }) {
+  return (
+    <span className={'flex items-center gap-3'}>
+      <span
+        className={
+          'bg-foreground/[0.06] h-1.5 flex-1 overflow-hidden rounded-full'
+        }
+      >
         <span
-          className={'flex flex-wrap items-center gap-1.5 text-sm font-medium'}
-        >
-          {props.group ? (
-            <Badge variant={'outline'} className={'font-normal'}>
-              {props.group}
-            </Badge>
-          ) : null}
-          {props.label}
-        </span>
+          className={'bg-foreground block h-full rounded-full'}
+          style={{
+            width: `${Math.round(props.value * 1000) / 10}%`,
+            // une avancée minuscule reste visible
+            minWidth: props.value > 0 ? 3 : 0,
+          }}
+        />
+      </span>
 
-        {props.preview ? (
-          <span className={'text-muted-foreground truncate text-sm'}>
-            {props.preview}
-          </span>
-        ) : null}
-      </div>
-
-      <div className={'flex shrink-0 flex-col items-end gap-0.5 text-sm'}>
-        <span className={'font-medium tabular-nums'}>{props.sent}</span>
-
-        {props.toVerify ? (
-          <span className={'text-muted-foreground tabular-nums'}>
-            {props.toVerify}
-          </span>
-        ) : null}
-      </div>
-    </li>
+      <span className={'text-muted-foreground w-12 text-right tabular-nums'}>
+        {props.label}
+      </span>
+    </span>
   );
 }

@@ -4,36 +4,31 @@
     "subTodo": "Nothing sent yet",
     "subSent": "{count, plural, one {# company contacted} other {# companies contacted}}"
   },
+  "kpi": {
+    "contacted": "Contacted",
+    "toVerify": "To check",
+    "remaining": "Not contacted yet",
+    "progress": "Progress"
+  },
   "contacted": {
-    "title": "Companies contacted",
-    "of": "contacted out of {total}",
-    "progressLabel": "Share of companies contacted",
-    "keptHint": "The total counts the campaign's kept companies.",
-    "websiteHint": "The total counts the campaign's companies that have a website.",
-    "toVerify": "{count, plural, one {# more send is} other {# more sends are}} to verify: Prospectigo clicked Send but saw no clear confirmation.",
-    "toVerifyLink": "Review them",
     "empty": "No outreach has gone out yet.",
     "goToSending": "Go to sending"
   },
-  "versions": {
-    "title": "Sends per version",
-    "description": "The message versions are sent in turn.",
-    "version": "Version {letter}",
-    "other": "Versions changed or removed since",
-    "sent": "{count, plural, =0 {Nothing sent} one {# sent} other {# sent}}",
-    "toVerify": "{count, plural, one {# to verify} other {# to verify}}",
-    "empty": "No message yet for this campaign.",
-    "goToMessage": "Write the message",
-    "others": "For the others"
-  },
-  "replies": {
-    "withEmail": "Companies reply directly to the sender's address, {email}. Reply tracking in Prospectigo will come later.",
-    "withoutEmail": "Companies reply directly to the sender's address. Reply tracking in Prospectigo will come later."
-  },
   "byGroup": {
     "title": "By group",
-    "description": "Companies contacted in each group, out of its kept companies.",
-    "outside": "Outside the groups",
-    "sentOf": "{sent, number} of {kept, number}"
+    "group": "Group",
+    "kept": "Kept",
+    "contacted": "Contacted",
+    "toVerify": "To check",
+    "progress": "Progress",
+    "outside": "Outside groups"
+  },
+  "versions": {
+    "title": "By version",
+    "version": "Version",
+    "contacted": "Contacted",
+    "toVerify": "To check",
+    "versionLabel": "Version {letter}",
+    "other": "Edited or removed versions"
   }
 }

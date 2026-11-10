@@ -328,10 +328,11 @@ begin
              where cp.campaign_id = p_campaign_id and cp.sorted_version = p_version and cp.verdict = 'gardee')
            >= v_settings.sort_groups_after
               * (case when (select c.sort_groups_fine from public.lm_campaigns c where c.id = p_campaign_id) then 3 else 1 end) then
-      insert into public.lm_tasks (account_id, kind, payload, idempotency_key)
+      -- priorité haute : sinon la proposition attend derrière tout le reste de la file de tri (10/11/2026)
+      insert into public.lm_tasks (account_id, kind, payload, idempotency_key, priority)
       select c.account_id, 'sort',
              jsonb_build_object('action', 'groups', 'campaign_id', c.id, 'version', p_version),
-             'sortgroups:' || c.id::text || ':' || p_version::text
+             'sortgroups:' || c.id::text || ':' || p_version::text, 40
         from public.lm_campaigns c where c.id = p_campaign_id
       on conflict (idempotency_key) do nothing;
     end if;

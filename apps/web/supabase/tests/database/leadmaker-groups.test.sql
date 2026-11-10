@@ -38,6 +38,9 @@ select is((select count(*)::integer from public.lm_tasks where payload ->> 'acti
 select public.lm_finish_sort('e3000000-0000-4000-8000-0000000000a1', pg_temp.pid('b1.fr'), 1, 'gardee', null, 'raison b1');
 select public.lm_finish_sort('e3000000-0000-4000-8000-0000000000a1', pg_temp.pid('x1.fr'), 1, 'ecartee', null, 'hors cible');
 select is((select count(*)::integer from public.lm_tasks where payload ->> 'action' = 'groups'), 1, '3 gardées : une tâche de proposition');
+select is((select priority from public.lm_tasks where payload ->> 'action' = 'groups'
+             and payload ->> 'campaign_id' = 'e3000000-0000-4000-8000-0000000000a1'), 40,
+  'Proposition des groupes en tête de file (pas derrière tout le tri)');
 
 -- 1 bis. Groupes fins : 3 fois plus de gardées avant la proposition (3 × 3 = 9 ici)
 set local role postgres;

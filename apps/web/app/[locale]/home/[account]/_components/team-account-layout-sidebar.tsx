@@ -23,8 +23,8 @@ import { TeamAccountLayoutSidebarNavigation } from './team-account-layout-sideba
 
 /**
  * Barre latérale façon ElevenLabs (relooking du 8/11/2026) : logo en haut à
- * gauche, sélecteur d'équipe juste dessous, navigation par groupes, et en bas
- * la ligne du compte (avatar, nom, menu). Le cadre et la navigation viennent de
+ * gauche, navigation par groupes, et en bas le sélecteur d'équipe juste
+ * au-dessus de la ligne du compte (avatar, nom, menu) (décision du 10/11). Le cadre et la navigation viennent de
  * la configuration et s'affichent tout de suite ; seuls le sélecteur et la
  * ligne du compte attendent l'espace de travail.
  */
@@ -44,10 +44,6 @@ export function TeamAccountLayoutSidebar({ account }: { account: string }) {
         >
           <LogoImage className={'text-[1.25rem]'} />
         </Link>
-
-        <Suspense fallback={<SidebarHeaderSkeleton />}>
-          <TeamAccountSidebarHeader account={account} />
-        </Suspense>
       </SidebarHeader>
 
       <SidebarContent className={'px-1 pt-2'}>
@@ -63,6 +59,10 @@ export function TeamAccountLayoutSidebar({ account }: { account: string }) {
           'border-t px-2 py-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0'
         }
       >
+        <Suspense fallback={<SidebarHeaderSkeleton />}>
+          <TeamAccountSidebarHeader account={account} />
+        </Suspense>
+
         <Suspense fallback={<SidebarHeaderSkeleton />}>
           <TeamAccountSidebarUser account={account} />
         </Suspense>
@@ -97,6 +97,7 @@ async function TeamAccountSidebarHeader({ account }: { account: string }) {
       user={data.user}
       accounts={accounts}
       selectedAccount={account}
+      openUpward
     />
   );
 }

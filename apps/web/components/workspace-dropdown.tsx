@@ -54,6 +54,8 @@ interface WorkspaceDropdownProps {
   user: JWTUserData;
   accounts: AccountModel[];
   selectedAccount?: string;
+  /** placé en bas de la barre latérale : le menu s'ouvre vers le haut */
+  openUpward?: boolean;
   workspace?: {
     id: string | null;
     name: string | null;
@@ -98,6 +100,7 @@ export function WorkspaceDropdown({
   user,
   accounts,
   selectedAccount,
+  openUpward = false,
   workspace,
 }: WorkspaceDropdownProps) {
   const router = useRouter();
@@ -195,7 +198,7 @@ export function WorkspaceDropdown({
         <DropdownMenuContent
           className="min-w-60!"
           align="center"
-          side={isSidebarOpen ? 'bottom' : 'inline-end'}
+          side={isSidebarOpen ? (openUpward ? 'top' : 'bottom') : 'inline-end'}
           sideOffset={4}
           alignOffset={8}
         >

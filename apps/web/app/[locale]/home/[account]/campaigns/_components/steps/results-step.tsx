@@ -45,11 +45,14 @@ export async function ResultsStep(props: {
   const share = (part: number, total: number) =>
     total > 0 ? Math.min(1, part / total) : 0;
   const percent = (value: number) =>
-    format.number(value, {
-      style: 'percent',
-      // une décimale sous 10 % : « 0,6 % » plutôt qu'un « 1 % » ou « 0 % » trompeur
-      maximumFractionDigits: value > 0 && value < 0.1 ? 1 : 0,
-    });
+    // une avancée minuscule n'affiche pas « 0 % » : « < 0,1 % »
+    value > 0 && value < 0.001
+      ? `< ${format.number(0.001, { style: 'percent', maximumFractionDigits: 1 })}`
+      : format.number(value, {
+          style: 'percent',
+          // une décimale sous 10 % : « 0,6 % » plutôt qu'un « 1 % » trompeur
+          maximumFractionDigits: value > 0 && value < 0.1 ? 1 : 0,
+        });
 
   const remaining = Math.max(
     0,
@@ -180,7 +183,12 @@ export async function ResultsStep(props: {
                       {format.number(group.kept)}
                     </TableCell>
 
-                    <TableCell className={'text-right tabular-nums'}>
+                    <TableCell
+                      className={cn(
+                        'text-right tabular-nums',
+                        group.sent === 0 && 'text-muted-foreground',
+                      )}
+                    >
                       {format.number(group.sent)}
                     </TableCell>
 
@@ -190,7 +198,7 @@ export async function ResultsStep(props: {
                         group.toVerify === 0 && 'text-muted-foreground',
                       )}
                     >
-                      {group.toVerify > 0 ? format.number(group.toVerify) : '–'}
+                      {format.number(group.toVerify)}
                     </TableCell>
 
                     <TableCell className={'pr-4'}>
@@ -243,7 +251,12 @@ export async function ResultsStep(props: {
                     </span>
                   </TableCell>
 
-                  <TableCell className={'text-right tabular-nums'}>
+                  <TableCell
+                    className={cn(
+                      'text-right tabular-nums',
+                      row.sent === 0 && 'text-muted-foreground',
+                    )}
+                  >
                     {format.number(row.sent)}
                   </TableCell>
 
@@ -253,7 +266,7 @@ export async function ResultsStep(props: {
                       row.toVerify === 0 && 'text-muted-foreground',
                     )}
                   >
-                    {row.toVerify > 0 ? format.number(row.toVerify) : '–'}
+                    {format.number(row.toVerify)}
                   </TableCell>
                 </TableRow>
               ))}

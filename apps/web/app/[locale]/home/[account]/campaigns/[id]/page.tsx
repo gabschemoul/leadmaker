@@ -132,8 +132,14 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     notFound();
   }
 
+  // MESURE TEMPORAIRE (10/11/2026) : durée de chaque vague de chargement, lue dans les journaux Vercel
+  const t0 = performance.now();
+  const lap = (label: string) =>
+    console.info(`[perf campagne] ${label} ${Math.round(performance.now() - t0)} ms`);
+
   // vérifie l'appartenance à l'organisation (et redirige sinon)
   const { account } = await loadTeamWorkspace(slug);
+  lap('workspace');
   const client = getSupabaseServerClient();
 
   const [campaign, countries, spaces] = await Promise.all([
@@ -142,17 +148,26 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     loadSpaces(client, account.id),
   ]);
 
+  lap('campagne+pays+dossiers');
+
   if (!campaign) {
     notFound();
   }
 
+  const timed = <T,>(label: string, p: Promise<T>) =>
+    p.then((v) => {
+      lap(label);
+      return v;
+    });
+
   const [live, counts, sender, autopilot, localDiscovery] = await Promise.all([
-    fetchCampaignLive(client, id),
-    loadCampaignAttemptCounts(client, id),
-    loadCampaignSender(client, campaign.id),
-    fetchAutopilotSummary(client, id),
-    loadLocalDiscoveryState(client, id),
+    timed('live', fetchCampaignLive(client, id)),
+    timed('compteurs', loadCampaignAttemptCounts(client, id)),
+    timed('expediteur', loadCampaignSender(client, campaign.id)),
+    timed('pilote', fetchAutopilotSummary(client, id)),
+    timed('ordinateur', loadLocalDiscoveryState(client, id)),
   ]);
+  lap('vague 2 finie');
 
   const templates = parseTemplates(campaign.templates);
   // « Un message par groupe » (encart des groupes) : un jeu de versions par groupe, plus « Pour les autres »

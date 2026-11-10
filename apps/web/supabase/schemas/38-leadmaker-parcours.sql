@@ -86,6 +86,7 @@ begin
   if v_count > 0 and p_choice = 'gardee' then
     perform public.lm_measure_sort_price(p_campaign_id);
     perform public.lm_settle_kept(p_campaign_id, null);
+    perform public.lm_forward_split_kept(p_campaign_id, p_prospect_ids);
   end if;
 
   return v_count;
@@ -255,7 +256,14 @@ begin
      and c.sort_version = p_version
      and (p_group = 'autre' or exists (select 1 from jsonb_array_elements(c.sort_groups) g where g ->> 'key' = p_group));
 
-  return found;
+  if not found then
+    return false;
+  end if;
+
+  -- campagne déjà découpée par groupes : l'entreprise rejoint aussi la campagne de son groupe
+  perform public.lm_forward_split_kept(p_campaign_id, array[p_prospect_id]);
+
+  return true;
 end;
 $$;
 
@@ -327,6 +335,46 @@ revoke all on function public.lm_set_groups_choice(uuid, text) from public;
 
 grant execute on function public.lm_set_groups_choice(uuid, text) to authenticated, service_role;
 
+-- Campagne découpée par groupes (« Créer N campagnes ») qui continue de chercher : chaque entreprise gardée,
+-- payée et classée dans un groupe rejoint la campagne de ce groupe, avec son avis et sa raison, sans nouveau
+-- débit (credits = 0) ni nouveau tri. p_prospect_ids null = toutes. Renvoie le nombre d'entreprises ajoutées.
+-- Une entreprise n'est contactée qu'une fois par espace (lm_attempts_prospect_unique_per_space).
+-- Appelant : lm_finish_sort, lm_finish_sort_group, lm_choose_prospects (rôle du propriétaire de la fonction).
+create or replace function public.lm_forward_split_kept(p_campaign_id uuid, p_prospect_ids uuid[] default null)
+returns integer
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_count integer;
+begin
+  if not exists (select 1 from public.lm_campaigns c where c.id = p_campaign_id and c.groups_choice = 'split') then
+    return 0;
+  end if;
+
+  insert into public.lm_campaign_prospects (campaign_id, prospect_id, account_id, space_id, verdict, group_key, reason,
+                                            sorted_at, sorted_version, client_choice, decided_at, credits, paid_at, gcid)
+  select ch.id, cp.prospect_id, cp.account_id, cp.space_id, coalesce(cp.verdict, 'gardee'), cp.group_key, cp.reason,
+         cp.sorted_at, ch.sort_version, cp.client_choice, cp.decided_at, 0, cp.paid_at, cp.gcid
+    from public.lm_campaign_prospects cp
+    join public.lm_campaigns src on src.id = cp.campaign_id
+    join public.lm_campaigns ch on ch.split_source_id = src.id and ch.sort_groups -> 0 ->> 'key' = cp.group_key
+   where cp.campaign_id = p_campaign_id
+     and (p_prospect_ids is null or cp.prospect_id = any (p_prospect_ids))
+     and cp.paid_at is not null
+     and coalesce(cp.client_choice, case when cp.sorted_version = src.sort_version then cp.verdict end) = 'gardee'
+  on conflict (campaign_id, prospect_id) do nothing;
+
+  get diagnostics v_count = row_count;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.lm_forward_split_kept(uuid, uuid[]) from public, anon, authenticated;
+
+
 -- « Créer N campagnes » (§4.3) : une campagne par groupe (copie des réglages et du message de la campagne, en
 -- brouillon, sans nouvelle recherche), qui reçoit les entreprises gardées de son groupe déjà trouvées (liens
 -- campagne ↔ entreprise, déjà payées : rien n'est redébité) avec leur avis et leur raison. Chacune aura son propre
@@ -377,7 +425,8 @@ begin
 
     update public.lm_campaigns
        set sort_target = v_source.sort_target, sort_version = 1, sort_groups = jsonb_build_array(v_group),
-           groups_choice = 'split', price_pending = false, credits_per_prospect = v_source.credits_per_prospect
+           groups_choice = 'split', price_pending = false, credits_per_prospect = v_source.credits_per_prospect,
+           split_source_id = p_campaign_id
      where id = v_id;
 
     campaign_id := v_id;

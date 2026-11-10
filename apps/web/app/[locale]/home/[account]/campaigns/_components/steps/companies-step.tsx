@@ -160,6 +160,11 @@ export function CompaniesStep(props: {
         </CardHeader>
 
         <CardContent className={'flex flex-col gap-5'}>
+          <SearchProgress
+            progress={data.progress}
+            live={data.status === 'running'}
+          />
+
           <SortProgress sort={sort} live={live} />
 
           <CampaignGroups
@@ -250,6 +255,57 @@ function TabCount(props: { value: number }) {
 }
 
 /** Avancement discret : fiches examinées par la recherche, part des entreprises déjà triées. */
+/**
+ * Avancement de la recherche (recherches faites sur le total des villes × activités), comme l'ancienne étape
+ * Trouver : sans lui, on ne voit plus combien il reste à chercher (remarque de Gabriel, 10/11/2026).
+ */
+function SearchProgress(props: {
+  progress: CampaignLive['progress'];
+  live: boolean;
+}) {
+  const format = useFormatter();
+  const locale = useLocale();
+  const t = useTranslations('campaigns.companies');
+  const { searchesDone, searchesTotal } = props.progress;
+
+  if (searchesTotal <= 0) {
+    return null;
+  }
+
+  const percent = Math.min(
+    100,
+    Math.floor((searchesDone / searchesTotal) * 100),
+  );
+
+  return (
+    <div
+      className={'flex flex-col gap-2'}
+      data-test={'campaign-search-progress'}
+    >
+      <div
+        className={
+          'text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm'
+        }
+      >
+        <span className={'flex items-center gap-2'}>
+          {props.live ? <Spinner className={'size-3.5'} /> : null}
+          <span className={'text-foreground font-medium'}>
+            <Trans i18nKey={'campaigns.companies.searchLabel'} />
+          </span>
+          <Trans
+            i18nKey={'campaigns.detail.searchesProgress'}
+            values={{ done: searchesDone, total: searchesTotal }}
+          />
+        </span>
+
+        <span className={'tabular-nums'}>{format.number(percent)} %</span>
+      </div>
+
+      <Progress value={percent} locale={locale} aria-label={t('searchLabel')} />
+    </div>
+  );
+}
+
 function SortProgress(props: { sort: SortState; live: boolean }) {
   const format = useFormatter();
   const locale = useLocale();

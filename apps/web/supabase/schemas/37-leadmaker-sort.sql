@@ -27,6 +27,8 @@ begin
          'sort:' || c.id::text || ':' || new.prospect_id::text || ':' || c.sort_version::text
     from public.lm_campaigns c
    where c.id = new.campaign_id and nullif(trim(c.sort_target), '') is not null
+     -- entreprise arrivée déjà triée (campagne d'un groupe : l'avis est recopié) : rien à retrier
+     and new.verdict is null
   on conflict (idempotency_key) do nothing;
 
   return null;
@@ -319,6 +321,8 @@ begin
 
   if p_verdict = 'gardee' then
     perform public.lm_settle_kept(p_campaign_id, p_prospect_id);
+    -- campagne déjà découpée par groupes : l'entreprise rejoint aussi la campagne de son groupe
+    perform public.lm_forward_split_kept(p_campaign_id, array[p_prospect_id]);
 
     -- Groupes (§4.3) : assez de gardées et pas encore de groupes → une tâche de proposition (une par cible)
     if (select c.sort_groups = '[]'::jsonb from public.lm_campaigns c where c.id = p_campaign_id)

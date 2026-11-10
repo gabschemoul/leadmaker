@@ -35,6 +35,9 @@ create table if not exists public.lm_campaigns (
   -- Encart des groupes (§4.3) : null = pas encore répondu, 'single' = « Un seul message », 'split' = « Créer N
   -- campagnes » déjà fait
   groups_choice text,
+  -- Campagne d'un groupe, créée par « Créer N campagnes » : campagne d'origine. Tant que l'origine cherche,
+  -- chaque nouvelle entreprise gardée de ce groupe y est ajoutée (lm_forward_split_kept, 10/11/2026).
+  split_source_id uuid references public.lm_campaigns(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -177,6 +180,9 @@ create trigger lm_campaigns_set_user_tracking
 
 create index if not exists ix_lm_campaigns_space_id_created_at
   on public.lm_campaigns (space_id, created_at desc);
+
+create index if not exists ix_lm_campaigns_split_source_id on public.lm_campaigns (split_source_id)
+  where split_source_id is not null;
 
 create index if not exists ix_lm_campaigns_account_id
   on public.lm_campaigns (account_id);

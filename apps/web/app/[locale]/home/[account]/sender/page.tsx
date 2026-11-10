@@ -14,7 +14,6 @@ import { alertExtras } from '@kit/ui/alert-extras';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
@@ -24,6 +23,7 @@ import {
 } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { FolderSwitch } from './_components/folder-switch';
+import { SendersLoading } from './_components/senders-loading';
 import { SendersWorkspace } from './_components/senders-workspace';
 import { CIVILITIES } from './_lib/schema/sender-profile.schema';
 import { senderLabel } from './_lib/sender-label';
@@ -53,13 +53,7 @@ function SenderPage({ params, searchParams }: SenderPageProps) {
       />
 
       <div className={'flex w-full flex-col pb-32'}>
-        <Suspense
-          fallback={
-            <Delayed>
-              <CardSkeleton rows={6} />
-            </Delayed>
-          }
-        >
+        <Suspense fallback={<SendersLoading />}>
           <SenderContent params={params} searchParams={searchParams} />
         </Suspense>
       </div>

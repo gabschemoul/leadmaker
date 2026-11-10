@@ -1,35 +1,53 @@
 /**
- * Silhouette de la page Formulaires pendant le premier chargement (10/11/2026) : même cadre que la page (texte
- * d'introduction, pastilles des onglets, phrase d'aide, tableau), pour que seule la liste semble se charger.
- * Composant serveur, sans données.
+ * Page Formulaires pendant le premier chargement (10/11/2026, règle « tout le statique s'affiche tout de
+ * suite ») : vrai texte d'introduction, vrais noms des onglets toujours présents, vrais titres de colonnes ;
+ * seuls les nombres et les lignes attendent la base. Composant serveur, sans données.
  */
-import { Card, CardContent, CardHeader } from '@kit/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
 import { Skeleton } from '@kit/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@kit/ui/table';
+import { Trans } from '@kit/ui/trans';
 
-const PILL_WIDTHS = [
-  'w-20',
-  'w-28',
-  'w-40',
-  'w-24',
-  'w-32',
-  'w-44',
-  'w-28',
-  'w-24',
+import { ALWAYS_VISIBLE_GROUPS } from '~/lib/leadmaker/attempts';
+
+const COLUMNS = [
+  'company',
+  'status',
+  'message',
+  'detail',
+  'screenshot',
+  'preparedAt',
 ];
-const COLUMN_WIDTHS = ['w-40', 'w-32', 'w-24', 'w-20', 'w-28'];
+
+const CELL_WIDTHS = ['w-40', 'w-24', 'w-28', 'w-32', 'w-16', 'w-20'];
 
 export function FormsSkeleton({ rows = 8 }: { rows?: number }) {
   return (
     <Card aria-busy={true} data-test={'forms-skeleton'}>
       <CardHeader className={'flex flex-col gap-4'}>
-        <div className={'flex max-w-2xl flex-col gap-2'}>
-          <Skeleton className={'h-3.5 w-full'} />
-          <Skeleton className={'h-3.5 w-2/3'} />
-        </div>
+        <CardDescription className={'max-w-2xl'}>
+          <Trans i18nKey={'outreach.forms.intro'} />
+        </CardDescription>
 
         <div className={'flex flex-wrap items-center gap-2'}>
-          {PILL_WIDTHS.map((width, index) => (
-            <Skeleton key={index} className={`h-8 rounded-full ${width}`} />
+          {ALWAYS_VISIBLE_GROUPS.map((group, index) => (
+            <span
+              key={group}
+              className={
+                index === 0
+                  ? 'bg-brand-pale text-brand-hover dark:text-brand flex h-8 items-center rounded-full px-3 text-[14px] font-medium whitespace-nowrap'
+                  : 'bg-card text-foreground ring-pill-ring shadow-soft flex h-8 items-center rounded-full px-3 text-[14px] font-medium whitespace-nowrap ring-[0.5px]'
+              }
+            >
+              <Trans i18nKey={`outreach.forms.groups.${group}`} />
+            </span>
           ))}
         </div>
 
@@ -37,26 +55,33 @@ export function FormsSkeleton({ rows = 8 }: { rows?: number }) {
       </CardHeader>
 
       <CardContent>
-        <div className={'rounded-lg border'}>
-          <div className={'flex items-center gap-6 border-b px-4 py-3'}>
-            {COLUMN_WIDTHS.map((width, index) => (
-              <Skeleton key={index} className={`h-3 ${width}`} />
-            ))}
-          </div>
-
-          {Array.from({ length: rows }).map((_, row) => (
-            <div
-              key={row}
-              className={
-                'flex h-14 items-center gap-6 border-b px-4 last:border-b-0'
-              }
-            >
-              {COLUMN_WIDTHS.map((width, index) => (
-                <Skeleton key={index} className={`h-3.5 ${width}`} />
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className={'w-8'} />
+              {COLUMNS.map((column) => (
+                <TableHead key={column}>
+                  <Trans i18nKey={`outreach.forms.columns.${column}`} />
+                </TableHead>
               ))}
-            </div>
-          ))}
-        </div>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {Array.from({ length: rows }).map((_, row) => (
+              <TableRow key={row} className={'[&>td]:h-14'}>
+                <TableCell>
+                  <Skeleton className={'size-4 rounded-sm'} />
+                </TableCell>
+                {CELL_WIDTHS.map((width, index) => (
+                  <TableCell key={index}>
+                    <Skeleton className={`h-3.5 ${width}`} />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

@@ -57,7 +57,10 @@ import {
   CampaignStepContent,
   CampaignStepNavigation,
 } from '../_components/steps/campaign-step-navigation';
-import { CampaignStepsRail } from '../_components/steps/campaign-steps-rail';
+import {
+  CampaignStepsRail,
+  CampaignStepsRailLoading,
+} from '../_components/steps/campaign-steps-rail';
 import { CompaniesStep } from '../_components/steps/companies-step';
 import {
   type ContactMode,
@@ -114,12 +117,17 @@ function CampaignPage({ params, searchParams }: CampaignPageProps) {
       <Suspense
         fallback={
           <>
-            <PageHeaderSkeleton />
+            <PageHeaderSkeleton withActions />
 
-            <Delayed className={'flex flex-col gap-6'}>
-              <CardSkeleton rows={1} />
-              <CardSkeleton rows={6} />
-            </Delayed>
+            {/* noms des étapes tout de suite ; le contenu de l'étape attend la campagne */}
+            <div className={'flex flex-col gap-6'}>
+              <CampaignStepsRailLoading />
+
+              <Delayed className={'flex flex-col gap-6'}>
+                <CardSkeleton rows={2} />
+                <CardSkeleton rows={6} />
+              </Delayed>
+            </div>
           </>
         }
       >

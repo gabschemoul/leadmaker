@@ -158,3 +158,36 @@ export function CampaignStepsRail(props: {
     </div>
   );
 }
+
+/**
+ * Onglets des étapes pendant le premier chargement (10/11/2026, règle « tout le statique s'affiche tout de
+ * suite ») : vrais noms des étapes à leur place, sans liens ni état (qui dépendent de la campagne).
+ */
+export function CampaignStepsRailLoading() {
+  const t = useTranslations('campaigns.steps');
+  const tr = useTranslations('results.step');
+
+  return (
+    <div className={'flex flex-col gap-3'} aria-busy={true}>
+      <div
+        className={
+          'bg-muted inline-flex max-w-full [scrollbar-width:none] items-center gap-1 self-start overflow-x-auto rounded-full p-1'
+        }
+      >
+        {CAMPAIGN_STEPS.map((step, index) => (
+          <span
+            key={step}
+            className={
+              'text-muted-foreground flex h-8 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium whitespace-nowrap'
+            }
+          >
+            <span className={'tabular-nums'}>{index + 1} ·</span>
+            <span>{step === 'resultats' ? tr('label') : t(step)}</span>
+          </span>
+        ))}
+      </div>
+
+      <div className={'h-5'} />
+    </div>
+  );
+}

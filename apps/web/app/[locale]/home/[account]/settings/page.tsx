@@ -14,9 +14,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
+import { Skeleton } from '@kit/ui/skeleton';
 import { Trans } from '@kit/ui/trans';
 
-import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
+import { CardLoading } from '~/components/skeletons/card-loading';
 import featuresFlagConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 
@@ -47,9 +48,11 @@ function TeamAccountSettingsPage(props: TeamAccountSettingsPageProps) {
     <div className={'flex w-full flex-1 flex-col gap-8 pb-16'}>
       <Suspense
         fallback={
-          <Delayed>
-            <CardSkeleton rows={2} />
-          </Delayed>
+          <CardLoading
+            titleKey={'teams.settings.offer.title'}
+            descriptionKey={'teams.settings.offer.description'}
+            content={'area'}
+          />
         }
       >
         <SpaceOfferCard
@@ -60,9 +63,21 @@ function TeamAccountSettingsPage(props: TeamAccountSettingsPageProps) {
 
       <Suspense
         fallback={
-          <Delayed>
-            <CardSkeleton rows={4} />
-          </Delayed>
+          <div className={'flex flex-col gap-8'}>
+            <CardLoading
+              titleKey={'teams.settings.teamLogo'}
+              descriptionKey={'teams.settings.teamLogoDescription'}
+            >
+              <Skeleton className={'size-20 rounded-full'} />
+            </CardLoading>
+
+            <CardLoading
+              titleKey={'teams.settings.teamName'}
+              descriptionKey={'teams.settings.teamNameDescription'}
+              content={'fields'}
+              rows={1}
+            />
+          </div>
         }
       >
         <TeamAccountSettings params={props.params} />

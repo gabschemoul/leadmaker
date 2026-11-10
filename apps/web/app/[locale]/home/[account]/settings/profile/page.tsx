@@ -4,8 +4,9 @@ import { getTranslations } from 'next-intl/server';
 
 import { PersonalAccountSettingsContainer } from '@kit/accounts/personal-account-settings';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
+import { Skeleton } from '@kit/ui/skeleton';
 
-import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
+import { CardLoading } from '~/components/skeletons/card-loading';
 import authConfig from '~/config/auth.config';
 import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
@@ -46,9 +47,27 @@ function TeamProfileSettingsPage({ params }: TeamProfileSettingsPageProps) {
     <div className={'flex w-full flex-1 flex-col'}>
       <Suspense
         fallback={
-          <Delayed>
-            <CardSkeleton rows={4} />
-          </Delayed>
+          <div className={'flex flex-col gap-8'}>
+            <CardLoading
+              titleKey={'account.notifications.title'}
+              descriptionKey={'account.notifications.description'}
+              rows={3}
+            />
+
+            <CardLoading
+              titleKey={'account.accountImage'}
+              descriptionKey={'account.accountImageDescription'}
+            >
+              <Skeleton className={'size-20 rounded-full'} />
+            </CardLoading>
+
+            <CardLoading
+              titleKey={'account.name'}
+              descriptionKey={'account.nameDescription'}
+              content={'fields'}
+              rows={1}
+            />
+          </div>
         }
       >
         <ProfileSettings params={params} />

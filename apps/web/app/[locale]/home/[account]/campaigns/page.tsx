@@ -22,7 +22,6 @@ import { Skeleton } from '@kit/ui/skeleton';
 import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
 
-import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import type { Database } from '~/lib/database.types';
 
@@ -33,7 +32,10 @@ import {
   loadSpaces,
 } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
-import { CampaignsTable } from './_components/campaigns-table';
+import {
+  CampaignsTable,
+  CampaignsTableLoading,
+} from './_components/campaigns-table';
 import { loadCampaigns } from './_lib/server/campaigns.loader';
 import { STATUS_FILTERS } from './_lib/status-filters';
 
@@ -67,13 +69,7 @@ function CampaignsPage({ params, searchParams }: CampaignsPageProps) {
       </TeamAccountLayoutPageHeader>
 
       <div className={'flex w-full flex-col pb-32'}>
-        <Suspense
-          fallback={
-            <Delayed>
-              <CardSkeleton rows={6} />
-            </Delayed>
-          }
-        >
+        <Suspense fallback={<CampaignsTableLoading />}>
           <CampaignsList params={params} searchParams={searchParams} />
         </Suspense>
       </div>

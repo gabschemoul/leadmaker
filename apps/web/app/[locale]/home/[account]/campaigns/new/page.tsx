@@ -6,7 +6,7 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
+import { CardLoading } from '~/components/skeletons/card-loading';
 
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
@@ -42,10 +42,28 @@ function NewCampaignPage({ params }: NewCampaignPageProps) {
 
       <Suspense
         fallback={
-          <Delayed className={'flex w-full flex-col gap-6'}>
-            <CardSkeleton rows={4} />
-            <CardSkeleton rows={3} />
-          </Delayed>
+          <div className={'flex w-full flex-col gap-6'}>
+            {/* titres des rubriques tout de suite ; les choix (pays, dossiers…) attendent la base */}
+            <CardLoading
+              titleKey={'campaigns.form.who.title'}
+              descriptionKey={'campaigns.form.who.description'}
+              content={'area'}
+            />
+
+            <CardLoading
+              titleKey={'campaigns.form.whereTitle'}
+              descriptionKey={'campaigns.form.citiesDescription'}
+              content={'fields'}
+              rows={2}
+            />
+
+            <CardLoading
+              titleKey={'campaigns.form.moreCriteriaTitle'}
+              descriptionKey={'campaigns.form.filtersDescription'}
+              content={'fields'}
+              rows={2}
+            />
+          </div>
         }
       >
         <NewCampaignContent params={params} />

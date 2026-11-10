@@ -12,10 +12,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { ArrowRight, Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@kit/ui/button';
 import { Card } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
+import { Skeleton } from '@kit/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -304,5 +306,88 @@ function StatusChip(props: {
         {props.count}
       </span>
     </button>
+  );
+}
+
+/**
+ * Même écran pendant le premier chargement (10/11/2026) : recherche, pastilles et titres de colonnes tout de
+ * suite ; seules les lignes (et les nombres des pastilles) attendent la base.
+ */
+export function CampaignsTableLoading() {
+  const t = useTranslations('campaigns');
+
+  return (
+    <div className={'flex flex-col gap-4'} aria-busy={true}>
+      <div className={'flex flex-wrap items-center gap-2'}>
+        <div className={'relative w-full sm:w-72'}>
+          <Search
+            className={
+              'text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2'
+            }
+          />
+
+          <Input
+            disabled
+            placeholder={t('list.searchPlaceholder')}
+            className={'h-8 rounded-full pl-10 text-[14px]'}
+          />
+        </div>
+
+        <div className={'flex flex-wrap items-center gap-1.5'}>
+          {[null, ...STATUS_FILTERS].map((status) => (
+            <span
+              key={status ?? 'all'}
+              className={cn(
+                'flex h-8 shrink-0 items-center rounded-full px-3 text-[14px] font-medium whitespace-nowrap',
+                status === null
+                  ? 'bg-brand-pale text-brand-hover dark:text-brand'
+                  : 'bg-card text-foreground ring-pill-ring shadow-soft ring-[0.5px]',
+              )}
+            >
+              {status ? t(`status.${status}`) : t('list.filterAll')}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <Card className={'gap-0 py-0'}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('list.nameColumn')}</TableHead>
+              <TableHead>{t('list.statusColumn')}</TableHead>
+              <TableHead>{t('list.countryColumn')}</TableHead>
+              <TableHead className={'text-right'}>
+                {t('list.prospectsColumn')}
+              </TableHead>
+              <TableHead className={'w-12'} />
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={index} className={'[&>td]:h-14'}>
+                <TableCell>
+                  <div className={'flex flex-col gap-1.5'}>
+                    <Skeleton className={'h-4 w-56'} />
+                    <Skeleton className={'h-3 w-32'} />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Skeleton className={'h-6 w-24 rounded-md'} />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className={'h-4 w-20'} />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className={'ml-auto h-4 w-14'} />
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
   );
 }

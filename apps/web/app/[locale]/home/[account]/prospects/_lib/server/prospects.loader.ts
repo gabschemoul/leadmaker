@@ -25,7 +25,7 @@ export interface ProspectsQuery {
 }
 
 const LIST_COLUMNS =
-  'id, name, category, city, rating, review_count, address, website, phone, found_email, email_checked_at, is_chain, source, excluded_at, created_at, campaign:lm_campaigns(id, name)';
+  'id, name, category, city, rating, review_count, address, website, phone, found_email, email_checked_at, is_chain, source, excluded_at, created_at, campaign:lm_campaigns!lm_prospects_campaign_id_fkey(id, name)';
 
 /**
  * Une page de prospects d'un espace, avec le total pour la pagination.

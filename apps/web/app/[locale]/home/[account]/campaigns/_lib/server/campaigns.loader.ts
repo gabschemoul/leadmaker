@@ -18,7 +18,7 @@ export async function loadCampaigns(client: Client, accountId: string) {
   const { data, error } = await client
     .from('lm_campaigns')
     .select(
-      'id, name, status, country_code, created_at, space_id, prospects:lm_prospects(count)',
+      'id, name, status, country_code, created_at, space_id, prospects:lm_prospects!lm_prospects_campaign_id_fkey(count)',
     )
     .eq('account_id', accountId)
     .order('created_at', { ascending: false });

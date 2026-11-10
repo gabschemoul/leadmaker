@@ -36,7 +36,7 @@ export async function loadDashboard(client: Client, accountId: string) {
       client
         .from('lm_campaigns')
         .select(
-          'id, name, status, space_id, templates, filters, created_at, prospects:lm_prospects(count)',
+          'id, name, status, space_id, templates, filters, created_at, prospects:lm_prospects!lm_prospects_campaign_id_fkey(count)',
         )
         .eq('account_id', accountId)
         .neq('status', 'archived')

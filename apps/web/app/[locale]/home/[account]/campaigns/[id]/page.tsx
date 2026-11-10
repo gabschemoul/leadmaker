@@ -72,6 +72,7 @@ import {
   loadAutoValidationAllowed,
   loadCampaign,
   loadCampaignForEdit,
+  loadKeptPreviewByGroup,
   loadKeptPreviewProspects,
   loadLocalDiscoveryState,
   loadPreviewProspects,
@@ -303,6 +304,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
                   countryLabel={countryLabel}
                   editHref={`${basePath}/edit`}
                   nextHref={stepHref('trouver')}
+                  launched={live.progress.zones > 0}
                 />
               ) : null}
 
@@ -424,10 +426,16 @@ async function TargetStepContent(props: {
   countryLabel: string;
   editHref: string;
   nextHref: string;
+  launched: boolean;
 }) {
   const client = getSupabaseServerClient();
   const locale = await getLocale();
-  const campaign = await loadCampaignForEdit(client, props.campaignId, locale);
+  const campaign = await loadCampaignForEdit(
+    client,
+    props.campaignId,
+    locale,
+    props.launched,
+  );
 
   if (!campaign) {
     notFound();
@@ -456,16 +464,18 @@ async function WriteStepContent(props: {
   nextHref: string;
 }) {
   const client = getSupabaseServerClient();
-  const user = await requireUserInServerComponent();
   // campagne triée (cible en mots) : l'aperçu se fait sur ses entreprises gardées
   const sorted = Boolean(props.campaign.sort_target?.trim());
+  const groupKeys = (props.groups ?? []).map((group) => group.key);
 
+  // tout en même temps (10/11/2026 : l'utilisateur était vérifié avant le reste)
   const [
     prospects,
     keptProspects,
     autoValidationAllowed,
     companyOptional,
     senders,
+    previewByGroup,
   ] = await Promise.all([
     loadPreviewProspects(client, props.campaign.space_id),
     sorted
@@ -476,27 +486,18 @@ async function WriteStepContent(props: {
         )
       : Promise.resolve([]),
     loadAutoValidationAllowed(client, props.accountId),
-    isPowerUser(user.id),
+    requireUserInServerComponent().then((user) => isPowerUser(user.id)),
     loadSenders(client, props.campaign.space_id),
+    // aperçu de chaque onglet de groupe sur ses propres entreprises gardées (une seule requête)
+    groupKeys.length > 0
+      ? loadKeptPreviewByGroup(
+          client,
+          props.campaign.id,
+          props.campaign.sort_version,
+          groupKeys,
+        )
+      : Promise.resolve({}),
   ]);
-
-  // aperçu de chaque onglet de groupe sur ses propres entreprises gardées
-  const previewByGroup = Object.fromEntries(
-    await Promise.all(
-      (props.groups ?? []).map(
-        async (group) =>
-          [
-            group.key,
-            await loadKeptPreviewProspects(
-              client,
-              props.campaign.id,
-              props.campaign.sort_version,
-              { groupKey: group.key, limit: 5 },
-            ),
-          ] as const,
-      ),
-    ),
-  );
 
   return (
     <WriteStep

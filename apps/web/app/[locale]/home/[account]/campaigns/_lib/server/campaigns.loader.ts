@@ -64,14 +64,30 @@ export async function loadCampaignForEdit(
   client: Client,
   campaignId: string,
   locale: string,
+  /** déjà connu de l'appelant (nombre de zones > 0) : évite de recompter les zones (16 000 pour une campagne France) */
+  knownLaunched?: boolean,
 ) {
-  const { data, error } = await client
-    .from('lm_campaigns')
-    .select(
-      'id, account_id, space_id, name, status, country_code, targeting, filters, sort_target, offer, zones:lm_campaign_zones(count)',
-    )
-    .eq('id', campaignId)
-    .maybeSingle();
+  const [{ data, error }, zones] = await Promise.all([
+    client
+      .from('lm_campaigns')
+      .select(
+        'id, account_id, space_id, name, status, country_code, targeting, filters, sort_target, offer',
+      )
+      .eq('id', campaignId)
+      .maybeSingle(),
+    // « déjà lancée » = des zones existent ; seulement si l'appelant ne le sait pas déjà
+    knownLaunched === undefined
+      ? client
+          .from('lm_campaign_zones')
+          .select('campaign_id', { count: 'exact', head: true })
+          .eq('campaign_id', campaignId)
+          .limit(1)
+      : Promise.resolve({ count: null, error: null }),
+  ]);
+
+  if (zones.error) {
+    throw zones.error;
+  }
 
   if (error) {
     throw error;
@@ -131,7 +147,7 @@ export async function loadCampaignForEdit(
 
   return {
     ...data,
-    launched: (data.zones?.[0]?.count ?? 0) > 0,
+    launched: knownLaunched ?? (zones.count ?? 0) > 0,
     cities: geonameIds.flatMap((id) => cityById.get(id) ?? []),
     categories: gcids.flatMap((gcid) => categoryById.get(gcid) ?? []),
   };
@@ -208,6 +224,51 @@ export async function loadPreviewProspects(client: Client, spaceId: string) {
   }
 
   return data ?? [];
+}
+
+/**
+ * Aperçu de « Un message par groupe » : quelques entreprises gardées de chaque groupe, en UNE requête (avant,
+ * une par groupe : 20 requêtes pour 20 groupes fins). Renvoie { clé du groupe: entreprises }.
+ */
+export async function loadKeptPreviewByGroup(
+  client: Client,
+  campaignId: string,
+  version: number,
+  groupKeys: string[],
+  perGroup = 5,
+) {
+  const { data, error } = await client
+    .from('lm_campaign_prospects')
+    .select(
+      'group_key, prospect:lm_prospects(id, name, city, category, rating, review_count, website)',
+    )
+    .eq('campaign_id', campaignId)
+    .or(keptCompaniesFilter(version))
+    .in('group_key', groupKeys)
+    .order('sorted_at', { ascending: false, nullsFirst: false })
+    .order('prospect_id', { ascending: true })
+    .limit(Math.min(1000, groupKeys.length * perGroup * 10));
+
+  if (error) {
+    throw error;
+  }
+
+  const byGroup: Record<
+    string,
+    NonNullable<(typeof data)[number]['prospect']>[]
+  > = {};
+
+  for (const row of data ?? []) {
+    if (!row.group_key || !row.prospect) continue;
+
+    const list = (byGroup[row.group_key] ??= []);
+
+    if (list.length < perGroup) {
+      list.push(row.prospect);
+    }
+  }
+
+  return byGroup;
 }
 
 /**

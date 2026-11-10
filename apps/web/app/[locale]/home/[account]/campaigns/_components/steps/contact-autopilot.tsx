@@ -328,8 +328,11 @@ function AutopilotSetup(props: {
       <label
         key={message.name}
         className={cn(
-          'flex cursor-pointer items-start gap-2.5 rounded-xl border p-3',
-          checked ? 'border-brand bg-brand-pale/60' : 'bg-card',
+          'flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 transition-colors duration-75',
+          // même sélection que les pastilles : filet noir renforcé (10/11/2026)
+          checked
+            ? 'border-foreground ring-foreground bg-foreground/[0.02] ring-[0.5px]'
+            : 'border-foreground/10 hover:bg-foreground/[0.043]',
         )}
       >
         <input
@@ -385,6 +388,18 @@ function AutopilotSetup(props: {
         }))
         .filter((section) => section.messages.length > 0)
     : [{ heading: null, messages: props.messages }];
+
+  // Un titre de groupe n'est utile que s'il ne répète pas le nom de ses messages (ménage du 10/11/2026 :
+  // « Couvreurs et charpentiers » apparaissait deux fois) ; sans titre utile, une seule grille sur deux colonnes
+  const sectionTitle = (section: (typeof messageSections)[number]) => {
+    const title = section.heading ?? t('messages.othersHeading');
+
+    return section.messages.every((message) => message.name === title)
+      ? null
+      : title;
+  };
+  const showSectionTitles =
+    props.perGroup && messageSections.some((section) => sectionTitle(section));
 
   return (
     <form
@@ -477,23 +492,31 @@ function AutopilotSetup(props: {
             </Link>
           </div>
 
-          {messageSections.map((section) => (
-            <div
-              key={section.heading ?? '-'}
-              className={'flex flex-col gap-2'}
-              data-test={'autopilot-message-section'}
-            >
-              {props.perGroup ? (
-                <h4 className={'text-muted-foreground text-sm font-medium'}>
-                  {section.heading ?? t('messages.othersHeading')}
-                </h4>
-              ) : null}
+          {showSectionTitles ? (
+            messageSections.map((section) => (
+              <div
+                key={section.heading ?? '-'}
+                className={'flex flex-col gap-2'}
+                data-test={'autopilot-message-section'}
+              >
+                {sectionTitle(section) ? (
+                  <h4 className={'text-muted-foreground text-sm font-medium'}>
+                    {sectionTitle(section)}
+                  </h4>
+                ) : null}
 
-              <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
-                {section.messages.map(renderMessage)}
+                <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
+                  {section.messages.map(renderMessage)}
+                </div>
               </div>
+            ))
+          ) : (
+            <div className={'grid grid-cols-1 gap-2.5 sm:grid-cols-2'}>
+              {messageSections.flatMap((section) =>
+                section.messages.map(renderMessage),
+              )}
             </div>
-          ))}
+          )}
         </section>
 
         {/* 5. Nombre d'entreprises */}

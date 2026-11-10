@@ -7,7 +7,6 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import pathsConfig from '~/config/paths.config';
 import { requireUserInServerComponent } from '~/lib/server/require-user-in-server-component';
-import { timed } from '~/lib/server/timing';
 import { composeTeamWorkspace } from '~/lib/server/workspace/compose-team-workspace';
 
 export { composeTeamWorkspace };
@@ -32,10 +31,7 @@ async function workspaceLoader(accountSlug: string) {
 
   const client = getSupabaseServerClient();
   const user = await requireUserInServerComponent();
-  const data = await timed(
-    'workspace rpc',
-    composeTeamWorkspace(client, user, accountSlug),
-  );
+  const data = await composeTeamWorkspace(client, user, accountSlug);
 
   // we cannot find any record for the selected account
   // so we redirect the user to the home page

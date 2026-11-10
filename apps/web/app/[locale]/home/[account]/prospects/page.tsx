@@ -21,7 +21,6 @@ import {
   buildProspectsHref,
   parseProspectsSearchParams,
 } from '~/lib/leadmaker/prospects-query';
-import { timed } from '~/lib/server/timing';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
@@ -86,10 +85,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
-  const spaces = await timed(
-    'prospects spaces',
-    loadSpaces(client, account.id),
-  );
+  const spaces = await loadSpaces(client, account.id);
 
   // l'espace par défaut vient en premier ; avec un seul dossier client, la
   // notion reste invisible (pas de filtre, pas de paramètre d'URL)
@@ -99,23 +95,21 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
   // compteurs des filtres (0,5 s sur 229 000 fiches) : lancés tout de suite mais pas attendus, les lignes
   // s'affichent sans eux ; les listes Activité / Ville se remplissent dès qu'ils arrivent
-  const facets = timed(
-    'prospects facets',
-    loadProspectFacets(client, space.id),
-  ).catch(() => ({ categories: [], cities: [], campaigns: [] }));
+  const facets = loadProspectFacets(client, space.id).catch(() => ({
+    categories: [],
+    cities: [],
+    campaigns: [],
+  }));
 
   const [{ prospects, total }, campaigns] = await Promise.all([
-    timed(
-      'prospects page',
-      loadProspectsPage(client, {
-        spaceId: space.id,
-        page: state.page,
-        sort: state.sort,
-        dir: state.dir,
-        filters: state.filters,
-      }),
-    ),
-    timed('prospects campaigns', loadSpaceCampaigns(client, space.id)),
+    loadProspectsPage(client, {
+      spaceId: space.id,
+      page: state.page,
+      sort: state.sort,
+      dir: state.dir,
+      filters: state.filters,
+    }),
+    loadSpaceCampaigns(client, space.id),
   ]);
 
   const pageCount = Math.max(1, Math.ceil(total / PROSPECTS_PAGE_SIZE));

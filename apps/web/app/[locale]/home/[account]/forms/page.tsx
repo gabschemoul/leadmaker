@@ -22,7 +22,6 @@ import {
   type AttemptGroup,
   isAttemptGroup,
 } from '~/lib/leadmaker/attempts';
-import { timed } from '~/lib/server/timing';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
@@ -80,7 +79,7 @@ async function FormsContent(props: FormsPageProps) {
 
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
-  const spaces = await timed('forms spaces', loadSpaces(client, account.id));
+  const spaces = await loadSpaces(client, account.id);
 
   const requestedSpace =
     typeof rawSearchParams.space === 'string' ? rawSearchParams.space : null;
@@ -88,10 +87,7 @@ async function FormsContent(props: FormsPageProps) {
   const showFolders = spaces.length > 1;
 
   // crédit unique (9/11) : les envois sont gratuits, plus de solde de prise de contact à afficher
-  const counts = await timed(
-    'forms counts',
-    loadAttemptCounts(client, space.id),
-  );
+  const counts = await loadAttemptCounts(client, space.id);
 
   // Sans onglet choisi : « Prêts », ou le premier onglet non vide (robot au
   // travail, formulaires à compléter…) pour ne jamais tomber sur une liste vide
@@ -99,10 +95,7 @@ async function FormsContent(props: FormsPageProps) {
     ? rawSearchParams.status
     : (ATTEMPT_GROUP_ORDER.find((item) => counts[item] > 0) ?? 'ready');
 
-  const rows = await timed(
-    'forms rows',
-    loadAttempts(client, { spaceId: space.id, group }),
-  );
+  const rows = await loadAttempts(client, { spaceId: space.id, group });
 
   const basePath = pathsConfig.app.accountForms.replace('[account]', slug);
 

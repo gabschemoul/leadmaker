@@ -117,7 +117,9 @@ async function EditCampaignContent({ params }: { params: Params }) {
           id: campaign.id,
           values: campaignToFormValues({
             ...campaign,
-            offer: spaceOffers[campaign.space_id] ?? null,
+            // offre propre à la campagne, sinon celle du dossier
+            offer:
+              campaign.offer?.trim() || spaceOffers[campaign.space_id] || null,
           }),
           launched: campaign.launched,
         }}

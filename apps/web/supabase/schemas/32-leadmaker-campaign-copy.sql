@@ -23,11 +23,13 @@ begin
     raise exception 'campaign not found' using errcode = 'P0002';
   end if;
 
+  -- offre propre à la campagne et groupes fins recopiés (10/11/2026)
   insert into public.lm_campaigns (account_id, space_id, name, country_code, targeting, filters, templates,
-                                   daily_limit, auto_validation, sender_id)
+                                   daily_limit, auto_validation, sender_id, offer, sort_groups_fine)
   values (v_source.account_id, v_source.space_id, left(p_name, 255), v_source.country_code, v_source.targeting,
           v_source.filters - 'paused_reason', v_source.templates, v_source.daily_limit,
-          v_source.auto_validation and public.lm_auto_validation_allowed(v_source.account_id), v_source.sender_id)
+          v_source.auto_validation and public.lm_auto_validation_allowed(v_source.account_id), v_source.sender_id,
+          v_source.offer, v_source.sort_groups_fine)
   returning id into v_id;
 
   return v_id;

@@ -7,7 +7,7 @@
  */
 
 /** 4 versions × 6 onglets au plus (5 groupes + « Pour les autres ») ; même plafond que le pilote automatique */
-export const MAX_MESSAGES = 24;
+export const MAX_MESSAGES = 84; // 4 versions × 21 onglets (20 groupes fins + « Pour les autres »)
 /** versions d'un même onglet (un groupe, ou « Pour les autres ») */
 export const MAX_VERSIONS_PER_GROUP = 4;
 export const SHORT_BODY_MAX = 200;
@@ -39,6 +39,8 @@ export const TEMPLATE_VARIABLES = [
   { token: 'rating', aliases: ['note'], group: 'prospect' },
   { token: 'reviews', aliases: ['nb_avis'], group: 'prospect' },
   { token: 'website', aliases: ['site'], group: 'prospect' },
+  // nom du groupe de l'entreprise (« Un message par groupe », 10/11/2026)
+  { token: 'group', aliases: ['groupe'], group: 'prospect' },
   { token: 'first_name', aliases: ['prenom'], group: 'sender' },
   { token: 'last_name', aliases: ['nom'], group: 'sender' },
   { token: 'my_company', aliases: ['societe'], group: 'sender' },
@@ -57,6 +59,8 @@ export interface TemplateContext {
     rating: number | null;
     review_count: number | null;
     website: string | null;
+    /** nom du groupe de l'entreprise dans la campagne (variable {groupe}) */
+    group?: string | null;
   };
   sender: {
     first_name: string;
@@ -137,6 +141,8 @@ function resolve(token: string, ctx: TemplateContext): string | null {
         : String(prospect.review_count);
     case 'website':
       return prospect.website ?? '';
+    case 'group':
+      return groupPhrase(prospect.group);
     case 'first_name':
       return sender?.first_name ?? '';
     case 'last_name':
@@ -159,7 +165,26 @@ const PROSPECT_VARS = new Set([
   'rating',
   'reviews',
   'website',
+  'group',
 ]);
+
+/**
+ * Nom du groupe prêt à glisser dans une phrase : « Magasins de literie » → « magasins de literie » (sigles
+ * gardés). Même règle que le robot (outreach/templates.py, group_phrase).
+ */
+export function groupPhrase(label: string | null | undefined) {
+  const text = (label ?? '').trim();
+
+  if (
+    text.length > 1 &&
+    text[0] !== text[0]!.toLowerCase() &&
+    text[1] === text[1]!.toLowerCase()
+  ) {
+    return text[0]!.toLowerCase() + text.slice(1);
+  }
+
+  return text;
+}
 const EMPTY_MARK = '\u0000';
 const SENTENCE = /[^.!?]*[.!?]+\s*|[^.!?]+$/g;
 

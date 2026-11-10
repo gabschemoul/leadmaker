@@ -68,7 +68,7 @@ export async function loadCampaignForEdit(
   const { data, error } = await client
     .from('lm_campaigns')
     .select(
-      'id, account_id, space_id, name, status, country_code, targeting, filters, sort_target, zones:lm_campaign_zones(count)',
+      'id, account_id, space_id, name, status, country_code, targeting, filters, sort_target, offer, zones:lm_campaign_zones(count)',
     )
     .eq('id', campaignId)
     .maybeSingle();

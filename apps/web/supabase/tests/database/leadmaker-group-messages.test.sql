@@ -92,8 +92,8 @@ select is((select template_name from tgm_attempts where site_key = 'x1.fr'), 'Au
 select is((select template_name from tgm_attempts where site_key = 's1.fr'), 'Autres A', 'Sans groupe : le message pour les autres');
 
 -- 4. Plus de 4 messages acceptés par le pilote (jusqu'à 24 : 4 versions × 6 onglets)
-select ok((select pg_get_constraintdef(oid) like '%24%' from pg_constraint where conname = 'lm_autopilots_messages_not_empty'),
-  'Jusqu''à 24 messages par pilote');
+select ok((select pg_get_constraintdef(oid) like '%84%' from pg_constraint where conname = 'lm_autopilots_messages_not_empty'),
+  'Jusqu''à 84 messages par pilote (4 versions × 21 onglets)');
 
 -- 4 bis. Résultats par groupe : gardées, parties, à vérifier
 set local role postgres;
@@ -107,6 +107,28 @@ select makerkit.authenticate_as('gm_other');
 select is((select count(*)::integer from public.lm_campaign_group_results('e4000000-0000-4000-8000-0000000000a1')), 0,
   'Autre utilisateur : aucun chiffre');
 set local role service_role;
+
+-- 4 ter. Offre de la campagne, groupes fins
+set local role postgres;
+select makerkit.authenticate_as('gm_owner');
+select lives_ok($$ select public.lm_set_campaign_offer('e4000000-0000-4000-8000-0000000000a1', '  Booster : du trafic garanti  ') $$,
+  'Offre propre à la campagne');
+select is((select offer from public.lm_campaigns where id = 'e4000000-0000-4000-8000-0000000000a1'), 'Booster : du trafic garanti', 'Offre enregistrée sans espaces');
+select lives_ok($$ select public.lm_set_campaign_offer('e4000000-0000-4000-8000-0000000000a1', '') $$, 'Offre vidée');
+select is((select offer from public.lm_campaigns where id = 'e4000000-0000-4000-8000-0000000000a1'), null, 'Vide = offre du dossier');
+select makerkit.authenticate_as('gm_other');
+select throws_ok($$ select public.lm_set_campaign_offer('e4000000-0000-4000-8000-0000000000a1', 'x') $$, 'P0002', null,
+  'Autre utilisateur : offre refusée');
+select throws_ok($$ update public.lm_campaigns set offer = 'x' $$, '42501', null, 'Client : offre non modifiable en direct');
+set local role service_role;
+insert into public.lm_campaigns (id, account_id, space_id, name, country_code, sort_target, sort_version)
+select 'e4000000-0000-4000-8000-0000000000b2'::uuid, account_id, space_id, 'Fins', 'FR', 'Meubles', 1 from tgm;
+select is(public.lm_set_sort_groups('e4000000-0000-4000-8000-0000000000b2', 1,
+  (select jsonb_agg(jsonb_build_object('key', 'g' || n, 'label', 'Groupe ' || n)) from generate_series(1, 20) n)), 0,
+  '20 groupes fins acceptés');
+select throws_ok($$ select public.lm_set_sort_groups('e4000000-0000-4000-8000-0000000000b2', 1,
+  (select jsonb_agg(jsonb_build_object('key', 'h' || n, 'label', 'H' || n)) from generate_series(1, 21) n)) $$, 'P0001', null,
+  'Plus de 20 groupes refusés');
 
 -- 5. Réservé : la liste des messages est lue par les robots, le choix seulement par un membre
 set local role postgres;

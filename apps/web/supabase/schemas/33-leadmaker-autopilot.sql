@@ -56,8 +56,8 @@ create table if not exists public.lm_autopilots (
   updated_by uuid references auth.users on delete set null,
   primary key (id),
   constraint lm_autopilots_target_positive check (target > 0),
-  -- jusqu'à 4 versions par groupe et 6 onglets (5 groupes + « Pour les autres ») : 24 messages (10/11/2026)
-  constraint lm_autopilots_messages_not_empty check (cardinality(messages) between 1 and 24),
+  -- jusqu'à 4 versions par onglet, 21 onglets (20 groupes fins + « Pour les autres ») : 84 messages (10/11/2026)
+  constraint lm_autopilots_messages_not_empty check (cardinality(messages) between 1 and 84),
   constraint lm_autopilots_spread_days check (spread_days between 1 and 60)
 );
 
@@ -567,9 +567,9 @@ begin
            case when jsonb_typeof(v_campaign.templates) = 'array' then v_campaign.templates
                 when jsonb_typeof(v_campaign.templates -> 'messages') = 'array' then v_campaign.templates -> 'messages'
                 else '[]'::jsonb end) with ordinality as t(m, pos)
-   where pos <= 24 and length(trim(coalesce(m ->> 'body', ''))) > 0;
+   where pos <= 84 and length(trim(coalesce(m ->> 'body', ''))) > 0;
 
-  if p_messages is null or cardinality(p_messages) = 0 or cardinality(p_messages) > 24
+  if p_messages is null or cardinality(p_messages) = 0 or cardinality(p_messages) > 84
      or not (p_messages <@ coalesce(v_names, '{}'::text[])) then
     raise exception 'unknown message' using errcode = 'P0001', hint = 'messages';
   end if;

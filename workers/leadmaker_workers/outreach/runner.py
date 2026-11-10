@@ -83,6 +83,15 @@ def run_site_job(job: dict, timeout: int) -> dict | None:
     return json.loads(lines[-1])
 
 
+# Entreprise à contacter, avec le nom de son groupe dans la campagne (variable {groupe}, 10/11/2026)
+PROSPECT_SQL = """select p.name, p.city, p.category, p.rating, p.review_count, p.website,
+                         (select g ->> 'label' from public.lm_campaigns c
+                                 join public.lm_campaign_prospects cp on cp.campaign_id = c.id and cp.prospect_id = p.id,
+                                 jsonb_array_elements(c.sort_groups) g
+                           where c.id = %s and g ->> 'key' = cp.group_key limit 1) as "group"
+                    from public.lm_prospects p where p.id = %s"""
+
+
 def _group_message_names(conn: psycopg.Connection, campaign_id: Any, prospect_id: Any) -> list[str] | None:
     """Messages utilisables pour cette entreprise selon son groupe (lm_campaign_message_names) ; None si la base
     n'a pas encore la fonction ou si la campagne n'a aucun message : on garde alors tous les messages."""
@@ -101,10 +110,7 @@ def _group_message_names(conn: psycopg.Connection, campaign_id: Any, prospect_id
 
 def _load_context(conn: psycopg.Connection, row: dict):
     """Prospect, expéditeur, campagne et expéditeur prêt pour le navigateur (None si incomplet)."""
-    prospect = conn.execute(
-        "select name, city, category, rating, review_count, website from public.lm_prospects where id = %s",
-        (row["prospect_id"],),
-    ).fetchone()
+    prospect = conn.execute(PROSPECT_SQL, (row["campaign_id"], row["prospect_id"])).fetchone()
     # Expéditeur de la campagne (choisi pour elle, sinon celui par défaut de l'espace : lm_campaign_sender)
     sender = conn.execute(
         """select civility, first_name, last_name, job_title, company, email, phone, website, address, zip, city, country_code
@@ -202,10 +208,7 @@ class PrepareRunner:
         if not row:
             return {"skipped": "tentative plus en attente"}
 
-        prospect = conn.execute(
-            "select name, city, category, rating, review_count, website from public.lm_prospects where id = %s",
-            (row["prospect_id"],),
-        ).fetchone()
+        prospect = conn.execute(PROSPECT_SQL, (row["campaign_id"], row["prospect_id"])).fetchone()
         # Expéditeur de la campagne (choisi pour elle, sinon celui par défaut de l'espace : lm_campaign_sender)
         sender = conn.execute(
             """select civility, first_name, last_name, job_title, company, email, phone, website, address, zip, city, country_code

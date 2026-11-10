@@ -36,6 +36,12 @@ create table if not exists public.lm_campaigns (
   -- message par groupe » dans la même campagne (10/11/2026 : chaque entreprise reçoit le message de son groupe,
   -- lm_campaign_message_names). 'split' = ancienne version « Créer N campagnes », plus proposée.
   groups_choice text,
+  -- « Votre offre » propre à la campagne (10/11/2026) : null = celle du dossier (lm_spaces.offer). Une équipe qui
+  -- vend plusieurs produits (ex. Studio Namma : sites en marque blanche et Booster) en met une par campagne.
+  offer text,
+  -- Groupes fins (10/11/2026) : un groupe par sous-activité (jusqu'à 20) au lieu de 2 à 5 grands groupes, pour
+  -- un message très ciblé par mini-catégorie
+  sort_groups_fine boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -46,6 +52,7 @@ create table if not exists public.lm_campaigns (
   constraint lm_campaigns_daily_limit_positive check (daily_limit > 0),
   constraint lm_campaigns_daily_limit_max check (daily_limit <= 100000),
   constraint lm_campaigns_credits_per_prospect check (credits_per_prospect between 1 and 10),
+  constraint lm_campaigns_offer_length check (offer is null or length(offer) <= 1000),
   constraint lm_campaigns_groups_choice check (groups_choice is null or groups_choice in ('single', 'per_group', 'split'))
 );
 

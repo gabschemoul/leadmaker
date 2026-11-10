@@ -8,7 +8,7 @@ from typing import Any
 ALIASES = {
     "entreprise": "company", "ville": "city", "categorie": "category", "note": "rating", "nb_avis": "reviews",
     "site": "website", "prenom": "first_name", "nom": "last_name", "societe": "my_company", "email": "my_email",
-    "telephone": "my_phone", "mon_site": "my_website",
+    "telephone": "my_phone", "mon_site": "my_website", "groupe": "group",
 }
 TOKEN = re.compile(r"\{([a-z_]+)\}", re.I)
 
@@ -24,8 +24,8 @@ def parse_templates(raw: Any) -> tuple[list[dict], dict]:
     else:
         messages, short = [], {}
     out = []
-    # jusqu'à 24 messages depuis le 10/11/2026 : 4 versions par groupe, 6 onglets (« Un message par groupe »)
-    for i, m in enumerate(messages[:24]):
+    # jusqu'à 84 messages depuis le 10/11/2026 : 4 versions par onglet, 21 onglets (20 groupes fins + autres)
+    for i, m in enumerate(messages[:84]):
         if not isinstance(m, dict):
             continue
         body = str(m.get("body") or "")
@@ -46,13 +46,24 @@ def values(prospect: dict, sender: dict) -> dict[str, str]:
         "company": prospect.get("name") or "", "city": prospect.get("city") or "",
         "category": prospect.get("category") or "", "rating": f"{float(rating):.1f}" if rating is not None else "",
         "reviews": str(reviews) if reviews is not None else "", "website": prospect.get("website") or "",
+        # nom du groupe de l'entreprise (« Un message par groupe »), première lettre en minuscule pour se glisser
+        # dans une phrase (« les magasins de literie ») ; sigles gardés (« SPA »)
+        "group": group_phrase(prospect.get("group")),
         "first_name": sender.get("first_name") or "", "last_name": sender.get("last_name") or "",
         "my_company": sender.get("company") or "", "my_email": sender.get("email") or "",
         "my_phone": sender.get("phone") or "", "my_website": sender.get("website") or "",
     }
 
 
-PROSPECT_VARS = {"company", "city", "category", "rating", "reviews", "website"}
+PROSPECT_VARS = {"company", "city", "category", "rating", "reviews", "website", "group"}
+
+
+def group_phrase(label: Any) -> str:
+    """Libellé du groupe prêt à glisser dans une phrase : « Magasins de literie » → « magasins de literie »."""
+    text = str(label or "").strip()
+    if len(text) > 1 and text[0].isupper() and not text[1].isupper():
+        return text[0].lower() + text[1:]
+    return text
 EMPTY_MARK = "\x00"
 SENTENCE = re.compile(r"[^.!?]*[.!?]+\s*|[^.!?]+$")
 

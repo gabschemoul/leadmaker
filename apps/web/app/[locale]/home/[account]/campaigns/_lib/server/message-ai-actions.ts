@@ -68,7 +68,7 @@ export const proposeMessageAction = authActionClient
     const { data: campaign } = await client
       .from('lm_campaigns')
       .select(
-        'id, account_id, space_id, country_code, sort_target, sort_groups, sort_version',
+        'id, account_id, space_id, country_code, sort_target, sort_groups, sort_version, offer',
       )
       .eq('id', campaignId)
       .maybeSingle();
@@ -145,7 +145,8 @@ export const proposeMessageAction = authActionClient
           {
             role: 'user',
             content: [
-              `Offre de l'expéditeur : ${space?.offer ?? '(non précisée)'}`,
+              // offre de la campagne, sinon celle du dossier (10/11/2026)
+              `Offre de l'expéditeur : ${campaign.offer?.trim() || space?.offer || '(non précisée)'}`,
               `Cible : ${campaign.sort_target ?? '(non précisée)'}`,
               group ? `Groupe visé : ${group}` : '',
               `Pays des entreprises contactées : ${campaign.country_code}`,

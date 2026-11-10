@@ -33,7 +33,7 @@ select is(public.lm_start_sort('f0000000-0000-4000-8000-0000000000a1', '  Agence
   1, 'Lancement : l''entreprise déjà trouvée est mise en file');
 select is((select sort_target || ' / v' || sort_version from public.lm_campaigns where id = 'f0000000-0000-4000-8000-0000000000a1'),
   'Agences marketing / v1', 'Cible enregistrée (sans espaces), version 1');
-select is((select offer from public.lm_spaces where id = (select space_id from tso)), 'Sites Webflow en marque blanche', 'Offre de l''espace enregistrée');
+select is((select offer from public.lm_campaigns where id = 'f0000000-0000-4000-8000-0000000000a1'), 'Sites Webflow en marque blanche', 'Offre de la campagne enregistrée');
 select is(public.lm_start_sort('f0000000-0000-4000-8000-0000000000a1', 'Agences marketing'), 0,
   'Même cible relancée : rien de plus en file');
 
@@ -62,7 +62,7 @@ select ok(not public.lm_finish_sort('f0000000-0000-4000-8000-0000000000a1', (sel
   1, 'ecartee', null, 'ancien avis'), 'Avis de l''ancienne cible ignoré');
 select is((select verdict from public.lm_campaign_prospects where prospect_id = (select id from public.lm_prospects where site_key = 'deux.fr')),
   null, 'Rien d''écrit pour l''ancienne cible');
-select is((select offer from public.lm_spaces where id = (select space_id from tso)), 'Sites Webflow en marque blanche',
+select is((select offer from public.lm_campaigns where id = 'f0000000-0000-4000-8000-0000000000a1'), 'Sites Webflow en marque blanche',
   'Offre gardée quand elle n''est pas redonnée');
 
 -- 6. Entrées invalides

@@ -702,7 +702,8 @@
     "insertVariables": {
       "company": "Entreprise",
       "city": "Ville",
-      "category": "Activité"
+      "category": "Activité",
+      "group": "Groupe"
     },
     "insertMore": "Autres",
     "insertMyCompany": "Insérer « Votre société »",

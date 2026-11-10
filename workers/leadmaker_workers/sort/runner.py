@@ -167,8 +167,22 @@ différent à chaque groupe. On te donne sa cible, son offre et un échantillon 
 gardée, qui dit ce que fait l'entreprise).
 
 Propose 2 à 5 groupes qui couvrent l'essentiel de l'échantillon, assez différents pour justifier un message différent
-(par exemple « Marketing et com », « Branding », « Design graphique »). Pour chaque groupe : key (court, minuscules,
-sans accents ni espaces, tirets bas autorisés) et label (2 à 4 mots, dans la langue de la cible)."""
+(par exemple « Agences de communication », « Studios de branding », « Graphistes »). Pour chaque groupe : key (court,
+minuscules, sans accents ni espaces, tirets bas autorisés) et label (2 à 4 mots, dans la langue de la cible).
+Le label est un nom au pluriel qui désigne les entreprises du groupe et peut se glisser dans une phrase (« les
+{label} de votre ville ») : « Agences de communication », pas « Communication »."""
+
+# Groupes fins (lm_campaigns.sort_groups_fine, 10/11/2026) : un message très ciblé par mini-catégorie
+GROUPS_FINE_SYSTEM = """Tu aides un client de Prospectigo à découper sa cible en groupes d'entreprises, pour écrire un message
+très ciblé à chaque mini-catégorie. On te donne sa cible, son offre et un échantillon de raisons du tri (une par
+entreprise gardée, qui dit ce que fait l'entreprise).
+
+Propose un groupe par sous-activité distincte que tu vois dans l'échantillon (de 4 à 20 groupes), du plus fréquent au
+plus rare ; regroupe seulement ce qui recevrait vraiment le même message (par exemple pour des meubles : « Magasins de
+meubles », « Magasins de literie », « Cuisinistes », « Ébénistes et meubles sur mesure », « Mobilier de jardin »,
+« Meubles d'occasion et antiquités »). Pour chaque groupe : key (court, minuscules, sans accents ni espaces, tirets bas
+autorisés) et label (2 à 5 mots, dans la langue de la cible). Le label est un nom au pluriel qui désigne les
+entreprises du groupe et peut se glisser dans une phrase (« les {label} de votre ville »)."""
 
 
 class SortGroup(BaseModel):
@@ -201,7 +215,7 @@ class SortRunner:
         if p.get("action") == "group":
             return self.classify_group(p, conn)
         ctx = conn.execute(
-            """select c.sort_target, c.sort_groups, c.sort_version, s.offer,
+            """select c.sort_target, c.sort_groups, c.sort_version, coalesce(nullif(trim(c.offer), ''), s.offer) as offer,
                       pr.name, pr.category, pr.city, pr.website, pr.review_count, pr.google_place_id,
                       pl.site_status, pl.site_text, pl.site_read_at
                  from public.lm_campaigns c
@@ -261,7 +275,8 @@ class SortRunner:
     def propose_groups(self, p: dict, conn: psycopg.Connection) -> dict[str, Any]:
         """Groupes de la campagne (§4.3), proposés par Claude Sonnet une fois assez d'entreprises gardées."""
         c = conn.execute(
-            """select c.sort_target, c.sort_version, c.sort_groups, s.offer from public.lm_campaigns c
+            """select c.sort_target, c.sort_version, c.sort_groups, c.sort_groups_fine,
+                      coalesce(nullif(trim(c.offer), ''), s.offer) as offer from public.lm_campaigns c
                  join public.lm_spaces s on s.id = c.space_id where c.id = %s""", (p["campaign_id"],)).fetchone()
         if not c or c["sort_version"] != int(p.get("version", -1)) or c["sort_groups"]:
             return {"skipped": "cible changée ou groupes déjà là"}
@@ -270,16 +285,19 @@ class SortRunner:
         reasons = [r["reason"] for r in conn.execute(
             """select cp.reason from public.lm_campaign_prospects cp
                 where cp.campaign_id = %s and cp.sorted_version = %s and cp.verdict = 'gardee' and cp.reason is not null
-                order by md5(cp.prospect_id::text) limit 80""", (p["campaign_id"], c["sort_version"])).fetchall()]
+                order by md5(cp.prospect_id::text) limit %s""",
+            (p["campaign_id"], c["sort_version"], 300 if c["sort_groups_fine"] else 80)).fetchall()]
         content = (f"Cible du client : {c['sort_target']}\nOffre du client : {c['offer'] or '(non précisée)'}\n\n"
                    "Raisons du tri (entreprises gardées) :\n" + "\n".join(f"- {r}" for r in reasons))
-        r = _get_client().messages.parse(model=GROUPS_MODEL, max_tokens=4000, system=GROUPS_SYSTEM,
+        fine = bool(c["sort_groups_fine"])
+        r = _get_client().messages.parse(model=GROUPS_MODEL, max_tokens=4000,
+                                         system=GROUPS_FINE_SYSTEM if fine else GROUPS_SYSTEM,
                                          output_format=SortGroups, output_config={"effort": "medium"},
                                          messages=[{"role": "user", "content": content}])
         if r.stop_reason == "refusal" or not r.parsed_output:
             return {"groups": 0, "refused": True}
         groups, seen = [], set()
-        for g in r.parsed_output.groups[:5]:
+        for g in r.parsed_output.groups[:20 if fine else 5]:
             key = _slug(g.key)
             if key in seen or key == "autre" or not g.label.strip():
                 continue

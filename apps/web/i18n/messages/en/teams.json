@@ -13,7 +13,7 @@
     "dangerZoneDescription": "This section contains actions that are irreversible",
     "offer": {
       "title": "Your offer",
-      "description": "What you sell, in one sentence. Sorting keeps the companies that may need it, and “Suggest with AI” uses it to write your messages.",
+      "description": "What you sell, in one sentence: the default offer of your campaigns. Sorting keeps the companies that may need it, and “Suggest with AI” uses it to write your messages. A campaign can have its own offer (“Who?” screen).",
       "hint": "A change applies to companies sorted afterwards; companies already sorted are not sorted again.",
       "save": "Save",
       "saved": "Offer saved",

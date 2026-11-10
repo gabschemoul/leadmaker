@@ -78,8 +78,9 @@ begin
     update public.lm_campaign_categories set sorted = 0, sorted_kept = 0 where campaign_id = p_campaign_id;
   end if;
 
+  -- offre donnée : celle de la campagne (10/11/2026 ; avant, celle du dossier)
   if nullif(trim(p_offer), '') is not null then
-    update public.lm_spaces set offer = trim(p_offer) where id = v_campaign.space_id;
+    update public.lm_campaigns set offer = left(trim(p_offer), 1000) where id = v_campaign.id;
   end if;
 
   insert into public.lm_tasks (account_id, kind, payload, idempotency_key)
@@ -321,10 +322,12 @@ begin
     perform public.lm_settle_kept(p_campaign_id, p_prospect_id);
 
     -- Groupes (§4.3) : assez de gardées et pas encore de groupes → une tâche de proposition (une par cible)
+    -- groupes fins : 3 fois plus de gardées avant de proposer, pour voir aussi les sous-activités rares
     if (select c.sort_groups = '[]'::jsonb from public.lm_campaigns c where c.id = p_campaign_id)
        and (select count(*) from public.lm_campaign_prospects cp
              where cp.campaign_id = p_campaign_id and cp.sorted_version = p_version and cp.verdict = 'gardee')
-           >= v_settings.sort_groups_after then
+           >= v_settings.sort_groups_after
+              * (case when (select c.sort_groups_fine from public.lm_campaigns c where c.id = p_campaign_id) then 3 else 1 end) then
       insert into public.lm_tasks (account_id, kind, payload, idempotency_key)
       select c.account_id, 'sort',
              jsonb_build_object('action', 'groups', 'campaign_id', c.id, 'version', p_version),

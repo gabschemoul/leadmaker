@@ -52,6 +52,29 @@ revoke all on function public.lm_set_space_offer(uuid, text) from public;
 
 grant execute on function public.lm_set_space_offer(uuid, text) to authenticated, service_role;
 
+-- « Votre offre » propre à une campagne (10/11/2026) ; null ou vide = celle du dossier. Comme pour l'offre du
+-- dossier, les entreprises déjà triées ne sont pas retriées.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
+create or replace function public.lm_set_campaign_offer(p_campaign_id uuid, p_offer text) returns void
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  update public.lm_campaigns c
+     set offer = left(nullif(trim(p_offer), ''), 1000)
+   where c.id = p_campaign_id and public.lm_member(c.account_id);
+
+  if not found then
+    raise exception 'campaign not found' using errcode = 'P0002';
+  end if;
+end;
+$$;
+
+revoke all on function public.lm_set_campaign_offer(uuid, text) from public, anon;
+
+grant execute on function public.lm_set_campaign_offer(uuid, text) to authenticated, service_role;
+
 -- Écran « Vos entreprises » : le client garde ou écarte des entreprises « À vérifier » (jamais celles déjà
 -- gardées ou écartées : pas de bouton « Écarter » dans « Gardées », décision du 9/11). Une entreprise gardée
 -- ainsi est payée au prix de la campagne (CDC §4.2). Renvoie le nombre d'entreprises changées.
@@ -204,7 +227,8 @@ as $$
 declare
   v_count integer;
 begin
-  if jsonb_typeof(p_groups) is distinct from 'array' or jsonb_array_length(p_groups) not between 2 and 5 then
+  -- 2 à 5 grands groupes, ou jusqu'à 20 groupes fins (lm_campaigns.sort_groups_fine)
+  if jsonb_typeof(p_groups) is distinct from 'array' or jsonb_array_length(p_groups) not between 2 and 20 then
     raise exception 'invalid groups' using errcode = 'P0001';
   end if;
 
@@ -349,7 +373,7 @@ as $$
   ), m as (
     select coalesce(nullif(x ->> 'name', ''), 'Message ' || pos) as name, nullif(trim(x ->> 'group'), '') as grp, pos
       from c, jsonb_array_elements(c.messages) with ordinality as t(x, pos)
-     where pos <= 24 and length(trim(coalesce(x ->> 'body', ''))) > 0
+     where pos <= 84 and length(trim(coalesce(x ->> 'body', ''))) > 0
   )
   select case
            when (select groups_choice from c) = 'per_group' then

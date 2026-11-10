@@ -526,7 +526,10 @@ export function CampaignMessagesForm(props: {
           )}
         />
 
-        <InsertButtons onInsert={(token) => insertVariable(index, token)} />
+        <InsertButtons
+          withGroup={perGroup}
+          onInsert={(token) => insertVariable(index, token)}
+        />
 
         <FormField
           name={`messages.${index}.short`}
@@ -634,10 +637,15 @@ export function CampaignMessagesForm(props: {
     : [];
   const previewProspects =
     groupProspects.length > 0 ? groupProspects : props.prospects;
-  const prospect =
+  const previewBase =
     previewProspects.length > 0
       ? previewProspects[previewIndex % previewProspects.length]
       : undefined;
+  // variable {groupe} : le nom du groupe de l'onglet ouvert (aucun groupe dans « Pour les autres » ni sans
+  // « Un message par groupe » : la phrase qui la contient est retirée, comme pour le robot)
+  const prospect = previewBase
+    ? { ...previewBase, group: activeTab.key ? activeTab.label : null }
+    : undefined;
 
   return (
     <Form {...form}>
@@ -1030,12 +1038,18 @@ function MessagePreview(props: {
 }
 
 /** « Insérer : Entreprise / Ville / Activité », et les autres variables dans « Autres ». */
-function InsertButtons(props: { onInsert: (token: string) => void }) {
+function InsertButtons(props: {
+  onInsert: (token: string) => void;
+  /** « Un message par groupe » : « Groupe » parmi les boutons principaux */
+  withGroup: boolean;
+}) {
   const t = useTranslations('outreach.messages');
+  const main: readonly string[] = props.withGroup
+    ? [...MAIN_VARIABLES, 'group']
+    : MAIN_VARIABLES;
 
   const others = TEMPLATE_VARIABLES.filter(
-    (variable) =>
-      !(MAIN_VARIABLES as readonly string[]).includes(variable.token),
+    (variable) => !main.includes(variable.token),
   );
   const groups = [
     { key: 'prospect', label: 'variablesProspect' },
@@ -1051,7 +1065,7 @@ function InsertButtons(props: { onInsert: (token: string) => void }) {
         <Trans i18nKey={'campaigns.messages.insert'} />
       </span>
 
-      {MAIN_VARIABLES.map((token) => (
+      {main.map((token) => (
         <Button
           key={token}
           type={'button'}

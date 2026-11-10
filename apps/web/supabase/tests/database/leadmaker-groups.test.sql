@@ -39,6 +39,23 @@ select public.lm_finish_sort('e3000000-0000-4000-8000-0000000000a1', pg_temp.pid
 select public.lm_finish_sort('e3000000-0000-4000-8000-0000000000a1', pg_temp.pid('x1.fr'), 1, 'ecartee', null, 'hors cible');
 select is((select count(*)::integer from public.lm_tasks where payload ->> 'action' = 'groups'), 1, '3 gardées : une tâche de proposition');
 
+-- 1 bis. Groupes fins : 3 fois plus de gardées avant la proposition (3 × 3 = 9 ici)
+set local role postgres;
+insert into public.lm_campaigns (id, account_id, space_id, name, country_code, status, sort_groups_fine)
+select 'e3000000-0000-4000-8000-0000000000f1'::uuid, account_id, space_id, 'Fins', 'FR', 'running', true from tgr;
+set local role service_role;
+select public.lm_start_sort('e3000000-0000-4000-8000-0000000000f1', 'Meubles');
+select public.lm_record_prospect('e3000000-0000-4000-8000-0000000000f1',
+  format('{"place_id":"gf:%s","name":"Meuble %s","site_key":"f%s.fr","website":"https://f%s.fr"}', n, n, n, n)::jsonb)
+  from generate_series(1, 9) n;
+select public.lm_finish_sort('e3000000-0000-4000-8000-0000000000f1', pg_temp.pid('f' || n || '.fr'), 1, 'gardee', null, 'meuble ' || n)
+  from generate_series(1, 8) n;
+select is((select count(*)::integer from public.lm_tasks where payload ->> 'action' = 'groups'
+             and payload ->> 'campaign_id' = 'e3000000-0000-4000-8000-0000000000f1'), 0, 'Groupes fins : 8 gardées, pas encore');
+select public.lm_finish_sort('e3000000-0000-4000-8000-0000000000f1', pg_temp.pid('f9.fr'), 1, 'gardee', null, 'meuble 9');
+select is((select count(*)::integer from public.lm_tasks where payload ->> 'action' = 'groups'
+             and payload ->> 'campaign_id' = 'e3000000-0000-4000-8000-0000000000f1'), 1, 'Groupes fins : 9 gardées, proposition');
+
 -- 2. Groupes enregistrés : chaque gardée sans groupe est mise en file de classement (pas l'écartée)
 select throws_ok($$ select public.lm_set_sort_groups('e3000000-0000-4000-8000-0000000000a1', 1, '[{"key":"seul","label":"Seul"}]') $$,
   'P0001', null, 'Un seul groupe : refusé');

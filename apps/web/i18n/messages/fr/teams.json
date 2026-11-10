@@ -13,7 +13,7 @@
     "dangerZoneDescription": "Cette section contient des actions irréversibles",
     "offer": {
       "title": "Votre offre",
-      "description": "Ce que vous vendez, en une phrase. Le tri garde les entreprises qui peuvent en avoir besoin, et « Proposer avec l'IA » s'en sert pour écrire vos messages.",
+      "description": "Ce que vous vendez, en une phrase : l'offre par défaut de vos campagnes. Le tri garde les entreprises qui peuvent en avoir besoin, et « Proposer avec l'IA » s'en sert pour écrire vos messages. Une campagne peut avoir sa propre offre (écran « Qui ? »).",
       "hint": "Une modification compte pour les entreprises triées ensuite ; celles déjà triées ne sont pas retriées.",
       "save": "Enregistrer",
       "saved": "Offre enregistrée",

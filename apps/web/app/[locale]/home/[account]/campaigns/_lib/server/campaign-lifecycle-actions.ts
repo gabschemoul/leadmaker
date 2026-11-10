@@ -65,9 +65,10 @@ async function logLaunchError(
 }
 
 /**
- * Écran « Qui ? » : enregistre l'offre du dossier si elle a changé (lm_set_space_offer), puis la cible si
- * elle a changé (lm_set_sort_target : nouvelle cible = tout est retrié). Renvoie un code d'erreur, ou null.
- * Ne lève pas : la campagne existe déjà, la page l'ouvre avec le message.
+ * Écran « Qui ? » : enregistre l'offre, puis la cible si elle a changé (lm_set_sort_target : nouvelle cible =
+ * tout est retrié). Renvoie un code d'erreur, ou null. Ne lève pas : la campagne existe déjà.
+ * Offre (10/11/2026) : la première devient celle du dossier (Réglages) ; ensuite, une offre différente de celle
+ * du dossier est propre à la campagne (lm_set_campaign_offer), une offre identique revient à celle du dossier.
  */
 async function saveOfferAndTarget(
   client: Client,
@@ -82,16 +83,42 @@ async function saveOfferAndTarget(
 ): Promise<LaunchError | null> {
   const context = { campaignId: params.campaignId, userId: params.userId };
 
-  const { data: space } = await client
-    .from('lm_spaces')
-    .select('offer')
-    .eq('id', params.spaceId)
-    .maybeSingle();
+  const [{ data: space }, { data: campaign }] = await Promise.all([
+    client
+      .from('lm_spaces')
+      .select('offer')
+      .eq('id', params.spaceId)
+      .maybeSingle(),
+    client
+      .from('lm_campaigns')
+      .select('offer')
+      .eq('id', params.campaignId)
+      .maybeSingle(),
+  ]);
 
-  if ((space?.offer ?? '').trim() !== params.offer) {
+  const spaceOffer = (space?.offer ?? '').trim();
+  const campaignOffer = (campaign?.offer ?? '').trim();
+  // offre propre à la campagne voulue : aucune si c'est celle du dossier (ou si le dossier n'en a pas encore)
+  const wantedCampaignOffer =
+    spaceOffer === '' || params.offer === spaceOffer ? '' : params.offer;
+
+  if (spaceOffer === '' && params.offer !== '') {
     const { error } = await client.rpc('lm_set_space_offer', {
       p_space_id: params.spaceId,
       p_offer: params.offer,
+    });
+
+    if (error) {
+      await logLaunchError('offer', context, error);
+
+      return 'offerFailed';
+    }
+  }
+
+  if (campaignOffer !== wantedCampaignOffer) {
+    const { error } = await client.rpc('lm_set_campaign_offer', {
+      p_campaign_id: params.campaignId,
+      p_offer: wantedCampaignOffer,
     });
 
     if (error) {

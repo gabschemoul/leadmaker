@@ -57,7 +57,7 @@ export function TeamAccountTopBar(props: {
       <Link
         href={prospectsPath}
         className={
-          'text-muted-foreground hover:bg-muted hover:text-foreground ring-border hidden h-8 w-72 items-center gap-2 rounded-full px-3 text-[13px] ring-1 transition-colors xl:flex'
+          'text-muted-foreground hover:bg-muted hover:text-foreground ring-border hidden h-8 w-72 items-center gap-2 rounded-full px-3 text-[14px] ring-1 transition-colors xl:flex'
         }
         data-test={'top-bar-search'}
       >
@@ -94,7 +94,7 @@ async function CreditsPill(props: { accountId: string; billingPath: string }) {
     <Link
       href={props.billingPath}
       className={
-        'ring-border hover:bg-muted hidden h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium whitespace-nowrap tabular-nums ring-1 transition-colors md:flex'
+        'ring-border hover:bg-muted hidden h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[14px] font-medium whitespace-nowrap tabular-nums ring-1 transition-colors md:flex'
       }
       data-test={'top-bar-credits'}
     >

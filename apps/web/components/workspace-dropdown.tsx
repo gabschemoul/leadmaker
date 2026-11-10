@@ -159,7 +159,7 @@ export function WorkspaceDropdown({
                   size="icon"
                 >
                   <WorkspaceAvatar
-                    className="size-5 rounded-md text-[11px]"
+                    className="size-5 rounded-md text-[12px]"
                     isTeam={isTeamContext}
                     pictureUrl={currentAvatar}
                     label={currentLabel}
@@ -178,7 +178,7 @@ export function WorkspaceDropdown({
               >
                 <span className="flex aspect-square size-6 items-center justify-center">
                   <WorkspaceAvatar
-                    className="size-5 rounded-md text-[11px]"
+                    className="size-5 rounded-md text-[12px]"
                     isTeam={isTeamContext}
                     pictureUrl={currentAvatar}
                     label={currentLabel}
@@ -453,7 +453,7 @@ function TeamItems(props: {
               }}
             >
               <WorkspaceAvatar
-                className="size-6 rounded-md text-[11px]"
+                className="size-6 rounded-md text-[12px]"
                 isTeam
                 pictureUrl={account.image}
                 label={account.label}

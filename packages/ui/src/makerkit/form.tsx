@@ -31,7 +31,7 @@ const FormMessage: React.FC<
   return (
     <p
       id={formMessageId}
-      className={cn('text-destructive text-[0.8rem] font-medium', className)}
+      className={cn('text-destructive text-[0.875rem] font-medium', className)}
       {...props}
     >
       {typeof body === 'string' ? (

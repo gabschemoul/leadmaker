@@ -251,7 +251,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
         <div
           className={
-            'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[13px]'
+            'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[14px]'
           }
         >
           <span data-test={'prospects-total'}>

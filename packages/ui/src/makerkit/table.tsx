@@ -44,7 +44,7 @@ function TableHead({
   return (
     <ShadcnTableHead
       className={cn(
-        'text-muted-foreground h-10 px-4 font-mono text-[11px] font-medium tracking-[0.06em] uppercase',
+        'text-muted-foreground h-10 px-4 font-mono text-[12px] font-medium tracking-[0.06em] uppercase',
         className,
       )}
       {...props}

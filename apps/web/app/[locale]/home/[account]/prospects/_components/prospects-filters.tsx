@@ -131,7 +131,7 @@ export function ProspectsFilters(props: {
             <Input
               name={'q'}
               type={'search'}
-              className={'h-8 w-56 pl-9 text-[13px] md:w-72'}
+              className={'h-8 w-56 pl-9 text-[14px] md:w-72'}
               data-test={'prospects-search-input'}
               defaultValue={filters.query ?? ''}
               placeholder={t('filters.searchPlaceholder')}

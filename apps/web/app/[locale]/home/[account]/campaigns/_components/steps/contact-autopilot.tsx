@@ -785,7 +785,7 @@ function Chip(
       data-test={props.testId}
       onClick={props.onClick}
       className={cn(
-        'flex h-8 items-center rounded-full px-3.5 text-[13px] font-medium tabular-nums transition-colors',
+        'flex h-8 items-center rounded-full px-3.5 text-[14px] font-medium tabular-nums transition-colors',
         props.selected
           ? 'bg-brand-pale text-brand-hover dark:text-brand'
           : 'bg-card ring-pill-ring shadow-soft hover:bg-muted ring-[0.5px]',
@@ -1247,7 +1247,7 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
     >
       <h3 className={'font-medium'}>{t('title')}</h3>
 
-      <ol className={'flex flex-col gap-2 font-mono text-[13px] leading-snug'}>
+      <ol className={'flex flex-col gap-2 font-mono text-[14px] leading-snug'}>
         {rows.length === 0 ? (
           <li className={'text-[#8fb3ac]'}>{t('empty')}</li>
         ) : (

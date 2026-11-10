@@ -264,7 +264,7 @@ async function CampaignsList({
             name={'q'}
             defaultValue={query.q ?? ''}
             placeholder={t('list.searchPlaceholder')}
-            className={'h-8 rounded-full pl-10 text-[13px]'}
+            className={'h-8 rounded-full pl-10 text-[14px]'}
             data-test={'campaigns-search'}
           />
         </form>
@@ -349,7 +349,7 @@ async function CampaignsList({
                       </span>
 
                       <span
-                        className={'text-muted-foreground truncate text-[13px]'}
+                        className={'text-muted-foreground truncate text-[14px]'}
                       >
                         {t('list.createdAtColumn')}{' '}
                         {format.dateTime(new Date(campaign.createdAt), {
@@ -399,7 +399,7 @@ async function CampaignsList({
 
         <div
           className={
-            'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[13px]'
+            'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[14px]'
           }
         >
           <span>{t('list.count', { count: campaigns.length })}</span>

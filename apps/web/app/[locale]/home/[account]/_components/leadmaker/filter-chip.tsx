@@ -20,7 +20,7 @@ export function FilterChip(props: {
       aria-current={props.active ? 'page' : undefined}
       data-test={props.testId}
       className={cn(
-        'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium whitespace-nowrap transition-colors',
+        'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[14px] font-medium whitespace-nowrap transition-colors',
         props.active
           ? 'bg-brand-pale text-brand-hover dark:text-brand'
           : 'bg-card text-foreground ring-pill-ring shadow-soft hover:bg-muted ring-[0.5px]',

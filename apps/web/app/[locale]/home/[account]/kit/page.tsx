@@ -438,7 +438,7 @@ function KitPage({ params }: KitPageProps) {
 
             <div
               className={
-                'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[13px]'
+                'text-muted-foreground flex items-center justify-between border-t px-4 py-2.5 text-[14px]'
               }
             >
               <span>1 – 5 sur 9 campagnes</span>
@@ -657,7 +657,7 @@ function Kpi(props: {
     <div className={'flex flex-col gap-1 px-5 py-4'}>
       <span
         className={
-          'text-muted-foreground font-mono text-[11px] font-medium tracking-[0.06em] uppercase'
+          'text-muted-foreground font-mono text-[12px] font-medium tracking-[0.06em] uppercase'
         }
       >
         {props.label}

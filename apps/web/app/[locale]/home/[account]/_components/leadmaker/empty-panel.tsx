@@ -72,7 +72,7 @@ export function EmptyPanel(props: {
 
                 <p
                   className={
-                    'text-muted-foreground text-[13px] leading-relaxed'
+                    'text-muted-foreground text-[14px] leading-relaxed'
                   }
                 >
                   {feature.text}

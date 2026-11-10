@@ -167,7 +167,7 @@ function Balance(props: {
 
   return (
     <div className={'flex flex-col gap-2 px-5 py-4'}>
-      <p className={'text-muted-foreground text-[13px] font-medium'}>
+      <p className={'text-muted-foreground text-[14px] font-medium'}>
         {props.label}
       </p>
 

@@ -12,7 +12,7 @@ export const emailTheme = {
   faint: '#a59f97',
   primary: '#000000',
   primaryText: '#ffffff',
-  brand: '#ff4704',
+  brand: '#3d3dff',
   ink: '#000000',
   codeBackground: '#f5f3f1',
 } as const;

@@ -23,8 +23,8 @@ export const generateRootMetadata = (): Metadata => {
       title: appConfig.title,
       description: appConfig.description,
     },
-    // Logo « Le repère » (2/11/2026) : icônes générées depuis le symbole de
-    // components/app-logo.tsx.
+    // Logo « i baguette » (10/11/2026) : icônes = l'étoile bleue seule sur carré
+    // noir (62 % de la largeur). Anciennes icônes : public/images/favicon-archive-repere/.
     icons: {
       icon: [
         { url: '/images/favicon/favicon.ico', sizes: '48x48' },

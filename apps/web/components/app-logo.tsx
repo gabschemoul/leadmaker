@@ -3,29 +3,62 @@ import Link from 'next/link';
 import { cn } from '@kit/ui/utils';
 
 /**
- * Logo Prospectigo « le dernier o » (choisi le 3/11/2026 par Nath, à
- * l'essai sur staging) : le o final du nom devient un rond orange, avec un
- * petit trait en dessous, comme une épingle au-dessus de son point d'ancrage.
+ * Logo Prospectigo « i baguette » (validé par Gabriel le 10/11/2026, sa
+ * « V2 ») : le i devient une baguette magique. La barre garde la couleur du
+ * texte, le point devient une étoile bleue à 6 branches posée juste au-dessus.
+ * L'ancien logo « le dernier o » est gardé dans app-logo-archive-dernier-o.tsx.
  *
- * Le rond prend exactement la place du vrai o de la police (Host Grotesk 600,
- * en unités pour 1000 em) : 576 de chasse, 520 de diamètre, du haut du o
- * (508 au-dessus de la ligne de base) à 12 en dessous. Le trait de 244 × 65
- * est 146 plus bas, il descend à 223 sous la ligne de base, comme le g. Ce
- * sont les proportions de l'ancien symbole (rond 498, trait 234 × 62, écart
- * 140) : les icônes (favicon) restent donc valables.
+ * Mesures en unités pour 1000 em, prises sur le i de la police des titres
+ * (graisse 600) : chasse 212, barre de 120 × 496 (x de 46,3 à 166,3).
+ * Étoile : 6 branches de 168 depuis le cœur, épaisseur 84, tournée de 30°
+ * (deux branches couchées), cœur à 686 au-dessus de la ligne de base, ce qui
+ * laisse un petit espace de 24 entre la barre et l'étoile. À droite du i,
+ * -25 pour rapprocher le g.
+ *
+ * Le bleu est le bleu principal, y compris sur fond sombre (choix de Gabriel).
  */
-export function LogoMark({ className }: { className?: string }) {
+const STAR_BLUE = '#3d3dff';
+
+/** Les 6 branches de l'étoile, cœur en (0, 0), axe y vers le bas. */
+const STAR_PATH =
+  'M36.4 21 120.4 -124.5 47.6 -166.5 -36.4 -21Z' +
+  'M0 42 168 42 168 -42 0 -42Z' +
+  'M-36.4 21 47.6 166.5 120.4 124.5 36.4 -21Z' +
+  'M-36.4 -21 -120.4 124.5 -47.6 166.5 36.4 21Z' +
+  'M0 -42 -168 -42 -168 42 0 42Z' +
+  'M36.4 -21 -47.6 -166.5 -120.4 -124.5 -36.4 21Z';
+
+/** Le i en baguette, à placer dans le texte du nom (posé sur la ligne de base). */
+export function LogoWand({ className }: { className?: string }) {
   return (
     <svg
       aria-hidden
-      viewBox={'0 0 576 731'}
+      viewBox={'0 -853 212 853'}
       className={cn(
-        'inline-block h-[0.731em] w-[0.576em] shrink-0 overflow-visible align-[-0.223em]',
+        'inline-block h-[0.853em] w-[0.212em] shrink-0 overflow-visible align-baseline',
         className,
       )}
+      style={{ marginRight: '-0.025em' }}
     >
-      <circle cx={288} cy={260} r={260} className={'fill-brand'} />
-      <rect x={166} y={666} width={244} height={65} fill={'currentColor'} />
+      <rect x={46.29} y={-496} width={120} height={496} fill={'currentColor'} />
+      <path
+        d={STAR_PATH}
+        transform={'translate(106.29 -686.28)'}
+        fill={STAR_BLUE}
+      />
+    </svg>
+  );
+}
+
+/** L'étoile seule : symbole du logo (barre latérale repliée, icônes). */
+export function LogoStar({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox={'-170 -170 340 340'}
+      className={cn('inline-block size-[0.8em] shrink-0', className)}
+    >
+      <path d={STAR_PATH} fill={STAR_BLUE} />
     </svg>
   );
 }
@@ -46,9 +79,15 @@ export function LogoImage({
       )}
     >
       <span aria-hidden className={'group-data-[collapsible=icon]:hidden'}>
-        Prospectig
+        Prospect
+        <LogoWand />
+        go
       </span>
-      <LogoMark />
+      <LogoStar
+        className={
+          'hidden align-middle group-data-[collapsible=icon]:inline-block'
+        }
+      />
     </span>
   );
 }

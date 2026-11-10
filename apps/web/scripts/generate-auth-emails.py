@@ -18,6 +18,18 @@ LANG_PICK = ('{{ $en := false }}{{ with .Data }}{{ with .lang }}{{ if eq . "en" 
              '{{ end }}{{ end }}{{ end }}')
 
 
+# Logo « i baguette » (10/11/2026, voir apps/web/components/app-logo.tsx) : le point du i devient une petite étoile bleue
+# (image servie par le site ; si les images sont bloquées, un astérisque bleu la remplace), empilée sur un i sans point.
+LOGO = ('Prospect<span style="display:inline-block;vertical-align:baseline;text-align:center">'
+        '<img src="https://prospectigo.com/images/logo/etoile-email.png" width="8" height="8" alt="*" '
+        'style="display:block;width:8px;height:8px;margin:0 auto;border:0;color:#3d3dff;font-size:12px;line-height:8px">'
+        '<span style="display:block;line-height:12px">&#305;</span></span>go')
+# ARCHIVE — ancien logo « le dernier o » (3/11 → 10/11/2026), pour revenir en arrière : remettre LOGO = LOGO_DERNIER_O.
+LOGO_DERNIER_O = ('Prospectig<span style="display:inline-block;width:12px;margin-left:1px;vertical-align:-5px"><span style="display:block;'
+                  'width:12px;height:12px;border-radius:12px;background-color:#ff4704"></span><span style="display:block;width:6px;'
+                  'height:2px;margin:3px auto 0 auto;background-color:#000000"></span></span>')
+
+
 def block(fr: str, en: str) -> str:
     return '{{ if $en }}' + en + '{{ else }}' + fr + '{{ end }}'
 
@@ -53,7 +65,7 @@ def page(title_fr, title_en, heading_fr, heading_en, body_fr, body_en, button_fr
     <tr><td align="center" style="padding:32px 20px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
         <tr><td style="padding:0 0 20px 0;font-size:22px;line-height:28px;font-weight:700;letter-spacing:-0.5px;color:#000000">
-          Prospectig<span style="display:inline-block;width:12px;margin-left:1px;vertical-align:-5px"><span style="display:block;width:12px;height:12px;border-radius:12px;background-color:#ff4704"></span><span style="display:block;width:6px;height:2px;margin:3px auto 0 auto;background-color:#000000"></span></span>
+          {LOGO}
         </td></tr>
         <tr><td style="padding:0 0 16px 0;font-size:22px;line-height:28px;font-weight:700;color:#000000">{block(heading_fr, heading_en)}</td></tr>
         <tr><td style="background-color:#ffffff;border:1px solid #e7e4e0;border-radius:12px;padding:28px 32px">

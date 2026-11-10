@@ -1,7 +1,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Texte : Inter (choix de Gabriel, 10/11/2026) ; titres de page en Season Mix, autres titres en Host Grotesk */
+  /* Texte : Inter (choix de Gabriel, 10/11/2026) ; titres de page en Season Mix (--font-display) */
   --font-sans: var(--font-sans-fallback), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono);
   /* Tailles de texte un cran au-dessus des valeurs de Tailwind (10/11/2026 : l'appli paraissait petite et peu

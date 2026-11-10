@@ -6,7 +6,7 @@ Usage (depuis la racine du dépôt, base en ligne via workers/.env.cloud) :
         --cible "Agences de communication… pour qui le web n'est pas le cœur de métier" \\
         --offre "Studio Namma développe en marque blanche les sites Webflow des agences…" --echantillon 300
 
-« lancer » fixe la cible en mots de la campagne (et l'offre de son dossier si donnée) puis met en file le tri des
+« lancer » fixe la cible en mots de la campagne (et son offre propre si donnée) puis met en file le tri des
 entreprises pas encore triées pour cette cible : un échantillon fixe de N entreprises avec --echantillon, sinon
 toutes. Ensuite, chaque nouvelle entreprise trouvée par la campagne est triée au fil de l'eau. Une nouvelle cible
 fait tout retrier (les anciens avis sont ignorés). Rien d'autre ne change : prix, crédits, écrans.

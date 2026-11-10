@@ -2,7 +2,7 @@
  * Rôle : en-tête de 48 px présent sur toutes les pages de l'organisation (relooking du 8/11/2026,
  * façon ElevenLabs) — bouton pour replier la barre latérale, fil d'Ariane, accès à la recherche,
  * crédits restants et notifications. Le menu du compte est en bas de la barre latérale (pas en double ici, 10/11).
- * Données : workspace (passé par le layout) ; solde de crédits (loadDiscoveryBalance) derrière un Suspense.
+ * Données : workspace (passé par le layout) ; crédits disponibles, packs compris (loadAvailableCredits) derrière un Suspense.
  * Écritures : aucune.
  */
 import { Suspense } from 'react';
@@ -19,7 +19,7 @@ import { Trans } from '@kit/ui/trans';
 
 import pathsConfig from '~/config/paths.config';
 
-import { loadDiscoveryBalance } from '../_lib/server/leadmaker.loader';
+import { loadAvailableCredits } from '../_lib/server/leadmaker.loader';
 import type { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { TeamAccountNotifications } from './team-account-notifications';
 
@@ -86,7 +86,7 @@ export function TeamAccountTopBar(props: {
 
 async function CreditsPill(props: { accountId: string; billingPath: string }) {
   const [balance, format] = await Promise.all([
-    loadDiscoveryBalance(getSupabaseServerClient(), props.accountId),
+    loadAvailableCredits(getSupabaseServerClient(), props.accountId),
     getFormatter(),
   ]);
 

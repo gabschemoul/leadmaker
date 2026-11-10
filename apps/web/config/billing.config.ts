@@ -5,6 +5,8 @@
  * Crédit unique (9/11/2026) : 15 000 / 40 000 / 100 000 crédits par mois, 1 crédit = 1 entreprise
  * gardée, prise de contact incluse (les envois ne coûtent rien). Aucun plafond par jour.
  * Les textes (description, avantages, badge) sont des clés de traduction : billing.json › plans (FR/EN).
+ * Packs de crédits (10/11/2026) : achat ponctuel réservé aux organisations avec forfait (S / M / L), produit
+ * caché du choix de forfait et de la grille tarifaire ; crédits par pack dans lib/leadmaker/credit-packs.ts.
  * Les identifiants de prix Stripe sont lus dans l'environnement : tant qu'ils ne sont
  * pas renseignés, des valeurs de substitution permettent de faire tourner l'application.
  */
@@ -168,6 +170,56 @@ export default createBillingSchema({
         'billing.plans.scale.features.campaigns',
         'billing.plans.scale.features.support',
       ],
+    },
+    {
+      // Packs de crédits : paiement unique, achetés depuis la page Facturation (jamais dans le choix de forfait)
+      id: 'credit-packs',
+      name: 'Packs de crédits',
+      description: 'billing.creditPacks.description',
+      currency: 'USD',
+      hidden: true,
+      plans: [
+        {
+          name: 'Pack S',
+          id: 'pack-s',
+          paymentType: 'one-time',
+          lineItems: [
+            {
+              id: price('NEXT_PUBLIC_STRIPE_PRICE_PACK_S', 'price_pack_s'),
+              name: 'Pack S',
+              cost: 99,
+              type: 'flat' as const,
+            },
+          ],
+        },
+        {
+          name: 'Pack M',
+          id: 'pack-m',
+          paymentType: 'one-time',
+          lineItems: [
+            {
+              id: price('NEXT_PUBLIC_STRIPE_PRICE_PACK_M', 'price_pack_m'),
+              name: 'Pack M',
+              cost: 279,
+              type: 'flat' as const,
+            },
+          ],
+        },
+        {
+          name: 'Pack L',
+          id: 'pack-l',
+          paymentType: 'one-time',
+          lineItems: [
+            {
+              id: price('NEXT_PUBLIC_STRIPE_PRICE_PACK_L', 'price_pack_l'),
+              name: 'Pack L',
+              cost: 549,
+              type: 'flat' as const,
+            },
+          ],
+        },
+      ],
+      features: ['billing.creditPacks.validity'],
     },
   ],
 });

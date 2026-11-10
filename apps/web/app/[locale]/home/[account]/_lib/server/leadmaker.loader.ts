@@ -74,36 +74,40 @@ export async function loadCountryOptions(client: Client) {
   return toCountryOptions(data ?? [], locale);
 }
 
-/** Solde de crédits de l'organisation (crédit unique, colonne discovery_balance ; 0 sans forfait). */
-export async function loadDiscoveryBalance(client: Client, accountId: string) {
-  const { data, error } = await client
-    .from('lm_account_credits')
-    .select('discovery_balance')
-    .eq('account_id', accountId)
-    .maybeSingle();
+/**
+ * Crédits disponibles de l'organisation : solde du forfait + packs de crédits non expirés (10/11/2026,
+ * lm_available_credits) ; 0 sans forfait ni pack.
+ */
+export async function loadAvailableCredits(client: Client, accountId: string) {
+  const { data, error } = await client.rpc('lm_available_credits', {
+    p_account_id: accountId,
+  });
 
   if (error) {
     throw error;
   }
 
-  return data?.discovery_balance ?? 0;
+  return data ?? 0;
 }
 
 /**
- * L'organisation a-t-elle un forfait (ou un reste de crédits) ? Même règle que le bandeau « Choisissez un
- * forfait » ; sans forfait, le pilote automatique ne peut rien envoyer (les envois sont gratuits mais
- * réservés aux organisations avec forfait).
+ * L'organisation a-t-elle un forfait (ou un reste de crédits, packs compris) ? Même règle que le bandeau
+ * « Choisissez un forfait » ; sans forfait, le pilote automatique ne peut rien envoyer (les envois sont
+ * gratuits mais réservés aux organisations avec forfait).
  */
 export async function loadHasPlan(client: Client, accountId: string) {
-  const { data, error } = await client
-    .from('lm_account_credits')
-    .select('plan_id, discovery_balance')
-    .eq('account_id', accountId)
-    .maybeSingle();
+  const [{ data, error }, available] = await Promise.all([
+    client
+      .from('lm_account_credits')
+      .select('plan_id')
+      .eq('account_id', accountId)
+      .maybeSingle(),
+    loadAvailableCredits(client, accountId),
+  ]);
 
   if (error) {
     throw error;
   }
 
-  return Boolean(data?.plan_id) || (data?.discovery_balance ?? 0) > 0;
+  return Boolean(data?.plan_id) || available > 0;
 }

@@ -19,7 +19,7 @@
   "noPermissionsAlertHeading": "Vous n'avez pas les droits pour modifier les paramètres de facturation",
   "noPermissionsAlertBody": "Veuillez contacter le propriétaire du compte pour modifier les paramètres de facturation de votre compte.",
   "checkoutSuccessTitle": "C'est fait ! Tout est prêt.",
-  "checkoutSuccessDescription": "Merci pour votre abonnement, il a été traité avec succès ! Un e-mail de confirmation sera envoyé à {customerEmail}.",
+  "checkoutSuccessDescription": "Merci, votre paiement a bien été traité ! Un e-mail de confirmation sera envoyé à {customerEmail}.",
   "checkoutSuccessBackButton": "Accéder à l'application",
   "cannotManageBillingAlertTitle": "Vous ne pouvez pas gérer la facturation",
   "cannotManageBillingAlertDescription": "Vous n'avez pas les droits pour gérer la facturation. Veuillez contacter le propriétaire du compte.",
@@ -167,7 +167,21 @@
     "dateColumn": "Date",
     "campaignColumn": "Campagne",
     "creditsColumn": "Crédits",
-    "refill": "Recharge du forfait",
-    "other": "Autre"
+    "refill": "Crédits ajoutés",
+    "other": "Autre",
+    "total": "Total disponible : {count} crédits",
+    "planBalance": "Crédits du forfait",
+    "packBalance": "Crédits des packs",
+    "packExpiry": "Prochaine expiration le {date}"
+  },
+  "creditPacks": {
+    "title": "Acheter des crédits",
+    "subtitle": "Besoin de plus de crédits ce mois-ci ? Ajoutez un pack, sans changer de forfait.",
+    "description": "Crédits en plus de votre forfait, en paiement unique",
+    "credits": "{count} crédits",
+    "perThousand": "soit {price} les 1 000 crédits",
+    "buy": "Acheter",
+    "validity": "Valables 12 mois. Utilisés seulement quand les crédits de votre forfait sont épuisés.",
+    "error": "Le paiement n'a pas pu être préparé. Réessayez dans un instant ; si le problème continue, contactez-nous."
   }
 }

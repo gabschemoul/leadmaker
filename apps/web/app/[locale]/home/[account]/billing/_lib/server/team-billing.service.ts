@@ -18,6 +18,7 @@ import appConfig from '~/config/app.config';
 import billingConfig from '~/config/billing.config';
 import pathsConfig from '~/config/paths.config';
 import { Database } from '~/lib/database.types';
+import { CREDIT_PACKS_PRODUCT_ID } from '~/lib/leadmaker/credit-packs';
 
 import { TeamCheckoutSchema } from '../schema/team-billing.schema';
 
@@ -85,6 +86,17 @@ class TeamBillingService {
     // retrieve the plan from the configuration
     // so we can assign the correct checkout data
     const { plan, product } = getPlanDetails(params.productId, params.planId);
+
+    // Packs de crédits (10/11/2026) : réservés aux organisations dont l'abonnement est en cours
+    if (product.id === CREDIT_PACKS_PRODUCT_ID) {
+      const subscription = await api.getSubscription(accountId);
+
+      if (!subscription?.active) {
+        logger.warn(ctx, `Credit pack checkout without an active plan.`);
+
+        throw new Error('An active plan is required to buy credit packs');
+      }
+    }
 
     // Determine trial eligibility at the identity level: if the user already
     // has billing history on any account they own, do not grant another trial.

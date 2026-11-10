@@ -1,5 +1,10 @@
+import { connection } from 'next/server';
+
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 import { getFormatter, getTranslations } from 'next-intl/server';
 
+import type { Database } from '@kit/supabase/database';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import {
   Card,
@@ -30,13 +35,15 @@ type UsageRow = {
  * Crédit unique (9/11) : seul le solde `discovery_balance` (type 'discovery') compte ; l'ancien solde
  * de prise de contact n'est plus ni affiché ni débité. Si la fonction n'existe pas encore en base,
  * seul le solde est affiché.
+ * Packs de crédits (10/11) : quand l'organisation en a, le solde du forfait et celui des packs (avec la
+ * prochaine expiration) sont montrés côte à côte, avec le total disponible (lm_available_credits).
  */
 export async function CreditUsageCard(props: { accountId: string }) {
   const client = getSupabaseServerClient();
   const t = await getTranslations('billing.usage');
   const format = await getFormatter();
 
-  const [credits, usage] = await Promise.all([
+  const [credits, usage, packRows, available] = await Promise.all([
     client
       .from('lm_account_credits')
       .select(
@@ -48,11 +55,19 @@ export async function CreditUsageCard(props: { accountId: string }) {
       p_account_id: props.accountId,
       p_days: 30,
     }),
+    loadActivePacks(client, props.accountId),
+    client.rpc('lm_available_credits', { p_account_id: props.accountId }),
   ]);
 
   const balance = credits.data;
   const plan = balance?.plan ?? null;
   const renewal = balance?.next_refill_at ?? balance?.period_ends_at ?? null;
+  const planBalance = balance?.discovery_balance ?? 0;
+
+  const packs = packRows.data ?? [];
+  const packCredits = packs.reduce((sum, pack) => sum + pack.remaining, 0);
+  const nextExpiry = packs[0]?.expires_at ?? null;
+  const total = available.data ?? planBalance + packCredits;
 
   // une ligne par jour et par campagne ; les recharges du forfait (sans campagne) à part
   const rows = new Map<string, UsageRow>();
@@ -90,15 +105,54 @@ export async function CreditUsageCard(props: { accountId: string }) {
       </CardHeader>
 
       <CardContent className={'flex flex-col gap-6'}>
-        <div className={'overflow-hidden rounded-xl border'}>
-          <Balance
-            label={t('balance')}
-            value={balance?.discovery_balance ?? 0}
-            max={plan?.discovery_credits ?? null}
-            format={format}
-            ofLabel={t('of')}
-          />
-        </div>
+        {packCredits > 0 ? (
+          <div className={'flex flex-col gap-2'}>
+            <p className={'text-sm'} data-test={'credit-usage-total'}>
+              {t('total', { count: format.number(total) })}
+            </p>
+
+            <div
+              className={
+                'grid overflow-hidden rounded-xl border sm:grid-cols-2 sm:divide-x'
+              }
+            >
+              <Balance
+                label={t('planBalance')}
+                value={planBalance}
+                max={plan?.discovery_credits ?? null}
+                format={format}
+                ofLabel={t('of')}
+              />
+
+              <Balance
+                label={t('packBalance')}
+                value={packCredits}
+                max={null}
+                format={format}
+                ofLabel={t('of')}
+                hint={
+                  nextExpiry
+                    ? t('packExpiry', {
+                        date: format.dateTime(new Date(nextExpiry), {
+                          dateStyle: 'long',
+                        }),
+                      })
+                    : null
+                }
+              />
+            </div>
+          </div>
+        ) : (
+          <div className={'overflow-hidden rounded-xl border'}>
+            <Balance
+              label={t('balance')}
+              value={total}
+              max={plan?.discovery_credits ?? null}
+              format={format}
+              ofLabel={t('of')}
+            />
+          </div>
+        )}
 
         {usage.error ? null : lines.length === 0 ? (
           <p className={'text-muted-foreground text-sm'}>{t('empty')}</p>
@@ -139,6 +193,23 @@ export async function CreditUsageCard(props: { accountId: string }) {
   );
 }
 
+/** Packs de crédits encore utilisables, du plus proche de son expiration au plus lointain (RLS : membres). */
+async function loadActivePacks(
+  client: SupabaseClient<Database>,
+  accountId: string,
+) {
+  // l'heure de la requête : lecture par requête, jamais pré-rendue
+  await connection();
+
+  return client
+    .from('lm_credit_packs')
+    .select('remaining, expires_at')
+    .eq('account_id', accountId)
+    .gt('remaining', 0)
+    .gt('expires_at', new Date().toISOString())
+    .order('expires_at', { ascending: true });
+}
+
 /** « −120 », « +30 000 », les deux, ou « — ». */
 function movement(
   used: number,
@@ -158,6 +229,7 @@ function Balance(props: {
   value: number;
   max: number | null;
   ofLabel: string;
+  hint?: string | null;
   format: Awaited<ReturnType<typeof getFormatter>>;
 }) {
   // jauge façon ElevenLabs : étiquette, grand chiffre, barre de progression
@@ -180,6 +252,10 @@ function Balance(props: {
           </span>
         ) : null}
       </p>
+
+      {props.hint ? (
+        <p className={'text-muted-foreground text-sm'}>{props.hint}</p>
+      ) : null}
 
       {ratio !== null ? (
         <div

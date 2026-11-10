@@ -19,7 +19,7 @@
   "noPermissionsAlertHeading": "You don't have permissions to change the billing settings",
   "noPermissionsAlertBody": "Please contact your account owner to change the billing settings for your account.",
   "checkoutSuccessTitle": "Done! You're all set.",
-  "checkoutSuccessDescription": "Thank you for subscribing, we have successfully processed your subscription! A confirmation email will be sent to {customerEmail}.",
+  "checkoutSuccessDescription": "Thank you, your payment was processed successfully! A confirmation email will be sent to {customerEmail}.",
   "checkoutSuccessBackButton": "Proceed to App",
   "cannotManageBillingAlertTitle": "You cannot manage billing",
   "cannotManageBillingAlertDescription": "You do not have permissions to manage billing. Please contact your account owner.",
@@ -167,7 +167,21 @@
     "dateColumn": "Date",
     "campaignColumn": "Campaign",
     "creditsColumn": "Credits",
-    "refill": "Plan refill",
-    "other": "Other"
+    "refill": "Credits added",
+    "other": "Other",
+    "total": "Total available: {count} credits",
+    "planBalance": "Plan credits",
+    "packBalance": "Pack credits",
+    "packExpiry": "Next expiry on {date}"
+  },
+  "creditPacks": {
+    "title": "Buy credits",
+    "subtitle": "Need more credits this month? Add a pack without changing your plan.",
+    "description": "Credits on top of your plan, one-time payment",
+    "credits": "{count} credits",
+    "perThousand": "{price} per 1,000 credits",
+    "buy": "Buy",
+    "validity": "Valid for 12 months. Only used once your plan credits run out.",
+    "error": "We couldn't prepare the payment. Please try again in a moment; if the problem persists, contact us."
   }
 }

@@ -27,6 +27,7 @@ import billingConfig from '~/config/billing.config';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadTeamAccountBillingPage } from '../_lib/server/team-account-billing-page.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
+import { CreditPacksCard } from './_components/credit-packs-card';
 import { CreditUsageCard } from './_components/credit-usage-card';
 import { TeamAccountCheckoutForm } from './_components/team-account-checkout-form';
 import { TeamBillingPortalForm } from './_components/team-billing-portal-form';
@@ -113,6 +114,9 @@ async function TeamAccountBillingContent({
 
   const shouldShowBillingPortal = canManageBilling && customerId;
 
+  // packs de crédits (10/11/2026) : seulement avec un abonnement en cours
+  const canBuyCreditPacks = canManageBilling && Boolean(subscription?.active);
+
   return (
     <>
       {/* relooking du 8/11/2026 : les crédits d'abord (jauges), puis le forfait sur toute la largeur */}
@@ -144,6 +148,10 @@ async function TeamAccountBillingContent({
             );
           }}
         </If>
+
+        {canBuyCreditPacks ? (
+          <CreditPacksCard accountId={accountId} slug={account} />
+        ) : null}
 
         <If condition={order}>
           {(order) => {

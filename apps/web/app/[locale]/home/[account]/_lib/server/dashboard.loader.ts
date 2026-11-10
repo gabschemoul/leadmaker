@@ -31,8 +31,8 @@ function emptyCounts() {
  * pour nommer leur prochaine action, et les chiffres clés de l'organisation.
  */
 export async function loadDashboard(client: Client, accountId: string) {
-  const [campaigns, attempts, senders, credits, autopilots] = await Promise.all(
-    [
+  const [campaigns, attempts, senders, credits, autopilots, available] =
+    await Promise.all([
       client
         .from('lm_campaigns')
         .select(
@@ -62,8 +62,9 @@ export async function loadDashboard(client: Client, accountId: string) {
         .select('id, campaign_id, status, target')
         .eq('account_id', accountId)
         .in('status', ['preview', 'running', 'paused']),
-    ],
-  );
+      // solde du forfait + packs de crédits non expirés (10/11)
+      client.rpc('lm_available_credits', { p_account_id: accountId }),
+    ]);
 
   if (campaigns.error) throw campaigns.error;
   if (attempts.error) throw attempts.error;
@@ -136,8 +137,8 @@ export async function loadDashboard(client: Client, accountId: string) {
   return {
     campaigns: rows,
     kpis: {
-      // crédit unique (9/11) : discovery_balance est le seul solde
-      creditBalance: credits.data?.discovery_balance ?? 0,
+      // crédit unique (9/11) ; packs de crédits compris (10/11)
+      creditBalance: available.data ?? credits.data?.discovery_balance ?? 0,
       creditMonthly: plan?.discovery_credits ?? null,
       toReview: totals.ready + totals.to_verify + totals.incomplete,
       activeCampaigns: rows.filter((row) => row.facts.status === 'running')

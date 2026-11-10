@@ -6,6 +6,7 @@ import { getLogger } from '@kit/shared/logger';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
 import billingConfig from '~/config/billing.config';
+import { createCreditPacksService } from '~/lib/server/leadmaker/credit-packs.service';
 import { createPlanCreditsService } from '~/lib/server/leadmaker/plan-credits.service';
 
 /**
@@ -61,12 +62,44 @@ export const POST = enhanceRouteHandler(
       );
     };
 
+    // Packs de crédits (10/11/2026) : une commande payée crédite les packs qu'elle contient (une fois par
+    // commande et par prix). Les autres commandes sont ignorées.
+    const packs = createCreditPacksService(supabaseClientProvider());
+
+    const logPacks = (
+      accountId: string | null,
+      orderId: string,
+      result: { granted: unknown[]; reason?: string },
+    ) => {
+      // commande sans pack : rien à dire
+      if (result.granted.length === 0 && !result.reason) return;
+
+      logger.info(
+        { ...ctx, accountId, orderId, ...result },
+        'LeadMaker credit packs grant',
+      );
+    };
+
     try {
       await service.handleWebhookEvent(request, {
         onCheckoutSessionCompleted: async (payload) => {
-          if (!('target_order_id' in payload)) {
+          if ('target_order_id' in payload) {
+            const result = await packs.grantFromOrder(payload);
+
+            logPacks(
+              payload.target_account_id,
+              payload.target_order_id,
+              result,
+            );
+          } else {
             await syncCredits(payload);
           }
+        },
+        // paiement différé (ex. prélèvement) validé après coup : la commande enregistrée passe à « payée »
+        onPaymentSucceeded: async (sessionId) => {
+          const result = await packs.grantFromStoredOrder(sessionId);
+
+          logPacks(null, sessionId, result);
         },
         onSubscriptionUpdated: syncCredits,
         onInvoicePaid: syncCredits,

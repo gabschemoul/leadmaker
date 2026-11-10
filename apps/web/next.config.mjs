@@ -61,6 +61,9 @@ const config = {
   cacheComponents: true,
   partialPrefetching: true,
   experimental: {
+    // Étapes et pages déjà vues gardées 60 s dans le navigateur : y revenir est immédiat (10/11/2026). Une
+    // action (enregistrer, lancer…) vide ce cache ; les chiffres en direct se rafraîchissent d'eux-mêmes.
+    staleTimes: { dynamic: 60 },
     globalNotFound: true,
     mdxRs: true,
     turbopackFileSystemCacheForDev: true,

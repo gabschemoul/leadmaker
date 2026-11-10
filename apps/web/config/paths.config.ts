@@ -44,7 +44,8 @@ const pathsConfig = PathsSchema.parse({
     personalAccountSettings: '/home/settings',
     personalAccountBilling: '/home/billing',
     personalAccountBillingReturn: '/home/billing/return',
-    accountHome: '/home/[account]',
+    // l'organisation s'ouvre sur ses campagnes (10/11/2026 : le tableau de bord est retiré)
+    accountHome: '/home/[account]/campaigns',
     accountSettings: `/home/[account]/settings`,
     accountBilling: `/home/[account]/billing`,
     accountMembers: `/home/[account]/members`,

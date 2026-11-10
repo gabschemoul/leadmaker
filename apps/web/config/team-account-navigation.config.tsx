@@ -9,7 +9,6 @@ import {
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
 import { CampaignsIcon } from '~/components/icons/campaigns-icon';
-import { DashboardIcon } from '~/components/icons/dashboard-icon';
 import { FormsIcon } from '~/components/icons/forms-icon';
 import { SendersIcon } from '~/components/icons/senders-icon';
 import featureFlagsConfig from '~/config/feature-flags.config';
@@ -32,12 +31,6 @@ const getRoutes = (account: string, showSpaces: boolean) => [
   {
     label: 'common.routes.application',
     children: [
-      {
-        label: 'common.routes.dashboard',
-        path: pathsConfig.app.accountHome.replace('[account]', account),
-        Icon: <DashboardIcon {...customIconProps} />,
-        highlightMatch: `${pathsConfig.app.home}$`,
-      },
       {
         label: 'common.routes.campaigns',
         path: createPath(pathsConfig.app.accountCampaigns, account),

@@ -651,6 +651,7 @@
   "companies": {
     "title": "Your companies",
     "editTarget": "Edit",
+    "sortLabel": "Sorting",
     "examined": "{count, plural, =0 {No listing examined yet} one {{value} listing examined} other {{value} listings examined}}",
     "sorted": "{done} / {total} sorted",
     "searchLabel": "Search",

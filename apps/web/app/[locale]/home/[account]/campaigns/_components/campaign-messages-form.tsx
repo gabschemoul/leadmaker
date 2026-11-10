@@ -43,7 +43,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
@@ -70,6 +69,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Textarea } from '@kit/ui/textarea';
 import { Trans } from '@kit/ui/trans';
 
+import { InfoTip } from '~/components/info-tip';
 import {
   BODY_MAX,
   type CampaignTemplates,
@@ -537,13 +537,14 @@ export function CampaignMessagesForm(props: {
             <FormItem
               className={'bg-muted/40 rounded-lg border border-dashed p-4'}
             >
-              <FormLabel>
-                <Trans i18nKey={'outreach.messages.shortLabel'} />
-              </FormLabel>
-
-              <p className={'text-muted-foreground text-sm'}>
-                <Trans i18nKey={'outreach.messages.shortIntro'} />
-              </p>
+              <div className={'flex items-center gap-2'}>
+                <FormLabel>
+                  <Trans i18nKey={'outreach.messages.shortLabel'} />
+                </FormLabel>
+                <InfoTip>
+                  <Trans i18nKey={'outreach.messages.shortIntro'} />
+                </InfoTip>
+              </div>
 
               <FormControl>
                 <Textarea
@@ -677,13 +678,21 @@ export function CampaignMessagesForm(props: {
 
           <Card>
             <CardHeader>
-              <CardTitle>
+              <CardTitle className={'flex items-center gap-2'}>
                 <Trans i18nKey={'campaigns.messages.title'} />
+                <InfoTip>
+                  <span className={'flex flex-col gap-2'}>
+                    <span>
+                      <Trans i18nKey={'campaigns.messages.intro'} />
+                    </span>
+                    {perGroup ? (
+                      <span>
+                        <Trans i18nKey={'campaigns.messages.groupsHint'} />
+                      </span>
+                    ) : null}
+                  </span>
+                </InfoTip>
               </CardTitle>
-
-              <CardDescription>
-                <Trans i18nKey={'campaigns.messages.intro'} />
-              </CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -692,10 +701,6 @@ export function CampaignMessagesForm(props: {
                   className={'mb-4 flex flex-col gap-2'}
                   data-test={'messages-groups'}
                 >
-                  <p className={'text-muted-foreground text-sm'}>
-                    <Trans i18nKey={'campaigns.messages.groupsHint'} />
-                  </p>
-
                   <Tabs
                     value={String(view.tab)}
                     onValueChange={(value) =>
@@ -839,7 +844,7 @@ export function CampaignMessagesForm(props: {
                   </div>
                 ) : null}
 
-                {perGroup && !tabFilled(view.tab) ? (
+                {perGroup && !activeTab.key && !tabFilled(view.tab) ? (
                   <p
                     className={
                       'text-muted-foreground mt-3 flex items-start gap-2 text-sm'
@@ -847,9 +852,7 @@ export function CampaignMessagesForm(props: {
                     data-test={'messages-group-empty'}
                   >
                     <TriangleAlert className={'mt-0.5 size-4 shrink-0'} />
-                    <span>
-                      {activeTab.key ? tm('groupEmpty') : tm('othersEmpty')}
-                    </span>
+                    <span>{tm('othersEmpty')}</span>
                   </p>
                 ) : null}
 

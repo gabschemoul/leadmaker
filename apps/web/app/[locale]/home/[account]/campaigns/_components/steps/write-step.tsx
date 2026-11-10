@@ -7,11 +7,11 @@ import { Button } from '@kit/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@kit/ui/card';
 
+import { InfoTip } from '~/components/info-tip';
 import type {
   CampaignTemplates,
   TemplateContext,
@@ -69,8 +69,10 @@ export async function WriteStep(props: {
   const senderCard = (
     <Card data-test={'campaign-sender-card'}>
       <CardHeader>
-        <CardTitle>{t('senderTitle')}</CardTitle>
-        <CardDescription>{t('senderIntro')}</CardDescription>
+        <CardTitle className={'flex items-center gap-2'}>
+          {t('senderTitle')}
+          <InfoTip>{t('senderIntro')}</InfoTip>
+        </CardTitle>
       </CardHeader>
 
       <CardContent className={'flex flex-col gap-4 text-sm'}>

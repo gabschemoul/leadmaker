@@ -38,6 +38,7 @@ import { Spinner } from '@kit/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Trans } from '@kit/ui/trans';
 
+import { InfoTip } from '~/components/info-tip';
 import {
   COMPANIES_PAGE_SIZE,
   type CompaniesTab,
@@ -200,18 +201,17 @@ export function CompaniesStep(props: {
                 </TabsTrigger>
               </TabsList>
 
-              <span
-                className={'text-muted-foreground text-sm'}
-                data-test={'campaign-companies-price'}
-              >
-                {sort.pricePending ? (
-                  <Trans i18nKey={'campaigns.companies.pricePending'} />
-                ) : (
-                  <Trans
-                    i18nKey={'campaigns.companies.price'}
-                    values={{ count: sort.creditsPerProspect }}
-                  />
-                )}
+              <span data-test={'campaign-companies-price'}>
+                <InfoTip>
+                  {sort.pricePending ? (
+                    <Trans i18nKey={'campaigns.companies.pricePending'} />
+                  ) : (
+                    <Trans
+                      i18nKey={'campaigns.companies.price'}
+                      values={{ count: sort.creditsPerProspect }}
+                    />
+                  )}
+                </InfoTip>
               </span>
             </div>
 
@@ -325,13 +325,9 @@ function SortProgress(props: { sort: SortState; live: boolean }) {
       >
         <span className={'flex items-center gap-2'}>
           {props.live ? <Spinner className={'size-3.5'} /> : null}
-          <Trans
-            i18nKey={'campaigns.companies.examined'}
-            values={{
-              count: sort.examined,
-              value: format.number(sort.examined),
-            }}
-          />
+          <span className={'text-foreground font-medium'}>
+            <Trans i18nKey={'campaigns.companies.sortLabel'} />
+          </span>
         </span>
 
         {sort.total > 0 ? (

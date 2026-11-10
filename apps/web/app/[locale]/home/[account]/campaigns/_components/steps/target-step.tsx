@@ -14,6 +14,8 @@ import {
 } from '@kit/ui/card';
 import { Trans } from '@kit/ui/trans';
 
+import { InfoTip } from '~/components/info-tip';
+
 import type { loadCampaignForEdit } from '../../_lib/server/campaigns.loader';
 
 const CHIPS_PREVIEW = 24;
@@ -144,11 +146,9 @@ export async function TargetStep(props: {
         </CardHeader>
       </Card>
 
-      {campaign.launched ? (
-        <p className={'text-muted-foreground text-sm'}>{t('launchedHint')}</p>
-      ) : null}
+      <div className={'flex flex-wrap items-center justify-end gap-2'}>
+        {campaign.launched ? <InfoTip>{t('launchedHint')}</InfoTip> : null}
 
-      <div className={'flex flex-wrap justify-end gap-2'}>
         <Button
           variant={'outline'}
           nativeButton={false}

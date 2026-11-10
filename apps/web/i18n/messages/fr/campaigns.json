@@ -651,6 +651,7 @@
   "companies": {
     "title": "Vos entreprises",
     "editTarget": "Modifier",
+    "sortLabel": "Tri",
     "examined": "{count, plural, =0 {Aucune fiche examinée pour l'instant} one {{value} fiche examinée} other {{value} fiches examinées}}",
     "sorted": "{done} / {total} triées",
     "searchLabel": "Recherche",

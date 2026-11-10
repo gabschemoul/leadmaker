@@ -9,6 +9,8 @@ import { Spinner } from '@kit/ui/spinner';
 import { Switch } from '@kit/ui/switch';
 import { Trans } from '@kit/ui/trans';
 
+import { InfoTip } from '~/components/info-tip';
+
 import { setLocalDiscoveryAction } from '../_lib/server/campaign-lifecycle-actions';
 
 /**
@@ -49,7 +51,7 @@ export function CampaignLocalDiscovery(props: {
 
   return (
     <div
-      className={'flex items-start gap-3 rounded-lg border p-4'}
+      className={'flex items-center gap-3 rounded-lg border p-4'}
       data-test={'campaign-local-discovery'}
     >
       {props.allowed ? (
@@ -69,18 +71,17 @@ export function CampaignLocalDiscovery(props: {
       <div className={'flex flex-col gap-1'}>
         <span className={'flex items-center gap-2 text-sm font-medium'}>
           <Trans i18nKey={'campaigns.localDiscovery.title'} />
+          <InfoTip>
+            <Trans
+              i18nKey={
+                enabled
+                  ? 'campaigns.localDiscovery.onHint'
+                  : 'campaigns.localDiscovery.offHint'
+              }
+            />
+          </InfoTip>
           {toggle.isPending ? <Spinner className={'size-3.5'} /> : null}
         </span>
-
-        <p className={'text-muted-foreground text-sm'}>
-          <Trans
-            i18nKey={
-              enabled
-                ? 'campaigns.localDiscovery.onHint'
-                : 'campaigns.localDiscovery.offHint'
-            }
-          />
-        </p>
 
         {enabled && props.allowed ? (
           <p

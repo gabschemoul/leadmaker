@@ -134,8 +134,7 @@ export function CompaniesStep(props: {
               {/* Texte en ligne (pas de flex) : « · Modifier » suit la fin de la cible au lieu de tomber
                   seul sur la ligne suivante quand la cible est longue */}
               <CardDescription data-test={'campaign-companies-target'}>
-                <span>{sort.target}</span>{' '}
-                <span aria-hidden>·</span>{' '}
+                <span>{sort.target}</span> <span aria-hidden>·</span>{' '}
                 <Link
                   href={props.editHref}
                   className={
@@ -273,10 +272,9 @@ function SearchProgress(props: {
     return null;
   }
 
-  const percent = Math.min(
-    100,
-    Math.floor((searchesDone / searchesTotal) * 100),
-  );
+  const raw = Math.min(100, (searchesDone / searchesTotal) * 100);
+  // une décimale sous 10 % : « 0,7 % » plutôt qu'un « 0 % » trompeur quand la recherche prévue est immense
+  const percent = raw < 10 ? Math.floor(raw * 10) / 10 : Math.floor(raw);
 
   return (
     <div
@@ -299,7 +297,9 @@ function SearchProgress(props: {
           />
         </span>
 
-        <span className={'tabular-nums'}>{format.number(percent)} %</span>
+        <span className={'tabular-nums'}>
+          {format.number(percent, { maximumFractionDigits: 1 })} %
+        </span>
       </div>
 
       <Progress value={percent} locale={locale} aria-label={t('searchLabel')} />

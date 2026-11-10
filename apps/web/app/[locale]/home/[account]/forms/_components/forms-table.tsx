@@ -394,7 +394,7 @@ export function FormsTable(props: {
                   </div>
                 </TableCell>
 
-                <TableCell className={'max-w-72'}>
+                <TableCell className={'w-72 max-w-72'}>
                   <div className={'flex flex-col items-start gap-1'}>
                     <Badge
                       variant={'outline'}
@@ -423,7 +423,11 @@ export function FormsTable(props: {
                     ) : null}
 
                     {row.detail ? (
-                      <span className={'text-muted-foreground line-clamp-2 text-xs'}>
+                      <span
+                        className={
+                          'text-muted-foreground line-clamp-2 text-xs whitespace-normal'
+                        }
+                      >
                         {alert &&
                         missing.length === 0 &&
                         !row.protection_type ? (

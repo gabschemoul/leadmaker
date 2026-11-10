@@ -7,10 +7,22 @@ import { getTranslations } from 'next-intl/server';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { createTeamAccountsApi } from '@kit/team-accounts/api';
 import { TeamAccountSettingsContainer } from '@kit/team-accounts/components';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@kit/ui/card';
+import { Trans } from '@kit/ui/trans';
 
 import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 import featuresFlagConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
+
+import { loadSpaces } from '../_lib/server/leadmaker.loader';
+import { FolderSwitch } from '../sender/_components/folder-switch';
+import { SpaceOfferForm } from './_components/space-offer-form';
 
 export const generateMetadata = async () => {
   const t = await getTranslations('teams');
@@ -23,6 +35,7 @@ export const generateMetadata = async () => {
 
 interface TeamAccountSettingsPageProps {
   params: Promise<{ account: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 const paths = {
@@ -31,7 +44,20 @@ const paths = {
 
 function TeamAccountSettingsPage(props: TeamAccountSettingsPageProps) {
   return (
-    <div className={'flex max-w-2xl flex-1 flex-col'}>
+    <div className={'flex max-w-2xl flex-1 flex-col gap-8'}>
+      <Suspense
+        fallback={
+          <Delayed>
+            <CardSkeleton rows={2} />
+          </Delayed>
+        }
+      >
+        <SpaceOfferCard
+          params={props.params}
+          searchParams={props.searchParams}
+        />
+      </Suspense>
+
       <Suspense
         fallback={
           <Delayed>
@@ -74,6 +100,81 @@ async function TeamAccountSettings({
       paths={paths}
       features={features}
     />
+  );
+}
+
+/**
+ * « Votre offre » (CDC-PARCOURS-TRI-ANNUAIRE §3.1) : texte du dossier utilisé par le tri IA et « Proposer avec
+ * l'IA ». Choix du dossier (?space=) seulement quand l'organisation en a plusieurs, comme la page Expéditeurs.
+ */
+async function SpaceOfferCard(props: TeamAccountSettingsPageProps) {
+  await connection();
+
+  const [{ account: slug }, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ]);
+
+  const client = getSupabaseServerClient();
+  const team = await createTeamAccountsApi(client).getTeamAccount(slug);
+  const spaces = await loadSpaces(client, team.id);
+
+  const requested =
+    typeof searchParams.space === 'string' ? searchParams.space : null;
+
+  const space = spaces.find((item) => item.id === requested) ?? spaces[0];
+
+  if (!space) {
+    return null;
+  }
+
+  const { data, error } = await client
+    .from('lm_spaces')
+    .select('offer')
+    .eq('id', space.id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (
+    <Card data-test={'space-offer-card'}>
+      <CardHeader>
+        <CardTitle>
+          <Trans i18nKey={'teams.settings.offer.title'} />
+        </CardTitle>
+
+        <CardDescription>
+          <Trans i18nKey={'teams.settings.offer.description'} />
+        </CardDescription>
+
+        {spaces.length > 1 ? (
+          <div className={'flex flex-col gap-1.5 pt-2'}>
+            <span className={'text-muted-foreground text-xs'}>
+              <Trans i18nKey={'outreach.sender.folderLabel'} />
+            </span>
+
+            <FolderSwitch
+              basePath={pathsConfig.app.accountSettings.replace(
+                '[account]',
+                slug,
+              )}
+              folders={spaces.map(({ id, label }) => ({ id, label }))}
+              value={space.id}
+            />
+          </div>
+        ) : null}
+      </CardHeader>
+
+      <CardContent>
+        <SpaceOfferForm
+          key={space.id}
+          spaceId={space.id}
+          offer={data?.offer ?? ''}
+        />
+      </CardContent>
+    </Card>
   );
 }
 

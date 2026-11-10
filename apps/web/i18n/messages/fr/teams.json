@@ -10,7 +10,15 @@
     "teamName": "Nom de l'équipe",
     "teamNameDescription": "Mettez à jour le nom de votre équipe",
     "dangerZone": "Zone sensible",
-    "dangerZoneDescription": "Cette section contient des actions irréversibles"
+    "dangerZoneDescription": "Cette section contient des actions irréversibles",
+    "offer": {
+      "title": "Votre offre",
+      "description": "Ce que vous vendez, en une phrase. Le tri garde les entreprises qui peuvent en avoir besoin, et « Proposer avec l'IA » s'en sert pour écrire vos messages.",
+      "hint": "Une modification compte pour les entreprises triées ensuite ; celles déjà triées ne sont pas retriées.",
+      "save": "Enregistrer",
+      "saved": "Offre enregistrée",
+      "saveFailed": "Votre offre n'a pas pu être enregistrée. Réessayez."
+    }
   },
   "members": {
     "pageTitle": "Membres"

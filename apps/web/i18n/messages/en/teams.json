@@ -10,7 +10,15 @@
     "teamName": "Team Name",
     "teamNameDescription": "Update your team's name",
     "dangerZone": "Danger Zone",
-    "dangerZoneDescription": "This section contains actions that are irreversible"
+    "dangerZoneDescription": "This section contains actions that are irreversible",
+    "offer": {
+      "title": "Your offer",
+      "description": "What you sell, in one sentence. Sorting keeps the companies that may need it, and “Suggest with AI” uses it to write your messages.",
+      "hint": "A change applies to companies sorted afterwards; companies already sorted are not sorted again.",
+      "save": "Save",
+      "saved": "Offer saved",
+      "saveFailed": "Your offer could not be saved. Please try again."
+    }
   },
   "members": {
     "pageTitle": "Members"

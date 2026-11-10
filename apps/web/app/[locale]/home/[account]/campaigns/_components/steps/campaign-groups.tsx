@@ -31,15 +31,19 @@ type Groups = CampaignLive['groups'];
 
 /** Part minimale des gardées pour qu'un groupe compte (§4.3 : au moins 2 groupes à 15 % ou plus). */
 const GROUP_MIN_SHARE = 0.15;
+/** Groupes fins (plus de 5, jusqu'à 20, 10/11/2026) : chacun pèse peu, 2 % suffisent. */
+const FINE_GROUP_MIN_SHARE = 0.02;
 
-/** L'encart se propose : au moins 2 groupes pèsent chacun 15 % ou plus des gardées, et rien n'est encore choisi. */
+/** L'encart se propose : au moins 2 groupes pèsent assez dans les gardées, et rien n'est encore choisi. */
 function shouldPropose(groups: Groups) {
   if (groups.choice !== null || groups.totalKept <= 0) {
     return false;
   }
 
+  const minShare =
+    groups.list.length > 5 ? FINE_GROUP_MIN_SHARE : GROUP_MIN_SHARE;
   const significant = groups.list.filter(
-    (group) => group.kept / groups.totalKept >= GROUP_MIN_SHARE,
+    (group) => group.kept / groups.totalKept >= minShare,
   );
 
   return significant.length >= 2;

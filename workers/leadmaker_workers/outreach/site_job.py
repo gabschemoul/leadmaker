@@ -20,7 +20,7 @@ from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
 from ..discovery.scraper import USER_AGENT, proxy_from_env
 from . import netguard
-from .formfill import (CONTACT_PATHS, QUOTE_DETAIL, Sender, SiteDown, _check_alive, _contact_links, _dismiss_cookies,
+from .formfill import (CONTACT_PATHS, QUOTE_DETAIL, Sender, SiteDown, SiteGone, _check_alive, _contact_links, _dismiss_cookies,
                        _same_site, best_email, detect_protection, fill_form, harvest_emails, legal_links, open_contact_form,
                        own_email, submit)
 
@@ -147,12 +147,14 @@ def prepare(job: dict) -> dict:
                 if status == "ready":
                     out["context"] = _context(page, frame)
         except SiteDown as e:
-            out.update(status="unreachable", detail=f"site hors ligne ou en construction (« {e} »)")
+            out.update(status="unreachable", detail=f"site hors ligne ou en construction (« {e} »)",
+                       site_dead=isinstance(e, SiteGone))
         except SiteHang as e:
             out.update(status="unreachable", detail=f"site bloqué : {e} (pages vues : " + ", ".join(dict.fromkeys(visited)) + ")")
             _finish_now(out, job["site"], emails, visited)
         except Exception as e:
-            out.update(status="unreachable", detail=f"site inaccessible : {type(e).__name__}: {str(e)[:150]}")
+            out.update(status="unreachable", detail=f"site inaccessible : {type(e).__name__}: {str(e)[:150]}",
+                       site_dead="ERR_NAME_NOT_RESOLVED" in str(e))
         finally:
             signal.alarm(0)
             out["found_email"] = best_email(job["site"], emails, job.get("name", ""))

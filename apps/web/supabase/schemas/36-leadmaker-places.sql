@@ -48,8 +48,15 @@ create table if not exists public.lm_places (
   details_at timestamptz,
   -- Dernière mise à jour des infos de la fiche
   updated_at timestamptz not null default now(),
-  -- Entreprise disparue (site mort, fiche absente d'une nouvelle recherche) : plus proposée (étape 3)
+  -- Entreprise disparue : plus proposée (étape 3, CDC §8.5). Notée quand la carte affiche « fermé
+  -- définitivement » ou quand la fiche manque à places_missed_to_close nouvelles recherches complètes de sa zone.
+  -- Effacée dès que la fiche réapparaît dans une recherche.
   closed_at timestamptz,
+  -- Nouvelles recherches complètes de sa zone où la fiche n'apparaissait plus (remis à 0 quand elle est revue)
+  missed_searches smallint not null default 0,
+  -- Site mort vu par le robot de préparation (domaine à vendre, boutique fermée, domaine introuvable) : la fiche
+  -- n'est plus proposée tant que ce constat a moins de places_max_age_days jours. Effacé si le site se relit bien.
+  site_dead_at timestamptz,
   primary key (google_place_id),
   constraint lm_places_country_code_upper check (country_code = upper(country_code)),
   constraint lm_places_website_http check (website is null or website ~* '^https?://[^/\s]+'),
@@ -133,9 +140,15 @@ revoke all on function public.lm_place_zone_key(integer, double precision, doubl
 grant execute on function public.lm_place_zone_key(integer, double precision, double precision, integer) to service_role;
 
 -- Fin d'une recherche : range toutes les fiches vues dans l'annuaire commun et note la recherche au registre.
--- p_search : { country_code, gcid, geoname_id, latitude, longitude, zoom, query, complete, source, campaign_id }
+-- p_search : { country_code, gcid, geoname_id, latitude, longitude, zoom, query, complete, ended, source,
+--             campaign_id } ; ended : la liste a été lue jusqu'au bout (« fin de la liste » de Google).
 -- p_places : [{ place_id, name, category, rating, review_count, address, phone, website, website_known,
---               site_key, maps_url, latitude, longitude, city, geoname_id, opened }] dans l'ordre de Google.
+--               site_key, maps_url, latitude, longitude, city, geoname_id, opened, closed }] dans l'ordre de
+--               Google ; closed : la carte ou la fiche affiche « fermé définitivement ».
+-- Étape 3 (CDC §8.5) : une fiche revue n'est plus fermée (sauf si elle s'affiche fermée) ; une recherche
+-- complète lue jusqu'au bout compte une absence pour chaque fiche des 10 recherches précédentes de la même
+-- zone qui n'y est plus (et qu'aucune autre recherche n'a vue depuis 7 jours) ; à places_missed_to_close absences,
+-- la fiche est fermée.
 -- Mise à jour d'une fiche déjà connue : les infos nouvelles remplacent les anciennes, une info absente ne
 -- l'efface pas (une carte de liste n'a pas toujours le téléphone que la fiche ouverte avait donné), sauf le
 -- site quand on sait qu'il n'y en a plus. Renvoie le nombre de fiches rangées.
@@ -150,6 +163,10 @@ declare
   v_count integer;
   v_chain_min integer;
   v_keys text[];
+  v_search_id bigint;
+  v_cur_ids text[];
+  v_prev record;
+  v_missed_to_close integer;
 begin
   if v_country is null or length(v_country) <> 2 or jsonb_typeof(p_places) is distinct from 'array' then
     return 0;
@@ -163,22 +180,24 @@ begin
            nullif(trim(x.address), '') as address, left(nullif(trim(x.phone), ''), 50) as phone,
            public.lm_clean_website(x.website) as website, nullif(trim(x.site_key), '') as site_key,
            coalesce(x.website_known, false) as website_known, left(nullif(trim(x.maps_url), ''), 1000) as maps_url,
-           x.latitude, x.longitude, nullif(trim(x.city), '') as city, x.geoname_id, coalesce(x.opened, false) as opened
+           x.latitude, x.longitude, nullif(trim(x.city), '') as city, x.geoname_id, coalesce(x.opened, false) as opened,
+           coalesce(x.closed, false) as closed
       from jsonb_to_recordset(p_places) as x(
              place_id text, name text, category text, rating numeric, review_count integer, address text,
              phone text, website text, website_known boolean, site_key text, maps_url text,
-             latitude double precision, longitude double precision, city text, geoname_id integer, opened boolean)
+             latitude double precision, longitude double precision, city text, geoname_id integer, opened boolean,
+             closed boolean)
      where nullif(trim(x.place_id), '') is not null and nullif(trim(x.name), '') is not null
      order by x.place_id, x.opened desc nulls last
   )
   insert into public.lm_places as p (google_place_id, name, category, gcid, address, city, geoname_id, country_code,
                                      latitude, longitude, phone, website, site_key, website_known, rating,
-                                     review_count, maps_url, details_at)
+                                     review_count, maps_url, details_at, closed_at)
   select s.place_id, s.name, s.category,
          (select c.gcid from public.lm_categories c where c.label_en = s.category order by c.gcid limit 1),
          s.address, s.city, s.geoname_id, v_country, s.latitude, s.longitude, s.phone, s.website,
          case when s.website is not null then s.site_key end, s.website_known or s.website is not null,
-         s.rating, s.review_count, s.maps_url, case when s.opened then now() end
+         s.rating, s.review_count, s.maps_url, case when s.opened then now() end, case when s.closed then now() end
     from src s
   on conflict (google_place_id) do update set
     name = excluded.name,
@@ -200,8 +219,9 @@ begin
     details_at = coalesce(excluded.details_at, p.details_at),
     last_seen_at = now(),
     updated_at = now(),
-    -- revue dans une recherche : elle existe toujours
-    closed_at = null;
+    -- revue dans une recherche : elle existe toujours, sauf si Google l'affiche fermée définitivement
+    closed_at = case when excluded.closed_at is not null then coalesce(p.closed_at, excluded.closed_at) end,
+    missed_searches = 0;
 
   get diagnostics v_count = row_count;
 
@@ -233,7 +253,38 @@ begin
                         and nullif(trim(x ->> 'name'), '') is not null), '{}'),
            jsonb_array_length(p_places), coalesce((p_search ->> 'complete')::boolean, false),
            coalesce(nullif(p_search ->> 'source', ''), 'discovery'),
-           (select c.id from public.lm_campaigns c where c.id = (p_search ->> 'campaign_id')::uuid);
+           (select c.id from public.lm_campaigns c where c.id = (p_search ->> 'campaign_id')::uuid)
+    returning id, place_ids into v_search_id, v_cur_ids;
+
+    -- Étape 3 : fiches disparues. Seulement si cette recherche est complète et lue jusqu'au bout (sinon une
+    -- fiche absente peut juste être plus bas dans la liste), et si elle n'a pas fondu de moitié par rapport à
+    -- la précédente (page mal chargée).
+    if coalesce((p_search ->> 'complete')::boolean, false) and coalesce((p_search ->> 'ended')::boolean, false) then
+      select ps.id, ps.cards into v_prev
+        from public.lm_place_searches ps, public.lm_place_searches cur
+       where cur.id = v_search_id and ps.id <> cur.id and ps.complete
+         and ps.country_code = cur.country_code and ps.gcid = cur.gcid and ps.zone_key = cur.zone_key
+       order by ps.searched_at desc, ps.id desc
+       limit 1;
+
+      if v_prev.id is not null and jsonb_array_length(p_places) * 2 >= v_prev.cards then
+        select coalesce(places_missed_to_close, 2) into v_missed_to_close from public.lm_discovery_settings where id;
+
+        update public.lm_places p
+           set missed_searches = least(p.missed_searches + 1, 100),
+               closed_at = case when p.missed_searches + 1 >= coalesce(v_missed_to_close, 2)
+                                then coalesce(p.closed_at, now()) else p.closed_at end
+         where p.google_place_id in (
+                 select unnest(ps.place_ids)
+                   from (select q.place_ids from public.lm_place_searches q, public.lm_place_searches cur
+                          where cur.id = v_search_id and q.id <> cur.id and q.complete
+                            and q.country_code = cur.country_code and q.gcid = cur.gcid and q.zone_key = cur.zone_key
+                          order by q.searched_at desc, q.id desc
+                          limit 10) ps)
+           and not (p.google_place_id = any (v_cur_ids))
+           and p.last_seen_at < now() - interval '7 days';
+      end if;
+    end if;
   end if;
 
   return v_count;
@@ -248,7 +299,7 @@ grant execute on function public.lm_record_search_places(jsonb, jsonb) to servic
 
 -- Annuaire commun, étape 2 (CDC §8.3) : la recherche complète la plus récente de moins de places_max_age_days
 -- jours pour ce pays, cette activité et cette zone, avec ses fiches dans l'ordre de Google (fiches fermées
--- exclues). null si aucune : il faut faire la vraie recherche. Rien sur qui l'a faite (jamais montré).
+-- et sites morts depuis moins de places_max_age_days jours exclus, étape 3). null si aucune : il faut faire la vraie recherche. Rien sur qui l'a faite (jamais montré).
 -- Appelant : robots / serveur uniquement (rôle service).
 create or replace function public.lm_replay_search(
   p_country_code text, p_gcid text, p_geoname_id integer, p_latitude double precision, p_longitude double precision,
@@ -278,7 +329,11 @@ as $$
                          'latitude', p.latitude, 'longitude', p.longitude, 'is_chain', p.is_chain) order by i.o)
                                  from unnest(s.place_ids) with ordinality as i(id, o)
                                  join public.lm_places p on p.google_place_id = i.id
-                                where p.closed_at is null), '[]'::jsonb))
+                                where p.closed_at is null
+                                  and (p.site_dead_at is null
+                                       or p.site_dead_at <= now() - make_interval(days => (
+                                            select places_max_age_days from public.lm_discovery_settings where id)))),
+                              '[]'::jsonb))
     from s;
 $$;
 

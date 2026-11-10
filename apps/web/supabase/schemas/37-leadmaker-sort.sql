@@ -274,7 +274,9 @@ begin
       update public.lm_places
          set site_status = p_site_status,
              site_text = case when p_site_status = 'ok' then left(p_site_text, 8000) end,
-             site_read_at = now()
+             site_read_at = now(),
+             -- site relu sans souci : il n'est plus mort (étape 3 de l'annuaire)
+             site_dead_at = case when p_site_status = 'ok' then null else site_dead_at end
        where google_place_id = v_place_id;
     end if;
   end if;

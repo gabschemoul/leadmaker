@@ -110,7 +110,7 @@ nécessaire, pour garder les mises à jour du kit faciles (remote git `upstream`
 | 34 local discovery | recherche sur le Mac dédié |
 | 35 notifications | e-mails de notification |
 | 37 sort | **tri IA** : `lm_enqueue_sort` (déclencheur : toute entreprise ajoutée à une campagne qui a une cible en mots), `lm_start_sort` (fixe la cible / l'offre, met en file, robots seulement pour l'instant), `lm_finish_sort` (avis gardee / a_verifier / ecartee pour la version de cible en cours) |
-| 36 places | **annuaire commun** à tous les clients : `lm_places` (toutes les fiches vues, infos publiques), `lm_place_searches` (registre pays × activité × zone), `lm_record_search_places` appelée par le robot de recherche à chaque recherche. Illisible par les clients |
+| 36 places | **annuaire commun** à tous les clients : `lm_places` (toutes les fiches vues, infos publiques), `lm_place_searches` (registre pays × activité × zone), `lm_record_search_places` appelée par le robot de recherche à chaque recherche ; `lm_replay_search` reprend une recherche complète de moins de 90 jours (étape 2, arrivée progressive). Étape 3 : une fiche « fermé définitivement », absente de 2 recherches complètes lues jusqu'au bout (`missed_searches`, `closed_at`) ou au site mort vu par la préparation (`site_dead_at`) n'est plus reprise ; au-delà de 90 jours la vraie recherche remet les fiches à jour. Illisible par les clients |
 
 Hiérarchie : organisation (compte d'équipe MakerKit) → espace → campagne → zones × activités → recherches →
 prospects → tentatives (prises de contact) → pilote automatique.

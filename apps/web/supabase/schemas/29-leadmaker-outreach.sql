@@ -305,6 +305,15 @@ begin
      where id = p_attempt_id and status = 'ready';
   end if;
 
+  -- Site mort (domaine à vendre, boutique fermée, domaine introuvable) : noté dans l'annuaire commun pour ne
+  -- plus proposer la fiche (CDC §8.5) ; le tri IA le lit comme injoignable. Infos publiques seulement.
+  if coalesce((p_result ->> 'site_dead')::boolean, false) then
+    update public.lm_places pl
+       set site_dead_at = now(), site_status = 'unreachable', site_text = null, site_read_at = now()
+      from public.lm_prospects p
+     where p.id = v_prospect and pl.google_place_id = p.google_place_id;
+  end if;
+
   -- Email relevé sur le site : enregistré sur le prospect s'il n'en avait pas
   v_email := nullif(trim(coalesce(p_result ->> 'found_email', '')), '');
 

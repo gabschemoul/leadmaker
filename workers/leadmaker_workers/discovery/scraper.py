@@ -48,6 +48,14 @@ def card_hides_buttons(actions: list[str]) -> bool:
 
 COORDS = re.compile(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)")
 STATUS = re.compile(r"^(open|closed|opens|closes|temporarily|permanently|\d)", re.I)
+# Entreprise fermée pour de bon, affiché sur la carte et sur la fiche (annuaire, étape 3 : CDC §8.5). « Temporarily
+# closed » n'en fait pas partie : elle peut rouvrir.
+PERMANENTLY_CLOSED = re.compile(r"^\s*(permanently closed|définitivement fermé)", re.I | re.M)
+
+
+def card_closed(text: str) -> bool:
+    """Vrai si la carte de résultat affiche « Permanently closed »."""
+    return bool(PERMANENTLY_CLOSED.search(text or ""))
 
 
 RATING_LINE = re.compile(r"^\d[.,]\d\s*\(")
@@ -146,6 +154,7 @@ class Place:
     # que sur la fiche. Sert à l'estimation, qui n'ouvre jamais les fiches (voir runner.estimate).
     site_unknown: bool = False
     opened: bool = False  # fiche complète ouverte pendant la recherche (adresse, téléphone, site sûrs)
+    closed: bool = False  # « Permanently closed » sur la carte ou la fiche : jamais proposée
 
     @property
     def website_known(self) -> bool:
@@ -218,6 +227,7 @@ class GMapsScraper:
         # robot les range dans l'annuaire commun (lm_places). last_complete : liste lue jusqu'au bout.
         self.last_places: list[Place] = []
         self.last_complete = False
+        self.last_ended = False
         # octets reçus à travers le proxy depuis l'ouverture (voir _meter)
         self.bytes = 0
 
@@ -311,7 +321,10 @@ class GMapsScraper:
         last = 0
         while not self.stop_flag():
             count = feed.locator('a[href*="/maps/place/"]').count()
-            if count >= max_results or END_OF_LIST.search(feed.inner_text()):
+            if END_OF_LIST.search(feed.inner_text()):
+                self.last_ended = True
+                break
+            if count >= max_results:
                 break
             stale = stale + 1 if count == last else 0
             if stale >= (FAST_SCROLL_STALE if fast else 8):
@@ -373,6 +386,8 @@ class GMapsScraper:
                     address: lbl('button[data-item-id="address"]'),
                     phone: lbl('button[data-item-id^="phone:tel:"]'),
                     site: site ? site.href : '',
+                    closed: /^\\s*(permanently closed|définitivement fermé)/im.test(
+                        (q('div[role="main"]') || document.body).innerText.slice(0, 3000)),
                 };
             }"""
         )
@@ -381,6 +396,7 @@ class GMapsScraper:
         place.address = re.sub(r"^\s*(Address|Adresse)\s*:\s*", "", data["address"]).strip()
         place.phone = re.sub(r"^.*?:\s*", "", data["phone"]).strip()
         place.website = data["site"] or place.website
+        place.closed = place.closed or bool(data.get("closed"))
         if data["rating_text"]:
             place.rating = _parse_float(data["rating_text"].split("\n")[0]) or place.rating
             place.review_count = _parse_count(data["rating_text"]) or place.review_count
@@ -399,6 +415,7 @@ class GMapsScraper:
         self.searches += 1
         self.last_places = []
         self.last_complete = False
+        self.last_ended = False  # liste lue jusqu'à « fin de la liste » : une fiche absente n'y est vraiment plus
         page = self._ctx.new_page()
         detail = self._ctx.new_page()
         self._meter(page)
@@ -421,6 +438,7 @@ class GMapsScraper:
             else:
                 cards = self._collect_cards(page, max_results)
             self.last_complete = not self.stop_flag()
+            self.last_ended = self.last_ended and self.last_complete
             yield "info", f"« {query} » : {len(cards)} fiches"
             opened = 0
 
@@ -433,6 +451,7 @@ class GMapsScraper:
                               card_category=card_category(c.get("text", "")),
                               site_unknown=not c["site"] and card_hides_buttons(c.get("actions") or []))
                 place.address, place.phone = card_details(c.get("text", ""))
+                place.closed = card_closed(c.get("text", ""))
                 place.latitude, place.longitude = coords(c["href"])
                 m = PLACE_ID.search(c["href"])
                 place.place_id = m.group(1) if m else place.maps_url
@@ -445,6 +464,9 @@ class GMapsScraper:
                 rating = _parse_float(c["star"])
 
                 if filters.in_area and not filters.in_area(place):
+                    yield "skip", place
+                    continue
+                if place.closed:  # fermée pour de bon : rien à proposer, et pas de fiche à ouvrir
                     yield "skip", place
                     continue
                 if filters.category_ok and not filters.category_ok(place.card_category):
@@ -499,7 +521,7 @@ class GMapsScraper:
                         raise BlockedError("Google a bloqué la lecture d'une fiche (captcha)")
                     self._sleep()
 
-                if not _rating_ok(place.rating, filters) or not _website_ok(place.website, filters):
+                if place.closed or not _rating_ok(place.rating, filters) or not _website_ok(place.website, filters):
                     yield "skip", place
                     continue
                 if filters.exclude and filters.exclude(place.name, place.category, place.website):

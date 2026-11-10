@@ -113,6 +113,11 @@ EMAIL_SKIP = re.compile(r"\.(png|jpe?g|gif|svg|webp|css|js)$|sentry|example\.|wi
                         r"|@2x|godaddy|placeholder|noreply|no-reply", re.I)
 
 
+# Sous-ensemble de DEAD_SITE : mort pour de bon (voir SiteGone)
+GONE_SITE = re.compile(r"domain (is )?for sale|domaine (est )?(a vendre|en vente)|is for sale|hugedomains|sedo\.com|dan\.com"
+                       r"|parked|account (has been )?suspended|site suspendu|domain (has )?expired|domaine expire"
+                       r"|shop (is )?(unavailable|closed)|boutique indisponible|reconnect your domain", re.I)
+
 # Pages de domaine mort, boutique fermée, site en construction : inutile de chercher un formulaire
 DEAD_SITE = re.compile(r"site not found|boutique indisponible|shop (is )?(unavailable|closed)|domain (is )?for sale|ce domaine"
                        r"|domaine (est )?(a vendre|en vente)|site en construction|under construction|coming soon|parked"
@@ -187,6 +192,12 @@ QSA_JS = r"""
 
 class SiteDown(Exception):
     """Le site répond mais n'est plus un vrai site (domaine expiré, boutique fermée, en construction)."""
+
+
+class SiteGone(SiteDown):
+    """Site mort pour de bon (domaine à vendre ou expiré, hébergement suspendu, boutique fermée) : noté dans
+    l'annuaire commun pour ne plus proposer la fiche (CDC-PARCOURS-TRI-ANNUAIRE §8.5). Pas les sites en
+    construction ou en maintenance, qui peuvent revenir."""
 
 
 @dataclass
@@ -804,6 +815,8 @@ def _check_alive(page: Page, final: bool = False) -> None:
     short = len(body) < 800
     if PROTECTED_SITE.search(_norm(title)) or (short and PROTECTED_SITE.search(_norm(body))) or PROTECTED_FRAME.search(st["frames"]):
         raise SiteDown(f"site protégé contre les robots (« {(title or body)[:60].strip()} »)")
+    if GONE_SITE.search(_norm(title)) or (short and GONE_SITE.search(_norm(body))):
+        raise SiteGone((title or body).strip()[:80])
     if DEAD_SITE.search(_norm(title)) or (short and DEAD_SITE.search(_norm(body))):
         raise SiteDown((title or body).strip()[:80])
     if short and st["passwords"] and st["inputs"] <= 3 and st["links"] < 5:

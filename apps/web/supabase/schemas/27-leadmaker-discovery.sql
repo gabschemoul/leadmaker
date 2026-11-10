@@ -90,6 +90,9 @@ create table if not exists public.lm_discovery_settings (
   -- Annuaire commun, étape 2 (CDC §8.3) : une recherche (pays × activité × zone) faite il y a moins de ce nombre de
   -- jours est reprise de l'annuaire, sans proxy
   places_max_age_days integer not null default 90,
+  -- Annuaire, étape 3 : absences d'une fiche dans de nouvelles recherches complètes de sa zone avant de la
+  -- considérer fermée (CDC §8.5). 2 : Google varie un peu d'une recherche à l'autre.
+  places_missed_to_close integer not null default 2,
   -- Arrivée progressive des fiches reprises de l'annuaire (CDC §8.4, décidé le 9/11) : premières fiches après
   -- first_delay secondes (tirage), puis des paquets de batch fiches examinées toutes les pause secondes (tirage
   -- à chaque paquet), une campagne entièrement reprise ne finissant jamais en moins de min_total secondes

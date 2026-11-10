@@ -281,6 +281,8 @@ class PrepareRunner:
             "subject": subject, "body": body, "form_url": result.get("form_url"), "filled": result.get("filled") or {},
             "missing": result.get("missing") or [], "protection_type": result.get("protection_type"),
             "screenshot_before": shot, "detail": result.get("detail") or None, "found_email": result.get("found_email"),
+            # site mort pour de bon : noté dans l'annuaire commun (lm_finish_prepare), la fiche n'est plus proposée
+            "site_dead": bool(result.get("site_dead")),
         }
         conn.execute("select public.lm_finish_prepare(%s, %s)", (attempt_id, Jsonb(finish)))
         log.info("%s → %s (%.1fs) %s", prospect["website"], result["status"], time.monotonic() - started,

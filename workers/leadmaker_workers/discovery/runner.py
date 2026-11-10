@@ -127,11 +127,13 @@ def _record_places(conn: psycopg.Connection, payload: dict[str, Any], scraper: G
             "website": pl.website, "site_key": site_key(pl.website) or None, "website_known": pl.website_known,
             "maps_url": pl.maps_url, "latitude": pl.latitude, "longitude": pl.longitude,
             "city": city if here else None, "geoname_id": geoname_id if here else None, "opened": pl.opened,
+            "closed": pl.closed,
         })
     search = {
         "country_code": payload.get("country_code"), "gcid": payload.get("gcid"), "geoname_id": geoname_id,
         "latitude": payload.get("latitude"), "longitude": payload.get("longitude"), "zoom": payload.get("zoom"),
-        "query": payload.get("query"), "complete": scraper.last_complete, "source": "discovery",
+        "query": payload.get("query"), "complete": scraper.last_complete,
+        "ended": getattr(scraper, "last_ended", False), "source": "discovery",
         "campaign_id": payload.get("campaign_id"),
     }
     return conn.execute("select public.lm_record_search_places(%s, %s) as n",

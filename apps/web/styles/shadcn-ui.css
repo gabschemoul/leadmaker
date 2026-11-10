@@ -1,7 +1,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans-fallback), system-ui, -apple-system, sans-serif;
+  /* Texte : Host Grotesk, comme le site vitrine et sa fenêtre d'appli (10/11/2026, avant Inter) ; Inter en secours */
+  --font-sans:
+    var(--font-heading-face), var(--font-sans-fallback), system-ui,
+    -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono);
   --font-heading:
     var(--font-heading-face), var(--font-sans-fallback), system-ui, sans-serif;

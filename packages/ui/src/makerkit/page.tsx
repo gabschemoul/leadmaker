@@ -165,8 +165,9 @@ export function PageDescription(props: React.PropsWithChildren) {
 export function PageTitle(props: React.PropsWithChildren) {
   return (
     <h1
+      // Prospectigo (10/11/2026) : même police que les titres du site vitrine (Season Mix, --font-display)
       className={
-        'font-heading text-2xl leading-tight font-normal tracking-[-0.01em] dark:text-white'
+        'font-display text-[28px] leading-tight font-medium tracking-[-0.01em] dark:text-white'
       }
     >
       {props.children}

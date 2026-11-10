@@ -11,15 +11,10 @@ import { getTranslations } from 'next-intl/server';
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
-import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import {
-  CardSkeleton,
-  Delayed,
-  PageHeaderSkeleton,
-} from '~/components/skeletons/page-skeletons';
+import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
@@ -52,11 +47,12 @@ export const generateMetadata = async () => {
 function SenderPage({ params, searchParams }: SenderPageProps) {
   return (
     <PageBody>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <SenderPageHeader params={params} />
-      </Suspense>
+      {/* titre fixe : affiché tout de suite, sans attendre le serveur */}
+      <TeamAccountLayoutPageHeader
+        title={<Trans i18nKey={'common.routes.sender'} />}
+      />
 
-      <div className={'flex w-full max-w-4xl flex-col pb-32'}>
+      <div className={'flex w-full flex-col pb-32'}>
         <Suspense
           fallback={
             <Delayed>
@@ -72,22 +68,6 @@ function SenderPage({ params, searchParams }: SenderPageProps) {
 }
 
 export default SenderPage;
-
-async function SenderPageHeader({
-  params,
-}: {
-  params: SenderPageProps['params'];
-}) {
-  const { account } = await params;
-
-  return (
-    <TeamAccountLayoutPageHeader
-      account={account}
-      title={<Trans i18nKey={'common.routes.sender'} />}
-      description={<AppBreadcrumbs />}
-    />
-  );
-}
 
 async function SenderContent(props: SenderPageProps) {
   const [{ account: slug }, rawSearchParams] = await Promise.all([

@@ -11,16 +11,11 @@ import { getTranslations } from 'next-intl/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { Alert, AlertDescription } from '@kit/ui/alert';
-import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import {
-  Delayed,
-  PageHeaderSkeleton,
-  TableSkeleton,
-} from '~/components/skeletons/page-skeletons';
+import { Delayed, TableSkeleton } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import {
   ATTEMPT_GROUP_ORDER,
@@ -52,10 +47,11 @@ export const generateMetadata = async () => {
 
 function FormsPage({ params, searchParams }: FormsPageProps) {
   return (
-    <PageBody className={'max-w-[1600px]'}>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <FormsPageHeader params={params} />
-      </Suspense>
+    <PageBody>
+      {/* titre fixe : affiché tout de suite, sans attendre le serveur */}
+      <TeamAccountLayoutPageHeader
+        title={<Trans i18nKey={'common.routes.forms'} />}
+      />
 
       <div className={'flex w-full flex-col pb-32'}>
         <Suspense
@@ -73,22 +69,6 @@ function FormsPage({ params, searchParams }: FormsPageProps) {
 }
 
 export default FormsPage;
-
-async function FormsPageHeader({
-  params,
-}: {
-  params: FormsPageProps['params'];
-}) {
-  const { account } = await params;
-
-  return (
-    <TeamAccountLayoutPageHeader
-      account={account}
-      title={<Trans i18nKey={'common.routes.forms'} />}
-      description={<AppBreadcrumbs />}
-    />
-  );
-}
 
 async function FormsContent(props: FormsPageProps) {
   const [{ account: slug }, rawSearchParams] = await Promise.all([

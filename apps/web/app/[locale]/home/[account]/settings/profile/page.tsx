@@ -43,7 +43,7 @@ interface TeamProfileSettingsPageProps {
 
 function TeamProfileSettingsPage({ params }: TeamProfileSettingsPageProps) {
   return (
-    <div className={'flex w-full flex-1 flex-col lg:max-w-2xl'}>
+    <div className={'flex w-full flex-1 flex-col'}>
       <Suspense
         fallback={
           <Delayed>

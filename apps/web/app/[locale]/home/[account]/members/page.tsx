@@ -11,7 +11,6 @@ import {
   AccountMembersTable,
   InviteMembersDialogContainer,
 } from '@kit/team-accounts/components';
-import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { Button } from '@kit/ui/button';
 import {
   Card,
@@ -24,11 +23,7 @@ import { If } from '@kit/ui/if';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import {
-  CardSkeleton,
-  Delayed,
-  PageHeaderSkeleton,
-} from '~/components/skeletons/page-skeletons';
+import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 
 // local imports
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
@@ -61,11 +56,12 @@ export const generateMetadata = async () => {
 function TeamAccountMembersPage({ params }: TeamAccountMembersPageProps) {
   return (
     <PageBody>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <MembersPageHeader params={params} />
-      </Suspense>
+      {/* titre fixe : affiché tout de suite, sans attendre le serveur */}
+      <TeamAccountLayoutPageHeader
+        title={<Trans i18nKey={'common.routes.members'} />}
+      />
 
-      <div className={'flex w-full max-w-4xl flex-col space-y-4 pb-32'}>
+      <div className={'flex w-full flex-col space-y-4 pb-32'}>
         <Suspense
           fallback={
             <Delayed>
@@ -91,18 +87,6 @@ function TeamAccountMembersPage({ params }: TeamAccountMembersPageProps) {
 }
 
 export default TeamAccountMembersPage;
-
-async function MembersPageHeader({ params }: { params: Params }) {
-  const { account } = await params;
-
-  return (
-    <TeamAccountLayoutPageHeader
-      title={<Trans i18nKey={'common.routes.members'} />}
-      description={<AppBreadcrumbs />}
-      account={account}
-    />
-  );
-}
 
 async function MembersCard({ params }: { params: Params }) {
   await connection();

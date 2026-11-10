@@ -55,7 +55,7 @@ function EditCampaignPage({ params }: EditCampaignPageProps) {
           <>
             <PageHeaderSkeleton />
 
-            <Delayed className={'flex max-w-3xl flex-col gap-6'}>
+            <Delayed className={'flex w-full flex-col gap-6'}>
               <CardSkeleton rows={4} />
               <CardSkeleton rows={3} />
             </Delayed>

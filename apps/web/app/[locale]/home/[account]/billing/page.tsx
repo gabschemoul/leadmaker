@@ -12,17 +12,12 @@ import {
 } from '@kit/billing-gateway/components';
 import { Alert, AlertDescription, AlertTitle } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
-import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { If } from '@kit/ui/if';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
 
-import {
-  CardSkeleton,
-  Delayed,
-  PageHeaderSkeleton,
-} from '~/components/skeletons/page-skeletons';
+import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 import billingConfig from '~/config/billing.config';
 import { currencyFor } from '~/lib/leadmaker/billing-currency';
 
@@ -54,13 +49,14 @@ export const generateMetadata = async () => {
 function TeamAccountBillingPage({ params }: TeamAccountBillingPageProps) {
   return (
     <PageBody>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <BillingPageHeader params={params} />
-      </Suspense>
+      {/* titre fixe : affiché tout de suite, sans attendre le serveur */}
+      <TeamAccountLayoutPageHeader
+        title={<Trans i18nKey={'common.routes.billing'} />}
+      />
 
       <Suspense
         fallback={
-          <Delayed className={'flex max-w-2xl flex-col'}>
+          <Delayed className={'flex w-full flex-col'}>
             <CardSkeleton rows={4} />
           </Delayed>
         }
@@ -68,22 +64,6 @@ function TeamAccountBillingPage({ params }: TeamAccountBillingPageProps) {
         <TeamAccountBillingContent params={params} />
       </Suspense>
     </PageBody>
-  );
-}
-
-async function BillingPageHeader({
-  params,
-}: {
-  params: TeamAccountBillingPageProps['params'];
-}) {
-  const account = (await params).account;
-
-  return (
-    <TeamAccountLayoutPageHeader
-      account={account}
-      title={<Trans i18nKey={'common.routes.billing'} />}
-      description={<AppBreadcrumbs />}
-    />
   );
 }
 

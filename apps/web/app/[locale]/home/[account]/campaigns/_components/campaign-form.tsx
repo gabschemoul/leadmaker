@@ -193,7 +193,7 @@ export function CampaignForm(props: {
     <Form {...form}>
       <form
         data-test={'campaign-form'}
-        className={'flex max-w-3xl flex-col gap-6 pb-32'}
+        className={'flex w-full flex-col gap-6 pb-32'}
         onSubmit={form.handleSubmit(
           (data) =>
             props.campaign

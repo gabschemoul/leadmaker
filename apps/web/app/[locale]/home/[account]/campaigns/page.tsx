@@ -18,14 +18,11 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import { Button } from '@kit/ui/button';
 import { buttonExtras } from '@kit/ui/button-extras';
 import { PageBody } from '@kit/ui/page';
+import { Skeleton } from '@kit/ui/skeleton';
 import { Trans } from '@kit/ui/trans';
 import { cn } from '@kit/ui/utils';
 
-import {
-  CardSkeleton,
-  Delayed,
-  PageHeaderSkeleton,
-} from '~/components/skeletons/page-skeletons';
+import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import type { Database } from '~/lib/database.types';
 
@@ -60,9 +57,14 @@ export const generateMetadata = async () => {
 function CampaignsPage({ params, searchParams }: CampaignsPageProps) {
   return (
     <PageBody>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <CampaignsPageHeader params={params} />
-      </Suspense>
+      {/* titre fixe tout de suite ; seul le bouton attend l'adresse de l'organisation */}
+      <TeamAccountLayoutPageHeader
+        title={<Trans i18nKey={'common.routes.campaigns'} />}
+      >
+        <Suspense fallback={<Skeleton className={'h-9 w-44 rounded-full'} />}>
+          <NewCampaignButton params={params} />
+        </Suspense>
+      </TeamAccountLayoutPageHeader>
 
       <div className={'flex w-full flex-col pb-32'}>
         <Suspense
@@ -81,7 +83,7 @@ function CampaignsPage({ params, searchParams }: CampaignsPageProps) {
 
 export default CampaignsPage;
 
-async function CampaignsPageHeader({ params }: { params: Params }) {
+async function NewCampaignButton({ params }: { params: Params }) {
   const { account } = await params;
 
   const campaignsPath = pathsConfig.app.accountCampaigns.replace(
@@ -90,23 +92,18 @@ async function CampaignsPageHeader({ params }: { params: Params }) {
   );
 
   return (
-    <TeamAccountLayoutPageHeader
-      account={account}
-      title={<Trans i18nKey={'common.routes.campaigns'} />}
+    <Button
+      className={cn(buttonExtras.brand, buttonExtras.pill)}
+      nativeButton={false}
+      data-test={'new-campaign-button'}
+      render={<Link href={`${campaignsPath}/new`} />}
     >
-      <Button
-        className={cn(buttonExtras.brand, buttonExtras.pill)}
-        nativeButton={false}
-        data-test={'new-campaign-button'}
-        render={<Link href={`${campaignsPath}/new`} />}
-      >
-        <Plus className={'w-4'} />
+      <Plus className={'w-4'} />
 
-        <span>
-          <Trans i18nKey={'campaigns.list.newButton'} />
-        </span>
-      </Button>
-    </TeamAccountLayoutPageHeader>
+      <span>
+        <Trans i18nKey={'campaigns.list.newButton'} />
+      </span>
+    </Button>
   );
 }
 

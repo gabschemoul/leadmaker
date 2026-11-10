@@ -9,7 +9,8 @@ export function TeamAccountLayoutPageHeader(
   props: React.PropsWithChildren<{
     title: string | React.ReactNode;
     description?: string | React.ReactNode;
-    account: string;
+    /** inutilisé (ancien fil d'Ariane) ; gardé pour compatibilité */
+    account?: string;
   }>,
 ) {
   return (

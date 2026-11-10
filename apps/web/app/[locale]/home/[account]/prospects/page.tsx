@@ -12,15 +12,10 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import {
-  Delayed,
-  PageHeaderSkeleton,
-  TableSkeleton,
-} from '~/components/skeletons/page-skeletons';
+import { Delayed } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
 import {
   buildProspectsHref,
@@ -32,6 +27,7 @@ import { loadSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { ImportProspectsDialog } from './_components/import-prospects-dialog';
 import { ProspectsBrowser } from './_components/prospects-browser';
+import { ProspectsSkeleton } from './_components/prospects-skeleton';
 import {
   PROSPECTS_PAGE_SIZE,
   loadProspectFacets,
@@ -56,16 +52,17 @@ export const generateMetadata = async () => {
 
 function ProspectsPage({ params, searchParams }: ProspectsPageProps) {
   return (
-    <PageBody className={'max-w-[1600px]'}>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <ProspectsPageHeader params={params} />
-      </Suspense>
+    <PageBody>
+      {/* titre fixe : affiché tout de suite, sans attendre le serveur */}
+      <TeamAccountLayoutPageHeader
+        title={<Trans i18nKey={'common.routes.prospects'} />}
+      />
 
       <div className={'flex w-full flex-col pb-32'}>
         <Suspense
           fallback={
             <Delayed>
-              <TableSkeleton rows={10} />
+              <ProspectsSkeleton />
             </Delayed>
           }
         >
@@ -77,22 +74,6 @@ function ProspectsPage({ params, searchParams }: ProspectsPageProps) {
 }
 
 export default ProspectsPage;
-
-async function ProspectsPageHeader({
-  params,
-}: {
-  params: ProspectsPageProps['params'];
-}) {
-  const { account } = await params;
-
-  return (
-    <TeamAccountLayoutPageHeader
-      account={account}
-      title={<Trans i18nKey={'common.routes.prospects'} />}
-      description={<AppBreadcrumbs />}
-    />
-  );
-}
 
 async function ProspectsContent(props: ProspectsPageProps) {
   const [{ account: slug }, rawSearchParams] = await Promise.all([

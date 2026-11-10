@@ -3,7 +3,6 @@ import { Suspense } from 'react';
 import { getFormatter, getTranslations } from 'next-intl/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
 import { PageBody } from '@kit/ui/page';
 import {
@@ -16,11 +15,7 @@ import {
 } from '@kit/ui/table';
 import { Trans } from '@kit/ui/trans';
 
-import {
-  CardSkeleton,
-  Delayed,
-  PageHeaderSkeleton,
-} from '~/components/skeletons/page-skeletons';
+import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import { loadSpaces } from '../_lib/server/leadmaker.loader';
@@ -45,11 +40,12 @@ export const generateMetadata = async () => {
 function SpacesPage({ params }: SpacesPageProps) {
   return (
     <PageBody>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <SpacesPageHeader params={params} />
-      </Suspense>
+      {/* titre fixe : affiché tout de suite, sans attendre le serveur */}
+      <TeamAccountLayoutPageHeader
+        title={<Trans i18nKey={'common.routes.spaces'} />}
+      />
 
-      <div className={'flex w-full max-w-4xl flex-col pb-32'}>
+      <div className={'flex w-full flex-col pb-32'}>
         <Suspense
           fallback={
             <Delayed>
@@ -65,18 +61,6 @@ function SpacesPage({ params }: SpacesPageProps) {
 }
 
 export default SpacesPage;
-
-async function SpacesPageHeader({ params }: { params: Params }) {
-  const { account } = await params;
-
-  return (
-    <TeamAccountLayoutPageHeader
-      account={account}
-      title={<Trans i18nKey={'common.routes.spaces'} />}
-      description={<AppBreadcrumbs />}
-    />
-  );
-}
 
 async function SpacesCard({ params }: { params: Params }) {
   const { account: slug } = await params;

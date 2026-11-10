@@ -3,15 +3,10 @@ import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { AppBreadcrumbs } from '@kit/ui/app-breadcrumbs';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import {
-  CardSkeleton,
-  Delayed,
-  PageHeaderSkeleton,
-} from '~/components/skeletons/page-skeletons';
+import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
 
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
@@ -40,13 +35,14 @@ export const generateMetadata = async () => {
 function NewCampaignPage({ params }: NewCampaignPageProps) {
   return (
     <PageBody>
-      <Suspense fallback={<PageHeaderSkeleton />}>
-        <NewCampaignPageHeader params={params} />
-      </Suspense>
+      {/* titre fixe : affiché tout de suite, sans attendre le serveur */}
+      <TeamAccountLayoutPageHeader
+        title={<Trans i18nKey={'campaigns.form.pageTitle'} />}
+      />
 
       <Suspense
         fallback={
-          <Delayed className={'flex max-w-3xl flex-col gap-6'}>
+          <Delayed className={'flex w-full flex-col gap-6'}>
             <CardSkeleton rows={4} />
             <CardSkeleton rows={3} />
           </Delayed>
@@ -59,18 +55,6 @@ function NewCampaignPage({ params }: NewCampaignPageProps) {
 }
 
 export default NewCampaignPage;
-
-async function NewCampaignPageHeader({ params }: { params: Params }) {
-  const { account } = await params;
-
-  return (
-    <TeamAccountLayoutPageHeader
-      account={account}
-      title={<Trans i18nKey={'campaigns.form.pageTitle'} />}
-      description={<AppBreadcrumbs />}
-    />
-  );
-}
 
 async function NewCampaignContent({ params }: { params: Params }) {
   const { account: slug } = await params;

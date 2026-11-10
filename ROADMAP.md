@@ -98,7 +98,8 @@ Pistes à discuter :
 
 ### 5. Acheter des crédits supplémentaires 🟡 — tarifs DÉCIDÉS le 2/11
 - **Le principe** : quand les crédits du mois sont épuisés, on achète un pack en plus sans changer de forfait.
-- **Décidé (2/11)** : packs MIXTES, un seul prix, même proportion que les forfaits (2 prospects pour 1 prise de contact) :
+- **NOUVEAUX PACKS DÉCIDÉS le 10/11 (crédit unique, remplacent ceux du 2/11)** : S = 3 000 crédits pour 99 $ · M = 9 000 crédits pour 279 $ · L = 18 000 crédits pour 549 $ (≈ 3,3 / 3,1 / 3,05 centimes le crédit, calés sur Starter ; Growth 2,5 c et Scale 2 c restent plus intéressants). Mêmes règles : abonnés seulement, 12 mois, crédits du forfait consommés d'abord. Reste à faire : produits Stripe + achat dans Facturation.
+- *(Ancienne décision du 2/11, remplacée)* packs MIXTES, un seul prix, même proportion que les forfaits (2 prospects pour 1 prise de contact) :
   - S : 5 000 crédits de prospection + 2 500 crédits de prise de contact = 99 $
   - M : 15 000 + 7 500 = 279 $
   - L : 30 000 + 15 000 = 549 $

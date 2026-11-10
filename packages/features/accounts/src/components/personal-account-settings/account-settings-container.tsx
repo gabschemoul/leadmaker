@@ -52,7 +52,7 @@ export function PersonalAccountSettingsContainer(
   }
 
   return (
-    <div className={'flex w-full flex-col space-y-4 pb-32'}>
+    <div className={'flex w-full flex-col gap-8 pb-32'}>
       <Card>
         <CardHeader>
           <CardTitle>

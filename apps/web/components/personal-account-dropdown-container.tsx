@@ -39,7 +39,15 @@ export function ProfileAccountDropdownContainer(props: {
   return (
     <PersonalAccountDropdown
       className={'w-full'}
-      paths={{ home: homePath }}
+      paths={{
+        home: homePath,
+        profile: props.accountSlug
+          ? pathsConfig.app.accountProfileSettings.replace(
+              '[account]',
+              props.accountSlug,
+            )
+          : undefined,
+      }}
       features={features}
       user={userData}
       account={props.account}

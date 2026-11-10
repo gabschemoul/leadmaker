@@ -10,6 +10,7 @@ import {
   LogOut,
   MessageCircleQuestion,
   Shield,
+  User,
 } from 'lucide-react';
 
 import { JWTUserData } from '@kit/supabase/types';
@@ -49,6 +50,8 @@ export function PersonalAccountDropdown({
 
   paths: {
     home: string;
+    /** Prospectigo (10/11/2026) : page Profil ; remplace « Accueil » dans le menu du compte */
+    profile?: string;
   };
 
   features: {
@@ -156,17 +159,35 @@ export function PersonalAccountDropdown({
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          render={
-            <Link className={'flex items-center gap-x-2'} href={paths.home} />
-          }
-        >
-          <Home className={'h-4 w-4'} />
+        {paths.profile ? (
+          <DropdownMenuItem
+            render={
+              <Link
+                className={'flex items-center gap-x-2'}
+                href={paths.profile}
+                data-test={'account-dropdown-profile'}
+              />
+            }
+          >
+            <User className={'h-4 w-4'} />
 
-          <span>
-            <Trans i18nKey={'common.routes.home'} />
-          </span>
-        </DropdownMenuItem>
+            <span>
+              <Trans i18nKey={'common.routes.profile'} />
+            </span>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            render={
+              <Link className={'flex items-center gap-x-2'} href={paths.home} />
+            }
+          >
+            <Home className={'h-4 w-4'} />
+
+            <span>
+              <Trans i18nKey={'common.routes.home'} />
+            </span>
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuSeparator />
 

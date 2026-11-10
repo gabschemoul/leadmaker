@@ -26,7 +26,9 @@ import { Button } from '@kit/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -197,191 +199,205 @@ export function WorkspaceDropdown({
           sideOffset={4}
           alignOffset={8}
         >
-          <div className="flex items-center justify-start gap-2 py-1.5">
-            <div className="w-2/12">
-              <ProfileAvatar
-                className="size-6"
-                displayName={displayName}
-                pictureUrl={personalAccountData?.picture_url}
-              />
-            </div>
+          {/* Prospectigo (10/11/2026) : dans une équipe, ce menu ne parle que de l'équipe (changer d'équipe,
+              paramètres) ; le compte de l'utilisateur (profil, aide, déconnexion) est dans le menu du bas. */}
+          {isTeamContext ? (
+            <TeamItems
+              accounts={accounts}
+              selectedAccount={selectedAccount}
+              settingsPath={settingsPath}
+              onSwitch={switchToTeam}
+              onCreate={() => setIsCreatingTeam(true)}
+            />
+          ) : null}
 
-            <div className="flex w-10/12 flex-col text-left text-sm">
-              <span
-                className="max-w-max truncate font-medium"
-                data-test="account-dropdown-display-name"
-              >
-                {displayName}
-              </span>
+          <If condition={!isTeamContext}>
+            <div className="flex items-center justify-start gap-2 py-1.5">
+              <div className="w-2/12">
+                <ProfileAvatar
+                  className="size-6"
+                  displayName={displayName}
+                  pictureUrl={personalAccountData?.picture_url}
+                />
+              </div>
 
-              <span className="text-muted-foreground max-w-max truncate text-xs">
-                {userEmail}
-              </span>
-            </div>
-          </div>
-
-          <DropdownMenuSeparator />
-
-          <If condition={featuresFlagConfig.enableTeamAccounts}>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger data-test="workspace-switch-submenu">
-                <Users className="size-4" />
-                <span>
-                  <Trans i18nKey={'teams.switchWorkspace'} />
+              <div className="flex w-10/12 flex-col text-left text-sm">
+                <span
+                  className="max-w-max truncate font-medium"
+                  data-test="account-dropdown-display-name"
+                >
+                  {displayName}
                 </span>
-              </DropdownMenuSubTrigger>
 
-              <DropdownMenuSubContent
-                className="max-h-[50vh] overflow-y-auto"
-                data-test="workspace-switch-content"
-              >
-                <If condition={!featuresFlagConfig.enableTeamsOnly}>
-                  <DropdownMenuItem
-                    data-test="personal-workspace-item"
-                    className="flex gap-2"
-                    onClick={switchToPersonal}
-                  >
-                    <WorkspaceAvatar
-                      className="size-8"
-                      isTeam={false}
-                      pictureUrl={personalAccountData?.picture_url}
-                      label={displayName}
-                    />
-
-                    <span className="flex-1">
-                      <Trans i18nKey={'teams.personalAccount'} />
-                    </span>
-
-                    {!isTeamContext && <Check className="ml-auto size-4" />}
-                  </DropdownMenuItem>
-                </If>
-
-                {accounts.length > 0 && (
-                  <>
-                    <If condition={!featuresFlagConfig.enableTeamsOnly}>
-                      <DropdownMenuSeparator />
-                    </If>
-
-                    {accounts.map((account) => (
-                      <DropdownMenuItem
-                        key={account.value}
-                        data-test="workspace-team-item"
-                        data-name={account.label}
-                        data-slug={account.value}
-                        className="flex gap-2"
-                        onClick={() => {
-                          if (
-                            account.value &&
-                            account.value !== selectedAccount
-                          ) {
-                            switchToTeam(account.value);
-                          }
-                        }}
-                      >
-                        <WorkspaceAvatar
-                          className="size-8"
-                          isTeam
-                          pictureUrl={account.image}
-                          label={account.label}
-                        />
-
-                        <div className="flex-1">
-                          <div className="font-medium">{account.label}</div>
-                        </div>
-
-                        {selectedAccount === account.value && (
-                          <Check className="ml-auto size-4" />
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </>
-                )}
-
-                <If condition={featuresFlagConfig.enableTeamCreation}>
-                  <DropdownMenuItem
-                    onClick={() => setIsCreatingTeam(true)}
-                    data-test="create-team-trigger"
-                    className="bg-background/50 sticky bottom-0 mt-1 flex h-10 w-full gap-2 border backdrop-blur-lg"
-                  >
-                    <Plus className="size-4" />
-
-                    <span>
-                      <Trans i18nKey={'teams.createTeam'} />
-                    </span>
-                  </DropdownMenuItem>
-                </If>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
+                <span className="text-muted-foreground max-w-max truncate text-xs">
+                  {userEmail}
+                </span>
+              </div>
+            </div>
 
             <DropdownMenuSeparator />
-          </If>
 
-          <DropdownMenuItem
-            render={
-              <Link
-                className="flex items-center gap-x-2"
-                href={settingsPath}
-                data-test="workspace-settings-link"
-              >
-                <Settings className="size-4" />
+            <If condition={featuresFlagConfig.enableTeamAccounts}>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger data-test="workspace-switch-submenu">
+                  <Users className="size-4" />
+                  <span>
+                    <Trans i18nKey={'teams.switchWorkspace'} />
+                  </span>
+                </DropdownMenuSubTrigger>
 
-                <span>
-                  <Trans i18nKey={'common.routes.settings'} />
-                </span>
-              </Link>
-            }
-          />
+                <DropdownMenuSubContent
+                  className="max-h-[50vh] overflow-y-auto"
+                  data-test="workspace-switch-content"
+                >
+                  <If condition={!featuresFlagConfig.enableTeamsOnly}>
+                    <DropdownMenuItem
+                      data-test="personal-workspace-item"
+                      className="flex gap-2"
+                      onClick={switchToPersonal}
+                    >
+                      <WorkspaceAvatar
+                        className="size-8"
+                        isTeam={false}
+                        pictureUrl={personalAccountData?.picture_url}
+                        label={displayName}
+                      />
 
-          <If condition={user.is_superadmin}>
+                      <span className="flex-1">
+                        <Trans i18nKey={'teams.personalAccount'} />
+                      </span>
+
+                      {!isTeamContext && <Check className="ml-auto size-4" />}
+                    </DropdownMenuItem>
+                  </If>
+
+                  {accounts.length > 0 && (
+                    <>
+                      <If condition={!featuresFlagConfig.enableTeamsOnly}>
+                        <DropdownMenuSeparator />
+                      </If>
+
+                      {accounts.map((account) => (
+                        <DropdownMenuItem
+                          key={account.value}
+                          data-test="workspace-team-item"
+                          data-name={account.label}
+                          data-slug={account.value}
+                          className="flex gap-2"
+                          onClick={() => {
+                            if (
+                              account.value &&
+                              account.value !== selectedAccount
+                            ) {
+                              switchToTeam(account.value);
+                            }
+                          }}
+                        >
+                          <WorkspaceAvatar
+                            className="size-8"
+                            isTeam
+                            pictureUrl={account.image}
+                            label={account.label}
+                          />
+
+                          <div className="flex-1">
+                            <div className="font-medium">{account.label}</div>
+                          </div>
+
+                          {selectedAccount === account.value && (
+                            <Check className="ml-auto size-4" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+
+                  <If condition={featuresFlagConfig.enableTeamCreation}>
+                    <DropdownMenuItem
+                      onClick={() => setIsCreatingTeam(true)}
+                      data-test="create-team-trigger"
+                      className="bg-background/50 sticky bottom-0 mt-1 flex h-10 w-full gap-2 border backdrop-blur-lg"
+                    >
+                      <Plus className="size-4" />
+
+                      <span>
+                        <Trans i18nKey={'teams.createTeam'} />
+                      </span>
+                    </DropdownMenuItem>
+                  </If>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              <DropdownMenuSeparator />
+            </If>
+
             <DropdownMenuItem
               render={
                 <Link
-                  className="flex items-center gap-x-2 text-yellow-700 hover:text-yellow-600 dark:text-yellow-500"
-                  href="/admin"
-                  data-test="workspace-admin-link"
+                  className="flex items-center gap-x-2"
+                  href={settingsPath}
+                  data-test="workspace-settings-link"
                 >
-                  <Shield className="size-4" />
+                  <Settings className="size-4" />
 
-                  <span>Super Admin</span>
+                  <span>
+                    <Trans i18nKey={'common.routes.settings'} />
+                  </span>
                 </Link>
               }
             />
-          </If>
 
-          <DropdownMenuSeparator />
+            <If condition={user.is_superadmin}>
+              <DropdownMenuItem
+                render={
+                  <Link
+                    className="flex items-center gap-x-2 text-yellow-700 hover:text-yellow-600 dark:text-yellow-500"
+                    href="/admin"
+                    data-test="workspace-admin-link"
+                  >
+                    <Shield className="size-4" />
 
-          <DropdownMenuItem
-            render={
-              <Link className="flex items-center gap-x-2" href="/contact">
-                <MessageCircleQuestion className="size-4" />
-
-                <span>
-                  <Trans i18nKey={'common.documentation'} />
-                </span>
-              </Link>
-            }
-          />
-
-          <DropdownMenuSeparator />
-
-          <If condition={featuresFlagConfig.enableThemeToggle}>
-            <SubMenuModeToggle />
+                    <span>Super Admin</span>
+                  </Link>
+                }
+              />
+            </If>
 
             <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              render={
+                <Link className="flex items-center gap-x-2" href="/contact">
+                  <MessageCircleQuestion className="size-4" />
+
+                  <span>
+                    <Trans i18nKey={'common.documentation'} />
+                  </span>
+                </Link>
+              }
+            />
+
+            <DropdownMenuSeparator />
+
+            <If condition={featuresFlagConfig.enableThemeToggle}>
+              <SubMenuModeToggle />
+
+              <DropdownMenuSeparator />
+            </If>
+
+            <DropdownMenuItem
+              disabled={signOutMutation.isPending}
+              className="flex items-center gap-x-2"
+              data-test="workspace-sign-out"
+              onClick={() => signOutMutation.mutate()}
+            >
+              <LogOut className="size-4" />
+
+              <span>
+                <Trans i18nKey={'auth.signOut'} />
+              </span>
+            </DropdownMenuItem>
           </If>
-
-          <DropdownMenuItem
-            disabled={signOutMutation.isPending}
-            className="flex items-center gap-x-2"
-            data-test="workspace-sign-out"
-            onClick={() => signOutMutation.mutate()}
-          >
-            <LogOut className="size-4" />
-
-            <span>
-              <Trans i18nKey={'auth.signOut'} />
-            </span>
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -392,5 +408,95 @@ export function WorkspaceDropdown({
         />
       </If>
     </div>
+  );
+}
+
+/**
+ * Menu de l'équipe (barre latérale, en haut) : les équipes de l'utilisateur pour en changer, la création
+ * d'une équipe et les paramètres de l'équipe en cours.
+ */
+function TeamItems(props: {
+  accounts: AccountModel[];
+  selectedAccount?: string;
+  settingsPath: string;
+  onSwitch: (slug: string) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <>
+      <DropdownMenuGroup>
+        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+          <Trans
+            i18nKey={'teams.yourTeams'}
+            values={{ teamsCount: props.accounts.length }}
+          />
+        </DropdownMenuLabel>
+
+        <div
+          className="max-h-[50vh] overflow-y-auto"
+          data-test="workspace-switch-content"
+        >
+          {props.accounts.map((account) => (
+            <DropdownMenuItem
+              key={account.value}
+              data-test="workspace-team-item"
+              data-name={account.label}
+              data-slug={account.value}
+              className="flex gap-2"
+              onClick={() => {
+                if (account.value && account.value !== props.selectedAccount) {
+                  props.onSwitch(account.value);
+                }
+              }}
+            >
+              <WorkspaceAvatar
+                className="size-6 rounded-md text-[11px]"
+                isTeam
+                pictureUrl={account.image}
+                label={account.label}
+              />
+
+              <span className="flex-1 truncate">{account.label}</span>
+
+              {props.selectedAccount === account.value && (
+                <Check className="ml-auto size-4" />
+              )}
+            </DropdownMenuItem>
+          ))}
+        </div>
+
+        <If condition={featuresFlagConfig.enableTeamCreation}>
+          <DropdownMenuItem
+            onClick={props.onCreate}
+            data-test="create-team-trigger"
+            className="flex gap-2"
+          >
+            <Plus className="size-4" />
+
+            <span>
+              <Trans i18nKey={'teams.createTeam'} />
+            </span>
+          </DropdownMenuItem>
+        </If>
+      </DropdownMenuGroup>
+
+      <DropdownMenuSeparator />
+
+      <DropdownMenuItem
+        render={
+          <Link
+            className="flex items-center gap-x-2"
+            href={props.settingsPath}
+            data-test="workspace-settings-link"
+          >
+            <Settings className="size-4" />
+
+            <span>
+              <Trans i18nKey={'teams.settings.pageTitle'} />
+            </span>
+          </Link>
+        }
+      />
+    </>
   );
 }

@@ -83,7 +83,7 @@ async function ProfileSettings({ params }: TeamProfileSettingsPageProps) {
     .maybeSingle();
 
   return (
-    <div className={'flex flex-col gap-6'}>
+    <div className={'flex flex-col gap-8'}>
       <NotificationPreferences
         disabledGroups={preferences?.disabled_groups ?? []}
       />

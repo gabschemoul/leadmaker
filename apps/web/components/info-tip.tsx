@@ -6,6 +6,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { cn } from '@kit/ui/utils';
 
 /**
+ * Masqué pour l'instant (choix de Gabriel, 10/11/2026) : les « i » restent en place dans le code,
+ * repasser à `true` pour les réafficher partout d'un coup.
+ */
+const SHOW_INFO_TIPS = false;
+
+/**
  * Petit « i » entouré : l'explication s'affiche dans une bulle au survol (ordinateur)
  * ou à l'appui (téléphone). Ménage du 10/11/2026 : les textes d'aide ne sont plus
  * affichés d'office, pour que les pages restent lisibles.
@@ -16,6 +22,10 @@ export function InfoTip(props: {
   className?: string;
   side?: 'top' | 'bottom' | 'left' | 'right';
 }) {
+  if (!SHOW_INFO_TIPS) {
+    return null;
+  }
+
   return (
     <Popover>
       <PopoverTrigger

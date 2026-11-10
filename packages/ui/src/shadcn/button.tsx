@@ -35,7 +35,8 @@ const buttonVariants = cva(
         default:
           'h-8 gap-1.5 px-2.5 [&>svg:first-child:not(:only-child)]:-ml-1 [&>svg:last-child:not(:only-child)]:-mr-1',
         xs: "h-6 gap-1 rounded-md px-2 text-xs [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-lg px-2 text-[13px] [&_svg:not([class*='size-'])]:size-3.5 [&>svg:first-child:not(:only-child)]:-ml-0.5",
+        // même gabarit que `default` : tous les boutons de l'appli ont la forme du bouton « Feedback »
+        sm: 'h-8 gap-1.5 px-2.5 [&>svg:first-child:not(:only-child)]:-ml-1 [&>svg:last-child:not(:only-child)]:-mr-1',
         lg: "h-9 gap-1.5 rounded-[10px] px-3 text-[14px] [&_svg:not([class*='size-'])]:size-[18px] [&>svg:first-child:not(:only-child)]:-ml-[3px] [&>svg:last-child:not(:only-child)]:-mr-[3px]",
         chip: "h-10 gap-2 rounded-xl px-3 text-[14px] [&_svg:not([class*='size-'])]:size-[18px]",
         icon: 'size-8',

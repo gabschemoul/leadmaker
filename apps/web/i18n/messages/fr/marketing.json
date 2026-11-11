@@ -43,7 +43,7 @@
   "contactError": "Une erreur est survenue lors de l'envoi de votre message",
   "contactSuccessDescription": "Nous avons bien reçu votre message et vous répondrons dans les plus brefs délais",
   "contactErrorDescription": "Une erreur est survenue lors de l'envoi de votre message. Veuillez réessayer plus tard",
-  "footerDescription": "Prospection automatisée : ciblage, prospects qualifiés et prises de contact personnalisées, dans le monde entier.",
+  "footerDescription": "Prospection automatisée : ciblage, entreprises qualifiées et prises de contact personnalisées, dans le monde entier.",
   "copyright": "© Copyright {year} {product}. Tous droits réservés.",
   "home": {
     "pill": "Nouveau",
@@ -71,7 +71,7 @@
     "feature4Label": "Vous gardez la main",
     "feature4": "Pilote automatique par défaut, ou validation formulaire par formulaire avec capture d'écran : c'est vous qui choisissez.",
     "feature5Label": "Plusieurs expéditeurs",
-    "feature5": "Un expéditeur différent par campagne si besoin, invitez votre équipe, exportez les prospects en CSV.",
+    "feature5": "Un expéditeur différent par campagne si besoin, invitez votre équipe, exportez les entreprises en CSV.",
     "feature6Label": "Adresses e-mail trouvées",
     "feature6": "Quand un site affiche une adresse de contact, Prospectigo la récupère pour vos relances.",
     "controlTitle": "Vous voyez tout, vous décidez de tout.",
@@ -152,7 +152,7 @@
       "filterRatingValue": "De 4 à 5 ★",
       "filterWebsite": "Site web",
       "filterWebsiteValue": "Avec un site",
-      "prospects": "Prospects",
+      "prospects": "Entreprises",
       "formSender": "Alex Rivera · Pixel Studio",
       "formMessage": "Bonjour, bravo pour vos 312 avis clients ! Vos patients ne peuvent pas encore réserver en ligne sur votre site, nous pouvons vous aider",
       "formCardTitle": "Prise de contact",
@@ -196,7 +196,7 @@
     "metaTitle": "Prospection commerciale en pilote automatique",
     "eyebrow": "Prospection automatisée, partout dans le monde",
     "title": "Votre prospection commerciale, en pilote automatique.",
-    "lead": "Prospectigo trouve des prospects qualifiés pour votre secteur d'activité et les contacte directement. Vous choisissez la zone géographique et le secteur, Prospectigo s'occupe du reste.",
+    "lead": "Prospectigo trouve des entreprises qualifiées pour votre secteur d'activité et les contacte directement. Vous choisissez la zone géographique et le secteur, Prospectigo s'occupe du reste.",
     "start": "Commencer",
     "bookDemo": "Réserver une démo",
     "fine": "Sans engagement · résiliable à tout moment",
@@ -205,7 +205,7 @@
       "find": "2 · Trouvez",
       "contact": "3 · Contactez"
     },
-    "appAlt": "L'appli Prospectigo : on cible une zone et un secteur, les prospects apparaissent, puis les messages partent automatiquement.",
+    "appAlt": "L'appli Prospectigo : on cible une zone et un secteur, les entreprises apparaissent, puis les messages partent automatiquement.",
     "app": {
       "newCampaign": "Nouvelle campagne",
       "stepBadge": "Étape 1 sur 3 · Ciblage",
@@ -221,7 +221,7 @@
       "rating": "Note moyenne de 4 à 5",
       "matching": "entreprises correspondent",
       "launch": "Lancer la recherche →",
-      "qualified": "248 prospects qualifiés",
+      "qualified": "248 entreprises qualifiées",
       "export": "Exporter en CSV",
       "colCompany": "Entreprise",
       "colRating": "Note",
@@ -300,9 +300,9 @@
     },
     "find": {
       "eyebrow": "Trouver",
-      "title": "Une liste de prospects que vous contrôlez de A à Z",
-      "text": "Chaque prospect arrive avec son site web, son adresse e-mail et son numéro de téléphone. Vous gardez la main sur toute la liste.",
-      "manage": "<b>Gérez votre liste</b> : triez, retirez, ajoutez vos propres prospects",
+      "title": "Une liste d'entreprises que vous contrôlez de A à Z",
+      "text": "Chaque entreprise arrive avec son site web, son adresse e-mail et son numéro de téléphone. Vous gardez la main sur toute la liste.",
+      "manage": "<b>Gérez votre liste</b> : triez, retirez, ajoutez des entreprises vous-même",
       "enrich": "<b>Enrichissement</b> : l'adresse e-mail trouvée pour vous, le téléphone affiché",
       "export": "<b>Export CSV</b> en un clic, pour votre CRM ou vos outils",
       "cta": "Créer mon compte",
@@ -359,7 +359,7 @@
     },
     "final": {
       "title": "Votre prochaine campagne peut partir aujourd'hui.",
-      "text": "Choisissez une zone et un secteur : Prospectigo trouve vos prospects et les contacte pour vous."
+      "text": "Choisissez une zone et un secteur : Prospectigo trouve les entreprises qui correspondent et les contacte pour vous."
     }
   },
   "navHow": "Fonctionnement",

@@ -9,7 +9,7 @@
   "folders": {
     "pageTitle": "Client folders",
     "listTitle": "Client folders",
-    "intro": "For agencies: one folder per client, with its own prospects. If you prospect for your own business, you don't need them.",
+    "intro": "For agencies: one folder per client, with its own list of businesses. If you prospect for your own business, you don't need them.",
     "defaultName": "My company",
     "nameColumn": "Name",
     "createdAtColumn": "Created",
@@ -30,7 +30,7 @@
     "renameError": "The folder couldn't be renamed. Please try again in a moment.",
     "deleteButton": "Delete",
     "deleteTitle": "Delete the “{name}” folder?",
-    "deleteDescription": "Its campaigns, prospects and forms will be permanently deleted. To confirm, type the folder name: {name}",
+    "deleteDescription": "Its campaigns, businesses and forms will be permanently deleted. To confirm, type the folder name: {name}",
     "deleteSubmit": "Delete permanently",
     "deleteDone": "Folder deleted.",
     "deleteRunning": "A campaign in this folder is running: pause it before deleting the folder.",
@@ -41,13 +41,13 @@
     "pageTitle": "Campaigns",
     "title": "Your campaigns",
     "description": "A campaign finds the businesses that match the cities and activities you choose.",
-    "empty": "You don't have any campaign yet. Create one to find your first prospects.",
+    "empty": "You don't have any campaign yet. Create one to find your first businesses.",
     "newButton": "New campaign",
     "nameColumn": "Name",
     "statusColumn": "Status",
     "folderColumn": "Client folder",
     "countryColumn": "Country",
-    "prospectsColumn": "Prospects found",
+    "prospectsColumn": "Businesses found",
     "createdAtColumn": "Created",
     "searchPlaceholder": "Search campaigns",
     "filterAll": "All",
@@ -87,7 +87,7 @@
     "categoriesListLabel": "Activities",
     "categorySearchPlaceholder": "Type an activity, for example \"plumber\"…",
     "filtersTitle": "Which listings to keep?",
-    "filtersDescription": "Only businesses matching these criteria are added to your prospects.",
+    "filtersDescription": "Only businesses matching these criteria are added to your list.",
     "ratingMinLabel": "Minimum rating",
     "ratingMaxLabel": "Maximum rating",
     "minReviewsLabel": "Minimum number of reviews",
@@ -119,7 +119,7 @@
     "editPageTitle": "Edit campaign",
     "saveChanges": "Save changes",
     "countryLocked": "The country can no longer change once the campaign has been launched.",
-    "editLaunchedHint": "This campaign has already been launched. Cities and activities you add will be scanned next; those you remove will no longer be scanned, but prospects already found are kept.",
+    "editLaunchedHint": "This campaign has already been launched. Cities and activities you add will be scanned next; those you remove will no longer be scanned, but businesses already found are kept.",
     "nearbyButton": "+ nearby",
     "nearbyOpen": "City and surroundings",
     "nearbyHint": "Tip: click “+ nearby” next to a city to add every town around it at once.",
@@ -160,7 +160,7 @@
     },
     "categoriesSelectAll": "Select all",
     "categoriesDeselectAll": "Deselect all",
-    "categoriesMore": "+ {count, plural, one {# more trade} other {# more trades}}",
+    "categoriesMore": "Show more ({count, number} more)",
     "whereTitle": "Where?",
     "moreCriteriaTitle": "Advanced settings",
     "launch": "Launch the search",
@@ -182,7 +182,8 @@
       "offerRequired": "Describe your offer in one sentence: it is used to sort the companies.",
       "offerTooLong": "Offer too long (1,000 characters max).",
       "retargetHint": "The target changes: every company already found will be sorted again.",
-      "autoNameMore": "{names} and {count, plural, one {# other} other {# others}}"
+      "autoNameMore": "{names} and {count, plural, one {# other} other {# others}}",
+      "addProposed": "Add {count, plural, one {# suggested activity} other {# suggested activities}}"
     },
     "cancel": "Cancel",
     "saveDraft": "Save as draft"
@@ -200,7 +201,7 @@
     "real": {
       "title": "Matching businesses",
       "intro": "Count the businesses matching your criteria. Free, no credits used.",
-      "button": "Estimate the number of prospects",
+      "button": "Estimate the number of businesses",
       "running": "Searching: {done} of {total} search{total, plural, one {} other {es}}…",
       "exact": "{count, plural, =0 {No business matches} one {# business matches} other {# businesses match}} your criteria.",
       "exactHint": "Measured figure: every search was read.",
@@ -209,8 +210,8 @@
       "changed": "Your criteria changed: run the estimate again.",
       "failed": "The estimate did not complete. Please try again.",
       "again": "Run again",
-      "pricing": "Rate: {count, plural, one {# credit} other {# credits}} per prospect",
-      "pricingHint": "{rate}% of the businesses read match your filters. The more selective the filters, the more credits each prospect costs. The rate is fixed when the campaign launches."
+      "pricing": "Rate: {count, plural, one {# credit} other {# credits}} per business",
+      "pricingHint": "{rate}% of the businesses read match your filters. The more selective the filters, the more credits each kept business costs. The rate is fixed when the campaign launches."
     },
     "creditsHintPriced": "Each business kept will use {count, plural, one {# credit} other {# credits}}, contacting included (rate fixed at launch)."
   },
@@ -233,31 +234,31 @@
     "progressLive": "Updated live.",
     "progressDraft": "The search will start when you launch the campaign.",
     "searchesProgress": "{done, plural, one {# search} other {# searches}} done out of {total, number}",
-    "prospectsFound": "Prospects found",
+    "prospectsFound": "Businesses found",
     "citiesAndCategories": "Cities × activities",
     "abandonedCategories": "Dropped activities",
     "abandonedHint": "Stopped because they brought almost nothing.",
     "productiveCategories": "Productive activities",
     "productiveHint": "They get most of the searches.",
     "lastActivity": "Last activity",
-    "latestProspectsTitle": "Latest prospects",
+    "latestProspectsTitle": "Latest businesses",
     "latestProspectsDescription": "The last 50 businesses found by this campaign.",
-    "noProspects": "No prospects yet.",
+    "noProspects": "No businesses yet.",
     "edit": "Edit",
-    "pricingTitle": "Rate per prospect",
+    "pricingTitle": "Rate per business",
     "pricingValue": "{count, plural, one {# credit} other {# credits}}",
     "pricingFrozenHint": "Fixed at launch: {rate}% of businesses matched your filters.",
     "pricingFrozenHintNoRate": "Fixed when the campaign launched.",
     "pricingPreviewHint": "From your estimate ({rate}% of businesses match your filters). Fixed at launch.",
     "pricingMeasuring": "Measuring: {done} of {total}",
     "pricingMeasuringHint": "We are measuring the share of businesses matching your filters. You can launch the campaign right away.",
-    "pricingMeasuringLaunchedHint": "The campaign is already running. Until the measurement ends, 1 credit per prospect.",
+    "pricingMeasuringLaunchedHint": "The campaign is already running. Until the measurement ends, 1 credit per business.",
     "pricingUnknown": "Measured at launch",
-    "pricingUnknownHint": "The campaign starts as soon as you click “Launch”. The rate is measured in parallel, 1 credit per prospect meanwhile."
+    "pricingUnknownHint": "The campaign starts as soon as you click “Launch”. The rate is measured in parallel, 1 credit per business meanwhile."
   },
   "import": {
     "button": "Import a CSV file",
-    "title": "Import prospects",
+    "title": "Import businesses",
     "description": "Add your own businesses from a CSV file (Excel or Google Sheets export). Importing doesn't use any credits.",
     "folderLabel": "Client folder",
     "fileLabel": "CSV file",
@@ -311,7 +312,7 @@
       "trouverTodo": "Search to launch",
       "trouverRunning": "Running · {count, plural, =0 {nothing yet} one {# found} other {# found}}",
       "trouverPaused": "Paused · {count, plural, one {# found} other {# found}}",
-      "trouverDone": "{count, plural, =0 {No prospect} one {# prospect} other {# prospects}}",
+      "trouverDone": "{count, plural, =0 {No businesses} one {# business} other {# businesses}}",
       "redigerTodo": "Message to write",
       "redigerNoSender": "Sender to fill in",
       "redigerDone": "{count, plural, one {# message} other {# messages}} · sender OK",
@@ -349,7 +350,7 @@
       "title": "Business search",
       "launch": "Launch the search",
       "whileRunning": "Meanwhile, write your message",
-      "next": "Go to Write"
+      "next": "Go to Message"
     },
     "write": {
       "senderTitle": "Who sends?",
@@ -368,16 +369,16 @@
       "noMessage": "The message is missing: Prospectigo does not know what to write in the forms.",
       "writeMessage": "Write the message",
       "noSender": "The sender is missing: Prospectigo does not know which details to write.",
-      "noProspects": "No prospect yet: launch the search first.",
-      "goDiscover": "Go to Find",
+      "noProspects": "No businesses yet: launch the search first.",
+      "goDiscover": "Go to Businesses",
       "prepareTitle": "a. Prepare",
       "prepareCount": "{count, number}",
-      "prepareOf": "of {count, plural, one {# prospect} other {# prospects}}",
+      "prepareOf": "of {count, plural, one {# business} other {# businesses}}",
       "prepareIdle": "Prospectigo visits every website, finds the contact form and fills it with your message. Allow about a minute per site.",
       "prepareWorking": "Prospectigo is working: {count, plural, one {# form in progress} other {# forms in progress}}.",
-      "prepareDone": "Every prospect has been visited. Run again after a new search.",
+      "prepareDone": "Every business has been visited. Run again after a new search.",
       "prepareButton": "Prepare the forms",
-      "prepareAgain": "Prepare the new prospects",
+      "prepareAgain": "Prepare the new businesses",
       "verifyTitle": "b. Review",
       "verifyCount": "{count, number}",
       "verifyUnit": "ready",
@@ -434,7 +435,7 @@
       "button": "Fill in the sender"
     },
     "message": {
-      "text": "{count, plural, =0 {Message missing} one {# prospect found · message missing} other {# prospects found · message missing}}",
+      "text": "{count, plural, =0 {Message missing} one {# business found · message missing} other {# businesses found · message missing}}",
       "button": "Write the message"
     },
     "review": {
@@ -458,11 +459,11 @@
       "button": "Follow"
     },
     "searching": {
-      "text": "Search running · {count, plural, =0 {nothing yet} one {# prospect found} other {# prospects found}}",
+      "text": "Search running · {count, plural, =0 {nothing yet} one {# business found} other {# businesses found}}",
       "button": "Follow"
     },
     "prepare": {
-      "text": "{count, plural, one {# prospect found} other {# prospects found}}, no form prepared",
+      "text": "{count, plural, one {# business found} other {# businesses found}}, no form prepared",
       "button": "Prepare the forms"
     },
     "finished": {
@@ -470,7 +471,7 @@
       "button": "See the results"
     },
     "resume": {
-      "text": "Search paused · {count, plural, one {# prospect} other {# prospects}}",
+      "text": "Search paused · {count, plural, one {# business} other {# businesses}}",
       "button": "Resume"
     },
     "noProspects": {
@@ -490,7 +491,7 @@
       "button": "Check"
     },
     "noCredits": {
-      "text": "Search stopped: no credits left · {count, plural, one {# prospect} other {# prospects}}",
+      "text": "Search stopped: no credits left · {count, plural, one {# business} other {# businesses}}",
       "button": "See my plan"
     },
     "tooHard": {
@@ -498,7 +499,7 @@
       "button": "Refine the target"
     },
     "contactMore": {
-      "text": "{sent, plural, one {# sent} other {# sent}} · {remaining, plural, one {# prospect not contacted yet} other {# prospects not contacted yet}}",
+      "text": "{sent, plural, one {# sent} other {# sent}} · {remaining, plural, one {# business not contacted yet} other {# businesses not contacted yet}}",
       "button": "Contact the next ones"
     }
   },
@@ -516,9 +517,9 @@
     "more": "More",
     "countLabel": "Number of businesses to contact",
     "all": "All ({count, number})",
-    "maxHint": "Type a number or use the buttons. Maximum {max, number}: {prospects, plural, one {# prospect not contacted yet} other {# prospects not contacted yet}}. Sending uses no credits.",
-    "maxHintEdit": "Between {min, number} (already sent or in progress) and {max, number} (counting the prospects not contacted yet).",
-    "targetAdjusted": "Number adjusted to {count, number} (prospects not contacted yet).",
+    "maxHint": "Type a number or use the buttons. Maximum {max, number}: {prospects, plural, one {# business not contacted yet} other {# businesses not contacted yet}}. Sending uses no credits.",
+    "maxHintEdit": "Between {min, number} (already sent or in progress) and {max, number} (counting the businesses not contacted yet).",
+    "targetAdjusted": "Number adjusted to {count, number} (businesses not contacted yet).",
     "pace": {
       "title": "When to send?",
       "office": "Business hours (recommended)",
@@ -562,7 +563,7 @@
     "cancelEdit": "Cancel",
     "how": {
       "title": "What will happen",
-      "step1": "Prospectigo takes your prospects in the order they were found.",
+      "step1": "Prospectigo takes the businesses in the order they were found.",
       "step2": "It fills in the form and sends it at the chosen time if everything is clear.",
       "step3": "Doubtful cases (captcha, unknown field) are set aside.",
       "step4": "It stops at {count, plural, one {# message sent} other {# messages sent}}. You can pause at any time.",
@@ -570,14 +571,14 @@
     },
     "blocked": {
       "noPlan": "You need a plan to contact businesses: choose one in Billing.",
-      "noProspects": "Every prospect of this campaign has already been contacted or prepared. Run a new search to find more, or switch to Advanced mode.",
+      "noProspects": "Every business in this campaign has already been contacted or prepared. Run a new search to find more, or switch to Advanced mode.",
       "billing": "See my plan"
     },
     "run": {
       "running": "Autopilot running",
       "paused": "Paused",
       "doneTitle": "Done: {count, plural, one {# business contacted} other {# businesses contacted}}",
-      "doneNoProspects": "Done, no prospect left to contact: {count, plural, =0 {no business contacted} one {# business contacted} other {# businesses contacted}}",
+      "doneNoProspects": "Done, no businesses left to contact: {count, plural, =0 {no business contacted} one {# business contacted} other {# businesses contacted}}",
       "pause": "Pause",
       "resume": "Resume",
       "edit": "Change the number",
@@ -614,11 +615,11 @@
     "errors": {
       "generic": "That didn't work. Try again in a moment.",
       "notFound": "Campaign not found.",
-      "noSender": "Fill in the sender first (Write step).",
-      "noMessages": "Write at least one message first (Write step).",
+      "noSender": "Fill in the sender first (Message step).",
+      "noMessages": "Write at least one message first (Message step).",
       "messages": "A ticked message no longer exists: reload the page.",
       "active": "The autopilot is already running on this campaign: reload the page.",
-      "noProspects": "No prospect to contact: all of them have already been contacted or prepared.",
+      "noProspects": "No businesses to contact: all of them have already been contacted or prepared.",
       "noCredits": "You need a plan to contact businesses.",
       "target": "Pick at least one business.",
       "schedule": "Choose how many days to spread the sends over.",
@@ -666,7 +667,7 @@
     "button": "Archive",
     "restoreButton": "Unarchive",
     "confirmTitle": "Archive this campaign?",
-    "confirmDescription": "It disappears from the list and the dashboard. Its search and autopilot stop, and approved forms not yet sent are held back. Its prospects stay in the Prospects page. You can unarchive it at any time.",
+    "confirmDescription": "It disappears from the list and the dashboard. Its search and autopilot stop, and approved forms not yet sent are held back. Its businesses stay in the Businesses page. You can unarchive it at any time.",
     "confirmButton": "Archive",
     "archivedDone": "Campaign archived.",
     "restoredDone": "Campaign unarchived: it is paused, click “Resume” to restart it.",

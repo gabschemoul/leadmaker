@@ -219,8 +219,8 @@ export const createCampaignAction = authActionClient
     }
 
     const client = getSupabaseServerClient();
-    const sortTarget =
-      values.sortTarget || (values.launch ? await targetFromActivities() : '');
+    // brouillon compris : sans phrase, la cible fixe (l'écran Entreprises du brouillon est celui d'une campagne triée)
+    const sortTarget = values.sortTarget || (await targetFromActivities());
 
     const { data, error } = await client
       .from('lm_campaigns')
@@ -261,13 +261,13 @@ export const createCampaignAction = authActionClient
 
     revalidatePath('/home/[account]/campaigns', 'layout');
 
-    // « Enregistrer en brouillon » : rien n'est lancé, retour à la liste des campagnes (la page du brouillon si
-    // l'offre n'a pas pu être enregistrée : elle dit pourquoi)
+    // « Enregistrer en brouillon » : rien n'est lancé, on reste sur le formulaire du brouillon (retour du 11/11 :
+    // pas de retour à la liste) ; la page du brouillon si l'offre n'a pas pu être enregistrée (elle dit pourquoi)
     if (!values.launch) {
       redirect(
         saveError
           ? companiesHref(values.accountSlug, data.id, saveError)
-          : `/home/${values.accountSlug}/campaigns`,
+          : `/home/${values.accountSlug}/campaigns/${data.id}/edit`,
       );
     }
 
@@ -305,15 +305,13 @@ export const updateCampaignAction = authActionClient
       .eq('id', values.campaignId)
       .maybeSingle();
 
-    // Sans phrase : cible déduite des activités (brouillon lancé, ou campagne déjà triée). Une ancienne campagne
-    // lancée sans cible garde l'ancien parcours. Brouillon enregistré sans lancer : la phrase reste vide.
+    // Sans phrase : cible fixe « toutes les entreprises des activités choisies » (brouillon compris). Une ancienne
+    // campagne lancée sans cible garde l'ancien parcours.
     const isDraft = before?.status === 'draft';
     const keepsLegacy = !isDraft && !before?.sort_target?.trim();
     const sortTarget =
       values.sortTarget ||
-      (keepsLegacy || (isDraft && !values.launch)
-        ? ''
-        : await targetFromActivities(before?.sort_target));
+      (keepsLegacy ? '' : await targetFromActivities(before?.sort_target));
 
     const { data: status, error } = await client.rpc('lm_update_campaign', {
       p_campaign_id: values.campaignId,
@@ -350,7 +348,9 @@ export const updateCampaignAction = authActionClient
     if (isDraft && !values.launch) {
       revalidatePath('/home/[account]/campaigns', 'layout');
 
-      redirect(`/home/${values.accountSlug}/campaigns`);
+      redirect(
+        `/home/${values.accountSlug}/campaigns/${values.campaignId}/edit`,
+      );
     }
 
     if (!launchError && isDraft && sortTarget.length > 0) {

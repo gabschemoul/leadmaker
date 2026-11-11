@@ -1,7 +1,5 @@
 'use client';
 
-import { Info } from 'lucide-react';
-
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { cn } from '@kit/ui/utils';
 
@@ -37,11 +35,20 @@ export function InfoTip(props: {
         aria-label={props.label ?? 'Plus d’informations'}
         data-test={'info-tip'}
         className={cn(
-          'text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex size-4 shrink-0 items-center justify-center rounded-full align-middle transition-colors outline-none focus-visible:ring-2',
+          'bg-foreground/[0.07] text-muted-foreground hover:bg-foreground/[0.12] hover:text-foreground data-[popup-open]:bg-foreground/[0.12] data-[popup-open]:text-foreground focus-visible:ring-ring inline-flex size-[18px] shrink-0 cursor-help items-center justify-center rounded-full align-middle transition-colors outline-none focus-visible:ring-2',
           props.className,
         )}
       >
-        <Info className={'size-4'} strokeWidth={1.75} />
+        {/* « i » dessiné (11/11 : l'icône cerclée de lucide ne plaisait pas) : pastille pleine, point + trait arrondis */}
+        <svg aria-hidden viewBox={'0 0 16 16'} className={'size-3'}>
+          <circle cx={8} cy={3.6} r={1.35} fill={'currentColor'} />
+          <path
+            d={'M8 7v5.6'}
+            stroke={'currentColor'}
+            strokeWidth={2}
+            strokeLinecap={'round'}
+          />
+        </svg>
       </PopoverTrigger>
 
       <PopoverContent

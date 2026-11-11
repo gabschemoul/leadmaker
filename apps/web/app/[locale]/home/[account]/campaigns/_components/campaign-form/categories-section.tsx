@@ -10,7 +10,7 @@
 
 import { useState } from 'react';
 
-import { ListTree } from 'lucide-react';
+import { ListTree, Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 import { useFormContext } from 'react-hook-form';
@@ -40,13 +40,20 @@ import { CategoryBrowserDialog } from '../category-browser-dialog';
 import { SearchPicker } from '../search-picker';
 import { ChipList, SelectedChip } from './form-controls';
 
-/** Activités affichées en étiquettes ; au-delà, un simple « + N autres ». */
-const CATEGORY_CHIPS_SHOWN = 150;
+/** Activités affichées en étiquettes au départ, puis par paquets avec « Afficher plus » (retour du 11/11). */
+const CATEGORY_CHIPS_STEP = 40;
 
-export function CategoriesSection(props: { limit: number }) {
+export function CategoriesSection(props: {
+  limit: number;
+  /** l'IA cherche les activités d'après la phrase */
+  suggesting?: boolean;
+  /** activités proposées par l'IA qui manquent à une sélection faite à la main (jamais ajoutées d'office) */
+  proposed?: CategoryRef[];
+}) {
   const t = useTranslations('campaigns');
   const locale = useLocale();
   const [browsing, setBrowsing] = useState(false);
+  const [shown, setShown] = useState(CATEGORY_CHIPS_STEP);
   // taille du catalogue, connue après un « Tout sélectionner »
   const [catalogSize, setCatalogSize] = useState<number | null>(null);
   const { setValue } = useFormContext<CampaignFormValues>();
@@ -90,6 +97,10 @@ export function CategoriesSection(props: { limit: number }) {
       name={'categories'}
       render={({ field }) => {
         const categories = (field.value ?? []) as CategoryRef[];
+        const selectedIds = new Set(categories.map((c) => c.gcid));
+        const proposedMissing = (props.proposed ?? []).filter(
+          (c) => !selectedIds.has(c.gcid),
+        );
         const allSelected =
           catalogSize !== null && categories.length >= catalogSize;
 
@@ -98,8 +109,14 @@ export function CategoriesSection(props: { limit: number }) {
             <div
               className={'flex flex-wrap items-center justify-between gap-2'}
             >
-              <FormLabel>
+              <FormLabel className={'flex items-center gap-2'}>
                 <Trans i18nKey={'campaigns.form.who.searchLabel'} />
+                {props.suggesting ? (
+                  <Spinner
+                    className={'size-3.5'}
+                    data-test={'campaign-categories-suggesting'}
+                  />
+                ) : null}
               </FormLabel>
 
               <div className={'flex flex-wrap items-center gap-2'}>
@@ -207,7 +224,27 @@ export function CategoriesSection(props: { limit: number }) {
             </If>
 
             <ChipList>
-              {categories.slice(0, CATEGORY_CHIPS_SHOWN).map((category) => (
+              {proposedMissing.length > 0 ? (
+                <Button
+                  type={'button'}
+                  variant={'chip'}
+                  data-test={'campaign-categories-add-proposed'}
+                  onClick={() =>
+                    field.onChange(
+                      [...categories, ...proposedMissing].slice(0, props.limit),
+                      { shouldValidate: true },
+                    )
+                  }
+                >
+                  <Plus />
+                  <Trans
+                    i18nKey={'campaigns.form.who.addProposed'}
+                    values={{ count: proposedMissing.length }}
+                  />
+                </Button>
+              ) : null}
+
+              {categories.slice(0, shown).map((category) => (
                 <SelectedChip
                   key={category.gcid}
                   label={category.label}
@@ -220,15 +257,22 @@ export function CategoriesSection(props: { limit: number }) {
                 />
               ))}
 
-              <If condition={categories.length > CATEGORY_CHIPS_SHOWN}>
-                <span className={'text-muted-foreground self-center text-sm'}>
+              <If condition={categories.length > shown}>
+                <Button
+                  type={'button'}
+                  size={'sm'}
+                  variant={'ghost'}
+                  className={'self-center'}
+                  data-test={'campaign-categories-more'}
+                  onClick={() =>
+                    setShown((current) => current + CATEGORY_CHIPS_STEP)
+                  }
+                >
                   <Trans
                     i18nKey={'campaigns.form.categoriesMore'}
-                    values={{
-                      count: categories.length - CATEGORY_CHIPS_SHOWN,
-                    }}
+                    values={{ count: categories.length - shown }}
                   />
-                </span>
+                </Button>
               </If>
             </ChipList>
 

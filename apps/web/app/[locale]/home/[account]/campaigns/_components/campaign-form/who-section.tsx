@@ -42,6 +42,7 @@ import {
   SORT_TARGET_MAX,
 } from '../../_lib/schema/campaign.schema';
 import { suggestTargetAction } from '../../_lib/server/ai-actions';
+import { searchCitiesAction } from '../../_lib/server/geo-actions';
 import { useDebouncedValue } from '../../_lib/use-debounced-value';
 import { CategoriesSection } from './categories-section';
 
@@ -102,7 +103,12 @@ export function WhoSection(props: {
     placeholderData: keepPreviousData,
   });
 
-  useSuggestedCategories(suggestions.data?.categories, props.categoryLimit);
+  const proposed = useSuggestedCategories(
+    suggestions.data?.categories,
+    props.categoryLimit,
+  );
+
+  usePlaceFromPhrase(suggestions.data?.place ?? null, settled, props.editing);
 
   useAutoName({
     editing: props.editing,
@@ -230,7 +236,11 @@ export function WhoSection(props: {
           </div>
         </div>
 
-        <CategoriesSection limit={props.categoryLimit} />
+        <CategoriesSection
+          limit={props.categoryLimit}
+          suggesting={updating}
+          proposed={proposed}
+        />
 
         {showOfferInput ? (
           <FormField
@@ -307,16 +317,15 @@ function useSuggestedCategories(
     useFormContext<CampaignFormValues>();
   const autoKey = useRef<string | null>(null);
   const submitted = formState.isSubmitted;
+  // sélection faite à la main avant ces propositions : rien n'est remplacé, on propose seulement d'ajouter
+  const [proposed, setProposed] = useState<CampaignFormValues['categories']>(
+    [],
+  );
 
   useEffect(() => {
     if (!suggested || suggested.length === 0) {
-      return;
-    }
+      setProposed([]);
 
-    const current = getValues('categories') ?? [];
-    const currentKey = current.map((category) => category.gcid).join(',');
-
-    if (current.length > 0 && currentKey !== autoKey.current) {
       return;
     }
 
@@ -326,6 +335,16 @@ function useSuggestedCategories(
       family: category.family,
     }));
 
+    const current = getValues('categories') ?? [];
+    const currentKey = current.map((category) => category.gcid).join(',');
+
+    if (current.length > 0 && currentKey !== autoKey.current) {
+      setProposed(next);
+
+      return;
+    }
+
+    setProposed([]);
     autoKey.current = next.map((category) => category.gcid).join(',');
 
     setValue('categories', next, {
@@ -333,6 +352,61 @@ function useSuggestedCategories(
       shouldValidate: submitted,
     });
   }, [suggested, limit, locale, getValues, setValue, submitted]);
+
+  return proposed;
+}
+
+/**
+ * Lieu cité dans la phrase (« Restaurants à Lyon ») : reporté dans « Où ? » (pays, puis la ville en « Villes
+ * précises »), seulement tant que le client n'a pas choisi de zone lui-même (tout le pays, aucune ville). Une fois
+ * par phrase. Jamais en modification (le pays d'une campagne lancée est figé).
+ *
+ * useEffect justifié : recopier dans le formulaire le résultat de requêtes asynchrones (IA puis villes).
+ */
+function usePlaceFromPhrase(
+  place: { city: string; countryCode: string | null } | null,
+  settled: string,
+  editing: boolean,
+) {
+  const { getValues, setValue } = useFormContext<CampaignFormValues>();
+  const applied = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (editing || !place || applied.current === settled) {
+      return;
+    }
+
+    const untouched =
+      getValues('citiesMode') === 'country' &&
+      (getValues('cities') ?? []).length === 0 &&
+      !getValues('radiusCity');
+
+    if (!untouched) {
+      return;
+    }
+
+    applied.current = settled;
+
+    const countryCode = place.countryCode ?? getValues('countryCode');
+
+    void searchCitiesAction({ countryCode, query: place.city }).then(
+      (result) => {
+        const city = result?.data?.[0];
+
+        if (!city || applied.current !== settled) {
+          return;
+        }
+
+        if (countryCode !== getValues('countryCode')) {
+          setValue('countryCode', countryCode, { shouldValidate: true });
+          setValue('radiusCity', null);
+        }
+
+        setValue('citiesMode', 'list', { shouldDirty: true });
+        setValue('cities', [city], { shouldDirty: true, shouldValidate: true });
+      },
+    );
+  }, [place, settled, editing, getValues, setValue]);
 }
 
 /**

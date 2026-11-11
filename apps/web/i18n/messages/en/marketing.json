@@ -43,7 +43,7 @@
   "contactError": "An error occurred while sending your message",
   "contactSuccessDescription": "We have received your message and will get back to you as soon as possible",
   "contactErrorDescription": "An error occurred while sending your message. Please try again later",
-  "footerDescription": "Automated prospecting: targeting, qualified prospects and personalized outreach, worldwide.",
+  "footerDescription": "Automated prospecting: targeting, qualified businesses and personalized outreach, worldwide.",
   "copyright": "© Copyright {year} {product}. All Rights Reserved.",
   "home": {
     "pill": "New",
@@ -71,7 +71,7 @@
     "feature4Label": "You stay in control",
     "feature4": "Autopilot by default, or form-by-form approval with a screenshot: your call.",
     "feature5Label": "Several senders",
-    "feature5": "A different sender per campaign when needed, invite your team, export prospects as CSV.",
+    "feature5": "A different sender per campaign when needed, invite your team, export businesses as CSV.",
     "feature6Label": "E-mail addresses found",
     "feature6": "When a website shows a contact address, Prospectigo collects it for your follow-ups.",
     "controlTitle": "You see everything, you decide everything.",
@@ -152,7 +152,7 @@
       "filterRatingValue": "4 to 5 ★",
       "filterWebsite": "Website",
       "filterWebsiteValue": "Has a website",
-      "prospects": "Prospects",
+      "prospects": "Businesses",
       "formSender": "Alex Rivera · Pixel Studio",
       "formMessage": "Hi, congrats on your 312 customer reviews! Your patients can't book online on your website yet, and we can help",
       "formCardTitle": "Outreach",
@@ -196,7 +196,7 @@
     "metaTitle": "Sales prospecting on autopilot",
     "eyebrow": "Automated prospecting, worldwide",
     "title": "Your sales prospecting, on autopilot.",
-    "lead": "Prospectigo finds qualified prospects for your industry and reaches out to them directly. You pick the area and the industry, Prospectigo handles the rest.",
+    "lead": "Prospectigo finds qualified businesses for your industry and reaches out to them directly. You pick the area and the industry, Prospectigo handles the rest.",
     "start": "Get started",
     "bookDemo": "Book a demo",
     "fine": "No commitment · cancel anytime",
@@ -205,7 +205,7 @@
       "find": "2 · Find",
       "contact": "3 · Reach out"
     },
-    "appAlt": "The Prospectigo app: you target an area and an industry, prospects appear, then messages go out automatically.",
+    "appAlt": "The Prospectigo app: you target an area and an industry, businesses appear, then messages go out automatically.",
     "app": {
       "newCampaign": "New campaign",
       "stepBadge": "Step 1 of 3 · Targeting",
@@ -221,7 +221,7 @@
       "rating": "Average rating 4 to 5",
       "matching": "businesses match",
       "launch": "Start the search →",
-      "qualified": "248 qualified prospects",
+      "qualified": "248 qualified businesses",
       "export": "Export to CSV",
       "colCompany": "Business",
       "colRating": "Rating",
@@ -295,9 +295,9 @@
     },
     "find": {
       "eyebrow": "Find",
-      "title": "A prospect list you control from A to Z",
-      "text": "Every prospect comes with its website, email address and phone number. You stay in charge of the whole list.",
-      "manage": "<b>Manage your list</b>: sort, remove, add your own prospects",
+      "title": "A business list you control from A to Z",
+      "text": "Every business comes with its website, email address and phone number. You stay in charge of the whole list.",
+      "manage": "<b>Manage your list</b>: sort, remove, add businesses yourself",
       "enrich": "<b>Enrichment</b>: the email address found for you, the phone number shown",
       "export": "<b>CSV export</b> in one click, for your CRM or your tools",
       "cta": "Create my account",
@@ -354,7 +354,7 @@
     },
     "final": {
       "title": "Your next campaign can go out today.",
-      "text": "Pick an area and an industry: Prospectigo finds your prospects and reaches out for you."
+      "text": "Pick an area and an industry: Prospectigo finds matching businesses and reaches out for you."
     }
   },
   "navHow": "How it works",

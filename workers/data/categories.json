@@ -667,7 +667,7 @@
 },
 {
 "gcid": "gcid:amusement_center",
-"fr": "Centre de loisirs",
+"fr": "Centre de divertissement",
 "en": "Amusement center",
 "bucket": "Sports, Fitness & Recreation"
 },
@@ -1927,7 +1927,7 @@
 },
 {
 "gcid": "gcid:barrister",
-"fr": "Avocat plaidant",
+"fr": "Avocat au barreau",
 "en": "Barrister",
 "bucket": "Legal & Professional Services"
 },
@@ -2203,7 +2203,7 @@
 },
 {
 "gcid": "gcid:beer_hall",
-"fr": "Brasserie",
+"fr": "Bar à bière",
 "en": "Beer hall",
 "bucket": "Food & Drink"
 },
@@ -2413,7 +2413,7 @@
 },
 {
 "gcid": "gcid:blast_cleaning_service",
-"fr": "Service de sablage",
+"fr": "Service de nettoyage par projection",
 "en": "Blast cleaning service",
 "bucket": "Home & Garden Services"
 },
@@ -2827,7 +2827,7 @@
 },
 {
 "gcid": "gcid:brewery",
-"fr": "Brasserie",
+"fr": "Brasserie (fabrication de bière)",
 "en": "Brewery",
 "bucket": "Food & Drink"
 },
@@ -2941,7 +2941,7 @@
 },
 {
 "gcid": "gcid:building_firm",
-"fr": "Entreprise de construction",
+"fr": "Entreprise de bâtiment",
 "en": "Building firm",
 "bucket": "Construction & Trades"
 },
@@ -3199,7 +3199,7 @@
 },
 {
 "gcid": "gcid:cake_shop",
-"fr": "Pâtisserie",
+"fr": "Boutique de gâteaux",
 "en": "Cake shop",
 "bucket": "Retail & Shops"
 },
@@ -3301,7 +3301,7 @@
 },
 {
 "gcid": "gcid:candy_store",
-"fr": "Confiserie",
+"fr": "Magasin de bonbons",
 "en": "Candy store",
 "bucket": "Retail & Shops"
 },
@@ -3823,7 +3823,7 @@
 },
 {
 "gcid": "gcid:certified_public_accountant",
-"fr": "Expert-comptable",
+"fr": "Expert-comptable certifié (CPA)",
 "en": "Certified public accountant",
 "bucket": "Financial & Insurance"
 },
@@ -4369,7 +4369,7 @@
 },
 {
 "gcid": "gcid:church_supply_store",
-"fr": "Magasin d'articles religieux",
+"fr": "Fournisseur pour églises",
 "en": "Church supply store",
 "bucket": "Religious & Spiritual"
 },
@@ -4537,7 +4537,7 @@
 },
 {
 "gcid": "gcid:cleaners",
-"fr": "Pressing",
+"fr": "Teinturerie",
 "en": "Cleaners",
 "bucket": "Home & Garden Services"
 },
@@ -4687,7 +4687,7 @@
 },
 {
 "gcid": "gcid:coffee_shop",
-"fr": "Café",
+"fr": "Coffee shop",
 "en": "Coffee shop",
 "bucket": "Food & Drink"
 },
@@ -5155,7 +5155,7 @@
 },
 {
 "gcid": "gcid:containers_supplier",
-"fr": "Fournisseur de conteneurs",
+"fr": "Fournisseur de contenants",
 "en": "Containers supplier",
 "bucket": "Wholesale & Supply"
 },
@@ -5653,7 +5653,7 @@
 },
 {
 "gcid": "gcid:culinary_school",
-"fr": "École de cuisine",
+"fr": "École culinaire",
 "en": "Culinary school",
 "bucket": "Education & Training"
 },
@@ -6025,7 +6025,7 @@
 },
 {
 "gcid": "gcid:deli",
-"fr": "Traiteur",
+"fr": "Traiteur-épicerie (deli)",
 "en": "Deli",
 "bucket": "Food & Drink"
 },
@@ -6475,7 +6475,7 @@
 },
 {
 "gcid": "gcid:do_it_yourself_store",
-"fr": "Magasin de bricolage",
+"fr": "Magasin de bricolage (DIY)",
 "en": "Do-it-yourself shop",
 "bucket": "Retail & Shops"
 },
@@ -6793,7 +6793,7 @@
 },
 {
 "gcid": "gcid:drum_store",
-"fr": "Magasin de batteries",
+"fr": "Magasin de batteries (instruments)",
 "en": "Drum store",
 "bucket": "Retail & Shops"
 },
@@ -7831,7 +7831,7 @@
 },
 {
 "gcid": "gcid:factory_equipment_supplier",
-"fr": "Fournisseur d'équipements industriels",
+"fr": "Fournisseur d'équipements d'usine",
 "en": "Factory equipment supplier",
 "bucket": "Manufacturing & Industrial"
 },
@@ -7939,7 +7939,7 @@
 },
 {
 "gcid": "gcid:farm_bureau",
-"fr": "Chambre d'agriculture",
+"fr": "Syndicat agricole",
 "en": "Farm bureau",
 "bucket": "Agriculture, Farming & Natural Resources"
 },
@@ -7963,7 +7963,7 @@
 },
 {
 "gcid": "gcid:farm_school",
-"fr": "École d'agriculture",
+"fr": "École agricole",
 "en": "Farm school",
 "bucket": "Education & Training"
 },
@@ -8005,7 +8005,7 @@
 },
 {
 "gcid": "gcid:fashion_designer",
-"fr": "Styliste",
+"fr": "Créateur de mode",
 "en": "Fashion designer",
 "bucket": "Retail & Shops"
 },
@@ -8449,7 +8449,7 @@
 },
 {
 "gcid": "gcid:fitness_center",
-"fr": "Salle de sport",
+"fr": "Centre de fitness",
 "en": "Fitness center",
 "bucket": "Sports, Fitness & Recreation"
 },
@@ -8977,7 +8977,7 @@
 },
 {
 "gcid": "gcid:fruits_wholesaler",
-"fr": "Grossiste en fruits",
+"fr": "Grossiste fruitier",
 "en": "Fruits wholesaler",
 "bucket": "Wholesale & Supply"
 },
@@ -9091,7 +9091,7 @@
 },
 {
 "gcid": "gcid:furniture_maker",
-"fr": "Fabricant de meubles",
+"fr": "Artisan fabricant de meubles",
 "en": "Furniture maker",
 "bucket": "Retail & Shops"
 },
@@ -9751,7 +9751,7 @@
 },
 {
 "gcid": "gcid:grammar_school",
-"fr": "École primaire",
+"fr": "École primaire (grammar school)",
 "en": "Grammar school",
 "bucket": "Education & Training"
 },
@@ -10645,7 +10645,7 @@
 },
 {
 "gcid": "gcid:home_inspector",
-"fr": "Inspecteur en bâtiment",
+"fr": "Diagnostiqueur immobilier",
 "en": "Home inspector",
 "bucket": "Real Estate & Property"
 },
@@ -10795,7 +10795,7 @@
 },
 {
 "gcid": "gcid:horseshoe_smith",
-"fr": "Maréchal-ferrant",
+"fr": "Forgeron de fers à cheval",
 "en": "Horseshoe smith",
 "bucket": "Veterinary, Pets & Animals"
 },
@@ -10807,7 +10807,7 @@
 },
 {
 "gcid": "gcid:hose_supplier",
-"fr": "Fournisseur de tuyaux",
+"fr": "Fournisseur de flexibles",
 "en": "Hose supplier",
 "bucket": "Wholesale & Supply"
 },
@@ -10855,7 +10855,7 @@
 },
 {
 "gcid": "gcid:hostel",
-"fr": "Auberge de jeunesse",
+"fr": "Auberge (hostel)",
 "en": "Hostel",
 "bucket": "Travel, Hotels & Tourism"
 },
@@ -11935,7 +11935,7 @@
 },
 {
 "gcid": "gcid:joiner",
-"fr": "Menuisier",
+"fr": "Menuisier d'agencement",
 "en": "Joiner",
 "bucket": "Construction & Trades"
 },
@@ -12001,7 +12001,7 @@
 },
 {
 "gcid": "gcid:junkyard",
-"fr": "Casse automobile",
+"fr": "Casse (ferraille)",
 "en": "Junkyard",
 "bucket": "Automotive"
 },
@@ -12193,7 +12193,7 @@
 },
 {
 "gcid": "gcid:kinesiotherapist",
-"fr": "Kinésithérapeute",
+"fr": "Kinésiothérapeute",
 "en": "Kinesiotherapist",
 "bucket": "Health & Medical"
 },
@@ -12235,7 +12235,7 @@
 },
 {
 "gcid": "gcid:knife_store",
-"fr": "Coutellerie",
+"fr": "Magasin de couteaux",
 "en": "Knife store",
 "bucket": "Retail & Shops"
 },
@@ -12349,7 +12349,7 @@
 },
 {
 "gcid": "gcid:labor_relations_attorney",
-"fr": "Avocat en droit du travail",
+"fr": "Avocat en relations sociales",
 "en": "Labor relations attorney",
 "bucket": "Legal & Professional Services"
 },
@@ -12457,7 +12457,7 @@
 },
 {
 "gcid": "gcid:land_surveyor",
-"fr": "Géomètre",
+"fr": "Géomètre-expert foncier",
 "en": "Land surveyor",
 "bucket": "Construction & Trades"
 },
@@ -12655,7 +12655,7 @@
 },
 {
 "gcid": "gcid:learning_center",
-"fr": "Centre d'apprentissage",
+"fr": "Centre de soutien scolaire",
 "en": "Learning center",
 "bucket": "Education & Training"
 },
@@ -12931,7 +12931,7 @@
 },
 {
 "gcid": "gcid:live_music_venue",
-"fr": "Salle de concert",
+"fr": "Salle de musique live",
 "en": "Live music venue",
 "bucket": "Arts, Culture & Entertainment"
 },
@@ -12943,7 +12943,7 @@
 },
 {
 "gcid": "gcid:livestock_auction_house",
-"fr": "Marché aux bestiaux",
+"fr": "Ventes aux enchères de bétail",
 "en": "Livestock auction house",
 "bucket": "Veterinary, Pets & Animals"
 },
@@ -13153,7 +13153,7 @@
 },
 {
 "gcid": "gcid:lyceum",
-"fr": "Lycée",
+"fr": "Lycée d'enseignement général",
 "en": "Lyceum",
 "bucket": "Education & Training"
 },
@@ -13459,7 +13459,7 @@
 },
 {
 "gcid": "gcid:markmens_clubhouse",
-"fr": "Club de tir",
+"fr": "Club-house de tireurs",
 "en": "Marksmen's clubhouse",
 "bucket": "Sports, Fitness & Recreation"
 },
@@ -13915,7 +13915,7 @@
 },
 {
 "gcid": "gcid:mercantile_development",
-"fr": "Centre commercial",
+"fr": "Zone commerciale",
 "en": "Mercantile development",
 "bucket": "Real Estate & Property"
 },
@@ -14797,7 +14797,7 @@
 },
 {
 "gcid": "gcid:music_conservatory",
-"fr": "Conservatoire de musique",
+"fr": "Conservatoire (musique)",
 "en": "Music conservatory",
 "bucket": "Education & Training"
 },
@@ -15301,7 +15301,7 @@
 },
 {
 "gcid": "gcid:nursery_school",
-"fr": "École maternelle",
+"fr": "Jardin d'enfants",
 "en": "Nursery school",
 "bucket": "Health & Medical"
 },
@@ -16111,7 +16111,7 @@
 },
 {
 "gcid": "gcid:pancake_house",
-"fr": "Crêperie",
+"fr": "Restaurant de pancakes",
 "en": "Pancake restaurant",
 "bucket": "Food & Drink"
 },
@@ -16333,7 +16333,7 @@
 },
 {
 "gcid": "gcid:patisserie",
-"fr": "Pâtisserie",
+"fr": "Pâtisserie fine",
 "en": "Patisserie",
 "bucket": "Food & Drink"
 },
@@ -16669,7 +16669,7 @@
 },
 {
 "gcid": "gcid:pet_trainer",
-"fr": "Éducateur canin",
+"fr": "Éducateur pour animaux",
 "en": "Pet trainer",
 "bucket": "Veterinary, Pets & Animals"
 },
@@ -17467,7 +17467,7 @@
 },
 {
 "gcid": "gcid:preschool",
-"fr": "École maternelle",
+"fr": "École préélémentaire",
 "en": "Preschool",
 "bucket": "Education & Training"
 },
@@ -17617,13 +17617,13 @@
 },
 {
 "gcid": "gcid:produce_market",
-"fr": "Marché de produits frais",
+"fr": "Marché de fruits et légumes",
 "en": "Produce market",
 "bucket": "Retail & Shops"
 },
 {
 "gcid": "gcid:produce_wholesaler",
-"fr": "Grossiste en fruits et légumes",
+"fr": "Grossiste en produits frais",
 "en": "Produce wholesaler",
 "bucket": "Wholesale & Supply"
 },
@@ -18295,7 +18295,7 @@
 },
 {
 "gcid": "gcid:recreation_center",
-"fr": "Centre de loisirs",
+"fr": "Centre récréatif",
 "en": "Recreation center",
 "bucket": "Sports, Fitness & Recreation"
 },
@@ -18829,7 +18829,7 @@
 },
 {
 "gcid": "gcid:rug_store",
-"fr": "Magasin de tapis",
+"fr": "Magasin de carpettes",
 "en": "Rug store",
 "bucket": "Retail & Shops"
 },
@@ -19039,7 +19039,7 @@
 },
 {
 "gcid": "gcid:salvage_yard",
-"fr": "Casse automobile",
+"fr": "Casse de récupération",
 "en": "Salvage yard",
 "bucket": "Automotive"
 },
@@ -19471,7 +19471,7 @@
 },
 {
 "gcid": "gcid:secondary_school",
-"fr": "Collège",
+"fr": "Établissement secondaire",
 "en": "Secondary school",
 "bucket": "Education & Training"
 },
@@ -19561,7 +19561,7 @@
 },
 {
 "gcid": "gcid:senior_high_school",
-"fr": "Lycée",
+"fr": "Lycée (second cycle)",
 "en": "Senior high school",
 "bucket": "Education & Training"
 },
@@ -19597,7 +19597,7 @@
 },
 {
 "gcid": "gcid:sewage_disposal_service",
-"fr": "Service d'assainissement",
+"fr": "Service de vidange des eaux usées",
 "en": "Sewage disposal service",
 "bucket": "Utilities & Energy"
 },
@@ -19933,7 +19933,7 @@
 },
 {
 "gcid": "gcid:silversmith",
-"fr": "Orfèvre",
+"fr": "Orfèvre (argent)",
 "en": "Silversmith",
 "bucket": "Manufacturing & Industrial"
 },
@@ -19963,7 +19963,7 @@
 },
 {
 "gcid": "gcid:sixth_form_college",
-"fr": "Lycée",
+"fr": "Sixth form college",
 "en": "Sixth form college",
 "bucket": "Education & Training"
 },
@@ -20119,7 +20119,7 @@
 },
 {
 "gcid": "gcid:smart_dealer",
-"fr": "Concessionnaire Smart",
+"fr": "Agence Smart",
 "en": "Smart dealer",
 "bucket": "Automotive"
 },
@@ -20143,7 +20143,7 @@
 },
 {
 "gcid": "gcid:smoke_shop",
-"fr": "Bureau de tabac",
+"fr": "Boutique pour fumeurs",
 "en": "Smoke shop",
 "bucket": "Retail & Shops"
 },
@@ -20203,7 +20203,7 @@
 },
 {
 "gcid": "gcid:soccer_club",
-"fr": "Club de football",
+"fr": "Club de soccer",
 "en": "Soccer club",
 "bucket": "Sports, Fitness & Recreation"
 },
@@ -20869,13 +20869,13 @@
 },
 {
 "gcid": "gcid:steak_house",
-"fr": "Grill",
+"fr": "Steakhouse",
 "en": "Steak house",
 "bucket": "Food & Drink"
 },
 {
 "gcid": "gcid:steamboat_restaurant",
-"fr": "Restaurant de fondue chinoise",
+"fr": "Restaurant steamboat",
 "en": "Steamboat restaurant",
 "bucket": "Food & Drink"
 },
@@ -20887,7 +20887,7 @@
 },
 {
 "gcid": "gcid:steel_construction_company",
-"fr": "Entreprise de construction métallique",
+"fr": "Entreprise de construction en acier",
 "en": "Steel construction company",
 "bucket": "Construction & Trades"
 },
@@ -21319,7 +21319,7 @@
 },
 {
 "gcid": "gcid:swimming_basin",
-"fr": "Piscine",
+"fr": "Bassin de natation",
 "en": "Swimming pool",
 "bucket": "Sports, Fitness & Recreation"
 },
@@ -21421,7 +21421,7 @@
 },
 {
 "gcid": "gcid:tack_shop",
-"fr": "Sellerie",
+"fr": "Magasin de harnachement",
 "en": "Tack shop",
 "bucket": "Retail & Shops"
 },
@@ -22177,7 +22177,7 @@
 },
 {
 "gcid": "gcid:tour_agency",
-"fr": "Agence de voyages",
+"fr": "Agence d'excursions",
 "en": "Tour agency",
 "bucket": "Travel, Hotels & Tourism"
 },
@@ -22951,7 +22951,7 @@
 },
 {
 "gcid": "gcid:variety_store",
-"fr": "Bazar",
+"fr": "Magasin de variétés",
 "en": "Variety store",
 "bucket": "Retail & Shops"
 },
@@ -23275,13 +23275,13 @@
 },
 {
 "gcid": "gcid:vocational_gymnasium_school",
-"fr": "Lycée professionnel",
+"fr": "Lycée technique",
 "en": "Vocational gymnasium school",
 "bucket": "Education & Training"
 },
 {
 "gcid": "gcid:vocational_training_school",
-"fr": "École professionnelle",
+"fr": "Centre de formation professionnelle",
 "en": "Vocational school",
 "bucket": "Education & Training"
 },
@@ -23557,7 +23557,7 @@
 },
 {
 "gcid": "gcid:water_works_equipment_supplier",
-"fr": "Fournisseur d'équipements hydrauliques",
+"fr": "Fournisseur d'équipements pour réseaux d'eau",
 "en": "Water works equipment supplier",
 "bucket": "Wholesale & Supply"
 },
@@ -24121,7 +24121,7 @@
 },
 {
 "gcid": "gcid:woodworker",
-"fr": "Menuisier",
+"fr": "Artisan du bois",
 "en": "Woodworker",
 "bucket": "Manufacturing & Industrial"
 },

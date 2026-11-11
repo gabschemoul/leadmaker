@@ -29,10 +29,27 @@ const SuggestTargetSchema = z.object({
 
 const AiSuggestion = z.object({
   refinements: z.array(z.string()).max(5),
-  /** nom court de campagne (2 à 5 mots), sans lieu */
+  /** nom de campagne : les mots du client, raccourcis, sans rien inventer */
   name: z.string(),
-  /** numéros (dans la liste envoyée) des activités qui correspondent à la cible */
-  picks: z.array(z.number().int()),
+  /** lieu cité dans la phrase (« Restaurants à Lyon ») : ville et code pays ISO, sinon null */
+  place: z.object({
+    city: z.string().nullable(),
+    country_code: z.string().nullable(),
+  }),
+  /**
+   * Choix famille par famille (11/11 : une liste de numéros à cocher un par un oubliait des activités, comme
+   * « Brasserie » pour « Restaurants ») : toute la famille sauf quelques-unes, ou seulement quelques-unes.
+   * Essayé sur le vrai catalogue : « Restaurants » → 488 activités (brasserie, pizzeria, crêperie…), 40 écartées.
+   */
+  families: z.array(
+    z.object({
+      family: z.string(),
+      /** vrai : toute la famille sauf « drop » ; faux : seulement « keep » */
+      take_all: z.boolean(),
+      drop: z.array(z.number().int()),
+      keep: z.array(z.number().int()),
+    }),
+  ),
 });
 
 /** Activité proposée (code, libellés, famille) */
@@ -115,18 +132,26 @@ const STOP_WORDS = new Set([
 ]);
 
 const SYSTEM = `Tu aides un client de Prospectigo à décrire les entreprises qu'il veut contacter.
-On te donne sa phrase (sa cible) et une liste numérotée d'activités possibles (numéro | libellés | famille).
+On te donne sa phrase (sa cible) et des activités possibles, rangées par famille et numérotées
+(numéro | libellé français / libellé anglais).
 
 1. refinements : 3 à 5 précisions courtes qui rendraient sa cible plus nette, chacune un bout de phrase à
-   ajouter tel quel à sa phrase (par exemple « sans celles qui font du web », « 2 personnes ou plus »,
-   « avec un vrai site »). Dans la langue de sa phrase, sans répéter ce qu'elle dit déjà. Jamais de précision de
-   lieu (pays, ville, région) : la zone se choisit à part.
-2. name : un nom de campagne court et clair, 2 à 5 mots, dans la langue de sa phrase, sans lieu
-   (par exemple « Restaurants indépendants », « Agences web », « Plombiers chauffagistes »).
-3. picks : les numéros de TOUTES les activités de la liste qui correspondent à sa cible, sans exception et sans
-   limite de nombre : pour « Restaurants », toutes les sortes de restaurants (chaque cuisine, pizzeria, brasserie,
-   crêperie, restauration rapide, traiteur avec salle…), même s'il y en a des centaines. En cas de doute, coche.
-   N'écarte que ce qui n'est clairement pas sa cible. Les plus pertinentes d'abord.`;
+   ajouter tel quel à sa phrase (par exemple « sans celles qui font du web », « 2 personnes ou plus »).
+   Dans la langue de sa phrase, sans répéter ce qu'elle dit déjà. Jamais de précision de lieu.
+2. name : le nom de la campagne = les mots du client, raccourcis à 2 à 6 mots, SANS RIEN INVENTER ni ajouter
+   (« Brasseries en France » → « Brasseries en France » ; « Restaurants, sans les chaînes nationales, avec un
+   site » → « Restaurants sans chaînes »). Garde le lieu s'il est dans la phrase.
+3. place : la ville citée dans la phrase (« Restaurants à Lyon » → city « Lyon », country_code « FR »), sinon
+   city null ; country_code = code ISO du pays cité ou de la ville, sinon null.
+4. families : pour CHAQUE famille de la liste :
+   - take_all = true quand la cible couvre la plupart des activités de la famille (« Restaurants » : la famille
+     Restauration). Alors drop = les numéros des SEULES activités qui ne sont pas du tout la cible (pour
+     « Restaurants » : boulangerie, épicerie, magasin de mobilier, fabrication de bière, glacier sans salle…).
+     Tout ce qui n'est pas dans drop est coché : chaque sorte de restaurant (italien, grec, burgers, sushis,
+     brasserie, pizzeria, crêperie…) doit rester hors de drop. keep = [].
+   - take_all = false sinon. Alors keep = les numéros de TOUTES les activités qui correspondent à la cible (pour
+     « Brasseries » : chaque activité de brasserie et de bar à bière), drop = []. keep vide si rien ne correspond.
+   En cas de doute sur une activité, coche-la.`;
 
 export const suggestTargetAction = authActionClient
   .inputSchema(SuggestTargetSchema)
@@ -135,6 +160,7 @@ export const suggestTargetAction = authActionClient
     const fallback = {
       refinements: [] as string[],
       name: '',
+      place: null as { city: string; countryCode: string | null } | null,
       categories: candidates.slice(0, 10),
       ai: false,
     };
@@ -144,16 +170,29 @@ export const suggestTargetAction = authActionClient
     }
 
     try {
-      const list = candidates
+      const byFamily = new Map<string, number[]>();
+
+      candidates.forEach((c, index) => {
+        byFamily.set(c.family, [...(byFamily.get(c.family) ?? []), index]);
+      });
+
+      const list = [...byFamily.entries()]
         .map(
-          (c, index) =>
-            `${index + 1} | ${c.label_fr} / ${c.label_en} | ${c.family}`,
+          ([family, indexes]) =>
+            `## Famille : ${family}\n` +
+            indexes
+              .map((i) => {
+                const c = candidates[i]!;
+
+                return `${i + 1} | ${c.label_fr} / ${c.label_en}`;
+              })
+              .join('\n'),
         )
-        .join('\n');
+        .join('\n\n');
 
       const response = await getAiClient().messages.parse({
         model: AI_FAST_MODEL,
-        max_tokens: 16000,
+        max_tokens: 8000,
         system: SYSTEM,
         output_config: { effort: 'low', format: zodOutputFormat(AiSuggestion) },
         messages: [
@@ -170,18 +209,46 @@ export const suggestTargetAction = authActionClient
         return fallback;
       }
 
-      // toutes les activités cochées par l'IA, sans plafond (demande ferme de Gabriel, 11/11)
-      const categories = [
-        ...new Set(
-          parsed.picks.filter((n) => n >= 1 && n <= candidates.length),
-        ),
-      ].map((n) => candidates[n - 1]!);
+      // toutes les activités retenues, sans plafond (demande ferme de Gabriel, 11/11)
+      const chosen = new Set<number>();
+
+      for (const [family, indexes] of byFamily) {
+        const choice = parsed.families.find((f) => f.family === family);
+
+        if (!choice) {
+          continue;
+        }
+
+        if (choice.take_all) {
+          const drop = new Set(choice.drop.map((n) => n - 1));
+          indexes.filter((i) => !drop.has(i)).forEach((i) => chosen.add(i));
+        } else {
+          const keep = new Set(choice.keep.map((n) => n - 1));
+          indexes.filter((i) => keep.has(i)).forEach((i) => chosen.add(i));
+        }
+      }
+
+      const categories = [...chosen]
+        .sort((a, b) => a - b)
+        .map((i) => candidates[i]!);
+      const city = parsed.place.city?.trim() || null;
+      const countryCode =
+        parsed.place.country_code?.trim().toUpperCase() || null;
 
       return {
         refinements: parsed.refinements
           .map((r) => r.trim())
           .filter((r) => r.length > 0 && r.length <= 80),
         name: parsed.name.trim().slice(0, 80),
+        place: city
+          ? {
+              city: city.slice(0, 100),
+              countryCode:
+                countryCode && /^[A-Z]{2}$/.test(countryCode)
+                  ? countryCode
+                  : null,
+            }
+          : null,
         categories,
         ai: true,
       };

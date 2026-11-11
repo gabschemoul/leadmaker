@@ -76,7 +76,12 @@ export async function fetchCampaignLive(
       inFlight: Number(row?.in_flight ?? 0),
       abandoned: row?.abandoned ?? 0,
       productive: row?.productive ?? 0,
-      prospects: Number(row?.prospects ?? 0),
+      // campagne triée (crédit unique) : les entreprises trouvées, pas les débits de l'ancien tarif (toujours 0 ici,
+      // d'où « Aucun prospect pour l'instant » à l'étape Envoi alors que la recherche en avait trouvé, 11/11)
+      prospects:
+        sortTarget && summary
+          ? (summary.total ?? 0)
+          : Number(row?.prospects ?? 0),
       lastSearchAt: row?.last_search_at ?? null,
       /** recherches en file / en cours, recherches d'autres campagnes avant, reprise prévue, mesure du prix */
       phase: phaseRow

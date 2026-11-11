@@ -1,5 +1,5 @@
 {
-  "pageTitle": "Prospects",
+  "pageTitle": "Businesses",
   "columns": {
     "name": "Name",
     "category": "Activity",
@@ -27,13 +27,13 @@
   "excludedBadge": "Excluded",
   "selectAll": "Select all on this page",
   "selectRow": "Select this row",
-  "total": "{count, plural, =0 {No prospects} one {# prospect} other {# prospects}}",
+  "total": "{count, plural, =0 {No businesses} one {# business} other {# businesses}}",
   "pageOf": "Page {page} of {count}",
   "previousPage": "Previous",
   "nextPage": "Next",
-  "empty": "No prospects yet.",
-  "noMatch": "No prospects match your filters.",
-  "campaignLink": "See all prospects from this campaign",
+  "empty": "No businesses yet.",
+  "noMatch": "No businesses match your filters.",
+  "campaignLink": "See all businesses from this campaign",
   "filters": {
     "folder": "Client folder",
     "searchPlaceholder": "Name, address, website, phone…",
@@ -84,29 +84,29 @@
     "findEmails": "Find emails"
   },
   "confirm": {
-    "excludeTitle": "Exclude {count, plural, one {this prospect} other {these # prospects}}?",
+    "excludeTitle": "Exclude {count, plural, one {this business} other {these # businesses}}?",
     "excludeDescription": "These businesses will never be contacted, even if another campaign finds them again. You can restore them at any time.",
     "excludeSubmit": "Exclude",
-    "restoreTitle": "Restore {count, plural, one {this prospect} other {these # prospects}}?",
+    "restoreTitle": "Restore {count, plural, one {this business} other {these # businesses}}?",
     "restoreDescription": "These businesses can be contacted again.",
     "restoreSubmit": "Restore",
-    "deleteTitle": "Delete {count, plural, one {this prospect} other {these # prospects}}?",
-    "deleteDescription": "Deletion is permanent: these prospects disappear from your list and cannot be recovered. If a campaign finds them again, they will be added back. To never contact them again, use \"Exclude\" instead.",
+    "deleteTitle": "Delete {count, plural, one {this business} other {these # businesses}}?",
+    "deleteDescription": "Deletion is permanent: these businesses disappear from your list and cannot be recovered. If a campaign finds them again, they will be added back. To never contact them again, use \"Exclude\" instead.",
     "deleteSubmit": "Delete permanently",
     "working": "One moment…"
   },
   "actions": {
-    "excludeDone": "{count, plural, one {# prospect excluded} other {# prospects excluded}}",
-    "restoreDone": "{count, plural, one {# prospect restored} other {# prospects restored}}",
-    "deleteDone": "{count, plural, one {# prospect deleted} other {# prospects deleted}}",
-    "nothingDone": "No prospects were changed.",
+    "excludeDone": "{count, plural, one {# business excluded} other {# businesses excluded}}",
+    "restoreDone": "{count, plural, one {# business restored} other {# businesses restored}}",
+    "deleteDone": "{count, plural, one {# business deleted} other {# businesses deleted}}",
+    "nothingDone": "No businesses were changed.",
     "excludeFailed": "Exclusion failed. Please try again in a moment.",
     "restoreFailed": "Restoring failed. Please try again in a moment.",
     "deleteFailed": "Deletion failed. Please try again in a moment.",
     "findEmailsDone": "{count, plural, one {# search started} other {# searches started}}: addresses will show up in the Email column within a few minutes (reload the page).",
-    "findEmailsNothing": "Nothing to search: these prospects already have an email, have no website, or are already being searched.",
+    "findEmailsNothing": "Nothing to search: these businesses already have an email, have no website, or are already being searched.",
     "findEmailsFailed": "The email search could not start. Please try again in a moment.",
-    "noPlan": "Choose a plan to look up prospects' emails."
+    "noPlan": "Choose a plan to look up businesses' emails."
   },
   "export": {
     "button": "Export CSV",

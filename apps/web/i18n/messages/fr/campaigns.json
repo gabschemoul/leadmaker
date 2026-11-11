@@ -9,7 +9,7 @@
   "folders": {
     "pageTitle": "Dossiers clients",
     "listTitle": "Dossiers clients",
-    "intro": "Pour les agences : un dossier par client, avec ses propres prospects. Si vous prospectez pour votre entreprise, vous n'en avez pas besoin.",
+    "intro": "Pour les agences : un dossier par client, avec sa propre liste d'entreprises. Si vous prospectez pour votre entreprise, vous n'en avez pas besoin.",
     "defaultName": "Mon entreprise",
     "nameColumn": "Nom",
     "createdAtColumn": "Créé le",
@@ -30,7 +30,7 @@
     "renameError": "Le dossier n'a pas pu être renommé. Réessayez dans un instant.",
     "deleteButton": "Supprimer",
     "deleteTitle": "Supprimer le dossier « {name} » ?",
-    "deleteDescription": "Ses campagnes, ses prospects et ses formulaires seront supprimés définitivement. Pour confirmer, tapez le nom du dossier : {name}",
+    "deleteDescription": "Ses campagnes, ses entreprises et ses formulaires seront supprimés définitivement. Pour confirmer, tapez le nom du dossier : {name}",
     "deleteSubmit": "Supprimer définitivement",
     "deleteDone": "Dossier supprimé.",
     "deleteRunning": "Une campagne de ce dossier est en cours : mettez-la en pause avant de supprimer le dossier.",
@@ -41,13 +41,13 @@
     "pageTitle": "Campagnes",
     "title": "Vos campagnes",
     "description": "Une campagne recherche les entreprises qui correspondent aux villes et aux activités que vous choisissez.",
-    "empty": "Vous n'avez pas encore de campagne. Créez-en une pour trouver vos premiers prospects.",
+    "empty": "Vous n'avez pas encore de campagne. Créez-en une pour trouver vos premières entreprises.",
     "newButton": "Nouvelle campagne",
     "nameColumn": "Nom",
     "statusColumn": "Statut",
     "folderColumn": "Dossier client",
     "countryColumn": "Pays",
-    "prospectsColumn": "Prospects trouvés",
+    "prospectsColumn": "Entreprises trouvées",
     "createdAtColumn": "Créée le",
     "searchPlaceholder": "Rechercher une campagne",
     "filterAll": "Toutes",
@@ -87,7 +87,7 @@
     "categoriesListLabel": "Activités",
     "categorySearchPlaceholder": "Tapez une activité, par exemple « plombier »…",
     "filtersTitle": "Quelles fiches garder ?",
-    "filtersDescription": "Seules les entreprises qui correspondent à ces critères sont ajoutées à vos prospects.",
+    "filtersDescription": "Seules les entreprises qui correspondent à ces critères sont ajoutées à votre liste.",
     "ratingMinLabel": "Note minimale",
     "ratingMaxLabel": "Note maximale",
     "minReviewsLabel": "Nombre d'avis minimum",
@@ -119,7 +119,7 @@
     "editPageTitle": "Modifier la campagne",
     "saveChanges": "Enregistrer les modifications",
     "countryLocked": "Le pays ne peut plus changer une fois la campagne lancée.",
-    "editLaunchedHint": "Cette campagne a déjà été lancée. Les villes et activités que vous ajoutez seront scannées à la suite ; celles que vous retirez ne seront plus scannées, mais les prospects déjà trouvés restent.",
+    "editLaunchedHint": "Cette campagne a déjà été lancée. Les villes et activités que vous ajoutez seront scannées à la suite ; celles que vous retirez ne seront plus scannées, mais les entreprises déjà trouvées restent.",
     "nearbyButton": "+ alentours",
     "nearbyOpen": "Ville et alentours",
     "nearbyHint": "Astuce : cliquez sur « + alentours » à côté d'une ville pour ajouter d'un coup toutes les communes autour.",
@@ -160,7 +160,7 @@
     },
     "categoriesSelectAll": "Tout sélectionner",
     "categoriesDeselectAll": "Tout désélectionner",
-    "categoriesMore": "+ {count, plural, one {# autre activité} other {# autres activités}}",
+    "categoriesMore": "Afficher plus ({count, number} autres)",
     "whereTitle": "Où ?",
     "moreCriteriaTitle": "Paramètres avancés",
     "launch": "Lancer la recherche",
@@ -182,7 +182,8 @@
       "offerRequired": "Décrivez votre offre en une phrase : elle sert à trier les entreprises.",
       "offerTooLong": "Offre trop longue (1 000 caractères au plus).",
       "retargetHint": "La cible change : toutes les entreprises déjà trouvées seront triées à nouveau.",
-      "autoNameMore": "{names} et {count, plural, one {# autre} other {# autres}}"
+      "autoNameMore": "{names} et {count, plural, one {# autre} other {# autres}}",
+      "addProposed": "Ajouter {count, plural, one {# activité proposée} other {# activités proposées}}"
     },
     "cancel": "Annuler",
     "saveDraft": "Enregistrer en brouillon"
@@ -200,7 +201,7 @@
     "real": {
       "title": "Entreprises qui correspondent",
       "intro": "Comptez les entreprises qui correspondent à vos critères. Gratuit, sans crédit.",
-      "button": "Estimer le nombre de prospects",
+      "button": "Estimer le nombre d'entreprises",
       "running": "Recherche en cours : {done} recherche{done, plural, one {} other {s}} sur {total}…",
       "exact": "{count, plural, =0 {Aucune entreprise ne correspond} one {# entreprise correspond} other {# entreprises correspondent}} à vos critères.",
       "exactHint": "Chiffre mesuré : toutes les recherches ont été lues.",
@@ -209,8 +210,8 @@
       "changed": "Vos critères ont changé : relancez l'estimation.",
       "failed": "L'estimation n'a pas abouti. Réessayez.",
       "again": "Relancer",
-      "pricing": "Tarif : {count, plural, one {# crédit} other {# crédits}} par prospect",
-      "pricingHint": "{rate} % des entreprises lues passent vos filtres. Plus les filtres sont sélectifs, plus chaque prospect coûte de crédits. Le tarif est fixé au lancement de la campagne."
+      "pricing": "Tarif : {count, plural, one {# crédit} other {# crédits}} par entreprise",
+      "pricingHint": "{rate} % des entreprises lues passent vos filtres. Plus les filtres sont sélectifs, plus chaque entreprise gardée coûte de crédits. Le tarif est fixé au lancement de la campagne."
     },
     "creditsHintPriced": "Chaque entreprise gardée utilisera {count, plural, one {# crédit} other {# crédits}}, prise de contact comprise (tarif fixé au lancement)."
   },
@@ -233,31 +234,31 @@
     "progressLive": "Mis à jour en direct.",
     "progressDraft": "La recherche commencera quand vous lancerez la campagne.",
     "searchesProgress": "{done, plural, one {# recherche faite} other {# recherches faites}} sur {total, number}",
-    "prospectsFound": "Prospects trouvés",
+    "prospectsFound": "Entreprises trouvées",
     "citiesAndCategories": "Villes × activités",
     "abandonedCategories": "Activités abandonnées",
     "abandonedHint": "Arrêtées car elles ne donnaient presque rien.",
     "productiveCategories": "Activités qui rapportent",
     "productiveHint": "Elles reçoivent la plupart des recherches.",
     "lastActivity": "Dernière activité",
-    "latestProspectsTitle": "Derniers prospects",
+    "latestProspectsTitle": "Dernières entreprises",
     "latestProspectsDescription": "Les 50 dernières entreprises trouvées par cette campagne.",
-    "noProspects": "Aucun prospect pour l'instant.",
+    "noProspects": "Aucune entreprise pour l'instant.",
     "edit": "Modifier",
-    "pricingTitle": "Tarif par prospect",
+    "pricingTitle": "Tarif par entreprise",
     "pricingValue": "{count, plural, one {# crédit} other {# crédits}}",
     "pricingFrozenHint": "Fixé au lancement : {rate} % des entreprises passaient vos filtres.",
     "pricingFrozenHintNoRate": "Fixé au lancement de la campagne.",
     "pricingPreviewHint": "D'après votre estimation ({rate} % des entreprises passent vos filtres). Fixé au lancement.",
     "pricingMeasuring": "Mesure : {done} sur {total}",
     "pricingMeasuringHint": "On mesure la part d'entreprises qui passent vos filtres. Vous pouvez lancer la campagne sans attendre.",
-    "pricingMeasuringLaunchedHint": "La campagne tourne déjà. En attendant la fin de la mesure, 1 crédit par prospect.",
+    "pricingMeasuringLaunchedHint": "La campagne tourne déjà. En attendant la fin de la mesure, 1 crédit par entreprise.",
     "pricingUnknown": "Mesuré au lancement",
-    "pricingUnknownHint": "La campagne part dès le clic sur « Lancer ». Le tarif est mesuré en parallèle, 1 crédit par prospect en attendant."
+    "pricingUnknownHint": "La campagne part dès le clic sur « Lancer ». Le tarif est mesuré en parallèle, 1 crédit par entreprise en attendant."
   },
   "import": {
     "button": "Importer un fichier CSV",
-    "title": "Importer des prospects",
+    "title": "Importer des entreprises",
     "description": "Ajoutez vos propres entreprises à partir d'un fichier CSV (export Excel ou Google Sheets). L'import ne consomme pas de crédits.",
     "folderLabel": "Dossier client",
     "fileLabel": "Fichier CSV",
@@ -309,9 +310,9 @@
       "cibler": "{country} · {zones, plural, one {# ville} other {# villes}} · {categories, plural, one {# activité} other {# activités}}",
       "ciblerDraft": "{country} · ciblage prêt",
       "trouverTodo": "Recherche à lancer",
-      "trouverRunning": "En cours · {count, plural, =0 {rien encore} one {# trouvé} other {# trouvés}}",
-      "trouverPaused": "En pause · {count, plural, one {# trouvé} other {# trouvés}}",
-      "trouverDone": "{count, plural, =0 {Aucun prospect} one {# prospect} other {# prospects}}",
+      "trouverRunning": "En cours · {count, plural, =0 {rien encore} one {# trouvée} other {# trouvées}}",
+      "trouverPaused": "En pause · {count, plural, one {# trouvée} other {# trouvées}}",
+      "trouverDone": "{count, plural, =0 {Aucune entreprise} one {# entreprise} other {# entreprises}}",
       "redigerTodo": "Message à écrire",
       "redigerNoSender": "Expéditeur à renseigner",
       "redigerDone": "{count, plural, one {# message} other {# messages}} · expéditeur OK",
@@ -349,7 +350,7 @@
       "title": "Recherche des entreprises",
       "launch": "Lancer la recherche",
       "whileRunning": "Pendant ce temps, rédigez votre message",
-      "next": "Passer à Rédiger"
+      "next": "Passer à Message"
     },
     "write": {
       "senderTitle": "Qui envoie ?",
@@ -368,16 +369,16 @@
       "noMessage": "Il manque le message : Prospectigo ne sait pas quoi écrire dans les formulaires.",
       "writeMessage": "Rédiger le message",
       "noSender": "Il manque l'expéditeur : Prospectigo ne sait pas quelles coordonnées écrire.",
-      "noProspects": "Aucun prospect pour l'instant : lancez d'abord la recherche.",
-      "goDiscover": "Aller à Trouver",
+      "noProspects": "Aucune entreprise pour l'instant : lancez d'abord la recherche.",
+      "goDiscover": "Aller à Entreprises",
       "prepareTitle": "a. Préparer",
       "prepareCount": "{count, number}",
-      "prepareOf": "sur {count, plural, one {# prospect} other {# prospects}}",
+      "prepareOf": "sur {count, plural, one {# entreprise} other {# entreprises}}",
       "prepareIdle": "Prospectigo visite chaque site, trouve le formulaire de contact et le remplit avec votre message. Comptez environ une minute par site.",
       "prepareWorking": "Prospectigo travaille : {count, plural, one {# formulaire en cours} other {# formulaires en cours}}.",
-      "prepareDone": "Tous les prospects ont été visités. Relancez après une nouvelle recherche.",
+      "prepareDone": "Toutes les entreprises ont été visitées. Relancez après une nouvelle recherche.",
       "prepareButton": "Préparer les formulaires",
-      "prepareAgain": "Préparer les nouveaux prospects",
+      "prepareAgain": "Préparer les nouvelles entreprises",
       "verifyTitle": "b. Vérifier",
       "verifyCount": "{count, number}",
       "verifyUnit": "{count, plural, one {prêt} other {prêts}}",
@@ -434,7 +435,7 @@
       "button": "Renseigner l'expéditeur"
     },
     "message": {
-      "text": "{count, plural, =0 {Il manque le message} one {# prospect trouvé · il manque le message} other {# prospects trouvés · il manque le message}}",
+      "text": "{count, plural, =0 {Il manque le message} one {# entreprise trouvée · il manque le message} other {# entreprises trouvées · il manque le message}}",
       "button": "Rédiger le message"
     },
     "review": {
@@ -458,11 +459,11 @@
       "button": "Suivre"
     },
     "searching": {
-      "text": "Recherche en cours · {count, plural, =0 {rien encore} one {# prospect trouvé} other {# prospects trouvés}}",
+      "text": "Recherche en cours · {count, plural, =0 {rien encore} one {# entreprise trouvée} other {# entreprises trouvées}}",
       "button": "Suivre"
     },
     "prepare": {
-      "text": "{count, plural, one {# prospect trouvé} other {# prospects trouvés}}, aucun encore contacté",
+      "text": "{count, plural, one {# entreprise trouvée} other {# entreprises trouvées}}, aucune encore contactée",
       "button": "Contacter"
     },
     "finished": {
@@ -470,7 +471,7 @@
       "button": "Voir le bilan"
     },
     "resume": {
-      "text": "Recherche en pause · {count, plural, one {# prospect} other {# prospects}}",
+      "text": "Recherche en pause · {count, plural, one {# entreprise} other {# entreprises}}",
       "button": "Reprendre"
     },
     "noProspects": {
@@ -490,7 +491,7 @@
       "button": "Vérifier"
     },
     "noCredits": {
-      "text": "Recherche arrêtée : plus de crédits · {count, plural, one {# prospect} other {# prospects}}",
+      "text": "Recherche arrêtée : plus de crédits · {count, plural, one {# entreprise} other {# entreprises}}",
       "button": "Voir mon forfait"
     },
     "tooHard": {
@@ -498,7 +499,7 @@
       "button": "Préciser la cible"
     },
     "contactMore": {
-      "text": "{sent, plural, one {# envoyé} other {# envoyés}} · {remaining, plural, one {# prospect pas encore contacté} other {# prospects pas encore contactés}}",
+      "text": "{sent, plural, one {# envoyé} other {# envoyés}} · {remaining, plural, one {# entreprise pas encore contactée} other {# entreprises pas encore contactées}}",
       "button": "Contacter les suivants"
     }
   },
@@ -516,9 +517,9 @@
     "more": "Plus",
     "countLabel": "Nombre d'entreprises à contacter",
     "all": "Tous ({count, number})",
-    "maxHint": "Tapez un nombre ou utilisez les boutons. Maximum {max, number} : {prospects, plural, one {# prospect pas encore contacté} other {# prospects pas encore contactés}}. Les envois ne consomment aucun crédit.",
-    "maxHintEdit": "Entre {min, number} (déjà envoyés ou en cours) et {max, number} (en comptant les prospects pas encore contactés).",
-    "targetAdjusted": "Nombre ajusté à {count, number} (prospects pas encore contactés).",
+    "maxHint": "Tapez un nombre ou utilisez les boutons. Maximum {max, number} : {prospects, plural, one {# entreprise pas encore contactée} other {# entreprises pas encore contactées}}. Les envois ne consomment aucun crédit.",
+    "maxHintEdit": "Entre {min, number} (déjà envoyés ou en cours) et {max, number} (en comptant les entreprises pas encore contactées).",
+    "targetAdjusted": "Nombre ajusté à {count, number} (entreprises pas encore contactées).",
     "pace": {
       "title": "Quand envoyer ?",
       "office": "Heures de bureau (recommandé)",
@@ -562,7 +563,7 @@
     "cancelEdit": "Annuler",
     "how": {
       "title": "Ce qui va se passer",
-      "step1": "Prospectigo prend vos prospects dans l'ordre où ils ont été trouvés.",
+      "step1": "Prospectigo prend les entreprises dans l'ordre où elles ont été trouvées.",
       "step2": "Il remplit le formulaire et l'envoie au moment choisi si tout est clair.",
       "step3": "Les cas douteux (captcha, champ inconnu) sont mis de côté.",
       "step4": "Il s'arrête à {count, plural, one {# message envoyé} other {# messages envoyés}}. Vous pouvez mettre en pause à tout moment.",
@@ -570,14 +571,14 @@
     },
     "blocked": {
       "noPlan": "Il faut un forfait pour contacter des entreprises : choisissez-en un dans Facturation.",
-      "noProspects": "Tous les prospects de cette campagne ont déjà été contactés ou préparés. Lancez une nouvelle recherche pour en trouver d'autres, ou passez en mode Avancé.",
+      "noProspects": "Toutes les entreprises de cette campagne ont déjà été contactées ou préparées. Lancez une nouvelle recherche pour en trouver d'autres, ou passez en mode Avancé.",
       "billing": "Voir mon forfait"
     },
     "run": {
       "running": "Pilote automatique en marche",
       "paused": "En pause",
       "doneTitle": "Terminé : {count, plural, one {# entreprise contactée} other {# entreprises contactées}}",
-      "doneNoProspects": "Terminé, plus aucun prospect à contacter : {count, plural, =0 {aucune entreprise contactée} one {# entreprise contactée} other {# entreprises contactées}}",
+      "doneNoProspects": "Terminé, plus aucune entreprise à contacter : {count, plural, =0 {aucune entreprise contactée} one {# entreprise contactée} other {# entreprises contactées}}",
       "pause": "Pause",
       "resume": "Reprendre",
       "edit": "Modifier le nombre",
@@ -607,18 +608,18 @@
       "captcha": "Captcha sur {site} : mis de côté",
       "unknownField": "Champ inconnu sur {site} : mis de côté",
       "noForm": "Pas de formulaire sur {site} : passé",
-      "skipped": "{name} : passé",
-      "excluded": "{name} : exclu",
+      "skipped": "{name} : passée",
+      "excluded": "{name} : exclue",
       "unreachable": "Site inaccessible : {site}, passé"
     },
     "errors": {
       "generic": "L'action n'a pas abouti. Réessayez dans un instant.",
       "notFound": "Campagne introuvable.",
-      "noSender": "Renseignez d'abord l'expéditeur (étape Rédiger).",
-      "noMessages": "Rédigez d'abord au moins un message (étape Rédiger).",
+      "noSender": "Renseignez d'abord l'expéditeur (étape Message).",
+      "noMessages": "Rédigez d'abord au moins un message (étape Message).",
       "messages": "Un message coché n'existe plus : rechargez la page.",
       "active": "Le pilote automatique est déjà lancé sur cette campagne : rechargez la page.",
-      "noProspects": "Aucun prospect à contacter : tous ont déjà été contactés ou préparés.",
+      "noProspects": "Aucune entreprise à contacter : toutes ont déjà été contactées ou préparées.",
       "noCredits": "Il faut un forfait pour contacter des entreprises.",
       "target": "Choisissez au moins une entreprise.",
       "schedule": "Choisissez sur combien de jours étaler les envois.",
@@ -666,7 +667,7 @@
     "button": "Archiver",
     "restoreButton": "Désarchiver",
     "confirmTitle": "Archiver cette campagne ?",
-    "confirmDescription": "Elle disparaît de la liste et du tableau de bord. Sa recherche et son pilote automatique s'arrêtent, et les formulaires validés qui ne sont pas encore partis sont retenus. Ses prospects restent dans la page Prospects. Vous pourrez la désarchiver à tout moment.",
+    "confirmDescription": "Elle disparaît de la liste et du tableau de bord. Sa recherche et son pilote automatique s'arrêtent, et les formulaires validés qui ne sont pas encore partis sont retenus. Ses entreprises restent dans la page Entreprises. Vous pourrez la désarchiver à tout moment.",
     "confirmButton": "Archiver",
     "archivedDone": "Campagne archivée.",
     "restoredDone": "Campagne désarchivée : elle est en pause, cliquez sur « Reprendre » pour la relancer.",

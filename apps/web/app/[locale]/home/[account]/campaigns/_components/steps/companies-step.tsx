@@ -17,6 +17,7 @@ import {
   useInfiniteQuery,
   useQuery,
   useQueryClient,
+  keepPreviousData,
 } from '@tanstack/react-query';
 import { ArrowRight, Check, Pencil, X } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
@@ -258,6 +259,7 @@ export function CompaniesStep(props: {
               live={live}
               waiting={sort.pending > 0 || data.status === 'running'}
               groupLabels={groupLabels(data.groups)}
+              count={tab === 'kept' ? sort.kept : sort.toCheck}
             />
           </Tabs>
         </CardContent>
@@ -456,6 +458,8 @@ function CompaniesList(props: {
   waiting: boolean;
   /** libellé de chaque groupe (campagne à plusieurs groupes), affiché en petit sur la ligne */
   groupLabels: Map<string, string> | null;
+  /** nombre de l'onglet (relu en direct) : la liste est relue quand il change, même campagne en pause (11/11) */
+  count: number;
 }) {
   const t = useTranslations();
   const client = useSupabase();
@@ -470,6 +474,7 @@ function CompaniesList(props: {
     props.campaignId,
     props.version,
     props.tab,
+    props.count,
   ];
 
   const query = useInfiniteQuery({
@@ -486,6 +491,8 @@ function CompaniesList(props: {
       lastPage.length === COMPANIES_PAGE_SIZE ? pages.length : undefined,
     staleTime: 5_000,
     refetchInterval: props.live ? REFRESH_INTERVAL * 1.5 : false,
+    // nouveau nombre dans l'onglet : la liste précédente reste affichée pendant la relecture (pas de clignotement)
+    placeholderData: keepPreviousData,
   });
 
   const choose = useAction(chooseProspectsAction, {

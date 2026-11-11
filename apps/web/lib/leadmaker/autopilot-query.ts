@@ -164,7 +164,14 @@ export async function fetchAutopilotLive(
   autopilotId: string,
   locale: string,
 ) {
-  const [recent, outcomes] = await Promise.all([
+  // une requête de comptage par issue (l'API renvoie 1 000 lignes au plus : on ne lit jamais toutes les tentatives)
+  const base = () =>
+    client
+      .from('lm_attempts')
+      .select('id', { count: 'exact', head: true })
+      .eq('autopilot_id', autopilotId);
+
+  const [recent, times, ...counts] = await Promise.all([
     client
       .from('lm_attempts')
       .select(
@@ -174,15 +181,40 @@ export async function fetchAutopilotLive(
       .in('status', ['sent', 'to_verify'])
       .order('sent_at', { ascending: false, nullsFirst: false })
       .limit(3),
+    // heures des derniers envois (rythme et prévision)
     client
       .from('lm_attempts')
-      .select('status, detail, protection_type, missing, sent_at')
+      .select('sent_at')
       .eq('autopilot_id', autopilotId)
-      .limit(10000),
+      .in('status', ['sent', 'to_verify'])
+      .not('sent_at', 'is', null)
+      .order('sent_at', { ascending: false })
+      .limit(1000),
+    base().in('status', ['sent', 'to_verify']),
+    base().eq('status', 'no_form').ilike('detail', '%devis%'),
+    base().eq('status', 'no_form').not('detail', 'ilike', '%devis%'),
+    base().eq('status', 'no_form').is('detail', null),
+    base().in('status', ['unreachable', 'failed']),
+    base().eq('status', 'intervention_required'),
+    base().eq('status', 'incomplete'),
+    base().eq('status', 'ready'),
+    base().in('status', ['skipped', 'excluded']),
   ]);
 
   if (recent.error) throw recent.error;
-  if (outcomes.error) throw outcomes.error;
+  if (times.error) throw times.error;
+
+  const [
+    sent,
+    quote,
+    noFormText,
+    noFormEmpty,
+    unreachable,
+    captcha,
+    unknownField,
+    toCheck,
+    other,
+  ] = counts.map((result) => result.count ?? 0);
 
   // libellé de l'activité dans la langue de l'appli (la fiche garde celui de l'annuaire, en anglais)
   const english = [
@@ -212,7 +244,20 @@ export async function fetchAutopilotLive(
         ? (labels.get(row.prospect.category) ?? row.prospect.category)
         : null,
     })),
-    outcomes: outcomes.data ?? [],
+    /** nombre de sites par issue (bilan « Sur N sites visités ») */
+    outcomes: {
+      sent: sent!,
+      quoteOnly: quote!,
+      noForm: noFormText! + noFormEmpty!,
+      unreachable: unreachable!,
+      captcha: captcha!,
+      unknownField: unknownField!,
+      toCheck: toCheck!,
+      other: other!,
+    },
+    sentTimes: (times.data ?? [])
+      .map((row) => new Date(row.sent_at!).getTime())
+      .reverse(),
   };
 }
 

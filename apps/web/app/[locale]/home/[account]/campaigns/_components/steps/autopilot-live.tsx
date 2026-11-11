@@ -32,7 +32,6 @@ import {
   displayHost,
   fetchAttemptScreenshot,
   fetchAutopilotLive,
-  isCleanAttempt,
 } from '~/lib/leadmaker/autopilot-query';
 
 /** Relecture en marche (même rythme que les compteurs). */
@@ -63,43 +62,6 @@ const OUTCOMES = [
   color: string;
   group: AttemptGroup;
 }>;
-
-type OutcomeKey = (typeof OUTCOMES)[number]['key'];
-
-type Outcome = {
-  status: string;
-  detail: string | null;
-  protection_type: string | null;
-  missing: unknown;
-};
-
-/** Issue d'un site visité ; null tant que le site est encore en cours (pas dans le bilan). */
-function outcomeOf(row: Outcome): OutcomeKey | null {
-  switch (row.status) {
-    case 'sent':
-    case 'to_verify':
-      return 'sent';
-    case 'no_form':
-      return (row.detail ?? '').toLowerCase().includes('devis')
-        ? 'quoteOnly'
-        : 'noForm';
-    case 'unreachable':
-    case 'failed':
-      return 'unreachable';
-    case 'intervention_required':
-      return 'captcha';
-    case 'incomplete':
-      return 'unknownField';
-    case 'ready':
-      // un formulaire « propre » part tout seul : encore en cours ; un formulaire douteux attend le client
-      return isCleanAttempt(row) ? null : 'toCheck';
-    case 'skipped':
-    case 'excluded':
-      return 'other';
-    default:
-      return null;
-  }
-}
 
 export function AutopilotLive(props: {
   autopilotId: string;
@@ -183,26 +145,13 @@ export function AutopilotLive(props: {
   };
 
   const cards = data?.sent ?? [];
-  const counts = new Map<OutcomeKey, number>();
-
-  for (const row of data?.outcomes ?? []) {
-    const key = outcomeOf(row);
-
-    if (key) {
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-  }
-
-  const visited = [...counts.values()].reduce((sum, n) => sum + n, 0);
+  const outcomes = data?.outcomes;
   const breakdown = OUTCOMES.map((outcome) => ({
     ...outcome,
-    count: counts.get(outcome.key) ?? 0,
+    count: outcomes?.[outcome.key] ?? 0,
   })).filter((outcome) => outcome.count > 0);
-
-  const sentTimes = (data?.outcomes ?? [])
-    .map((row) => (row.sent_at ? new Date(row.sent_at).getTime() : null))
-    .filter((time): time is number => time !== null)
-    .sort((a, b) => a - b);
+  const visited = breakdown.reduce((sum, item) => sum + item.count, 0);
+  const sentTimes = data?.sentTimes ?? [];
 
   const forecast = forecastEnd({
     sentTimes,
@@ -410,7 +359,7 @@ export function AutopilotLive(props: {
         >
           <span className={'text-sm text-white/80'}>{t('forecastLabel')}</span>
 
-          <p className={'text-2xl leading-tight font-medium'}>
+          <p className={'text-2xl leading-tight font-medium text-white'}>
             {forecast.kind === 'date'
               ? t('forecastDate', {
                   target: format.number(props.target),

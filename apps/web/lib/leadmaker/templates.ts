@@ -8,8 +8,11 @@
 
 /** 4 versions × 6 onglets au plus (5 groupes + « Pour les autres ») ; même plafond que le pilote automatique */
 export const MAX_MESSAGES = 84; // 4 versions × 21 onglets (20 groupes fins + « Pour les autres »)
-/** versions d'un même onglet (un groupe, ou « Pour les autres ») */
-export const MAX_VERSIONS_PER_GROUP = 4;
+/**
+ * versions d'un même onglet (un groupe, ou « Pour les autres ») : 10 depuis le 11/11/2026 (une campagne en avait 7,
+ * l'écran n'en montrait que 4 et l'enregistrement effaçait les 3 autres). Total toujours plafonné à MAX_MESSAGES.
+ */
+export const MAX_VERSIONS_PER_GROUP = 10;
 export const SHORT_BODY_MAX = 200;
 export const SUBJECT_MAX = 200;
 export const BODY_MAX = 5000;

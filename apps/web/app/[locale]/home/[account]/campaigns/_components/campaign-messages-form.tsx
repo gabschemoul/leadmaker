@@ -171,11 +171,18 @@ export function CampaignMessagesForm(props: {
 
   // messages d'aucun onglet (réservés à un groupe sans « Un message par groupe », ou à un groupe qui n'existe
   // plus) : ni affichés ni modifiés, renvoyés tels quels à l'enregistrement
-  const [hidden] = useState(() =>
-    props.templates.messages.filter(
+  // garde-fou : les versions au-delà de MAX_VERSIONS_PER_GROUP dans un onglet sont aussi gardées telles quelles
+  // (11/11/2026 : une campagne à 7 messages perdait les 3 derniers en enregistrant)
+  const [hidden] = useState(() => [
+    ...props.templates.messages.filter(
       (message) => !tabs.some((tab) => tab.key === message.group),
     ),
-  );
+    ...tabs.flatMap((tab) =>
+      props.templates.messages
+        .filter((message) => message.group === tab.key)
+        .slice(MAX_VERSIONS_PER_GROUP),
+    ),
+  ]);
 
   const tabMessages = (tab: MessageTab) =>
     props.templates.messages.filter((message) => message.group === tab.key);

@@ -799,6 +799,6 @@
     "groupEmpty": "No message: these prospects will receive “For the others”.",
     "othersEmpty": "No message yet: without it, prospects outside the groups (and in a group with no message) will receive another group's message.",
     "nameTaken": "This name is already used by another message in the campaign.",
-    "tooManyVersions": "At most 4 versions per group."
+    "tooManyVersions": "At most 10 versions per group."
   }
 }

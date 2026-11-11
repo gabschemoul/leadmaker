@@ -149,12 +149,9 @@ export function CampaignStepsRail(props: {
         })}
       </nav>
 
-      <p
-        className={'text-muted-foreground text-sm'}
-        data-test={'campaign-step-summary'}
-      >
-        {subtitles[active]}
-      </p>
+      {/* 11/11/2026 : plus de ligne de résumé sous les onglets. Calculée au chargement de la page, elle
+          contredisait les chiffres en direct de l'écran (« Pilote · 24 / 500 » à côté de « 30 / 500 »,
+          « Aucun prospect gardé » à côté de « Gardés 5 ») ; le résumé reste au survol de chaque onglet. */}
     </div>
   );
 }

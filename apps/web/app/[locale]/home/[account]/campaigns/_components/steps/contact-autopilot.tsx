@@ -34,6 +34,7 @@ import { Alert, AlertDescription } from '@kit/ui/alert';
 import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
 import { chipClasses } from '@kit/ui/button-extras';
+import { Checkbox } from '@kit/ui/checkbox';
 import {
   Dialog,
   DialogClose,
@@ -372,19 +373,18 @@ function AutopilotSetup(props: {
       <label
         key={message.name}
         className={cn(
-          'flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 transition-colors duration-75',
-          // même sélection que les pastilles : filet noir renforcé (10/11/2026)
+          'flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors duration-75',
+          // sélection douce aux couleurs de l'appli : fond bleu pâle, filet bleu (11/11 : le noir épais était laid)
           checked
-            ? 'border-foreground ring-foreground bg-foreground/[0.02] ring-[0.5px]'
+            ? 'border-brand/40 bg-brand-pale/50'
             : 'border-foreground/10 hover:bg-foreground/[0.043]',
         )}
       >
-        <input
-          type={'checkbox'}
-          className={'accent-primary mt-0.5 size-5 shrink-0'}
+        <Checkbox
+          className={'mt-0.5 shrink-0'}
           data-test={'autopilot-message'}
           checked={checked}
-          onChange={() => {
+          onCheckedChange={() => {
             const next = checked
               ? values.messages.filter((name) => name !== message.name)
               : [...values.messages, message.name];

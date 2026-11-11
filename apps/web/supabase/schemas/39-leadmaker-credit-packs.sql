@@ -111,3 +111,105 @@ $$;
 revoke all on function public.lm_grant_credit_pack(uuid, text, integer, text) from public, anon, authenticated;
 
 grant execute on function public.lm_grant_credit_pack(uuid, text, integer, text) to service_role;
+
+-- Paiement des entreprises gardées restées en attente de crédits, dans toutes les campagnes (non archivées, prix
+-- fixé) d'une organisation. Sans ça, une gardée arrivée pendant une panne de crédits n'était jamais réglée, donc
+-- jamais contactée, même après une recharge (analyse UX S-02, 11/11/2026). Renvoie le nombre de gardées réglées.
+-- Appelant : déclencheurs (recharge du forfait, achat d'un pack) ; robots / serveur uniquement (rôle service).
+create or replace function public.lm_settle_account_kept(p_account_id uuid) returns integer
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_campaign uuid;
+  v_count integer := 0;
+begin
+  for v_campaign in
+    select c.id
+      from public.lm_campaigns c
+     where c.account_id = p_account_id and c.status <> 'archived' and not c.price_pending
+       and nullif(trim(c.sort_target), '') is not null
+       and exists (select 1 from public.lm_campaign_prospects cp
+                    where cp.campaign_id = c.id and cp.paid_at is null
+                      and coalesce(cp.client_choice, cp.verdict) = 'gardee')
+     order by c.created_at
+  loop
+    v_count := v_count + public.lm_settle_kept(v_campaign, null);
+
+    -- crédits de nouveau épuisés : inutile d'essayer les campagnes suivantes (somme écrite ici :
+    -- lm_available_credits renvoie null hors d'une session membre ou service, par exemple sous pg_cron)
+    exit when coalesce((select ac.discovery_balance from public.lm_account_credits ac where ac.account_id = p_account_id), 0)
+              + public.lm_pack_credits(p_account_id) <= 0;
+  end loop;
+
+  return v_count;
+end;
+$$;
+
+revoke all on function public.lm_settle_account_kept(uuid) from public, anon, authenticated;
+
+grant execute on function public.lm_settle_account_kept(uuid) to service_role;
+
+-- Crédits ajoutés (forfait renouvelé ou rechargé, pack acheté) : les gardées en attente sont réglées tout de suite.
+-- Jamais bloquant : ces écritures viennent du paiement Stripe ou de la recharge mensuelle ; si le règlement
+-- échoue, il est annulé seul (bloc d'exception) et les crédits restent acquis.
+-- Appelant : déclencheurs (trigger) sur lm_account_credits et lm_credit_packs.
+create or replace function public.lm_credits_added_settle() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  begin
+    perform public.lm_settle_account_kept(new.account_id);
+  exception when others then
+    raise warning 'lm_credits_added_settle %: %', new.account_id, sqlerrm;
+  end;
+
+  return null;
+end;
+$$;
+
+revoke all on function public.lm_credits_added_settle() from public, anon, authenticated;
+
+-- seulement quand le solde monte (un débit le fait baisser : jamais de boucle débit → règlement → débit)
+create or replace trigger lm_account_credits_added_settle
+  after update of discovery_balance on public.lm_account_credits
+  for each row
+  when (new.discovery_balance > old.discovery_balance)
+  execute function public.lm_credits_added_settle();
+
+create or replace trigger lm_account_credits_created_settle
+  after insert on public.lm_account_credits
+  for each row
+  when (new.discovery_balance > 0)
+  execute function public.lm_credits_added_settle();
+
+create or replace trigger lm_credit_packs_added_settle
+  after insert on public.lm_credit_packs
+  for each row
+  execute function public.lm_credits_added_settle();
+
+-- Argent d'une campagne, montré dans le parcours (analyse UX E-01 / T-03, 11/11/2026) : crédits déjà utilisés par
+-- la campagne, crédits disponibles de l'organisation (forfait + packs). Le prix d'une gardée vient de
+-- lm_campaign_sort_summary. Rien pour un non-membre.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
+create or replace function public.lm_campaign_money(p_campaign_id uuid)
+returns table (spent integer, available integer)
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select (select coalesce(sum(cp.credits), 0)::integer from public.lm_campaign_prospects cp
+           where cp.campaign_id = c.id),
+         coalesce((select ac.discovery_balance from public.lm_account_credits ac where ac.account_id = c.account_id), 0)
+           + public.lm_pack_credits(c.account_id)
+    from public.lm_campaigns c
+   where c.id = p_campaign_id and public.lm_member(c.account_id);
+$$;
+
+revoke all on function public.lm_campaign_money(uuid) from public, anon;
+
+grant execute on function public.lm_campaign_money(uuid) to authenticated, service_role;

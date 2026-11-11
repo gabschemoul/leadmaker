@@ -23,6 +23,10 @@ create table if not exists public.lm_campaigns (
   -- 4/11/2026 : la campagne part tout de suite, sans attendre la mesure de difficulté. Tant que la mesure
   -- (estimate_id) tourne, 1 crédit par prospect ; à la fin, le tarif mesuré est fixé (lm_record_estimate_search)
   price_pending boolean not null default false,
+  -- Nombre d'entreprises triées sur lequel le prix d'une campagne triée a été mesuré. Sous sort_measure_size
+  -- (petite campagne, analyse UX S-01 du 11/11/2026), le prix est provisoire : il est remesuré quand la campagne
+  -- grandit (villes ajoutées). Null pour les campagnes mesurées avant cette colonne (prix définitif).
+  price_sample integer,
   -- Expéditeur choisi pour cette campagne (même espace, contrôlé par lm_campaigns_check_sender) ;
   -- null = l'expéditeur par défaut de l'espace (lm_campaign_sender)
   sender_id uuid references public.lm_sender_profiles(id) on delete set null,

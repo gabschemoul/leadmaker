@@ -501,22 +501,29 @@ begin
       end if;
     end if;
 
-    -- Plus aucun prospect à contacter et plus rien en cours : passage terminé
-    if ap.status = 'running' and v_found = 0 and c.in_flight = 0
-       and not exists (select 1 from public.lm_campaign_prospects cp
-                          join public.lm_prospects pr on pr.id = cp.prospect_id
-                        where cp.campaign_id = ap.campaign_id
-                          and (not (select nullif(trim(sc.sort_target), '') is not null from public.lm_campaigns sc where sc.id = ap.campaign_id)
-                 or (coalesce(cp.client_choice, cp.verdict) = 'gardee' and cp.paid_at is not null))
-                          and pr.space_id = ap.space_id and pr.account_id = ap.account_id
-                          and pr.excluded_at is null and pr.website is not null
-                          and pr.site_key not like 'maps:%' and pr.site_key not like 'tel:%'
-                          and (pr.created_at, pr.id) > (coalesce(v_cursor_at, '-infinity'::timestamptz),
-                                                        coalesce(v_cursor_id, '00000000-0000-0000-0000-000000000000'::uuid))
-                          and not exists (select 1 from public.lm_attempts a
-                                           where a.space_id = pr.space_id and a.prospect_id = pr.id)) then
-      update public.lm_autopilots set status = 'done', finished_reason = 'no_prospects', finished_at = now()
-       where id = ap.id and status = 'running';
+    -- Rien trouvé et plus rien en cours (analyse UX S-08 et S-09, 11/11/2026) :
+    --  * le curseur n'est qu'un raccourci : une entreprise payée après son passage (gardée après coup, réglée
+    --    après une recharge) est derrière lui. Il repart donc du début, et le tour suivant relit toute la
+    --    campagne avec la même règle que ci-dessus (une seule règle, pas de copie) ;
+    --  * curseur déjà au début et toujours rien : tant que la campagne apporte encore des entreprises (recherche
+    --    en cours, tri en file, tri qui avance depuis moins de 5 min), le pilote attend au lieu de se déclarer
+    --    terminé ; une recherche en pause ou un tri en échec ne le fait pas attendre ;
+    --  * sinon, passage terminé.
+    if ap.status = 'running' and v_want > 0 and v_found = 0 and c.in_flight = 0 then
+      if v_cursor_id is not null then
+        update public.lm_autopilots set cursor_created_at = null, cursor_prospect_id = null where id = ap.id;
+      elsif not exists (
+           select 1 from public.lm_campaigns sc
+            where sc.id = ap.campaign_id
+              and (sc.status = 'running'
+                   or exists (select 1 from public.lm_tasks t
+                               where t.kind = 'sort' and t.status = 'queued'
+                                 and t.payload ->> 'campaign_id' = sc.id::text)
+                   or exists (select 1 from public.lm_campaign_prospects cp
+                               where cp.campaign_id = sc.id and cp.sorted_at > now() - interval '5 minutes'))) then
+        update public.lm_autopilots set status = 'done', finished_reason = 'no_prospects', finished_at = now()
+         where id = ap.id and status = 'running';
+      end if;
     end if;
   end loop;
 

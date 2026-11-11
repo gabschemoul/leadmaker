@@ -11,7 +11,7 @@ export async function fetchCampaignLive(
   client: SupabaseClient<Database>,
   campaignId: string,
 ) {
-  const [campaign, progress, pricing, prospects, sortSummary, groups] =
+  const [campaign, progress, pricing, prospects, sortSummary, groups, money] =
     await Promise.all([
       client
         .from('lm_campaigns')
@@ -32,6 +32,8 @@ export async function fetchCampaignLive(
       client.rpc('lm_campaign_sort_summary', { p_campaign_id: campaignId }),
       // groupes proposés par le tri (CDC §4.3) : gardées par groupe et choix du client ; vide sans groupes
       client.rpc('lm_campaign_groups', { p_campaign_id: campaignId }),
+      // argent de la campagne montré dans le parcours (analyse UX E-01 / T-03)
+      client.rpc('lm_campaign_money', { p_campaign_id: campaignId }),
     ]);
 
   if (campaign.error) throw campaign.error;
@@ -47,6 +49,8 @@ export async function fetchCampaignLive(
   const summary = sortSummary.error ? undefined : sortSummary.data?.[0];
   // même prudence : sans la fonction des groupes en base, l'encart ne s'affiche simplement pas
   const groupRows = groups.error ? [] : (groups.data ?? []);
+  // même prudence : tant que la migration du 11/11 n'est pas en base, on montre seulement le prix
+  const moneyRow = money.error ? undefined : money.data?.[0];
 
   return {
     status: campaign.data.status,
@@ -76,6 +80,16 @@ export async function fetchCampaignLive(
       sampleSearches: price?.sample_searches ?? 0,
     },
     prospects: prospects.data ?? [],
+    /**
+     * Crédits de la campagne (analyse UX E-01 / T-03) : utilisés par la campagne et disponibles pour
+     * l'organisation ; null tant que la fonction n'existe pas en base.
+     */
+    money: moneyRow
+      ? {
+          spent: moneyRow.spent ?? 0,
+          available: moneyRow.available ?? 0,
+        }
+      : null,
     /**
      * Tri selon la cible en mots (nouveau parcours, CDC-PARCOURS-TRI-ANNUAIRE §6) ; null pour une campagne
      * sans cible (ancien parcours, écran « Trouver » inchangé).

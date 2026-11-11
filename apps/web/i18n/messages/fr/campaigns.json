@@ -182,7 +182,13 @@
       "offerRequired": "Décrivez votre offre en une phrase : elle sert à trier les entreprises.",
       "offerTooLong": "Offre trop longue (1 000 caractères au plus).",
       "retargetHint": "La cible change : toutes les entreprises déjà trouvées seront triées à nouveau."
-    }
+    },
+    "activeCriteria": "Appliqués : {list}",
+    "criteriaWithSite": "avec un site",
+    "criteriaWithoutSite": "sans site",
+    "criteriaRating": "notes {min} à {max}",
+    "criteriaReviews": "au moins {count, plural, one {# avis} other {# avis}}",
+    "criteriaExclusions": "mots exclus"
   },
   "estimate": {
     "title": "Estimation",
@@ -628,6 +634,19 @@
       "noMessage": "Aucun message",
       "edit": "Modifier",
       "done": "Terminé"
+    },
+    "confirm": {
+      "title": "Lancer le pilote automatique ?",
+      "count": "Entreprises",
+      "countValue": "jusqu'à {count, plural, one {# entreprise} other {# entreprises}}",
+      "sender": "Au nom de",
+      "messages": "Message",
+      "messagesValue": "{count} versions à tour de rôle ({names})",
+      "when": "Quand",
+      "spreadValue": "étalé sur {count, plural, one {# jour ouvré} other {# jours ouvrés}}",
+      "note": "Les premiers formulaires partent dans une dizaine de minutes. Un message envoyé ne peut pas être repris ; vous pouvez mettre le pilote en pause à tout moment.",
+      "cancel": "Annuler",
+      "launch": "Oui, lancer"
     }
   },
   "localDiscovery": {
@@ -681,7 +700,6 @@
     "tabKept": "Gardées",
     "tabToCheck": "À vérifier",
     "price": "{count, plural, one {# crédit par entreprise gardée} other {# crédits par entreprise gardée}}",
-    "pricePending": "Prix en cours de mesure",
     "keep": "Garder",
     "drop": "Écarter",
     "selectAll": "Tout sélectionner",
@@ -712,7 +730,10 @@
       "perGroup": "Un message par groupe",
       "perGroupLine": "Un message par groupe",
       "writeLink": "Écrire les messages"
-    }
+    },
+    "pricePendingVisible": "Prix mesuré sur les premières entreprises triées (1 à 4 crédits par entreprise gardée)",
+    "spent": "{count, plural, =0 {aucun crédit utilisé} one {# crédit utilisé} other {# crédits utilisés}} par cette campagne",
+    "available": "{count, plural, =0 {aucun crédit disponible} one {# crédit disponible} other {# crédits disponibles}}"
   },
   "messages": {
     "title": "Votre message",

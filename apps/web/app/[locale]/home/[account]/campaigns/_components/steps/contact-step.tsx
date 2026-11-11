@@ -98,6 +98,20 @@ export async function ContactStep(props: {
       basePath={props.basePath}
     />
   );
+  // expéditeur en clair pour la confirmation du lancement du pilote (analyse UX V-01)
+  const campaignSender = await loadCampaignSender(
+    getSupabaseServerClient(),
+    props.campaignId,
+  );
+  const senderLabel = campaignSender
+    ? [
+        `${campaignSender.first_name} ${campaignSender.last_name}`,
+        campaignSender.company,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : null;
+
   const senderRow = (
     <ContactSender
       compact
@@ -179,6 +193,7 @@ export async function ContactStep(props: {
           advancedHref={groupHref('intervention_required')}
           sendingSettingsHref={advancedHref}
           senderSection={senderRow}
+          senderLabel={senderLabel}
           billingHref={props.billingHref}
           hasPlan={props.hasPlan}
           // le nombre de prospects contactables est vérifié par le pilote lui-même

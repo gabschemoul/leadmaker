@@ -185,6 +185,8 @@ select pg_temp.tour();
 select is((select count(*)::int from public.lm_attempts where autopilot_id = (select id from ap_ids where name = 'camp')), 9,
   'Le dernier prospect contactable est pris');
 select public.lm_finish_prepare(pg_temp.att('P9'), '{"status":"unreachable"}'::jsonb);
+-- 11/11/2026 : un tour remet le curseur au début (entreprise payée après son passage), le suivant conclut
+select pg_temp.tour();
 select pg_temp.tour();
 select is((select (status, finished_reason)::text from public.lm_autopilots where id = (select id from ap_ids where name = 'camp')),
   '(done,no_prospects)', 'Plus aucun prospect : pilote terminé');

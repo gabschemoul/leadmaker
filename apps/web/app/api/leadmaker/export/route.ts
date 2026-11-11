@@ -63,6 +63,24 @@ type Target =
   | { kind: 'space'; id: string }
   | { kind: 'campaign'; id: string };
 
+type ExportRow = {
+  name: string | null;
+  category: string | null;
+  rating: number | null;
+  review_count: number | null;
+  address: string | null;
+  city: string | null;
+  country_code: string | null;
+  phone: string | null;
+  website: string | null;
+  found_email: string | null;
+  maps_url: string | null;
+  source: string | null;
+  is_chain: boolean | null;
+  created_at: string | null;
+  excluded_at: string | null;
+};
+
 function slugify(value: string) {
   return (
     value
@@ -79,7 +97,9 @@ function slugify(value: string) {
  * Export CSV des prospects :
  * - d'un espace (?space_id=), avec les mêmes filtres que la page Prospects
  *   (q, cat, city, rmin, rmax, reviews, website, source, status, campaign) ;
- * - d'une campagne (?campaign_id=) ;
+ * - d'une campagne (?campaign_id=) : campagne triée par l'IA, seulement ses entreprises gardées et payées
+ *   (CDC §5.1 « l'export ne sort que des fiches payées », analyse UX T-08) ; ancienne campagne sans phrase
+ *   cible, toutes ses fiches ;
  * - d'une sélection (?ids=a,b,c — 2 000 identifiants au plus).
  *
  * Client RLS : un membre n'exporte que son organisation. Lecture par pages de
@@ -106,6 +126,8 @@ export const GET = enhanceRouteHandler(
         : { kind: 'campaign', id: parsed.data.campaign_id! };
 
     let filename: string;
+    // campagne triée par l'IA (phrase cible) : on n'exporte que ce que le client a payé
+    let sortedCampaign = false;
 
     if (target.kind === 'ids') {
       filename = 'prospects-selection';
@@ -120,7 +142,7 @@ export const GET = enhanceRouteHandler(
               .maybeSingle()
           : await client
               .from('lm_campaigns')
-              .select('name')
+              .select('name, sort_target')
               .eq('id', target.id)
               .maybeSingle();
 
@@ -131,6 +153,10 @@ export const GET = enhanceRouteHandler(
       // l'espace par défaut porte un nom technique (« Default ») : on l'omet
       const isDefaultSpace =
         'is_default' in owner.data && owner.data.is_default === true;
+
+      sortedCampaign =
+        'sort_target' in owner.data &&
+        (owner.data.sort_target ?? '').trim().length > 0;
 
       filename = isDefaultSpace
         ? 'prospects'
@@ -147,7 +173,27 @@ export const GET = enhanceRouteHandler(
       ),
     ).filters;
 
-    const fetchPage = (from: number) => {
+    const fetchPage = async (
+      from: number,
+    ): Promise<{ data: ExportRow[] | null; error: unknown }> => {
+      if (target.kind === 'campaign' && sortedCampaign) {
+        const { data, error } = await client
+          .from('lm_campaign_prospects')
+          .select(`prospect_id, prospect:lm_prospects!inner(${SELECT})`)
+          .eq('campaign_id', target.id)
+          // payée = achetée : elle reste exportée même si un nouveau tri (changement de cible) l'a reclassée
+          .not('paid_at', 'is', null)
+          .or('client_choice.is.null,client_choice.neq.ecartee')
+          .order('created_at', { ascending: true })
+          .order('prospect_id', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
+
+        return {
+          data: (data ?? []).map((row) => row.prospect as ExportRow),
+          error,
+        };
+      }
+
       const query = client.from('lm_prospects').select(SELECT);
 
       const scoped =
@@ -157,10 +203,12 @@ export const GET = enhanceRouteHandler(
             ? applyProspectsFilters(query.eq('space_id', target.id), filters)
             : query.eq('campaign_id', target.id);
 
-      return scoped
+      const { data, error } = await scoped
         .order('created_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
+
+      return { data: data as ExportRow[] | null, error };
     };
 
     const separator = csvSeparatorFor(request.headers.get('accept-language'));

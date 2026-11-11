@@ -8,7 +8,8 @@
  */
 
 import { ChevronDown } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
+import { useWatch } from 'react-hook-form';
 
 import {
   Card,
@@ -43,6 +44,7 @@ export function FiltersSection(props: {
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations('campaigns');
+  const active = useActiveCriteria();
 
   return (
     <Collapsible
@@ -66,6 +68,16 @@ export function FiltersSection(props: {
             <CardDescription>
               <Trans i18nKey={'campaigns.form.filtersDescription'} />
             </CardDescription>
+
+            {/* les critères qui filtrent restent lisibles pli fermé (analyse UX Q-01) */}
+            {active.length > 0 ? (
+              <span
+                className={'text-foreground text-sm'}
+                data-test={'campaign-active-criteria'}
+              >
+                {t('form.activeCriteria', { list: active.join(' · ') })}
+              </span>
+            ) : null}
           </span>
 
           <ChevronDown
@@ -259,4 +271,50 @@ export function FiltersSection(props: {
       </CollapsibleContent>
     </Collapsible>
   );
+}
+
+/** Les critères qui écartent des entreprises, en clair (« avec un site · notes 1 à 3,5 »). */
+function useActiveCriteria() {
+  const t = useTranslations('campaigns');
+  const formatter = useFormatter();
+  const [ratingMin, ratingMax, minReviews, website, extraExclusions] = useWatch(
+    {
+      name: [
+        'ratingMin',
+        'ratingMax',
+        'minReviews',
+        'website',
+        'extraExclusions',
+      ],
+    },
+  ) as [number, number, number, string, string];
+
+  const format = (n: number) =>
+    formatter.number(n, { maximumFractionDigits: 1 });
+  const parts: string[] = [];
+
+  if (website === 'with') {
+    parts.push(t('form.criteriaWithSite'));
+  } else if (website === 'without') {
+    parts.push(t('form.criteriaWithoutSite'));
+  }
+
+  if (Number(ratingMin) > RATING_FLOOR || Number(ratingMax) < 5) {
+    parts.push(
+      t('form.criteriaRating', {
+        min: format(Number(ratingMin)),
+        max: format(Number(ratingMax)),
+      }),
+    );
+  }
+
+  if (Number(minReviews) > 0) {
+    parts.push(t('form.criteriaReviews', { count: Number(minReviews) }));
+  }
+
+  if ((extraExclusions ?? '').trim().length > 0) {
+    parts.push(t('form.criteriaExclusions'));
+  }
+
+  return parts;
 }

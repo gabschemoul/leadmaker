@@ -132,7 +132,12 @@ grant execute on function public.lm_credits_for_sort_rate(numeric) to service_ro
 -- Mesure du prix d'une campagne triée (prix en attente) : dès que sort_measure_size entreprises sont triées pour
 -- la cible en cours, la part de gardées fixe le prix (1 / 2 / 4 crédits), puis les entreprises gardées pendant la
 -- mesure sont payées. Sous le seuil : pause « too_hard », le prix reste en attente (rien n'est payé).
--- Appelant : robots / serveur uniquement (rôle service), via lm_finish_sort.
+-- Petite campagne (analyse UX S-01, 11/11/2026) : recherche terminée et tout trié avant sort_measure_size
+-- entreprises → le prix est fixé sur ce qui a été trié (1 crédit sous 50 triées, trop peu pour mesurer ; sous le
+-- seuil de pause, le palier le plus cher : une recherche finie n'a plus rien à mettre en pause). Avant, le prix
+-- restait en attente pour toujours : aucune gardée n'était payée ni contactée. Ce prix est provisoire
+-- (price_sample) : si la campagne grandit jusqu'à sort_measure_size triées, il est remesuré.
+-- Appelant : robots / serveur uniquement (rôle service), via lm_finish_sort et le déclencheur de fin de recherche.
 create or replace function public.lm_measure_sort_price(p_campaign_id uuid) returns void
 set search_path = ''
 language plpgsql
@@ -144,14 +149,20 @@ declare
   v_sorted integer;
   v_kept integer;
   v_credits integer;
+  v_small boolean := false;
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id;
 
-  if not v_campaign.price_pending or nullif(trim(v_campaign.sort_target), '') is null then
+  if nullif(trim(v_campaign.sort_target), '') is null then
     return;
   end if;
 
   select sort_measure_size into v_size from public.lm_discovery_settings where id;
+
+  -- Prix déjà mesuré sur assez d'entreprises : définitif (seul un prix provisoire de petite campagne se remesure)
+  if not v_campaign.price_pending and coalesce(v_campaign.price_sample, v_size) >= v_size then
+    return;
+  end if;
 
   select count(*), count(*) filter (where coalesce(cp.client_choice, cp.verdict) = 'gardee')
     into v_sorted, v_kept
@@ -159,17 +170,43 @@ begin
    where cp.campaign_id = p_campaign_id and cp.sorted_version = v_campaign.sort_version;
 
   if v_sorted < v_size then
-    return;
-  end if;
+    -- Petite campagne : seulement si le prix attend encore (ou si la campagne a grandi depuis un prix
+    -- provisoire), que plus rien n'est à trier et que la recherche est finie. Le statut est relu sous verrou : la fin de recherche (planificateur) et le dernier tri (robot) sont
+    -- deux transactions ; sans verrou, chacune pouvait manquer l'écriture de l'autre et le prix restait en
+    -- attente pour toujours.
+    if v_sorted = 0
+       or not (v_campaign.price_pending or coalesce(v_campaign.price_sample, v_size) < v_sorted)
+       or exists (select 1 from public.lm_campaign_prospects cp
+                   where cp.campaign_id = p_campaign_id
+                     and cp.sorted_version is distinct from v_campaign.sort_version) then
+      return;
+    end if;
 
-  -- Un seul passage fixe le prix (plusieurs robots trient en même temps)
-  perform 1 from public.lm_campaigns where id = p_campaign_id and price_pending for update;
+    select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
 
-  if not found then
-    return;
+    if v_campaign.status <> 'completed'
+       or not (v_campaign.price_pending or coalesce(v_campaign.price_sample, v_size) < v_sorted) then
+      return;
+    end if;
+
+    v_small := true;
+  else
+    -- Un seul passage fixe le prix (plusieurs robots trient en même temps)
+    select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
+
+    if not v_campaign.price_pending and coalesce(v_campaign.price_sample, v_size) >= v_size then
+      return;
+    end if;
   end if;
 
   v_credits := public.lm_credits_for_sort_rate(v_kept::numeric / v_sorted);
+
+  if v_small then
+    -- sous le seuil de pause : le palier le plus cher, lu par la même règle (part = seuil de pause)
+    v_credits := case when v_sorted < 50 then 1
+                      else coalesce(v_credits, public.lm_credits_for_sort_rate(
+                             (select ds.sort_pause_rate from public.lm_discovery_settings ds where ds.id))) end;
+  end if;
 
   if v_credits is null then
     if v_campaign.status = 'running' then
@@ -178,7 +215,10 @@ begin
     return;
   end if;
 
-  update public.lm_campaigns set credits_per_prospect = v_credits, price_pending = false where id = p_campaign_id;
+  -- Prix provisoire remesuré : les entreprises déjà payées le restent, les suivantes paient le nouveau prix
+  update public.lm_campaigns
+     set credits_per_prospect = v_credits, price_pending = false, price_sample = v_sorted
+   where id = p_campaign_id;
 
   perform public.lm_settle_kept(p_campaign_id, null);
 end;
@@ -187,6 +227,28 @@ $$;
 revoke all on function public.lm_measure_sort_price(uuid) from public;
 
 grant execute on function public.lm_measure_sort_price(uuid) to service_role;
+
+-- Fin de recherche d'une campagne triée : le prix d'une petite campagne (moins de sort_measure_size entreprises)
+-- se fixe ici quand le dernier tri a eu lieu avant la fin de la recherche (analyse UX S-01).
+-- Appelant : déclencheur (trigger) sur lm_campaigns.
+create or replace function public.lm_campaign_completed_measure() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  perform public.lm_measure_sort_price(new.id);
+  return null;
+end;
+$$;
+
+revoke all on function public.lm_campaign_completed_measure() from public, anon, authenticated;
+
+create or replace trigger lm_campaigns_completed_measure
+  after update of status on public.lm_campaigns
+  for each row
+  when (new.status = 'completed' and old.status is distinct from 'completed')
+  execute function public.lm_campaign_completed_measure();
 
 -- Paiement des entreprises gardées (par le tri ou par le client) pas encore réglées d'une campagne au prix
 -- figé (une seule si p_prospect_id). Une entreprise déjà payée par l'équipe dans une autre campagne n'est pas
@@ -208,6 +270,11 @@ begin
   if v_campaign.id is null or v_campaign.price_pending then
     return 0;
   end if;
+
+  -- Solde de l'organisation verrouillé AVANT de regarder si l'entreprise est déjà payée ailleurs : deux règlements
+  -- simultanés de la même entreprise dans deux campagnes (robot de tri + recharge qui règle l'attente) se suivent
+  -- au lieu de la débiter deux fois (relecture du 11/11/2026)
+  perform 1 from public.lm_account_credits where account_id = v_campaign.account_id for update;
 
   for r in
     select cp.prospect_id,

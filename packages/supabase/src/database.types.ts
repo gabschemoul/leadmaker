@@ -463,14 +463,14 @@ isOneToOne: false
                   ]
                 },"lm_campaigns": {
                   Row: {
-                    "account_id": string,"auto_validation": boolean,"country_code": string,"created_at": string,"created_by": string | null,"credits_per_prospect": number,"daily_limit": number,"estimate_id": string | null,"filters": NonNullable<Json>,"groups_choice": string | null,"id": string,"name": string,"offer": string | null,"price_pending": boolean,"sender_id": string | null,"sort_groups": NonNullable<Json>,"sort_groups_fine": boolean,"sort_target": string | null,"sort_version": number,"space_id": string,"status": Database["public"]['Enums']["lm_campaign_status"],"targeting": NonNullable<Json>,"templates": NonNullable<Json>,"updated_at": string,"updated_by": string | null
+                    "account_id": string,"auto_validation": boolean,"country_code": string,"created_at": string,"created_by": string | null,"credits_per_prospect": number,"daily_limit": number,"estimate_id": string | null,"filters": NonNullable<Json>,"groups_choice": string | null,"id": string,"name": string,"offer": string | null,"price_pending": boolean,"price_sample": number | null,"sender_id": string | null,"sort_groups": NonNullable<Json>,"sort_groups_fine": boolean,"sort_target": string | null,"sort_version": number,"space_id": string,"status": Database["public"]['Enums']["lm_campaign_status"],"targeting": NonNullable<Json>,"templates": NonNullable<Json>,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"auto_validation"?: boolean,"country_code": string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"groups_choice"?: string | null,"id"?: string,"name": string,"offer"?: string | null,"price_pending"?: boolean,"sender_id"?: string | null,"sort_groups"?: NonNullable<Json>,"sort_groups_fine"?: boolean,"sort_target"?: string | null,"sort_version"?: number,"space_id": string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id": string,"auto_validation"?: boolean,"country_code": string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"groups_choice"?: string | null,"id"?: string,"name": string,"offer"?: string | null,"price_pending"?: boolean,"price_sample"?: number | null,"sender_id"?: string | null,"sort_groups"?: NonNullable<Json>,"sort_groups_fine"?: boolean,"sort_target"?: string | null,"sort_version"?: number,"space_id": string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "account_id"?: string,"auto_validation"?: boolean,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"groups_choice"?: string | null,"id"?: string,"name"?: string,"offer"?: string | null,"price_pending"?: boolean,"sender_id"?: string | null,"sort_groups"?: NonNullable<Json>,"sort_groups_fine"?: boolean,"sort_target"?: string | null,"sort_version"?: number,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                    "account_id"?: string,"auto_validation"?: boolean,"country_code"?: string,"created_at"?: string,"created_by"?: string | null,"credits_per_prospect"?: number,"daily_limit"?: number,"estimate_id"?: string | null,"filters"?: NonNullable<Json>,"groups_choice"?: string | null,"id"?: string,"name"?: string,"offer"?: string | null,"price_pending"?: boolean,"price_sample"?: number | null,"sender_id"?: string | null,"sort_groups"?: NonNullable<Json>,"sort_groups_fine"?: boolean,"sort_target"?: string | null,"sort_version"?: number,"space_id"?: string,"status"?: Database["public"]['Enums']["lm_campaign_status"],"targeting"?: NonNullable<Json>,"templates"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -1519,6 +1519,7 @@ isOneToOne: false
 "name": string,
 "offer": string | null,
 "price_pending": boolean,
+"price_sample": number | null,
 "sender_id": string | null,
 "sort_groups": NonNullable<Json>,
 "sort_groups_fine": boolean,
@@ -1580,6 +1581,11 @@ isOneToOne: false
                            },
 "lm_campaign_message_names":
 { Args: { "p_campaign_id": string,"p_group": string }; Returns: (string)[]
+                           },
+"lm_campaign_money":
+{ Args: { "p_campaign_id": string }; Returns: {
+              "available": number,"spent": number
+            }[]
                            },
 "lm_campaign_pricing":
 { Args: { "p_campaign_id": string }; Returns: {
@@ -1953,6 +1959,9 @@ isOneToOne: false
                            },
 "lm_set_space_offer":
 { Args: { "p_offer": string,"p_space_id": string }; Returns: undefined
+                           },
+"lm_settle_account_kept":
+{ Args: { "p_account_id": string }; Returns: number
                            },
 "lm_settle_kept":
 { Args: { "p_campaign_id": string,"p_prospect_id"?: string }; Returns: number

@@ -38,7 +38,6 @@ import { Spinner } from '@kit/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '@kit/ui/tabs';
 import { Trans } from '@kit/ui/trans';
 
-import { InfoTip } from '~/components/info-tip';
 import {
   COMPANIES_PAGE_SIZE,
   type CompaniesTab,
@@ -201,18 +200,44 @@ export function CompaniesStep(props: {
                 </TabsTrigger>
               </TabsList>
 
-              <span data-test={'campaign-companies-price'}>
-                <InfoTip>
-                  {sort.pricePending ? (
-                    <Trans i18nKey={'campaigns.companies.pricePending'} />
-                  ) : (
-                    <Trans
-                      i18nKey={'campaigns.companies.price'}
-                      values={{ count: sort.creditsPerProspect }}
-                    />
-                  )}
-                </InfoTip>
-              </span>
+              {/* l'argent reste visible (analyse UX E-01 / T-03, CDC §5.2) : prix d'une gardée, crédits
+                  utilisés par la campagne, crédits disponibles */}
+              <p
+                className={'text-foreground text-sm'}
+                data-test={'campaign-companies-price'}
+              >
+                {sort.pricePending ? (
+                  <Trans i18nKey={'campaigns.companies.pricePendingVisible'} />
+                ) : (
+                  <Trans
+                    i18nKey={'campaigns.companies.price'}
+                    values={{ count: sort.creditsPerProspect }}
+                  />
+                )}
+
+                {data.money ? (
+                  <>
+                    <span aria-hidden className={'text-muted-foreground'}>
+                      {' · '}
+                    </span>
+                    <span data-test={'campaign-companies-spent'}>
+                      <Trans
+                        i18nKey={'campaigns.companies.spent'}
+                        values={{ count: data.money.spent }}
+                      />
+                    </span>
+                    <span aria-hidden className={'text-muted-foreground'}>
+                      {' · '}
+                    </span>
+                    <span data-test={'campaign-companies-available'}>
+                      <Trans
+                        i18nKey={'campaigns.companies.available'}
+                        values={{ count: data.money.available }}
+                      />
+                    </span>
+                  </>
+                ) : null}
+              </p>
             </div>
 
             <CompaniesList

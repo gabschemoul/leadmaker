@@ -123,6 +123,8 @@ export function ContactAutopilot(props: {
   sendingSettingsHref: string;
   /** section « Qui envoie ? » (rendue côté serveur) */
   senderSection: React.ReactNode;
+  /** « Prénom Nom · Société » de l'expéditeur, pour la confirmation du lancement (null : pas d'expéditeur) */
+  senderLabel: string | null;
   billingHref: string;
   /** l'organisation a un forfait (sinon le pilote ne peut rien envoyer) */
   hasPlan: boolean;
@@ -187,6 +189,7 @@ export function ContactAutopilot(props: {
         writeHref={props.writeHref}
         sendingSettingsHref={props.sendingSettingsHref}
         senderSection={props.senderSection}
+        senderLabel={props.senderLabel}
         billingHref={props.billingHref}
         hasPlan={props.hasPlan}
         ready={props.ready}
@@ -235,6 +238,7 @@ function AutopilotSetup(props: {
   writeHref: string;
   sendingSettingsHref: string;
   senderSection: React.ReactNode;
+  senderLabel: string | null;
   billingHref: string;
   hasPlan: boolean;
   ready: boolean;
@@ -313,23 +317,36 @@ function AutopilotSetup(props: {
   });
 
   const pending = start.isPending || update.isPending;
+  // lancement en attente de confirmation (analyse UX V-01 : un message envoyé en son nom ne se rattrape pas)
+  const [confirming, setConfirming] = useState<SetupValues | null>(null);
+
+  const toSettings = (input: SetupValues) => ({
+    target: clamp(input.target),
+    messages: input.messages,
+    schedule: input.schedule,
+    spreadDays: clampSpread(input.spreadDays),
+  });
+
+  const launch = (input: SetupValues) => {
+    setConfirming(null);
+    start.execute({
+      campaignId: props.campaignId,
+      preview: input.preview,
+      ...toSettings(input),
+    });
+  };
 
   const submit = form.handleSubmit((input) => {
-    const settings = {
-      target: clamp(input.target),
-      messages: input.messages,
-      schedule: input.schedule,
-      spreadDays: clampSpread(input.spreadDays),
-    };
-
     if (props.editing && summary.autopilot_id) {
-      update.execute({ autopilotId: summary.autopilot_id, ...settings });
-    } else {
-      start.execute({
-        campaignId: props.campaignId,
-        preview: input.preview,
-        ...settings,
+      update.execute({
+        autopilotId: summary.autopilot_id,
+        ...toSettings(input),
       });
+    } else if (input.preview) {
+      // l'aperçu n'envoie rien : les 3 premiers formulaires sont montrés avant tout envoi
+      launch(input);
+    } else {
+      setConfirming(input);
     }
   });
 
@@ -719,7 +736,81 @@ function AutopilotSetup(props: {
           </Dialog>
         </div>
       </aside>
+
+      <Dialog
+        open={confirming !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirming(null);
+          }
+        }}
+      >
+        <DialogContent data-test={'autopilot-confirm'}>
+          <DialogHeader>
+            <DialogTitle>{t('confirm.title')}</DialogTitle>
+          </DialogHeader>
+
+          {confirming ? (
+            <dl className={'flex flex-col gap-3 text-sm'}>
+              <ConfirmRow label={t('confirm.count')}>
+                {t('confirm.countValue', { count: clamp(confirming.target) })}
+              </ConfirmRow>
+              <ConfirmRow label={t('confirm.sender')}>
+                {props.senderLabel ?? '—'}
+              </ConfirmRow>
+              <ConfirmRow label={t('confirm.messages')}>
+                {confirming.messages.length === 1
+                  ? confirming.messages[0]
+                  : t('confirm.messagesValue', {
+                      count: confirming.messages.length,
+                      names: confirming.messages.join(', '),
+                    })}
+              </ConfirmRow>
+              <ConfirmRow label={t('confirm.when')}>
+                {confirming.schedule === 'spread'
+                  ? t('confirm.spreadValue', {
+                      count: clampSpread(confirming.spreadDays),
+                    })
+                  : t(`pace.${confirming.schedule}`)}
+              </ConfirmRow>
+            </dl>
+          ) : null}
+
+          <p className={'text-muted-foreground text-sm'}>{t('confirm.note')}</p>
+
+          <DialogFooter>
+            <DialogClose
+              render={<Button variant={'outline'} />}
+              data-test={'autopilot-confirm-cancel'}
+            >
+              {t('confirm.cancel')}
+            </DialogClose>
+            <Button
+              type={'button'}
+              data-test={'autopilot-confirm-launch'}
+              onClick={() => {
+                if (confirming) {
+                  launch(confirming);
+                }
+              }}
+            >
+              {t('confirm.launch')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
+  );
+}
+
+function ConfirmRow(props: { label: string; children: React.ReactNode }) {
+  return (
+    <div className={'flex flex-col gap-0.5 sm:flex-row sm:gap-3'}>
+      <dt className={'text-muted-foreground shrink-0 sm:w-36'}>
+        {props.label}
+      </dt>
+      <dd className={'text-foreground font-medium'}>{props.children}</dd>
+    </div>
   );
 }
 

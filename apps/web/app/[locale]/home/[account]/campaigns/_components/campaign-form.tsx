@@ -144,9 +144,11 @@ export function CampaignForm(props: {
       // choisit (une campagne « Restauration » lancée sur les activités courantes ramenait des pharmacies)
       categoriesMode: 'list' as const,
       categories: [],
+      // critères neutres par défaut (analyse UX Q-01, 11/11) : la note max 3,5 et « au moins 1 avis » venaient
+      // du premier usage (entreprises mal notées) et écartaient en silence les entreprises bien notées
       ratingMin: RATING_FLOOR,
-      ratingMax: 3.5,
-      minReviews: 1,
+      ratingMax: 5,
+      minReviews: 0,
       website: 'with' as const,
       excludePublic: true,
       mainCategoryOnly: true,

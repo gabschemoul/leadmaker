@@ -101,7 +101,9 @@ select ok((pg_temp.link('e1000000-0000-4000-8000-0000000000b1', 'b7.fr')).paid_a
 set local role postgres;
 update public.lm_account_credits set discovery_balance = 10 where account_id = (select account_id from tsc);
 set local role service_role;
-select is(public.lm_settle_kept('e1000000-0000-4000-8000-0000000000b1'), 1, 'Après recharge : réglée');
+-- analyse UX S-02 (11/11/2026) : la recharge règle d'elle-même les gardées en attente
+select ok((pg_temp.link('e1000000-0000-4000-8000-0000000000b1', 'b7.fr')).paid_at is not null, 'Après recharge : réglée tout de suite');
+select is(public.lm_settle_kept('e1000000-0000-4000-8000-0000000000b1'), 0, 'Plus rien à régler');
 select is(pg_temp.bal(), 8, '2 crédits débités');
 -- plus de crédit du tout : la découverte s'arrête aussi
 set local role postgres;

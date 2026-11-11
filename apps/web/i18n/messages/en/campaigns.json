@@ -182,7 +182,13 @@
       "offerRequired": "Describe your offer in one sentence: it is used to sort the companies.",
       "offerTooLong": "Offer too long (1,000 characters max).",
       "retargetHint": "The target changes: every company already found will be sorted again."
-    }
+    },
+    "activeCriteria": "Applied: {list}",
+    "criteriaWithSite": "with a website",
+    "criteriaWithoutSite": "without a website",
+    "criteriaRating": "ratings {min} to {max}",
+    "criteriaReviews": "at least {count, plural, one {# review} other {# reviews}}",
+    "criteriaExclusions": "excluded words"
   },
   "estimate": {
     "title": "Estimate",
@@ -628,6 +634,19 @@
       "noMessage": "No message",
       "edit": "Edit",
       "done": "Done"
+    },
+    "confirm": {
+      "title": "Launch the autopilot?",
+      "count": "Companies",
+      "countValue": "up to {count, plural, one {# company} other {# companies}}",
+      "sender": "On behalf of",
+      "messages": "Message",
+      "messagesValue": "{count} versions in rotation ({names})",
+      "when": "When",
+      "spreadValue": "spread over {count, plural, one {# business day} other {# business days}}",
+      "note": "The first forms go out in about ten minutes. A sent message cannot be taken back; you can pause the autopilot at any time.",
+      "cancel": "Cancel",
+      "launch": "Yes, launch"
     }
   },
   "localDiscovery": {
@@ -681,7 +700,6 @@
     "tabKept": "Kept",
     "tabToCheck": "To check",
     "price": "{count, plural, one {# credit per company kept} other {# credits per company kept}}",
-    "pricePending": "Price being measured",
     "keep": "Keep",
     "drop": "Set aside",
     "selectAll": "Select all",
@@ -712,7 +730,10 @@
       "perGroup": "One message per group",
       "perGroupLine": "One message per group",
       "writeLink": "Write the messages"
-    }
+    },
+    "pricePendingVisible": "Price measured on the first sorted companies (1 to 4 credits per kept company)",
+    "spent": "{count, plural, =0 {no credits used} one {# credit used} other {# credits used}} by this campaign",
+    "available": "{count, plural, =0 {no credits available} one {# credit available} other {# credits available}}"
   },
   "messages": {
     "title": "Your message",

@@ -53,14 +53,12 @@ export const MAX_CITIES_LIMIT = 20000;
 /** Villes au plus dans le mode « Villes précises ». */
 export const MAX_LIST_CITIES = 1000;
 
-/** Activités au plus dans une campagne. */
+/** Ancienne limite (1 000, retirée le 11/11/2026) : au-delà, « Tout sélectionner » s'affiche. */
 export const MAX_CATEGORIES = 1000;
 
 /**
- * Activités au plus pour les utilisateurs sans limite (Gabriel et Nath, même
- * liste que la recherche sur l'ordinateur dédié : lm_local_discovery_users).
- * Le catalogue en compte ~4 000 : « Tout sélectionner » y tient. La limite
- * réelle de chaque utilisateur est vérifiée par le serveur (server-actions.ts).
+ * Activités au plus dans une campagne, pour tout le monde depuis le 11/11/2026 (« aucune limite », Gabriel) :
+ * le catalogue en compte ~4 000, « Tout sélectionner » y tient. Garde-fou technique, pas une limite métier.
  */
 export const MAX_CATEGORIES_UNLIMITED = 10_000;
 

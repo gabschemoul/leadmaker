@@ -2,6 +2,9 @@
 -- d'une activité faute de résultats), plus de recherches d'essai pour une campagne triée (son prix vient du tri),
 -- compteur « N recherches faites sur M » juste, activité abandonnée avant sans aucun prospect relancée sur les villes
 -- ajoutées, et lm_campaign_search_phase (où en est le lancement). Compatible avec main : mêmes signatures.
+-- Groupes fins (jusqu'à 20) par défaut pour les nouvelles campagnes.
+
+alter table "public"."lm_campaigns" alter column "sort_groups_fine" set default true;
 
 set check_function_bodies = off;
 

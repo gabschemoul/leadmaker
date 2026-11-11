@@ -301,9 +301,9 @@
   },
   "steps": {
     "tabsLabel": "Étapes de la campagne",
-    "cibler": "Qui ?",
-    "trouver": "Vos entreprises",
-    "rediger": "Votre message",
+    "cibler": "Cible",
+    "trouver": "Entreprises",
+    "rediger": "Message",
     "contacter": "Envoi",
     "sub": {
       "cibler": "{country} · {zones, plural, one {# ville} other {# villes}} · {categories, plural, one {# activité} other {# activités}}",

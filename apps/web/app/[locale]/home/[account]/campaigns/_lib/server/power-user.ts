@@ -1,16 +1,12 @@
 import 'server-only';
 import { getSupabaseServerAdminClient } from '@kit/supabase/server-admin-client';
 
-import {
-  MAX_CATEGORIES,
-  MAX_CATEGORIES_UNLIMITED,
-} from '../schema/campaign.schema';
+import { MAX_CATEGORIES_UNLIMITED } from '../schema/campaign.schema';
 
 /**
  * Utilisateur « sans limite » : Gabriel et Nath (demandes du 3/11/2026). Même
  * liste que la recherche sur l'ordinateur dédié (lm_local_discovery_users,
  * 34-leadmaker-local-discovery.sql). Pour eux :
- * - plus de limite de 1 000 activités par campagne (getCategoryLimit) ;
  * - les messages n'ont pas à mentionner la société de l'expéditeur.
  *
  * La table n'est lisible que par le service : on n'y lit que la ligne de
@@ -26,9 +22,10 @@ export async function isPowerUser(userId: string) {
   return !error && Boolean(data);
 }
 
-/** Nombre d'activités qu'un utilisateur peut mettre dans une campagne. */
-export async function getCategoryLimit(userId: string) {
-  return (await isPowerUser(userId))
-    ? MAX_CATEGORIES_UNLIMITED
-    : MAX_CATEGORIES;
+/**
+ * Nombre d'activités qu'un utilisateur peut mettre dans une campagne : plus de limite pour personne (décision de
+ * Gabriel, 11/11/2026 ; avant, 1 000 sauf pour Gabriel et Nath). MAX_CATEGORIES_UNLIMITED dépasse le catalogue.
+ */
+export async function getCategoryLimit(_userId: string) {
+  return MAX_CATEGORIES_UNLIMITED;
 }

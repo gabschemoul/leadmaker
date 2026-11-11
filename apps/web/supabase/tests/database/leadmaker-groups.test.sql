@@ -19,8 +19,9 @@ grant select on tgr to authenticated, service_role;
 update public.lm_discovery_settings set sort_measure_size = 2, sort_groups_after = 3 where id;
 insert into public.lm_account_credits (account_id, plan_id, discovery_balance) select account_id, 'growth', 100 from tgr
 on conflict (account_id) do update set plan_id = 'growth', discovery_balance = 100;
-insert into public.lm_campaigns (id, account_id, space_id, name, country_code, status)
-select 'e3000000-0000-4000-8000-0000000000a1'::uuid, account_id, space_id, 'Agences', 'FR', 'running' from tgr;
+-- grands groupes (2 à 5) ; les groupes fins sont par défaut depuis le 11/11/2026, testés plus bas
+insert into public.lm_campaigns (id, account_id, space_id, name, country_code, status, sort_groups_fine)
+select 'e3000000-0000-4000-8000-0000000000a1'::uuid, account_id, space_id, 'Agences', 'FR', 'running', false from tgr;
 
 create function pg_temp.pid(p_key text) returns uuid language sql as $$ select id from public.lm_prospects where site_key = p_key $$;
 grant execute on function pg_temp.pid(text) to authenticated, service_role;

@@ -44,8 +44,8 @@ create table if not exists public.lm_campaigns (
   -- vend plusieurs produits (ex. Studio Namma : sites en marque blanche et Booster) en met une par campagne.
   offer text,
   -- Groupes fins (10/11/2026) : un groupe par sous-activité (jusqu'à 20) au lieu de 2 à 5 grands groupes, pour
-  -- un message très ciblé par mini-catégorie
-  sort_groups_fine boolean not null default false,
+  -- un message très ciblé par mini-catégorie. Par défaut pour les nouvelles campagnes depuis le 11/11/2026 (Gabriel)
+  sort_groups_fine boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,

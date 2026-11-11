@@ -301,9 +301,9 @@
   },
   "steps": {
     "tabsLabel": "Campaign steps",
-    "cibler": "Who?",
-    "trouver": "Your companies",
-    "rediger": "Your message",
+    "cibler": "Target",
+    "trouver": "Businesses",
+    "rediger": "Message",
     "contacter": "Sending",
     "sub": {
       "cibler": "{country} · {zones, plural, one {# city} other {# cities}} · {categories, plural, one {# trade} other {# trades}}",

@@ -1270,6 +1270,25 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
   const client = useSupabase();
 
   // « maintenant » = heure de la dernière lecture du fil (pas d'appel à l'horloge pendant l'affichage)
+  // « il y a 4 s », « il y a 2 min », puis l'heure (« 22:53 ») au-delà d'une heure
+  const ago = (date: Date, now: number) => {
+    const seconds = Math.max(0, Math.round((now - date.getTime()) / 1000));
+
+    if (seconds < 60) {
+      return t('ago.seconds', { count: seconds });
+    }
+
+    if (seconds < 3600) {
+      return t('ago.minutes', { count: Math.floor(seconds / 60) });
+    }
+
+    return format.dateTime(date, {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+  };
+
   const { data: rows = [], dataUpdatedAt } = useQuery({
     queryKey: ['lm-autopilot-feed', props.autopilotId],
     queryFn: () => fetchAutopilotFeed(client, props.autopilotId),
@@ -1354,10 +1373,7 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
                     'text-muted-foreground hidden w-24 shrink-0 text-right text-xs whitespace-nowrap tabular-nums sm:block'
                   }
                 >
-                  {format.relativeTime(new Date(row.updated_at), {
-                    now: new Date(dataUpdatedAt),
-                    style: 'narrow',
-                  })}
+                  {ago(new Date(row.updated_at), dataUpdatedAt)}
                 </span>
               </li>
             );

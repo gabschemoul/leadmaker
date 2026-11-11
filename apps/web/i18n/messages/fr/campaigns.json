@@ -626,6 +626,10 @@
         "noForm": "Pas de formulaire de contact",
         "skipped": "Passé",
         "unreachable": "Site inaccessible"
+      },
+      "ago": {
+        "seconds": "il y a {count} s",
+        "minutes": "il y a {count} min"
       }
     },
     "errors": {

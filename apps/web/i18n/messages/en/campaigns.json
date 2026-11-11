@@ -626,6 +626,10 @@
         "noForm": "No contact form",
         "skipped": "Skipped",
         "unreachable": "Site unreachable"
+      },
+      "ago": {
+        "seconds": "{count}s ago",
+        "minutes": "{count} min ago"
       }
     },
     "errors": {

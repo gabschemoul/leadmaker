@@ -1351,13 +1351,13 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
 
                 <span
                   className={
-                    'text-muted-foreground hidden w-20 shrink-0 text-right text-xs tabular-nums sm:block'
+                    'text-muted-foreground hidden w-24 shrink-0 text-right text-xs whitespace-nowrap tabular-nums sm:block'
                   }
                 >
-                  {format.relativeTime(
-                    new Date(row.updated_at),
-                    new Date(dataUpdatedAt),
-                  )}
+                  {format.relativeTime(new Date(row.updated_at), {
+                    now: new Date(dataUpdatedAt),
+                    style: 'narrow',
+                  })}
                 </span>
               </li>
             );

@@ -89,6 +89,7 @@ export function DiscoverStep(props: {
         live={data}
         billingPath={props.billingPath}
         targetHref={props.targetHref}
+        editHref={props.targetHref}
       />
 
       <ProgressCard live={data}>
@@ -181,12 +182,17 @@ export function PauseAlerts(props: {
   billingPath: string;
   /** où préciser la cible quand la campagne est en pause « too_hard » */
   targetHref: string;
+  /** formulaire de la campagne (plafonds), quand la campagne est en pause « cap_reached » */
+  editHref: string;
 }) {
   const noCredits =
     props.live.status === 'paused' && props.live.pausedReason === 'no_credits';
   // tri IA : moins de 6 % des entreprises trouvées correspondent à la cible (crédit unique, 9/11)
   const tooHard =
     props.live.status === 'paused' && props.live.pausedReason === 'too_hard';
+  // plafond fixé par le client atteint (11/11/2026)
+  const capReached =
+    props.live.status === 'paused' && props.live.pausedReason === 'cap_reached';
 
   return (
     <>
@@ -204,6 +210,29 @@ export function PauseAlerts(props: {
               components={{
                 link: (chunks: React.ReactNode) => (
                   <Link className={'underline'} href={props.billingPath}>
+                    {chunks}
+                  </Link>
+                ),
+              }}
+            />
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {capReached ? (
+        <Alert className={alertExtras.warning} data-test={'cap-reached-alert'}>
+          <TriangleAlert className={'h-4'} />
+
+          <AlertTitle>
+            <Trans i18nKey={'campaigns.detail.capReachedTitle'} />
+          </AlertTitle>
+
+          <AlertDescription>
+            <Trans
+              i18nKey={'campaigns.detail.capReachedDescription'}
+              components={{
+                link: (chunks: React.ReactNode) => (
+                  <Link className={'underline'} href={props.editHref}>
                     {chunks}
                   </Link>
                 ),

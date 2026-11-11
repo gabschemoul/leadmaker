@@ -37,6 +37,11 @@ export function nextAction(facts: CampaignStepFacts): NextAction {
     };
   }
 
+  // Plafond fixé par le client atteint (11/11/2026)
+  if (facts.status === 'paused' && facts.pausedReason === 'cap_reached') {
+    return { kind: 'todo', key: 'capReached', values: {}, step: 'cibler' };
+  }
+
   // Crédit unique (9/11) : moins de 6 % des entreprises trouvées correspondent à la cible
   if (facts.status === 'paused' && facts.pausedReason === 'too_hard') {
     return {

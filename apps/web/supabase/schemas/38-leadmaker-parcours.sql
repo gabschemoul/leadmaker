@@ -493,3 +493,29 @@ $$;
 revoke all on function public.lm_split_campaign_by_groups(uuid) from public;
 
 grant execute on function public.lm_split_campaign_by_groups(uuid) to authenticated, service_role;
+
+-- Plafonds d'une campagne (11/11/2026, écran « Qui ? », Paramètres avancés) : maximum de prospects gardés payés et
+-- maximum de crédits dépensés ; null = pas de plafond. Monter un plafond n'efface pas la pause : « Reprendre ».
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
+create or replace function public.lm_set_campaign_caps(p_campaign_id uuid, p_max_kept integer, p_max_credits integer)
+returns void
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  if not exists (select 1 from public.lm_campaigns c where c.id = p_campaign_id and public.lm_member(c.account_id)) then
+    raise exception 'campaign not found' using errcode = 'P0002';
+  end if;
+
+  if (p_max_kept is not null and p_max_kept <= 0) or (p_max_credits is not null and p_max_credits <= 0) then
+    raise exception 'invalid cap' using errcode = 'P0001', hint = 'invalid_cap';
+  end if;
+
+  update public.lm_campaigns set max_kept = p_max_kept, max_credits = p_max_credits where id = p_campaign_id;
+end;
+$$;
+
+revoke all on function public.lm_set_campaign_caps(uuid, integer, integer) from public;
+
+grant execute on function public.lm_set_campaign_caps(uuid, integer, integer) to authenticated, service_role;

@@ -71,7 +71,7 @@ export async function loadCampaignForEdit(
     client
       .from('lm_campaigns')
       .select(
-        'id, account_id, space_id, name, status, country_code, targeting, filters, sort_target, offer',
+        'id, account_id, space_id, name, status, country_code, targeting, filters, sort_target, offer, max_kept, max_credits',
       )
       .eq('id', campaignId)
       .maybeSingle(),

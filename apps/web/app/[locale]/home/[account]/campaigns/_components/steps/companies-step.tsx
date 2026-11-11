@@ -119,6 +119,7 @@ export function CompaniesStep(props: {
         live={data}
         billingPath={props.billingPath}
         targetHref={props.editHref}
+        editHref={props.editHref}
       />
 
       <Card data-test={'campaign-companies'}>

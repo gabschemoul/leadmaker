@@ -61,6 +61,8 @@ interface SpaceOption {
 
 /** Champs du pli « Plus de critères » : une erreur sur l'un d'eux ouvre le pli. */
 const CRITERIA_FIELDS = [
+  'maxKept',
+  'maxCredits',
   'ratingMin',
   'ratingMax',
   'minReviews',
@@ -177,6 +179,8 @@ function CampaignFormBody(props: {
     ratingMin: RATING_FLOOR,
     ratingMax: 5,
     minReviews: 0,
+    maxKept: null,
+    maxCredits: null,
     website: 'with' as const,
     excludePublic: true,
     mainCategoryOnly: true,

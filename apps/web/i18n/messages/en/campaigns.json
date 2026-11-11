@@ -187,7 +187,10 @@
     },
     "cancel": "Cancel",
     "saveDraft": "Save as draft",
-    "draftSaved": "Draft saved"
+    "draftSaved": "Draft saved",
+    "maxKeptLabel": "Maximum prospects kept",
+    "maxCreditsLabel": "Maximum budget (credits)",
+    "capPlaceholder": "No limit"
   },
   "estimate": {
     "title": "Estimate",
@@ -255,7 +258,9 @@
     "pricingMeasuringHint": "We are measuring the share of prospects matching your filters. You can launch the campaign right away.",
     "pricingMeasuringLaunchedHint": "The campaign is already running. Until the measurement ends, 1 credit per prospect.",
     "pricingUnknown": "Measured at launch",
-    "pricingUnknownHint": "The campaign starts as soon as you click “Launch”. The rate is measured in parallel, 1 credit per prospect meanwhile."
+    "pricingUnknownHint": "The campaign starts as soon as you click “Launch”. The rate is measured in parallel, 1 credit per prospect meanwhile.",
+    "capReachedTitle": "Campaign paused: limit reached",
+    "capReachedDescription": "The campaign reached the limit set in the advanced settings. Raise it (<link>Edit</link>), then click “Resume”."
   },
   "import": {
     "button": "Import a CSV file",
@@ -294,7 +299,8 @@
     "tooManyCategories": "A campaign can include at most 1,000 trades.",
     "estimateQuota": "You have reached today's estimate limit. Try again tomorrow, or launch the campaign directly: its rate is measured automatically.",
     "archived": "This campaign is archived: unarchive it first.",
-    "archiveFailed": "The campaign couldn't be archived. Please try again in a moment."
+    "archiveFailed": "The campaign couldn't be archived. Please try again in a moment.",
+    "capReached": "The campaign reached its limit: raise it in the advanced settings to resume."
   },
   "duplicate": {
     "button": "Duplicate",
@@ -502,6 +508,10 @@
     "contactMore": {
       "text": "{sent, plural, one {# sent} other {# sent}} · {remaining, plural, one {# prospect not contacted yet} other {# prospects not contacted yet}}",
       "button": "Contact the next ones"
+    },
+    "capReached": {
+      "text": "Search paused: campaign limit reached",
+      "button": "Raise the limit"
     }
   },
   "autopilot": {
@@ -686,7 +696,8 @@
     "campaignLimit": "The campaign is saved, but your plan doesn't allow more running campaigns. Pause one or change your plan, then launch the search.",
     "noCities": "The campaign is saved, but no city matches your criteria. Click “Edit” to widen the area.",
     "archived": "This campaign is archived: unarchive it first.",
-    "startFailed": "The campaign is saved, but the search couldn't start. Please try again in a moment."
+    "startFailed": "The campaign is saved, but the search couldn't start. Please try again in a moment.",
+    "capReached": "The campaign reached its limit: raise it in the advanced settings to resume."
   },
   "companies": {
     "title": "Your prospects",

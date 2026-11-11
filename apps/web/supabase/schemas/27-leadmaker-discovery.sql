@@ -512,6 +512,11 @@ begin
     raise exception 'campaign archived' using errcode = 'P0001', hint = 'archived';
   end if;
 
+  -- plafond fixé par le client déjà atteint : il faut le monter avant de reprendre (11/11/2026)
+  if public.lm_campaign_cap_reached(p_campaign_id) then
+    raise exception 'campaign cap reached' using errcode = 'P0001', hint = 'cap_reached';
+  end if;
+
   select p.active_campaigns, c.discovery_balance + public.lm_pack_credits(c.account_id) into v_limit, v_balance
     from public.lm_account_credits c left join public.lm_plans p on p.id = c.plan_id
    where c.account_id = v_campaign.account_id;

@@ -75,6 +75,40 @@ export function FiltersSection(props: {
         render={<CardContent />}
         className={'flex flex-col gap-4'}
       >
+        {/* plafonds de la campagne (11/11/2026) : vides = pas de limite ; la campagne se met en pause en les
+            atteignant */}
+        <div className={'grid grid-cols-1 gap-4 md:grid-cols-2'}>
+          {(['maxKept', 'maxCredits'] as const).map((name) => (
+            <FormField
+              key={name}
+              name={name}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <Trans i18nKey={`campaigns.form.${name}Label`} />
+                  </FormLabel>
+
+                  <FormControl>
+                    <NumberInput
+                      data-test={`campaign-${name}-input`}
+                      min={1}
+                      step={1}
+                      inputMode={'numeric'}
+                      placeholder={t('form.capPlaceholder')}
+                      value={field.value ?? Number.NaN}
+                      onChange={(value) =>
+                        field.onChange(Number.isFinite(value) ? value : null)
+                      }
+                    />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ))}
+        </div>
+
         <div className={'grid grid-cols-1 gap-4 md:grid-cols-3'}>
           <FormField
             name={'ratingMin'}

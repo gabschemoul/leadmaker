@@ -72,6 +72,7 @@ const START_LAUNCH_ERRORS: Record<string, LaunchError> = {
   campaign_limit: 'campaignLimit',
   no_cities: 'noCities',
   archived: 'archived',
+  cap_reached: 'capReached',
 };
 
 async function logLaunchError(
@@ -166,6 +167,28 @@ async function saveOfferAndTarget(
   return null;
 }
 
+/** Plafonds de la campagne (Paramètres avancés) : enregistrés avant le lancement. Code d'erreur ou null. */
+async function saveCaps(
+  client: Client,
+  campaignId: string,
+  values: { maxKept: number | null; maxCredits: number | null },
+  userId: string,
+): Promise<LaunchError | null> {
+  const { error } = await client.rpc('lm_set_campaign_caps', {
+    p_campaign_id: campaignId,
+    p_max_kept: values.maxKept as number,
+    p_max_credits: values.maxCredits as number,
+  });
+
+  if (error) {
+    await logLaunchError('caps', { campaignId, userId }, error);
+
+    return 'startFailed';
+  }
+
+  return null;
+}
+
 /** Démarre la campagne tout de suite (lm_start_campaign, sans attendre d'estimation). Code d'erreur ou null. */
 async function startNow(
   client: Client,
@@ -250,14 +273,21 @@ export const createCampaignAction = authActionClient
       throw new Error('campaigns.errors.createFailed');
     }
 
-    const saveError = await saveOfferAndTarget(client, {
-      campaignId: data.id,
-      spaceId: values.spaceId,
-      offer: values.offer,
-      sortTarget,
-      previousTarget: null,
-      userId: ctx.user.id,
-    });
+    const capsError =
+      values.maxKept !== null || values.maxCredits !== null
+        ? await saveCaps(client, data.id, values, ctx.user.id)
+        : null;
+
+    const saveError =
+      capsError ??
+      (await saveOfferAndTarget(client, {
+        campaignId: data.id,
+        spaceId: values.spaceId,
+        offer: values.offer,
+        sortTarget,
+        previousTarget: null,
+        userId: ctx.user.id,
+      }));
 
     revalidatePath('/home/[account]/campaigns', 'layout');
 
@@ -331,9 +361,14 @@ export const updateCampaignAction = authActionClient
       });
     }
 
-    let launchError: LaunchError | null = null;
+    let launchError: LaunchError | null = await saveCaps(
+      client,
+      values.campaignId,
+      values,
+      ctx.user.id,
+    );
 
-    if (sortTarget.length > 0 && before) {
+    if (!launchError && sortTarget.length > 0 && before) {
       launchError = await saveOfferAndTarget(client, {
         campaignId: values.campaignId,
         spaceId: before.space_id,

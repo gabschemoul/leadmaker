@@ -36,6 +36,7 @@ export const FIND_EMAILS_ERRORS: RpcHintMap = {
 /** Lancement / reprise d'une campagne (lm_start_campaign). */
 export const START_ERRORS: RpcHintMap = {
   no_credits: 'campaigns.errors.noCredits',
+  cap_reached: 'campaigns.errors.capReached',
   campaign_limit: 'campaigns.errors.campaignLimit',
   no_cities: 'campaigns.errors.noCities',
   archived: 'campaigns.errors.archived',

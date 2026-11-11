@@ -187,7 +187,10 @@
     },
     "cancel": "Annuler",
     "saveDraft": "Enregistrer en brouillon",
-    "draftSaved": "Brouillon enregistré"
+    "draftSaved": "Brouillon enregistré",
+    "maxKeptLabel": "Maximum de prospects gardés",
+    "maxCreditsLabel": "Budget maximum (crédits)",
+    "capPlaceholder": "Sans limite"
   },
   "estimate": {
     "title": "Estimation",
@@ -229,7 +232,7 @@
     "noCreditsTitle": "Campagne en pause : plus de crédits",
     "noCreditsDescription": "Vous n'avez plus de crédits. <link>Voir mon forfait</link> pour en avoir plus, puis cliquez sur « Reprendre ».",
     "tooHardTitle": "Campagne en pause : cible trop difficile",
-    "tooHardDescription": "Moins de 6 % des prospects trouvés correspondent à votre cible : précisez votre cible (<link>étape Cibler</link>), puis cliquez sur « Reprendre ».",
+    "tooHardDescription": "Moins de 6 % des prospects trouvés correspondent à votre cible : précisez votre cible (<link>étape Cible</link>), puis cliquez sur « Reprendre ».",
     "progressTitle": "Avancement",
     "progressDescription": "Où en est la recherche.",
     "progressLive": "Mis à jour en direct.",
@@ -255,7 +258,9 @@
     "pricingMeasuringHint": "On mesure la part de prospects qui passent vos filtres. Vous pouvez lancer la campagne sans attendre.",
     "pricingMeasuringLaunchedHint": "La campagne tourne déjà. En attendant la fin de la mesure, 1 crédit par prospect.",
     "pricingUnknown": "Mesuré au lancement",
-    "pricingUnknownHint": "La campagne part dès le clic sur « Lancer ». Le tarif est mesuré en parallèle, 1 crédit par prospect en attendant."
+    "pricingUnknownHint": "La campagne part dès le clic sur « Lancer ». Le tarif est mesuré en parallèle, 1 crédit par prospect en attendant.",
+    "capReachedTitle": "Campagne en pause : plafond atteint",
+    "capReachedDescription": "La campagne a atteint le plafond fixé dans les paramètres avancés. Montez-le (<link>Modifier</link>), puis cliquez sur « Reprendre »."
   },
   "import": {
     "button": "Importer un fichier CSV",
@@ -294,7 +299,8 @@
     "tooManyCategories": "Une campagne peut contenir 1 000 activités au plus.",
     "estimateQuota": "Vous avez atteint le nombre d'estimations possibles pour aujourd'hui. Réessayez demain, ou lancez directement la campagne : le tarif est mesuré automatiquement.",
     "archived": "Cette campagne est archivée : désarchivez-la d'abord.",
-    "archiveFailed": "La campagne n'a pas pu être archivée. Réessayez dans un instant."
+    "archiveFailed": "La campagne n'a pas pu être archivée. Réessayez dans un instant.",
+    "capReached": "Plafond de la campagne atteint : montez-le dans les paramètres avancés pour reprendre."
   },
   "duplicate": {
     "button": "Dupliquer",
@@ -502,6 +508,10 @@
     "contactMore": {
       "text": "{sent, plural, one {# envoyé} other {# envoyés}} · {remaining, plural, one {# prospect pas encore contacté} other {# prospects pas encore contactés}}",
       "button": "Contacter les suivants"
+    },
+    "capReached": {
+      "text": "Recherche en pause : plafond de la campagne atteint",
+      "button": "Monter le plafond"
     }
   },
   "autopilot": {
@@ -686,7 +696,8 @@
     "campaignLimit": "La campagne est enregistrée, mais votre forfait ne permet pas d'autres campagnes en cours. Mettez-en une en pause ou changez de forfait, puis lancez la recherche.",
     "noCities": "La campagne est enregistrée, mais aucune ville ne correspond à vos critères. Cliquez sur « Modifier » pour élargir la zone.",
     "archived": "Cette campagne est archivée : désarchivez-la d'abord.",
-    "startFailed": "La campagne est enregistrée, mais la recherche n'a pas pu démarrer. Réessayez dans un instant."
+    "startFailed": "La campagne est enregistrée, mais la recherche n'a pas pu démarrer. Réessayez dans un instant.",
+    "capReached": "Plafond de la campagne atteint : montez-le dans les paramètres avancés pour reprendre."
   },
   "companies": {
     "title": "Vos prospects",

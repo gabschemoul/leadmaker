@@ -106,6 +106,9 @@ const CampaignFieldsSchema = z.object({
   ratingMin: rating(),
   ratingMax: rating(),
   minReviews: integer(0, 1_000_000),
+  /** plafonds de la campagne (Paramètres avancés, 11/11/2026) : null = pas de plafond */
+  maxKept: integer(1, 10_000_000).nullable(),
+  maxCredits: integer(1, 100_000_000).nullable(),
   website: z.enum(['with', 'without', 'all']),
   excludePublic: z.boolean(),
   mainCategoryOnly: z.boolean(),
@@ -415,6 +418,8 @@ export function campaignToFormValues(campaign: {
   filters: unknown;
   cities: CityRef[];
   categories: CategoryRef[];
+  max_kept?: number | null;
+  max_credits?: number | null;
 }): CampaignFormValues {
   const targeting = TargetingSchema.safeParse(campaign.targeting);
   const filters = StoredFiltersSchema.safeParse(campaign.filters);
@@ -448,6 +453,8 @@ export function campaignToFormValues(campaign: {
     ratingMin: Math.max(RATING_FLOOR, f.rating_min ?? RATING_FLOOR),
     ratingMax: f.rating_max ?? 5,
     minReviews: f.min_reviews ?? 0,
+    maxKept: campaign.max_kept ?? null,
+    maxCredits: campaign.max_credits ?? null,
     website: f.website ?? 'with',
     excludePublic: f.exclude_public ?? true,
     mainCategoryOnly: f.main_category_only ?? true,
@@ -467,6 +474,7 @@ export const LAUNCH_ERRORS = [
   'noCities',
   'archived',
   'startFailed',
+  'capReached',
 ] as const;
 
 export type LaunchError = (typeof LAUNCH_ERRORS)[number];

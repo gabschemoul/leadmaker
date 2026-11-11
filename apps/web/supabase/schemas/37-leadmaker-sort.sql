@@ -251,6 +251,32 @@ create or replace trigger lm_campaigns_completed_measure
   when (new.status = 'completed' and old.status is distinct from 'completed')
   execute function public.lm_campaign_completed_measure();
 
+-- Plafond de la campagne atteint (max_kept : prospects gardés payés ; max_credits : crédits dépensés, en comptant le
+-- prix du prochain gardé). Appelant : lm_settle_kept, lm_start_campaign (fonctions SQL).
+create or replace function public.lm_campaign_cap_reached(p_campaign_id uuid) returns boolean
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select coalesce(
+           (c.max_kept is not null
+            and (select count(*) from public.lm_campaign_prospects cp
+                  where cp.campaign_id = c.id and cp.paid_at is not null
+                    and coalesce(cp.client_choice, cp.verdict) = 'gardee') >= c.max_kept)
+           or (c.max_credits is not null
+               and (select coalesce(sum(cp.credits), 0) from public.lm_campaign_prospects cp
+                     where cp.campaign_id = c.id and cp.paid_at is not null)
+                   + greatest(c.credits_per_prospect, 1) > c.max_credits),
+           false)
+    from public.lm_campaigns c
+   where c.id = p_campaign_id;
+$$;
+
+revoke all on function public.lm_campaign_cap_reached(uuid) from public;
+
+grant execute on function public.lm_campaign_cap_reached(uuid) to service_role;
+
 -- Paiement des entreprises gardées (par le tri ou par le client) pas encore réglées d'une campagne au prix
 -- figé (une seule si p_prospect_id). Une entreprise déjà payée par l'équipe dans une autre campagne n'est pas
 -- redébitée (CDC §5.1). Crédits épuisés : la campagne se met en pause et les suivantes attendent. Renvoie le
@@ -293,6 +319,12 @@ begin
      order by cp.sorted_at nulls last
      for update of cp skip locked
   loop
+    -- plafond fixé par le client atteint : on s'arrête là, la campagne se met en pause (11/11/2026)
+    if not r.already_paid and public.lm_campaign_cap_reached(p_campaign_id) then
+      perform public.lm_pause_campaign(p_campaign_id, 'cap_reached');
+      exit;
+    end if;
+
     if not r.already_paid
        and not public.lm_debit_credits(v_campaign.account_id, 'discovery', greatest(v_campaign.credits_per_prospect, 1),
                                        'keep:' || p_campaign_id::text || ':' || r.prospect_id::text, 'kept',

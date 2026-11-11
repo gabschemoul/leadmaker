@@ -46,6 +46,10 @@ create table if not exists public.lm_campaigns (
   -- Groupes fins (10/11/2026) : un groupe par sous-activité (jusqu'à 20) au lieu de 2 à 5 grands groupes, pour
   -- un message très ciblé par mini-catégorie. Par défaut pour les nouvelles campagnes depuis le 11/11/2026 (Gabriel)
   sort_groups_fine boolean not null default true,
+  -- Plafonds fixés par le client (11/11/2026) : la campagne se met en pause (« cap_reached ») quand elle a payé
+  -- autant de prospects gardés, ou dépensé autant de crédits. null = pas de plafond. lm_set_campaign_caps.
+  max_kept integer,
+  max_credits integer,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -57,7 +61,9 @@ create table if not exists public.lm_campaigns (
   constraint lm_campaigns_daily_limit_max check (daily_limit <= 100000),
   constraint lm_campaigns_credits_per_prospect check (credits_per_prospect between 1 and 10),
   constraint lm_campaigns_offer_length check (offer is null or length(offer) <= 1000),
-  constraint lm_campaigns_groups_choice check (groups_choice is null or groups_choice in ('single', 'per_group', 'split'))
+  constraint lm_campaigns_groups_choice check (groups_choice is null or groups_choice in ('single', 'per_group', 'split')),
+  constraint lm_campaigns_max_kept_positive check (max_kept is null or max_kept > 0),
+  constraint lm_campaigns_max_credits_positive check (max_credits is null or max_credits > 0)
 );
 
 comment on table public.lm_campaigns is 'Campagnes de prospection d''un espace';

@@ -489,7 +489,9 @@ function SentDetail(props: {
       }}
     >
       <SheetContent
-        className={'w-full gap-0 overflow-y-auto sm:max-w-[560px]'}
+        className={
+          'w-full gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-[560px]'
+        }
         data-test={'autopilot-sent-detail'}
       >
         {card ? (

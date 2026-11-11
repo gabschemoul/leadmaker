@@ -646,7 +646,7 @@
       "sentEmptyLive": "Les premiers messages partent dans quelques minutes…",
       "sentEmpty": "Aucun message envoyé pour l’instant.",
       "received": "Reçu par leur formulaire",
-      "visitedTitle": "{count, plural, =0 {Sites visités} one {Sur # site visité} other {Sur # sites visités}}",
+      "visitedTitle": "{count, plural, =0 {Sites visités} one {Sur {count, number} site visité} other {Sur {count, number} sites visités}}",
       "visitedEmpty": "Prospectigo visite les premiers sites…",
       "outcome": {
         "sent": "Message envoyé",

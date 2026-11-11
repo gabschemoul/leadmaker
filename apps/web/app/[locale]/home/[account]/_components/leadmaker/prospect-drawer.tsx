@@ -42,7 +42,9 @@ export function ProspectDrawer(props: {
   return (
     <Sheet open={prospect !== null} onOpenChange={props.onOpenChange}>
       <SheetContent
-        className={'w-full gap-0 overflow-y-auto sm:max-w-[640px]'}
+        className={
+          'w-full gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-[640px]'
+        }
         data-test={'prospect-drawer'}
       >
         {prospect ? (

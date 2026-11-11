@@ -158,43 +158,28 @@ function refineCampaign(values: CampaignFields, ctx: z.RefinementCtx) {
   }
 }
 
-function requireTarget(values: { sortTarget: string }, ctx: z.RefinementCtx) {
-  if (values.sortTarget.length === 0) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['sortTarget'],
-      message: 'campaigns.form.who.targetRequired',
-    });
-  }
-}
-
 /**
- * Formulaire de campagne. La cible est obligatoire, sauf pour une ancienne campagne déjà lancée sans cible
- * (`targetRequired` faux) : lui en donner une la fait passer au tri.
+ * Formulaire de campagne. La phrase est facultative (11/11) : on peut ne choisir que des activités.
  */
-export function buildCampaignFormSchema(targetRequired: boolean) {
-  return CampaignFieldsSchema.superRefine((values, ctx) => {
-    refineCampaign(values, ctx);
-
-    if (targetRequired) {
-      requireTarget(values, ctx);
-    }
-  });
-}
+export const CampaignFormSchema =
+  CampaignFieldsSchema.superRefine(refineCampaign);
 
 export type CampaignFormValues = z.infer<typeof CampaignFieldsSchema>;
 
+// Phrase facultative (11/11) : sans phrase, la cible envoyée au tri se déduit des activités choisies
+// (targetFromActivities, campaign-lifecycle-actions.ts).
 export const CreateCampaignSchema = CampaignFieldsSchema.extend({
   accountId: z.string().uuid(),
   accountSlug: z.string().min(1),
-}).superRefine((values, ctx) => {
-  refineCampaign(values, ctx);
-  requireTarget(values, ctx);
-});
+  /** faux : « Enregistrer en brouillon », la recherche n'est pas lancée */
+  launch: z.boolean().default(true),
+}).superRefine(refineCampaign);
 
 export const UpdateCampaignSchema = CampaignFieldsSchema.extend({
   campaignId: z.string().uuid(),
   accountSlug: z.string().min(1),
+  /** brouillon seulement : faux = enregistrer sans lancer */
+  launch: z.boolean().default(true),
 }).superRefine(refineCampaign);
 
 export const TargetingSchema = z.object({
@@ -405,6 +390,22 @@ const StoredFiltersSchema = z
  * passées déjà résolues (nom, population, libellé) : la base ne stocke que
  * leurs identifiants.
  */
+/**
+ * Cibles posées quand le client n'a pas écrit de phrase (campaign-lifecycle-actions.ts) : ce n'est pas une phrase
+ * du client, le champ reste vide. Pas de traduction à la volée : la cible enregistrée reste la même quel que soit
+ * le membre qui enregistre (une cible différente relancerait le tri de toute la campagne).
+ */
+export const ACTIVITIES_TARGETS = {
+  fr: 'Toutes les entreprises des activités choisies, sans autre critère',
+  en: 'Every business in the chosen activities, with no other criterion',
+} as const;
+
+export function isActivitiesTarget(target: string | null | undefined) {
+  const value = (target ?? '').trim();
+
+  return Object.values(ACTIVITIES_TARGETS).some((known) => known === value);
+}
+
 export function campaignToFormValues(campaign: {
   sort_target: string | null;
   /** offre actuelle du dossier de la campagne */
@@ -430,7 +431,10 @@ export function campaignToFormValues(campaign: {
       : null;
 
   return {
-    sortTarget: campaign.sort_target ?? '',
+    // cible tirée des activités (pas de phrase tapée) : le champ reste vide, la cible suit les activités
+    sortTarget: isActivitiesTarget(campaign.sort_target)
+      ? ''
+      : (campaign.sort_target ?? ''),
     offer: campaign.offer ?? '',
     name: campaign.name,
     spaceId: campaign.space_id,

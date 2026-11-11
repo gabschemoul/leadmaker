@@ -162,6 +162,7 @@ export function CompaniesStep(props: {
           <SearchProgress
             progress={data.progress}
             live={data.status === 'running'}
+            completed={data.status === 'completed'}
           />
 
           <SortProgress sort={sort} live={live} />
@@ -200,44 +201,49 @@ export function CompaniesStep(props: {
                 </TabsTrigger>
               </TabsList>
 
-              {/* l'argent reste visible (analyse UX E-01 / T-03, CDC §5.2) : prix d'une gardée, crédits
-                  utilisés par la campagne, crédits disponibles */}
-              <p
-                className={'text-foreground text-sm'}
+              {/* l'argent reste visible (analyse UX E-01 / T-03, CDC §5.2), en deux chiffres sobres : prix d'une
+                  gardée et crédits utilisés. Le solde est déjà dans la barre du haut (retour de Gabriel, 11/11). */}
+              <dl
+                className={
+                  'ml-auto flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm'
+                }
                 data-test={'campaign-companies-price'}
               >
-                {sort.pricePending ? (
-                  <Trans i18nKey={'campaigns.companies.pricePendingVisible'} />
-                ) : (
-                  <Trans
-                    i18nKey={'campaigns.companies.price'}
-                    values={{ count: sort.creditsPerProspect }}
-                  />
-                )}
+                <div className={'flex items-baseline gap-1.5'}>
+                  <dt className={'text-muted-foreground'}>
+                    <Trans i18nKey={'campaigns.companies.priceLabel'} />
+                  </dt>
+
+                  <dd className={'font-medium tabular-nums'}>
+                    {sort.pricePending ? (
+                      <Trans i18nKey={'campaigns.companies.priceMeasuring'} />
+                    ) : (
+                      <Trans
+                        i18nKey={'campaigns.companies.price'}
+                        values={{ count: sort.creditsPerProspect }}
+                      />
+                    )}
+                  </dd>
+                </div>
 
                 {data.money ? (
-                  <>
-                    <span aria-hidden className={'text-muted-foreground'}>
-                      {' · '}
-                    </span>
-                    <span data-test={'campaign-companies-spent'}>
+                  <div
+                    className={'flex items-baseline gap-1.5'}
+                    data-test={'campaign-companies-spent'}
+                  >
+                    <dt className={'text-muted-foreground'}>
+                      <Trans i18nKey={'campaigns.companies.spentLabel'} />
+                    </dt>
+
+                    <dd className={'font-medium tabular-nums'}>
                       <Trans
                         i18nKey={'campaigns.companies.spent'}
                         values={{ count: data.money.spent }}
                       />
-                    </span>
-                    <span aria-hidden className={'text-muted-foreground'}>
-                      {' · '}
-                    </span>
-                    <span data-test={'campaign-companies-available'}>
-                      <Trans
-                        i18nKey={'campaigns.companies.available'}
-                        values={{ count: data.money.available }}
-                      />
-                    </span>
-                  </>
+                    </dd>
+                  </div>
                 ) : null}
-              </p>
+              </dl>
             </div>
 
             <CompaniesList
@@ -288,17 +294,21 @@ function TabCount(props: { value: number }) {
 function SearchProgress(props: {
   progress: CampaignLive['progress'];
   live: boolean;
+  completed: boolean;
 }) {
   const format = useFormatter();
   const locale = useLocale();
   const t = useTranslations('campaigns.companies');
-  const { searchesDone, searchesTotal } = props.progress;
+  const { searchesDone, searchesTotal, abandoned, phase } = props.progress;
+  // avant la première recherche finie, on dit ce qui se passe au lieu de « 0 recherche faite » (retour du 11/11)
+  const step = props.live && searchesDone === 0 ? launchStep(phase) : null;
 
-  if (searchesTotal <= 0) {
+  if (searchesTotal <= 0 && !step) {
     return null;
   }
 
-  const raw = Math.min(100, (searchesDone / searchesTotal) * 100);
+  const raw =
+    searchesTotal > 0 ? Math.min(100, (searchesDone / searchesTotal) * 100) : 0;
   // une décimale sous 10 % : « 0,7 % » plutôt qu'un « 0 % » trompeur quand la recherche prévue est immense
   const percent = raw < 10 ? Math.floor(raw * 10) / 10 : Math.floor(raw);
 
@@ -317,20 +327,88 @@ function SearchProgress(props: {
           <span className={'text-foreground font-medium'}>
             <Trans i18nKey={'campaigns.companies.searchLabel'} />
           </span>
-          <Trans
-            i18nKey={'campaigns.detail.searchesProgress'}
-            values={{ done: searchesDone, total: searchesTotal }}
-          />
+          <span data-test={'campaign-search-step'}>
+            {step ? (
+              <Trans
+                i18nKey={`campaigns.companies.launchStep.${step.key}`}
+                values={{
+                  ...step.values,
+                  time:
+                    step.key === 'resume' && phase?.resumeAt
+                      ? format.dateTime(new Date(phase.resumeAt), {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '',
+                }}
+              />
+            ) : (
+              <Trans
+                i18nKey={'campaigns.detail.searchesProgress'}
+                values={{ done: searchesDone, total: searchesTotal }}
+              />
+            )}
+          </span>
         </span>
 
-        <span className={'tabular-nums'}>
-          {format.number(percent, { maximumFractionDigits: 1 })} %
-        </span>
+        {step ? null : (
+          <span className={'tabular-nums'}>
+            {format.number(percent, { maximumFractionDigits: 1 })} %
+          </span>
+        )}
       </div>
 
       <Progress value={percent} locale={locale} aria-label={t('searchLabel')} />
+
+      {/* activité arrêtée faute de résultats : dit pourquoi la recherche s'est arrêtée avant la fin */}
+      {props.completed && abandoned > 0 ? (
+        <p
+          className={'text-muted-foreground text-sm'}
+          data-test={'campaign-search-abandoned'}
+        >
+          <Trans
+            i18nKey={'campaigns.companies.searchAbandoned'}
+            values={{ count: abandoned }}
+          />
+        </p>
+      ) : null}
     </div>
   );
+}
+
+/** Étape du lancement montrée tant qu'aucune recherche n'est finie (lm_campaign_search_phase). */
+function launchStep(phase: CampaignLive['progress']['phase']): {
+  key: string;
+  values: Record<string, number>;
+} | null {
+  if (!phase) {
+    return null;
+  }
+
+  if (phase.running > 0) {
+    return { key: 'running', values: {} };
+  }
+
+  if (phase.resumeAt) {
+    return { key: 'resume', values: {} };
+  }
+
+  if (phase.queued === 0) {
+    return { key: 'preparing', values: {} };
+  }
+
+  if (phase.estimateTotal && phase.estimateTotal > 0) {
+    return {
+      key: 'measuring',
+      values: { done: phase.estimateDone ?? 0, total: phase.estimateTotal },
+    };
+  }
+
+  if (phase.ahead > 0) {
+    return { key: 'queued', values: { count: phase.ahead } };
+  }
+
+  return { key: 'starting', values: {} };
 }
 
 function SortProgress(props: { sort: SortState; live: boolean }) {

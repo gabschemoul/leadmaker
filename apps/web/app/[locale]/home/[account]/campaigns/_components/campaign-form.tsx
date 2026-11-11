@@ -9,7 +9,9 @@
  * Écritures : createCampaignAction / updateCampaignAction (campagne, offre, cible, lancement).
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import Link from 'next/link';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocale, useTranslations } from 'next-intl';
@@ -39,8 +41,8 @@ import { CountrySelect } from '../../_components/leadmaker/country-select';
 import {
   type CampaignFormValues,
   MAX_CITIES_LIMIT,
+  CampaignFormSchema,
   RATING_FLOOR,
-  buildCampaignFormSchema,
 } from '../_lib/schema/campaign.schema';
 import {
   createCampaignAction,
@@ -65,7 +67,31 @@ const CRITERIA_FIELDS = [
   'extraExclusions',
 ] as const;
 
-export function CampaignForm(props: {
+type CampaignFormProps = Parameters<typeof CampaignFormBody>[0];
+
+/**
+ * Les pages déjà vues restent montées en arrière-plan (cacheComponents) : « Nouvelle campagne » rouvrait avec tout
+ * ce qui avait été saisi pour la campagne précédente, activités proposées par l'IA comprises (retour de Gabriel,
+ * 11/11). En création, le formulaire est donc remonté à neuf chaque fois que la page revient. En modification, il
+ * garde ses valeurs (celles enregistrées).
+ * useEffect justifié : son nettoyage tourne quand la page passe en arrière-plan.
+ */
+export function CampaignForm(props: CampaignFormProps) {
+  const [generation, setGeneration] = useState(0);
+  const creating = !props.campaign;
+
+  useEffect(() => {
+    if (!creating) {
+      return;
+    }
+
+    return () => setGeneration((current) => current + 1);
+  }, [creating]);
+
+  return <CampaignFormBody key={generation} {...props} />;
+}
+
+function CampaignFormBody(props: {
   accountId: string;
   accountSlug: string;
   spaces: SpaceOption[];
@@ -80,6 +106,8 @@ export function CampaignForm(props: {
     values: CampaignFormValues;
     /** déjà lancée : le pays est figé, les villes ajoutées rejoignent le scan */
     launched: boolean;
+    /** triée sans phrase (cible tirée des activités) : taper une phrase relance aussi tout le tri */
+    activitiesTarget?: boolean;
   };
 }) {
   const t = useTranslations('campaigns');
@@ -95,9 +123,6 @@ export function CampaignForm(props: {
   const editing = Boolean(props.campaign);
   const launched = props.campaign?.launched ?? false;
   const initialTarget = props.campaign?.values.sortTarget ?? '';
-
-  // Cible obligatoire, sauf pour une ancienne campagne déjà lancée sans cible (ancien parcours)
-  const targetRequired = !launched || initialTarget.length > 0;
 
   // Une seule entrée = l'espace par défaut : le choix du dossier client est masqué.
   const defaultSpace =
@@ -121,40 +146,58 @@ export function CampaignForm(props: {
 
   const isPending = create.isPending || update.isPending;
 
-  const schema = useMemo(
-    () => buildCampaignFormSchema(targetRequired),
-    [targetRequired],
-  );
+  const defaultValues: CampaignFormValues = props.campaign?.values ?? {
+    sortTarget: '',
+    offer: props.spaceOffers[defaultSpace?.id ?? ''] ?? '',
+    name: '',
+    spaceId: defaultSpace?.id ?? '',
+    countryCode: locale.startsWith('fr') ? 'FR' : 'US',
+    citiesMode: 'country' as const,
+    minPopulation: 0,
+    radiusCity: null,
+    radiusKm: 30,
+    cities: [],
+    maxCities: MAX_CITIES_LIMIT,
+    // aucune activité présélectionnée à l'ouverture : elles sont proposées d'après la phrase, et le client
+    // choisit (une campagne « Restauration » lancée sur les activités courantes ramenait des pharmacies)
+    categoriesMode: 'list' as const,
+    categories: [],
+    // critères neutres par défaut (analyse UX Q-01, 11/11) : la note max 3,5 et « au moins 1 avis » venaient
+    // du premier usage (entreprises mal notées) et écartaient en silence les entreprises bien notées
+    ratingMin: RATING_FLOOR,
+    ratingMax: 5,
+    minReviews: 0,
+    website: 'with' as const,
+    excludePublic: true,
+    mainCategoryOnly: true,
+    extraExclusions: '',
+  };
 
   const form = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: props.campaign?.values ?? {
-      sortTarget: '',
-      offer: props.spaceOffers[defaultSpace?.id ?? ''] ?? '',
-      name: '',
-      spaceId: defaultSpace?.id ?? '',
-      countryCode: locale.startsWith('fr') ? 'FR' : 'US',
-      citiesMode: 'country' as const,
-      minPopulation: 0,
-      radiusCity: null,
-      radiusKm: 30,
-      cities: [],
-      maxCities: MAX_CITIES_LIMIT,
-      // aucune activité présélectionnée à l'ouverture : elles sont proposées d'après la phrase, et le client
-      // choisit (une campagne « Restauration » lancée sur les activités courantes ramenait des pharmacies)
-      categoriesMode: 'list' as const,
-      categories: [],
-      // critères neutres par défaut (analyse UX Q-01, 11/11) : la note max 3,5 et « au moins 1 avis » venaient
-      // du premier usage (entreprises mal notées) et écartaient en silence les entreprises bien notées
-      ratingMin: RATING_FLOOR,
-      ratingMax: 5,
-      minReviews: 0,
-      website: 'with' as const,
-      excludePublic: true,
-      mainCategoryOnly: true,
-      extraExclusions: '',
-    },
+    resolver: zodResolver(CampaignFormSchema),
+    defaultValues,
   });
+
+  // bouton cliqué : « Lancer la recherche » ou « Enregistrer en brouillon » (pour le bouton qui tourne)
+  const [launch, setLaunch] = useState(true);
+
+  const save = (data: CampaignFormValues, launchNow: boolean) => {
+    setLaunch(launchNow);
+
+    return props.campaign
+      ? update.execute({
+          ...data,
+          campaignId: props.campaign.id,
+          accountSlug: props.accountSlug,
+          launch: launchNow,
+        })
+      : create.execute({
+          ...data,
+          accountId: props.accountId,
+          accountSlug: props.accountSlug,
+          launch: launchNow,
+        });
+  };
 
   const countryCode = useWatch({ control: form.control, name: 'countryCode' });
   const sortTarget = useWatch({ control: form.control, name: 'sortTarget' });
@@ -186,9 +229,12 @@ export function CampaignForm(props: {
 
   // « Lancer la recherche » : nouvelle campagne ou brouillon ; campagne lancée : enregistrer les changements
   const launches = !launched;
+  const campaignHref = props.campaign
+    ? `/home/${props.accountSlug}/campaigns/${props.campaign.id}`
+    : `/home/${props.accountSlug}/campaigns`;
   const retargets =
     launched &&
-    initialTarget.length > 0 &&
+    (initialTarget.length > 0 || Boolean(props.campaign?.activitiesTarget)) &&
     (sortTarget ?? '').trim() !== initialTarget;
 
   return (
@@ -196,21 +242,7 @@ export function CampaignForm(props: {
       <form
         data-test={'campaign-form'}
         className={'flex w-full flex-col gap-6 pb-32'}
-        onSubmit={form.handleSubmit(
-          (data) =>
-            props.campaign
-              ? update.execute({
-                  ...data,
-                  campaignId: props.campaign.id,
-                  accountSlug: props.accountSlug,
-                })
-              : create.execute({
-                  ...data,
-                  accountId: props.accountId,
-                  accountSlug: props.accountSlug,
-                }),
-          onInvalid,
-        )}
+        onSubmit={form.handleSubmit((data) => save(data, true), onInvalid)}
       >
         <If condition={launched}>
           <Alert data-test={'campaign-edit-launched-alert'}>
@@ -223,7 +255,7 @@ export function CampaignForm(props: {
         <WhoSection
           categoryLimit={props.categoryLimit}
           spaceOffers={props.spaceOffers}
-          autoName={!editing}
+          editing={editing}
         />
 
         <CitiesSection countryCode={countryCode ?? 'FR'}>
@@ -332,24 +364,56 @@ export function CampaignForm(props: {
         </If>
 
         <div className={'flex flex-col items-end gap-2'}>
-          <Button
-            type={'submit'}
-            size={'lg'}
-            data-test={'campaign-save-button'}
-            loading={disabled}
-          >
-            <Trans
-              i18nKey={
-                disabled
-                  ? launches
-                    ? 'campaigns.form.launching'
-                    : 'campaigns.form.saving'
-                  : launches
-                    ? 'campaigns.form.launch'
-                    : 'campaigns.form.saveChanges'
-              }
-            />
-          </Button>
+          <div className={'flex flex-wrap items-center justify-end gap-2'}>
+            <Button
+              variant={'ghost'}
+              size={'lg'}
+              data-test={'campaign-cancel-button'}
+              nativeButton={false}
+              // les changements non enregistrés sont oubliés (la page reste montée en arrière-plan)
+              onClick={() => form.reset()}
+              render={<Link href={campaignHref} />}
+            >
+              <Trans i18nKey={'campaigns.form.cancel'} />
+            </Button>
+
+            <If condition={launches}>
+              <Button
+                type={'button'}
+                variant={'outline'}
+                size={'lg'}
+                data-test={'campaign-draft-button'}
+                disabled={disabled}
+                loading={disabled && !launch}
+                onClick={form.handleSubmit(
+                  (data) => save(data, false),
+                  onInvalid,
+                )}
+              >
+                <Trans i18nKey={'campaigns.form.saveDraft'} />
+              </Button>
+            </If>
+
+            <Button
+              type={'submit'}
+              size={'lg'}
+              data-test={'campaign-save-button'}
+              disabled={disabled}
+              loading={disabled && launch}
+            >
+              <Trans
+                i18nKey={
+                  disabled && launch
+                    ? launches
+                      ? 'campaigns.form.launching'
+                      : 'campaigns.form.saving'
+                    : launches
+                      ? 'campaigns.form.launch'
+                      : 'campaigns.form.saveChanges'
+                }
+              />
+            </Button>
+          </div>
 
           <p
             className={'text-muted-foreground text-sm'}

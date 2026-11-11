@@ -211,11 +211,21 @@ function FamilyRow(props: {
       const ids = new Set(items.map((item) => item.gcid));
       props.onChange(props.selected.filter((c) => !ids.has(c.gcid)));
     } else {
-      const fresh = items
-        .filter((item) => !props.selectedIds.has(item.gcid))
-        .map(({ gcid, label, family }) => ({ gcid, label, family }));
+      // les activités déjà choisies de la famille sont reprises avec leur famille (celles proposées d'après la
+      // phrase n'en avaient pas toujours) : le compteur de la famille reste juste
+      const ids = new Set(items.map((item) => item.gcid));
+      const family = items.map(({ gcid, label, family }) => ({
+        gcid,
+        label,
+        family,
+      }));
 
-      props.onChange([...props.selected, ...fresh].slice(0, props.max));
+      props.onChange(
+        [...props.selected.filter((c) => !ids.has(c.gcid)), ...family].slice(
+          0,
+          props.max,
+        ),
+      );
     }
   };
 

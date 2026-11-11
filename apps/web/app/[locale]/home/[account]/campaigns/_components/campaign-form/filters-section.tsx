@@ -1,23 +1,17 @@
 'use client';
 
 /**
- * Rôle : pli « Plus de critères » du formulaire de campagne, fermé par défaut (note moyenne, nombre d'avis,
- * site web, exclusions ; décision du 9/11 : ces filtres restent, sous « Où ? »).
+ * Rôle : pli « Paramètres avancés » du formulaire de campagne, fermé par défaut (note moyenne, nombre d'avis,
+ * site web, exclusions ; décision du 9/11 : ces filtres restent, sous « Où ? »). 11/11 : une simple ligne
+ * cliquable avec sa flèche, l'explication dans le « i » ; plus de résumé des critères (bruit, retour de Gabriel).
  * Données : champs du formulaire react-hook-form parent.
  * Écritures : aucune en base.
  */
 
-import { ChevronDown } from 'lucide-react';
-import { useFormatter, useTranslations } from 'next-intl';
-import { useWatch } from 'react-hook-form';
+import { ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kit/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@kit/ui/card';
 import { Checkbox } from '@kit/ui/checkbox';
 import {
   Collapsible,
@@ -35,6 +29,8 @@ import {
 import { Input } from '@kit/ui/input';
 import { Trans } from '@kit/ui/trans';
 
+import { InfoTip } from '~/components/info-tip';
+
 import { RATING_FLOOR } from '../../_lib/schema/campaign.schema';
 import { ChoiceGroup, NumberInput } from './form-controls';
 
@@ -44,7 +40,6 @@ export function FiltersSection(props: {
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations('campaigns');
-  const active = useActiveCriteria();
 
   return (
     <Collapsible
@@ -53,39 +48,27 @@ export function FiltersSection(props: {
       onOpenChange={(open) => props.onOpenChange(open)}
       data-test={'campaign-more-criteria'}
     >
-      <CardHeader>
+      <CardHeader className={'flex flex-row items-center gap-2'}>
         <CollapsibleTrigger
           className={
-            'group/criteria flex w-full cursor-pointer items-start justify-between gap-3 text-left'
+            'group/criteria hover:text-foreground hover:bg-muted -mx-2 -my-1 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-left transition-colors'
           }
           data-test={'campaign-more-criteria-toggle'}
         >
-          <span className={'flex flex-col gap-1.5'}>
-            <CardTitle>
-              <Trans i18nKey={'campaigns.form.moreCriteriaTitle'} />
-            </CardTitle>
-
-            <CardDescription>
-              <Trans i18nKey={'campaigns.form.filtersDescription'} />
-            </CardDescription>
-
-            {/* les critères qui filtrent restent lisibles pli fermé (analyse UX Q-01) */}
-            {active.length > 0 ? (
-              <span
-                className={'text-foreground text-sm'}
-                data-test={'campaign-active-criteria'}
-              >
-                {t('form.activeCriteria', { list: active.join(' · ') })}
-              </span>
-            ) : null}
-          </span>
-
-          <ChevronDown
+          <ChevronRight
             className={
-              'text-muted-foreground mt-0.5 size-4 shrink-0 transition-transform group-data-[panel-open]/criteria:rotate-180'
+              'text-muted-foreground size-4 shrink-0 transition-transform group-data-[panel-open]/criteria:rotate-90'
             }
           />
+
+          <CardTitle>
+            <Trans i18nKey={'campaigns.form.moreCriteriaTitle'} />
+          </CardTitle>
         </CollapsibleTrigger>
+
+        <InfoTip always label={t('form.moreCriteriaTitle')}>
+          <Trans i18nKey={'campaigns.form.filtersDescription'} />
+        </InfoTip>
       </CardHeader>
 
       <CollapsibleContent
@@ -271,50 +254,4 @@ export function FiltersSection(props: {
       </CollapsibleContent>
     </Collapsible>
   );
-}
-
-/** Les critères qui écartent des entreprises, en clair (« avec un site · notes 1 à 3,5 »). */
-function useActiveCriteria() {
-  const t = useTranslations('campaigns');
-  const formatter = useFormatter();
-  const [ratingMin, ratingMax, minReviews, website, extraExclusions] = useWatch(
-    {
-      name: [
-        'ratingMin',
-        'ratingMax',
-        'minReviews',
-        'website',
-        'extraExclusions',
-      ],
-    },
-  ) as [number, number, number, string, string];
-
-  const format = (n: number) =>
-    formatter.number(n, { maximumFractionDigits: 1 });
-  const parts: string[] = [];
-
-  if (website === 'with') {
-    parts.push(t('form.criteriaWithSite'));
-  } else if (website === 'without') {
-    parts.push(t('form.criteriaWithoutSite'));
-  }
-
-  if (Number(ratingMin) > RATING_FLOOR || Number(ratingMax) < 5) {
-    parts.push(
-      t('form.criteriaRating', {
-        min: format(Number(ratingMin)),
-        max: format(Number(ratingMax)),
-      }),
-    );
-  }
-
-  if (Number(minReviews) > 0) {
-    parts.push(t('form.criteriaReviews', { count: Number(minReviews) }));
-  }
-
-  if ((extraExclusions ?? '').trim().length > 0) {
-    parts.push(t('form.criteriaExclusions'));
-  }
-
-  return parts;
 }

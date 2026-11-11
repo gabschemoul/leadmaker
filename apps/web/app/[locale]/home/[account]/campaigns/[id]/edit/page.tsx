@@ -22,7 +22,10 @@ import {
 } from '../../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../../_lib/server/team-account-workspace.loader';
 import { CampaignForm } from '../../_components/campaign-form';
-import { campaignToFormValues } from '../../_lib/schema/campaign.schema';
+import {
+  campaignToFormValues,
+  isActivitiesTarget,
+} from '../../_lib/schema/campaign.schema';
 import {
   loadCampaignForEdit,
   loadSpaceOffers,
@@ -122,6 +125,7 @@ async function EditCampaignContent({ params }: { params: Params }) {
               campaign.offer?.trim() || spaceOffers[campaign.space_id] || null,
           }),
           launched: campaign.launched,
+          activitiesTarget: isActivitiesTarget(campaign.sort_target),
         }}
       />
     </>

@@ -47,7 +47,7 @@ select ok((select prosecdef from pg_proc where oid = 'public.lm_campaign_progres
 select makerkit.authenticate_as('pg_a');
 select is((select (zones, categories, searches_total, searches_done, in_flight, productive, prospects, cards)::text
              from public.lm_campaign_progress('a0000000-0000-4000-8000-0000000c0001')),
-  '(2,2,4,6,2,2,5,80)', 'Le membre voit l''avancement exact (ville retirée exclue, 5 prospects débités)');
+  '(2,2,4,4,2,2,5,80)', 'Le membre voit l''avancement exact (ville retirée exclue, recherches plafonnées aux villes actives, 5 prospects débités)');
 
 -- Autre organisation : rien
 select makerkit.authenticate_as('pg_b');

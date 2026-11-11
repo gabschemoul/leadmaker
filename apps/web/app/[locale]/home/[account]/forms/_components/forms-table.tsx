@@ -97,6 +97,8 @@ export function FormsTable(props: {
   preparing: number;
   /** données tenues par le parent (ex. onglet d'une campagne) à recharger aussi */
   onRefresh?: () => void;
+  /** dans une campagne : pas de « ouvrez une campagne » sous la liste vide */
+  inCampaign?: boolean;
 }) {
   const t = useTranslations('outreach.forms');
   const router = useRouter();
@@ -328,7 +330,9 @@ export function FormsTable(props: {
                 data-test={'forms-empty'}
               >
                 <p>{t('empty')}</p>
-                <p className={'text-xs'}>{t('emptyHint')}</p>
+                {props.inCampaign ? null : (
+                  <p className={'text-xs'}>{t('emptyHint')}</p>
+                )}
               </TableCell>
             </TableRow>
           ) : null}

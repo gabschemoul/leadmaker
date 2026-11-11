@@ -10,6 +10,8 @@ import { redirect } from 'next/navigation';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { getLocale } from 'next-intl/server';
+
 import { authActionClient } from '@kit/next/safe-action';
 import { getLogger } from '@kit/shared/logger';
 import type { Database } from '@kit/supabase/database';
@@ -28,10 +30,12 @@ import {
   DuplicateCampaignSchema,
   type LaunchError,
   LocalDiscoverySchema,
+  ACTIVITIES_TARGETS,
   MAX_CATEGORIES,
   UpdateCampaignSchema,
   buildFilters,
   buildTargeting,
+  isActivitiesTarget,
 } from '../schema/campaign.schema';
 import { getCategoryLimit } from './power-user';
 
@@ -43,6 +47,24 @@ async function assertCategoryLimit(count: number, userId: string) {
 }
 
 type Client = SupabaseClient<Database>;
+
+/**
+ * Phrase facultative (11/11) : sans phrase, la cible envoyée au tri est une phrase fixe (« Toutes les entreprises
+ * des activités choisies, sans autre critère ») : le tri garde les entreprises trouvées, et la campagne reste payée
+ * par entreprise gardée comme les autres. Phrase fixe, sans la liste des activités : ajouter une activité ne
+ * relance pas le tri de toute la campagne. Une campagne qui en a déjà une la garde (même langue qu'au départ).
+ */
+async function targetFromActivities(previous?: string | null) {
+  if (isActivitiesTarget(previous)) {
+    return (previous ?? '').trim();
+  }
+
+  const locale = await getLocale();
+
+  return locale.startsWith('fr')
+    ? ACTIVITIES_TARGETS.fr
+    : ACTIVITIES_TARGETS.en;
+}
 
 /** Refus de lm_start_campaign → code affiché sur la page de la campagne (`?erreur=`). */
 const START_LAUNCH_ERRORS: Record<string, LaunchError> = {
@@ -197,6 +219,8 @@ export const createCampaignAction = authActionClient
     }
 
     const client = getSupabaseServerClient();
+    const sortTarget =
+      values.sortTarget || (values.launch ? await targetFromActivities() : '');
 
     const { data, error } = await client
       .from('lm_campaigns')
@@ -226,17 +250,29 @@ export const createCampaignAction = authActionClient
       throw new Error('campaigns.errors.createFailed');
     }
 
-    const launchError =
-      (await saveOfferAndTarget(client, {
-        campaignId: data.id,
-        spaceId: values.spaceId,
-        offer: values.offer,
-        sortTarget: values.sortTarget,
-        previousTarget: null,
-        userId: ctx.user.id,
-      })) ?? (await startNow(client, data.id, ctx.user.id));
+    const saveError = await saveOfferAndTarget(client, {
+      campaignId: data.id,
+      spaceId: values.spaceId,
+      offer: values.offer,
+      sortTarget,
+      previousTarget: null,
+      userId: ctx.user.id,
+    });
 
     revalidatePath('/home/[account]/campaigns', 'layout');
+
+    // « Enregistrer en brouillon » : rien n'est lancé, retour à la liste des campagnes (la page du brouillon si
+    // l'offre n'a pas pu être enregistrée : elle dit pourquoi)
+    if (!values.launch) {
+      redirect(
+        saveError
+          ? companiesHref(values.accountSlug, data.id, saveError)
+          : `/home/${values.accountSlug}/campaigns`,
+      );
+    }
+
+    const launchError =
+      saveError ?? (await startNow(client, data.id, ctx.user.id));
 
     redirect(companiesHref(values.accountSlug, data.id, launchError));
   });
@@ -269,13 +305,15 @@ export const updateCampaignAction = authActionClient
       .eq('id', values.campaignId)
       .maybeSingle();
 
-    // Cible obligatoire, sauf pour une ancienne campagne déjà lancée sans cible (ancien parcours)
-    if (
-      values.sortTarget.length === 0 &&
-      (Boolean(before?.sort_target?.trim()) || before?.status === 'draft')
-    ) {
-      throw new Error('campaigns.form.who.targetRequired');
-    }
+    // Sans phrase : cible déduite des activités (brouillon lancé, ou campagne déjà triée). Une ancienne campagne
+    // lancée sans cible garde l'ancien parcours. Brouillon enregistré sans lancer : la phrase reste vide.
+    const isDraft = before?.status === 'draft';
+    const keepsLegacy = !isDraft && !before?.sort_target?.trim();
+    const sortTarget =
+      values.sortTarget ||
+      (keepsLegacy || (isDraft && !values.launch)
+        ? ''
+        : await targetFromActivities(before?.sort_target));
 
     const { data: status, error } = await client.rpc('lm_update_campaign', {
       p_campaign_id: values.campaignId,
@@ -297,20 +335,26 @@ export const updateCampaignAction = authActionClient
 
     let launchError: LaunchError | null = null;
 
-    if (values.sortTarget.length > 0 && before) {
+    if (sortTarget.length > 0 && before) {
       launchError = await saveOfferAndTarget(client, {
         campaignId: values.campaignId,
         spaceId: before.space_id,
         offer: values.offer,
-        sortTarget: values.sortTarget,
+        sortTarget,
         previousTarget: before.sort_target,
         userId: ctx.user.id,
       });
+    }
 
-      // Brouillon : « Lancer la recherche » le démarre (jamais sans sa cible)
-      if (!launchError && before.status === 'draft') {
-        launchError = await startNow(client, values.campaignId, ctx.user.id);
-      }
+    // Brouillon : « Lancer la recherche » le démarre (jamais sans sa cible) ; « Enregistrer en brouillon » non
+    if (isDraft && !values.launch) {
+      revalidatePath('/home/[account]/campaigns', 'layout');
+
+      redirect(`/home/${values.accountSlug}/campaigns`);
+    }
+
+    if (!launchError && isDraft && sortTarget.length > 0) {
+      launchError = await startNow(client, values.campaignId, ctx.user.id);
     }
 
     // Terminée puis complétée : on la relance tout de suite. Si la reprise est
@@ -325,7 +369,7 @@ export const updateCampaignAction = authActionClient
     revalidatePath('/home/[account]/campaigns', 'layout');
 
     redirect(
-      values.sortTarget.length > 0
+      sortTarget.length > 0
         ? companiesHref(values.accountSlug, values.campaignId, launchError)
         : `/home/${values.accountSlug}/campaigns/${values.campaignId}`,
     );

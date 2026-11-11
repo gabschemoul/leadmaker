@@ -54,15 +54,18 @@ const SUGGEST_MAX = 300;
 /** Puces affichées au plus. */
 const MAX_CHIPS = 8;
 
-/** Nom de campagne tiré de la phrase, tant que le client ne l'a pas changé. */
+/** Nom de campagne proposé (par l'IA, d'après la phrase ou les activités), tant que le client ne l'a pas changé. */
 const AUTO_NAME_MAX = 80;
+
+/** Activités citées dans un nom tiré des activités (« Restaurant, Pizzeria et 12 autres »). */
+const AUTO_NAME_ACTIVITIES = 2;
 
 export function WhoSection(props: {
   categoryLimit: number;
   /** « Votre offre » enregistrée pour chaque dossier (vide si aucune) */
   spaceOffers: Record<string, string>;
-  /** le nom de la campagne suit la phrase tant que le client ne l'a pas touché (création seulement) */
-  autoName: boolean;
+  /** modification : le nom ne change que si la phrase ou les activités changent */
+  editing: boolean;
 }) {
   const t = useTranslations('campaigns.form.who');
   const locale = useLocale();
@@ -101,6 +104,17 @@ export function WhoSection(props: {
 
   useSuggestedCategories(suggestions.data?.categories, props.categoryLimit);
 
+  useAutoName({
+    editing: props.editing,
+    phrase,
+    settled,
+    aiName: suggestions.isError
+      ? ''
+      : suggestions.data && !suggestions.isPlaceholderData
+        ? suggestions.data.name
+        : null,
+  });
+
   const updating =
     phrase.trim().length >= 3 &&
     (phrase.trim() !== settled || suggestions.isFetching);
@@ -117,12 +131,6 @@ export function WhoSection(props: {
       shouldDirty: true,
       shouldValidate: form.formState.isSubmitted,
     });
-
-    if (props.autoName && !form.getFieldState('name').isDirty) {
-      form.setValue('name', value.trim().slice(0, AUTO_NAME_MAX), {
-        shouldValidate: form.formState.isSubmitted,
-      });
-    }
   };
 
   const toggleChip = (item: string) => {
@@ -140,7 +148,9 @@ export function WhoSection(props: {
   };
 
   const storedOffer = (props.spaceOffers[spaceId] ?? '').trim();
-  const showOfferInput = state.editingOffer || storedOffer.length === 0;
+  // offre du formulaire vide (dossier sans offre au premier affichage) : le champ reste visible
+  const showOfferInput =
+    state.editingOffer || storedOffer.length === 0 || offer.trim().length === 0;
 
   return (
     <Card className={'overflow-visible'} data-test={'campaign-who'}>
@@ -283,7 +293,12 @@ export function WhoSection(props: {
  */
 function useSuggestedCategories(
   suggested:
-    | Array<{ gcid: string; label_fr: string; label_en: string }>
+    | Array<{
+        gcid: string;
+        label_fr: string;
+        label_en: string;
+        family: string;
+      }>
     | undefined,
   limit: number,
 ) {
@@ -308,6 +323,7 @@ function useSuggestedCategories(
     const next = suggested.slice(0, limit).map((category) => ({
       gcid: category.gcid,
       label: locale.startsWith('fr') ? category.label_fr : category.label_en,
+      family: category.family,
     }));
 
     autoKey.current = next.map((category) => category.gcid).join(',');
@@ -317,6 +333,89 @@ function useSuggestedCategories(
       shouldValidate: submitted,
     });
   }, [suggested, limit, locale, getValues, setValue, submitted]);
+}
+
+/**
+ * Nom de la campagne proposé tant que le client ne l'a pas tapé lui-même : le nom court donné par l'IA d'après la
+ * phrase (« Restaurants indépendants »), sinon le début de la phrase ; sans phrase, les activités choisies
+ * (« Restaurant, Pizzeria et 12 autres »). Il suit chaque changement de la phrase ou des activités. En modification,
+ * le nom enregistré ne change que si la phrase change.
+ *
+ * useEffect justifié : recopier dans le formulaire un nom qui dépend d'une requête asynchrone (l'IA).
+ */
+function useAutoName(params: {
+  editing: boolean;
+  phrase: string;
+  settled: string;
+  /** nom de l'IA pour la phrase actuelle ; '' si l'IA n'en donne pas ; null en attendant */
+  aiName: string | null;
+}) {
+  const t = useTranslations('campaigns.form.who');
+  const { getFieldState, setValue, getValues, formState } =
+    useFormContext<CampaignFormValues>();
+  const watched = useWatch({ name: 'categories' }) as
+    | CampaignFormValues['categories']
+    | undefined;
+  const categoriesKey = (watched ?? []).map((c) => c.gcid).join(',');
+  const initial = useRef({ phrase: params.phrase.trim() });
+  const submitted = formState.isSubmitted;
+  const phrase = params.phrase.trim();
+
+  useEffect(() => {
+    if (getFieldState('name').isDirty) {
+      return;
+    }
+
+    // modification : le nom enregistré (peut-être tapé par le client) ne change que si la phrase change
+    if (params.editing && phrase === initial.current.phrase) {
+      return;
+    }
+
+    const categories = getValues('categories') ?? [];
+    let next: string | null = null;
+
+    if (phrase.length > 0) {
+      // le nom de l'IA arrive ~1 s après la frappe : on garde l'ancien nom en attendant
+      if (params.settled === phrase && params.aiName !== null) {
+        next = params.aiName || firstClause(phrase);
+      }
+    } else if (categories.length > 0) {
+      const shown = categories
+        .slice(0, AUTO_NAME_ACTIVITIES)
+        .map((c) => c.label)
+        .join(', ');
+      const rest = categories.length - AUTO_NAME_ACTIVITIES;
+
+      next =
+        rest > 0 ? t('autoNameMore', { names: shown, count: rest }) : shown;
+    } else {
+      next = '';
+    }
+
+    if (next !== null && next !== getValues('name')) {
+      setValue('name', next.slice(0, AUTO_NAME_MAX), {
+        shouldValidate: submitted,
+      });
+    }
+  }, [
+    phrase,
+    params.settled,
+    params.aiName,
+    params.editing,
+    categoriesKey,
+    getFieldState,
+    getValues,
+    setValue,
+    submitted,
+    t,
+  ]);
+}
+
+/** Début de la phrase, jusqu'à la première virgule (« Restaurants, sans les chaînes… » → « Restaurants »). */
+function firstClause(phrase: string) {
+  const head = phrase.split(/[,;.:(]/)[0]?.trim() ?? '';
+
+  return head.length > 0 ? head : phrase;
 }
 
 function hasRefinement(phrase: string, item: string) {

@@ -182,6 +182,11 @@ export function CampaignGroups(props: {
     return null;
   }
 
+  const others = Math.max(
+    0,
+    groups.totalKept - groups.list.reduce((sum, group) => sum + group.kept, 0),
+  );
+
   return (
     <section
       className={
@@ -221,6 +226,25 @@ export function CampaignGroups(props: {
               </Badge>
             </li>
           ))}
+
+          {/* les gardées hors groupes (ou pas encore rangées) : les totaux tombent juste (retour de Gabriel, 11/11) */}
+          {others > 0 ? (
+            <li>
+              <Badge
+                variant={'outline'}
+                className={'bg-background'}
+                data-test={'campaign-group-others'}
+              >
+                <Trans i18nKey={'campaigns.companies.groups.others'} />
+                <span className={'text-muted-foreground tabular-nums'}>
+                  <Trans
+                    i18nKey={'campaigns.companies.groups.kept'}
+                    values={{ count: others }}
+                  />
+                </span>
+              </Badge>
+            </li>
+          ) : null}
         </ul>
       </div>
 

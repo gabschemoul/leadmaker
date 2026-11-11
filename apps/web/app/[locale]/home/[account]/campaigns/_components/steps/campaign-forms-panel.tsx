@@ -185,6 +185,7 @@ export function CampaignFormsPanel(props: {
           spaceId={props.spaceId}
           preparing={props.counts.preparing}
           onRefresh={refetchRows}
+          inCampaign
         />
       </CardContent>
     </Card>

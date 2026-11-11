@@ -11,30 +11,40 @@ export async function fetchCampaignLive(
   client: SupabaseClient<Database>,
   campaignId: string,
 ) {
-  const [campaign, progress, pricing, prospects, sortSummary, groups, money] =
-    await Promise.all([
-      client
-        .from('lm_campaigns')
-        .select('status, filters, sort_target, sort_version')
-        .eq('id', campaignId)
-        .single(),
-      client.rpc('lm_campaign_progress', { p_campaign_id: campaignId }),
-      client.rpc('lm_campaign_pricing', { p_campaign_id: campaignId }),
-      client
-        .from('lm_prospects')
-        .select(
-          'id, name, category, city, rating, review_count, address, website, phone, found_email, is_chain, source, excluded_at, created_at',
-        )
-        .eq('campaign_id', campaignId)
-        .order('created_at', { ascending: false })
-        .limit(50),
-      // écran « Vos entreprises » (campagne triée) : nombres par onglet, fiches examinées, prix
-      client.rpc('lm_campaign_sort_summary', { p_campaign_id: campaignId }),
-      // groupes proposés par le tri (CDC §4.3) : gardées par groupe et choix du client ; vide sans groupes
-      client.rpc('lm_campaign_groups', { p_campaign_id: campaignId }),
-      // argent de la campagne montré dans le parcours (analyse UX E-01 / T-03)
-      client.rpc('lm_campaign_money', { p_campaign_id: campaignId }),
-    ]);
+  const [
+    campaign,
+    progress,
+    pricing,
+    prospects,
+    sortSummary,
+    groups,
+    money,
+    phase,
+  ] = await Promise.all([
+    client
+      .from('lm_campaigns')
+      .select('status, filters, sort_target, sort_version')
+      .eq('id', campaignId)
+      .single(),
+    client.rpc('lm_campaign_progress', { p_campaign_id: campaignId }),
+    client.rpc('lm_campaign_pricing', { p_campaign_id: campaignId }),
+    client
+      .from('lm_prospects')
+      .select(
+        'id, name, category, city, rating, review_count, address, website, phone, found_email, is_chain, source, excluded_at, created_at',
+      )
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false })
+      .limit(50),
+    // écran « Vos entreprises » (campagne triée) : nombres par onglet, fiches examinées, prix
+    client.rpc('lm_campaign_sort_summary', { p_campaign_id: campaignId }),
+    // groupes proposés par le tri (CDC §4.3) : gardées par groupe et choix du client ; vide sans groupes
+    client.rpc('lm_campaign_groups', { p_campaign_id: campaignId }),
+    // argent de la campagne montré dans le parcours (analyse UX E-01 / T-03)
+    client.rpc('lm_campaign_money', { p_campaign_id: campaignId }),
+    // où en est le lancement (« 0 recherche faite » pendant 1 à 2 minutes, retour du 11/11)
+    client.rpc('lm_campaign_search_phase', { p_campaign_id: campaignId }),
+  ]);
 
   if (campaign.error) throw campaign.error;
   if (progress.error) throw progress.error;
@@ -51,6 +61,8 @@ export async function fetchCampaignLive(
   const groupRows = groups.error ? [] : (groups.data ?? []);
   // même prudence : tant que la migration du 11/11 n'est pas en base, on montre seulement le prix
   const moneyRow = money.error ? undefined : money.data?.[0];
+  // même prudence (migration du 11/11 « search_progress ») : sans la fonction, pas de phase affichée
+  const phaseRow = phase.error ? undefined : phase.data?.[0];
 
   return {
     status: campaign.data.status,
@@ -66,6 +78,17 @@ export async function fetchCampaignLive(
       productive: row?.productive ?? 0,
       prospects: Number(row?.prospects ?? 0),
       lastSearchAt: row?.last_search_at ?? null,
+      /** recherches en file / en cours, recherches d'autres campagnes avant, reprise prévue, mesure du prix */
+      phase: phaseRow
+        ? {
+            queued: phaseRow.queued ?? 0,
+            running: phaseRow.running ?? 0,
+            ahead: phaseRow.ahead ?? 0,
+            resumeAt: phaseRow.resume_at ?? null,
+            estimateDone: phaseRow.estimate_done ?? null,
+            estimateTotal: phaseRow.estimate_total ?? null,
+          }
+        : null,
     },
     /**
      * Tarif en crédits par prospect (roadmap n°13) : figé au lancement,

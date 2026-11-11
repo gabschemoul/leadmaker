@@ -181,7 +181,7 @@
     "openSite": "Ouvrir le site",
     "openForm": "Ouvrir le formulaire",
     "empty": "Aucun formulaire dans cette liste.",
-    "emptyHint": "Pour en préparer : ouvrez une campagne, étape « Contacter ».",
+    "emptyHint": "Pour en préparer : ouvrez une campagne, étape « Envoi ».",
     "selection": {
       "count": "{count, plural, one {# formulaire sélectionné} other {# formulaires sélectionnés}}",
       "all": "Tout sélectionner",

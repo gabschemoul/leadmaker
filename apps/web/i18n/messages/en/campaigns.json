@@ -162,13 +162,13 @@
     "categoriesDeselectAll": "Deselect all",
     "categoriesMore": "+ {count, plural, one {# more trade} other {# more trades}}",
     "whereTitle": "Where?",
-    "moreCriteriaTitle": "More criteria",
+    "moreCriteriaTitle": "Advanced settings",
     "launch": "Launch the search",
     "launching": "Launching…",
     "payKeptOnly": "You only pay for the companies kept.",
     "who": {
       "title": "Who do you want to contact?",
-      "description": "Describe them in one sentence, as you would to a colleague. Every company found is sorted against this sentence.",
+      "description": "Describe them in one sentence, as you would to a colleague, or pick the activities yourself. Every business found is sorted accordingly.",
       "placeholder": "For example: marketing agencies",
       "updating": "Updating…",
       "searchLabel": "We'll search for",
@@ -181,14 +181,11 @@
       "targetTooLong": "Sentence too long (500 characters max).",
       "offerRequired": "Describe your offer in one sentence: it is used to sort the companies.",
       "offerTooLong": "Offer too long (1,000 characters max).",
-      "retargetHint": "The target changes: every company already found will be sorted again."
+      "retargetHint": "The target changes: every company already found will be sorted again.",
+      "autoNameMore": "{names} and {count, plural, one {# other} other {# others}}"
     },
-    "activeCriteria": "Applied: {list}",
-    "criteriaWithSite": "with a website",
-    "criteriaWithoutSite": "without a website",
-    "criteriaRating": "ratings {min} to {max}",
-    "criteriaReviews": "at least {count, plural, one {# review} other {# reviews}}",
-    "criteriaExclusions": "excluded words"
+    "cancel": "Cancel",
+    "saveDraft": "Save as draft"
   },
   "estimate": {
     "title": "Estimate",
@@ -699,7 +696,7 @@
     "sortedLabel": "Companies sorted",
     "tabKept": "Kept",
     "tabToCheck": "To check",
-    "price": "{count, plural, one {# credit per company kept} other {# credits per company kept}}",
+    "price": "{count, plural, one {# credit} other {# credits}} / kept",
     "keep": "Keep",
     "drop": "Set aside",
     "selectAll": "Select all",
@@ -715,7 +712,7 @@
     "next": "Next: the message",
     "groups": {
       "title": "{count, plural, other {# groups found. One message per group?}}",
-      "description": "Each group can receive its own message, in this same campaign. You will write it at the Message step.",
+      "description": "Spotted from the kept businesses; new ones are sorted into them as they come. Each group can get its own message, and “Others” a shared one. You'll write them at the Message step.",
       "kept": "{count, plural, one {# kept} other {# kept}}",
       "single": "One message",
       "singleLine": "{count, plural, other {One message for all # groups}}",
@@ -729,11 +726,22 @@
       "noGroups": "This campaign has no groups yet.",
       "perGroup": "One message per group",
       "perGroupLine": "One message per group",
-      "writeLink": "Write the messages"
+      "writeLink": "Write the messages",
+      "others": "Others"
     },
-    "pricePendingVisible": "Price measured on the first sorted companies (1 to 4 credits per kept company)",
-    "spent": "{count, plural, =0 {no credits used} one {# credit used} other {# credits used}} by this campaign",
-    "available": "{count, plural, =0 {no credits available} one {# credit available} other {# credits available}}"
+    "spent": "{count, number}",
+    "priceLabel": "Price",
+    "priceMeasuring": "being measured",
+    "spentLabel": "Credits used",
+    "launchStep": {
+      "preparing": "Preparing the campaign…",
+      "measuring": "Sizing up the area: {done, number} of {total, number} trial searches",
+      "queued": "Waiting for a robot ({count, plural, one {# search ahead of yours} other {# searches ahead of yours}})",
+      "starting": "Starting the first search…",
+      "running": "First search in progress…",
+      "resume": "Paused, resuming around {time}"
+    },
+    "searchAbandoned": "{count, plural, one {One activity stopped early} other {# activities stopped early}}: no business matched your criteria in the first searches."
   },
   "messages": {
     "title": "Your message",

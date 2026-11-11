@@ -181,7 +181,7 @@
     "openSite": "Open the site",
     "openForm": "Open the form",
     "empty": "No form in this list.",
-    "emptyHint": "To prepare some: open a campaign, “Contact” step.",
+    "emptyHint": "To prepare some: open a campaign, “Sending” step.",
     "selection": {
       "count": "{count, plural, one {# form selected} other {# forms selected}}",
       "all": "Select all",

@@ -62,7 +62,8 @@ def main() -> None:
         searches = conn.execute("delete from public.lm_searches where campaign_id = %s", (campaign_id,)).rowcount
         conn.execute(
             """update public.lm_campaign_categories
-                  set next_zone_idx = 0, searches = 0, cards = 0, cards_new = 0, kept = 0, abandoned = false
+                  set next_zone_idx = 0, searches = 0, cards = 0, cards_new = 0, kept = 0, abandoned = false,
+                      abandon_base_searches = 0, abandon_base_kept = 0
                 where campaign_id = %s""",
             (campaign_id,),
         )

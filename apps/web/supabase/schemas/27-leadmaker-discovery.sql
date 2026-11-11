@@ -183,6 +183,10 @@ create table if not exists public.lm_campaign_categories (
   cards integer not null default 0,
   cards_new integer not null default 0,
   kept integer not null default 0,
+  -- Abandon « aucun prospect / trop peu » compté depuis la dernière modification qui a ajouté des villes
+  -- (lm_update_campaign, 11/11/2026) : sans cela, une activité abandonnée à Villeurbanne le restait pour Lyon
+  abandon_base_searches integer not null default 0,
+  abandon_base_kept integer not null default 0,
   -- Trafic réseau réel consommé par les recherches de cette activité (octets, proxy facturé au poids) :
   -- le planificateur classe les activités par prospects par Mo, pas par recherche (« Hotel » rapporte
   -- mais coûte ~35 Mo par recherche, roadmap n°13)
@@ -987,10 +991,13 @@ begin
            else (1 - v_settings.recent_weight) * coalesce(cc.recent_kept, cc.kept::numeric / cc.searches)
                 + v_settings.recent_weight * p_kept
          end,
+         -- compté depuis la dernière relance par ajout de villes (abandon_base_*)
          abandoned = cc.abandoned
-           or (cc.kept + p_kept = 0 and cc.searches + 1 >= v_settings.abandon_zero_after)
-           or (cc.searches + 1 >= v_settings.min_searches
-               and (cc.kept + p_kept) < v_settings.min_rate * (cc.searches + 1))
+           or (cc.kept - cc.abandon_base_kept + p_kept = 0
+               and cc.searches - cc.abandon_base_searches + 1 >= v_settings.abandon_zero_after)
+           or (cc.searches - cc.abandon_base_searches + 1 >= v_settings.min_searches
+               and (cc.kept - cc.abandon_base_kept + p_kept)
+                   < v_settings.min_rate * (cc.searches - cc.abandon_base_searches + 1))
    where cc.campaign_id = p_campaign_id and cc.gcid = p_gcid;
 end;
 $$;
@@ -1110,11 +1117,36 @@ begin
   select count(*)::integer into v_zones
     from public.lm_campaign_zones z where z.campaign_id = p_campaign_id and not z.removed;
 
+  -- 11/11/2026 : recherches comptées sur les villes encore ciblées (une campagne passée de Villeurbanne à Lyon
+  -- affichait « 10 sur 22 » sans rien chercher) ; une activité abandonnée (aucune entreprise ne correspond) ne
+  -- compte plus que ses recherches faites (Barcelone « terminée » à « 10 sur 46 »).
   return query
+  with removed_done as (
+    select s.category, count(*)::integer as n
+      from public.lm_searches s
+      join public.lm_campaign_zones z on z.campaign_id = s.campaign_id and z.label = s.zone_key and z.removed
+     where s.campaign_id = p_campaign_id
+     group by s.category
+  ), per_category as (
+    select cc.*, least(greatest(cc.searches - coalesce(rd.n, 0), 0), v_zones) as done_active
+      from public.lm_campaign_categories cc
+      left join removed_done rd on rd.category = cc.gcid
+     where cc.campaign_id = p_campaign_id
+  )
   select v_zones,
          count(cc.gcid) filter (where not cc.removed)::integer,
-         v_zones * count(cc.gcid) filter (where not cc.removed),
-         coalesce(sum(cc.searches), 0),
+         -- activité relancée sur des villes ajoutées (abandon_base_searches > 0) : elle a sauté les anciennes
+         -- villes jugées vides, son total = faites + en cours + villes restantes à partir de sa position
+         coalesce(sum(case
+                        when cc.abandoned then least(v_zones, cc.done_active + cc.in_flight)
+                        when cc.abandon_base_searches > 0 then
+                          least(v_zones, cc.done_active + cc.in_flight
+                                         + (select count(*) from public.lm_campaign_zones z
+                                             where z.campaign_id = p_campaign_id and not z.removed
+                                               and z.pos >= cc.next_zone_idx))
+                        else v_zones end)
+                    filter (where not cc.removed), 0)::bigint,
+         coalesce(sum(cc.done_active) filter (where not cc.removed), 0)::bigint,
          coalesce(sum(cc.in_flight), 0),
          count(*) filter (where cc.abandoned and not cc.removed)::integer,
          count(*) filter (where cc.kept > 0 and not cc.removed)::integer,
@@ -1122,14 +1154,79 @@ begin
            where l.campaign_id = p_campaign_id and l.kind = 'discovery' and l.delta < 0),
          coalesce(sum(cc.cards), 0),
          (select max(s.created_at) from public.lm_searches s where s.campaign_id = p_campaign_id)
-    from public.lm_campaign_categories cc
-   where cc.campaign_id = p_campaign_id;
+    from per_category cc;
 end;
 $$;
 
 revoke all on function public.lm_campaign_progress(uuid) from public;
 
 grant execute on function public.lm_campaign_progress(uuid) to authenticated, service_role;
+
+-- Où en est le lancement d'une campagne (11/11/2026 : « 0 recherche faite » pendant 1 à 2 minutes faisait croire à
+-- une panne) : recherches en file / en cours, recherches d'autres campagnes passées avant, reprise prévue (plafond
+-- de trafic, blocage), mesure du prix en cours. lm_tasks n'est pas lisible par l'appli : lu ici, une seule fois.
+-- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member. SECURITY DEFINER, ne renvoie que des nombres.
+create or replace function public.lm_campaign_search_phase(p_campaign_id uuid)
+returns table (queued integer, running integer, ahead integer, resume_at timestamptz, estimate_done integer,
+               estimate_total integer)
+set search_path = ''
+language plpgsql
+stable
+security definer
+as $$
+declare
+  v_campaign public.lm_campaigns%rowtype;
+  v_queued integer;
+  v_running integer;
+  v_ready integer;
+  v_first record;
+  v_ahead integer := 0;
+  v_resume timestamptz;
+  v_done integer;
+  v_total integer;
+begin
+  select * into v_campaign from public.lm_campaigns c where c.id = p_campaign_id and public.lm_member(c.account_id);
+
+  if v_campaign.id is null then
+    return;
+  end if;
+
+  select count(*) filter (where t.status = 'queued'),
+         count(*) filter (where t.status = 'running'),
+         count(*) filter (where t.status = 'queued' and t.run_after <= now()),
+         min(t.run_after) filter (where t.status = 'queued' and t.run_after > now())
+    into v_queued, v_running, v_ready, v_resume
+    from public.lm_tasks t
+   where t.kind = 'discovery' and t.payload ->> 'campaign_id' = p_campaign_id::text
+     and t.status in ('queued', 'running');
+
+  -- recherches passées avant la première des nôtres (même file, même ordre que lm_claim_task)
+  if v_ready > 0 then
+    select t.priority, t.created_at into v_first
+      from public.lm_tasks t
+     where t.kind = 'discovery' and t.payload ->> 'campaign_id' = p_campaign_id::text
+       and t.status = 'queued' and t.run_after <= now()
+     order by t.priority, t.created_at
+     limit 1;
+
+    select count(*)::integer into v_ahead
+      from public.lm_tasks t
+     where t.status = 'queued' and t.kind in ('discovery', 'estimate') and t.run_after <= now()
+       and (t.priority, t.created_at) < (v_first.priority, v_first.created_at);
+  end if;
+
+  if v_campaign.price_pending and v_campaign.estimate_id is not null then
+    select e.done_searches, e.sample_searches into v_done, v_total
+      from public.lm_estimates e where e.id = v_campaign.estimate_id and e.status = 'running';
+  end if;
+
+  return query select v_queued, v_running, v_ahead, case when v_ready = 0 then v_resume end, v_done, v_total;
+end;
+$$;
+
+revoke all on function public.lm_campaign_search_phase(uuid) from public;
+
+grant execute on function public.lm_campaign_search_phase(uuid) to authenticated, service_role;
 
 -- Modification d'une campagne (nom, ciblage, filtres), même après le lancement.
 -- Après le lancement : le pays ne change plus ; les villes et activités ajoutées rejoignent la file de scan,
@@ -1152,6 +1249,7 @@ declare
   v_zone_count integer;
   v_reprice boolean;
   v_estimate_id uuid;
+  v_added_zones integer;
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id for update;
 
@@ -1223,7 +1321,19 @@ begin
                                 where z.campaign_id = p_campaign_id and z.geoname_id = t.geoname_id
                                   and z.label = t.label)) z;
 
-  -- Activités : même logique (une activité abandonnée pour faible rendement le reste)
+  get diagnostics v_added_zones = row_count;
+
+  -- Activités : même logique. Une activité abandonnée faute du moindre prospect (Abbaye à Villeurbanne, puis Lyon
+  -- ajoutée, 11/11/2026) repart quand des villes sont ajoutées, directement sur ces nouvelles villes (pas sur les
+  -- anciennes déjà jugées vides) ; son abandon se compte depuis maintenant. Celles abandonnées pour faible
+  -- rendement ou écartées par le tri (elles ont des prospects) restent abandonnées : pas de proxy dépensé à nouveau.
+  if v_added_zones > 0 then
+    update public.lm_campaign_categories cc
+       set abandoned = false, abandon_base_searches = cc.searches, abandon_base_kept = cc.kept,
+           next_zone_idx = greatest(cc.next_zone_idx, v_next_pos)
+     where cc.campaign_id = p_campaign_id and cc.abandoned and cc.kept = cc.abandon_base_kept and cc.sorted = 0;
+  end if;
+
   update public.lm_campaign_categories cc
      set removed = cc.gcid not in (select t.gcid from public.lm_target_categories(p_targeting) t)
    where cc.campaign_id = p_campaign_id;

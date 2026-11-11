@@ -162,13 +162,13 @@
     "categoriesDeselectAll": "Tout désélectionner",
     "categoriesMore": "+ {count, plural, one {# autre activité} other {# autres activités}}",
     "whereTitle": "Où ?",
-    "moreCriteriaTitle": "Plus de critères",
+    "moreCriteriaTitle": "Paramètres avancés",
     "launch": "Lancer la recherche",
     "launching": "Lancement…",
     "payKeptOnly": "Vous ne payez que les entreprises gardées.",
     "who": {
       "title": "Qui voulez-vous contacter ?",
-      "description": "Décrivez-les en une phrase, comme à un collègue. Chaque entreprise trouvée est triée selon cette phrase.",
+      "description": "Décrivez-les en une phrase, comme à un collègue, ou choisissez directement les activités. Chaque entreprise trouvée est triée selon votre choix.",
       "placeholder": "Par exemple : agences marketing",
       "updating": "Mise à jour…",
       "searchLabel": "On cherchera",
@@ -181,14 +181,11 @@
       "targetTooLong": "Phrase trop longue (500 caractères au plus).",
       "offerRequired": "Décrivez votre offre en une phrase : elle sert à trier les entreprises.",
       "offerTooLong": "Offre trop longue (1 000 caractères au plus).",
-      "retargetHint": "La cible change : toutes les entreprises déjà trouvées seront triées à nouveau."
+      "retargetHint": "La cible change : toutes les entreprises déjà trouvées seront triées à nouveau.",
+      "autoNameMore": "{names} et {count, plural, one {# autre} other {# autres}}"
     },
-    "activeCriteria": "Appliqués : {list}",
-    "criteriaWithSite": "avec un site",
-    "criteriaWithoutSite": "sans site",
-    "criteriaRating": "notes {min} à {max}",
-    "criteriaReviews": "au moins {count, plural, one {# avis} other {# avis}}",
-    "criteriaExclusions": "mots exclus"
+    "cancel": "Annuler",
+    "saveDraft": "Enregistrer en brouillon"
   },
   "estimate": {
     "title": "Estimation",
@@ -699,7 +696,7 @@
     "sortedLabel": "Entreprises triées",
     "tabKept": "Gardées",
     "tabToCheck": "À vérifier",
-    "price": "{count, plural, one {# crédit par entreprise gardée} other {# crédits par entreprise gardée}}",
+    "price": "{count, plural, one {# crédit} other {# crédits}} / gardée",
     "keep": "Garder",
     "drop": "Écarter",
     "selectAll": "Tout sélectionner",
@@ -715,7 +712,7 @@
     "next": "Suivant : le message",
     "groups": {
       "title": "{count, plural, other {# groupes repérés. Un message par groupe ?}}",
-      "description": "Chaque groupe peut recevoir son propre message, dans cette même campagne. Vous l'écrirez à l'étape Message.",
+      "description": "Repérés d'après les entreprises gardées ; les suivantes sont rangées au fil du tri. Chaque groupe peut recevoir son propre message, les « Autres » un message commun. Vous les écrirez à l'étape Message.",
       "kept": "{count, plural, one {# gardée} other {# gardées}}",
       "single": "Un seul message",
       "singleLine": "{count, plural, other {Un seul message pour les # groupes}}",
@@ -729,11 +726,22 @@
       "noGroups": "Cette campagne n'a pas encore de groupes.",
       "perGroup": "Un message par groupe",
       "perGroupLine": "Un message par groupe",
-      "writeLink": "Écrire les messages"
+      "writeLink": "Écrire les messages",
+      "others": "Autres"
     },
-    "pricePendingVisible": "Prix mesuré sur les premières entreprises triées (1 à 4 crédits par entreprise gardée)",
-    "spent": "{count, plural, =0 {aucun crédit utilisé} one {# crédit utilisé} other {# crédits utilisés}} par cette campagne",
-    "available": "{count, plural, =0 {aucun crédit disponible} one {# crédit disponible} other {# crédits disponibles}}"
+    "spent": "{count, number}",
+    "priceLabel": "Prix",
+    "priceMeasuring": "en cours de mesure",
+    "spentLabel": "Crédits utilisés",
+    "launchStep": {
+      "preparing": "Préparation de la campagne…",
+      "measuring": "Estimation de la zone : {done, number} recherches d’essai sur {total, number}",
+      "queued": "En attente d’un robot ({count, plural, one {# recherche passe avant la vôtre} other {# recherches passent avant la vôtre}})",
+      "starting": "Démarrage de la première recherche…",
+      "running": "Première recherche en cours…",
+      "resume": "En pause, reprise prévue vers {time}"
+    },
+    "searchAbandoned": "{count, plural, one {Une activité s’est arrêtée avant la fin} other {# activités se sont arrêtées avant la fin}} : aucune entreprise ne correspondait à vos critères dans les premières recherches."
   },
   "messages": {
     "title": "Votre message",

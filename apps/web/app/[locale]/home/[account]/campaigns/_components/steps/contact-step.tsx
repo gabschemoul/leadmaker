@@ -15,14 +15,11 @@ import {
   Loader2,
   MessageSquareText,
   Search,
-  TriangleAlert,
   UserRound,
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { Alert, AlertDescription } from '@kit/ui/alert';
-import { alertExtras } from '@kit/ui/alert-extras';
 import { Button } from '@kit/ui/button';
 import { cn } from '@kit/ui/utils';
 
@@ -153,7 +150,7 @@ export async function ContactStep(props: {
       </div>
       {props.prospects === 0 ? (
         <Hint
-          icon={<Search className={'h-4'} />}
+          icon={<Search />}
           text={t('noProspects')}
           href={props.discoverHref}
           label={t('goDiscover')}
@@ -163,7 +160,7 @@ export async function ContactStep(props: {
 
       {props.messagesCount === 0 ? (
         <Hint
-          icon={<MessageSquareText className={'h-4'} />}
+          icon={<MessageSquareText />}
           text={t('noMessage')}
           href={props.writeHref}
           label={t('writeMessage')}
@@ -174,7 +171,7 @@ export async function ContactStep(props: {
 
       {!props.hasSender ? (
         <Hint
-          icon={<TriangleAlert className={'h-4'} />}
+          icon={<UserRound />}
           text={t('noSender')}
           href={props.writeHref}
           label={t('writeMessage')}
@@ -420,6 +417,10 @@ async function ContactSender(props: {
   );
 }
 
+/**
+ * Ce qui manque avant d'envoyer (message, expéditeur, prospects) : une carte calme aux couleurs de l'appli,
+ * icône dans une pastille, phrase, bouton à droite (11/11 : l'ancien encart jaune était « hors DA »).
+ */
 function Hint(props: {
   icon: React.ReactNode;
   text: string;
@@ -429,25 +430,34 @@ function Hint(props: {
   warning?: boolean;
 }) {
   return (
-    <Alert
-      className={props.warning ? alertExtras.warning : undefined}
+    <div
+      className={
+        'bg-card ring-foreground/10 flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 ring-1'
+      }
       data-test={props.testId}
     >
-      {props.icon}
-
-      <AlertDescription
-        className={'flex flex-wrap items-center justify-between gap-2'}
+      <span
+        aria-hidden
+        className={cn(
+          'flex size-8 shrink-0 items-center justify-center rounded-full [&>svg]:size-4',
+          props.warning
+            ? 'bg-brand-pale text-brand-hover dark:text-brand'
+            : 'bg-muted text-muted-foreground',
+        )}
       >
-        <span>{props.text}</span>
+        {props.icon}
+      </span>
 
-        <Button
-          size={'sm'}
-          nativeButton={false}
-          render={<Link href={props.href} />}
-        >
-          {props.label}
-        </Button>
-      </AlertDescription>
-    </Alert>
+      <p className={'min-w-0 flex-1 text-sm'}>{props.text}</p>
+
+      <Button
+        size={'sm'}
+        variant={'outline'}
+        nativeButton={false}
+        render={<Link href={props.href} />}
+      >
+        {props.label}
+      </Button>
+    </div>
   );
 }

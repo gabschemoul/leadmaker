@@ -21,8 +21,10 @@ export function InfoTip(props: {
   label?: string;
   className?: string;
   side?: 'top' | 'bottom' | 'left' | 'right';
+  /** affiché même quand les « i » sont masqués (demandé explicitement à cet endroit) */
+  always?: boolean;
 }) {
-  if (!SHOW_INFO_TIPS) {
+  if (!SHOW_INFO_TIPS && !props.always) {
     return null;
   }
 

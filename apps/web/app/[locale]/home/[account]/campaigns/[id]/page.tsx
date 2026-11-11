@@ -1,8 +1,8 @@
 /**
- * Rôle : page d'une campagne, parcours en cinq étapes (Qui ?, Vos entreprises, Votre message, Envoi, Résultats ;
- * dans le code : cibler, trouver, rediger, contacter, resultats) via `?etape=`. Campagne triée (cible en mots) : l'étape « trouver »
+ * Rôle : page d'une campagne, parcours en quatre étapes (Cible, Prospects, Message, Envoi ; dans le code : cibler,
+ * trouver, rediger, contacter) via `?etape=` (Résultats retiré le 12/11/2026, à remettre plus tard). Campagne triée (cible en mots) : l'étape « trouver »
  * est l'écran « Vos entreprises » ; sinon l'ancien écran de recherche.
- * Données : campaigns.loader, forms.loader, sender.loader, leadmaker.loader, results.loader (client Supabase de
+ * Données : campaigns.loader, forms.loader, sender.loader, leadmaker.loader (client Supabase de
  * l'utilisateur).
  * Écritures : aucune ici (actions serveur dans les composants d'étape).
  */
@@ -27,7 +27,6 @@ import {
   PageHeaderSkeleton,
 } from '~/components/skeletons/page-skeletons';
 import pathsConfig from '~/config/paths.config';
-import { type AttemptGroup, isAttemptGroup } from '~/lib/leadmaker/attempts';
 import {
   fetchAutopilotFacts,
   fetchAutopilotSummary,
@@ -43,10 +42,7 @@ import {
   loadSpaces,
 } from '../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../_lib/server/team-account-workspace.loader';
-import {
-  loadAttempts,
-  loadCampaignAttemptCounts,
-} from '../../forms/_lib/server/forms.loader';
+import { loadCampaignAttemptCounts } from '../../forms/_lib/server/forms.loader';
 import {
   loadCampaignSender,
   loadSenders,
@@ -62,12 +58,8 @@ import {
   CampaignStepsRailLoading,
 } from '../_components/steps/campaign-steps-rail';
 import { CompaniesStep } from '../_components/steps/companies-step';
-import {
-  type ContactMode,
-  ContactStep,
-} from '../_components/steps/contact-step';
+import { ContactStep } from '../_components/steps/contact-step';
 import { DiscoverStep } from '../_components/steps/discover-step';
-import { ResultsStep } from '../_components/steps/results-step';
 import { TargetStep } from '../_components/steps/target-step';
 import { WriteStep } from '../_components/steps/write-step';
 import { fetchCampaignLive } from '../_lib/campaign-live';
@@ -82,7 +74,6 @@ import {
   loadPreviewProspects,
 } from '../_lib/server/campaigns.loader';
 import { isPowerUser } from '../_lib/server/power-user';
-import { loadCampaignResults } from '../_lib/server/results.loader';
 import {
   type CampaignStep,
   type CampaignStepFacts,
@@ -106,8 +97,8 @@ export const generateMetadata = async () => {
 };
 
 /**
- * La page d'une campagne : son parcours en cinq étapes (Cibler, Trouver,
- * Rédiger, Contacter, Résultats), chaque étape étant un onglet `?etape=`.
+ * La page d'une campagne : son parcours en quatre étapes (Cibler, Trouver,
+ * Rédiger, Contacter), chaque étape étant un onglet `?etape=`.
  * L'en-tête porte le nom de la campagne : il attend donc les mêmes données
  * que le contenu et partage sa frontière.
  */
@@ -378,18 +369,6 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
                   accountId={account.id}
                   basePath={basePath}
                   facts={facts}
-                  group={
-                    isAttemptGroup(rawSearchParams.statut)
-                      ? rawSearchParams.statut
-                      : 'ready'
-                  }
-                  // mode Avancé : demandé dans l'adresse, ou lien direct vers un onglet de formulaires
-                  mode={
-                    rawSearchParams.mode === 'avance' ||
-                    isAttemptGroup(rawSearchParams.statut)
-                      ? 'advanced'
-                      : 'auto'
-                  }
                   messages={groupOrdered(messages, groups).map((message) => ({
                     name: message.name,
                     preview: message.body
@@ -409,19 +388,6 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
                   )}
                   writeHref={stepHref('rediger')}
                   discoverHref={stepHref('trouver')}
-                />
-              ) : null}
-
-              {step === 'resultats' ? (
-                <ResultsStepContent
-                  campaignId={id}
-                  templates={templates}
-                  groups={perGroup ? groups : null}
-                  kept={live.sort ? live.sort.kept : null}
-                  senderEmail={sender?.email ?? null}
-                  toVerifyHref={`${stepHref('contacter')}&statut=to_verify`}
-                  sendingHref={stepHref('contacter')}
-                  writeHref={stepHref('rediger')}
                 />
               ) : null}
             </Suspense>
@@ -550,8 +516,6 @@ async function ContactStepContent(props: {
   accountId: string;
   basePath: string;
   facts: CampaignStepFacts;
-  group: AttemptGroup;
-  mode: ContactMode;
   messages: Array<{ name: string; preview: string; group: string | null }>;
   perGroup: boolean;
   billingHref: string;
@@ -560,22 +524,14 @@ async function ContactStepContent(props: {
 }) {
   const client = getSupabaseServerClient();
 
-  // la liste des formulaires n'est chargée qu'en mode Avancé ; le résumé complet du pilote, seulement ici
-  const [rows, hasPlan, autopilot] = await Promise.all([
-    props.mode === 'advanced'
-      ? loadAttempts(client, {
-          spaceId: props.campaign.space_id,
-          campaignId: props.campaign.id,
-          group: props.group,
-        })
-      : Promise.resolve([]),
+  // le résumé complet du pilote n'est chargé qu'ici
+  const [hasPlan, autopilot] = await Promise.all([
     loadHasPlan(client, props.accountId),
     fetchAutopilotSummary(client, props.campaign.id),
   ]);
 
   return (
     <ContactStep
-      mode={props.mode}
       autopilot={autopilot}
       messages={props.messages}
       perGroup={props.perGroup}
@@ -588,44 +544,8 @@ async function ContactStepContent(props: {
       prospects={props.facts.prospects}
       messagesCount={props.facts.messagesCount}
       hasSender={props.facts.hasSender}
-      dailyLimit={props.campaign.daily_limit}
-      autoValidation={props.campaign.auto_validation}
-      counts={props.facts.attempts}
-      group={props.group}
-      rows={rows}
       writeHref={props.writeHref}
       discoverHref={props.discoverHref}
-    />
-  );
-}
-
-async function ResultsStepContent(props: {
-  campaignId: string;
-  templates: ReturnType<typeof parseTemplates>;
-  groups: CampaignGroup[] | null;
-  kept: number | null;
-  senderEmail: string | null;
-  toVerifyHref: string;
-  sendingHref: string;
-  writeHref: string;
-}) {
-  const client = getSupabaseServerClient();
-
-  const results = await loadCampaignResults(client, {
-    campaignId: props.campaignId,
-    templates: props.templates,
-    groups: props.groups,
-    kept: props.kept,
-  });
-
-  return (
-    <ResultsStep
-      results={results}
-      sorted={props.kept !== null}
-      senderEmail={props.senderEmail}
-      toVerifyHref={props.toVerifyHref}
-      sendingHref={props.sendingHref}
-      writeHref={props.writeHref}
     />
   );
 }

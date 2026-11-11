@@ -94,14 +94,3 @@ export const SaveCampaignTemplatesSchema = CampaignTemplatesBaseSchema.extend({
   accountId: z.string().uuid(),
   campaignId: z.string().uuid(),
 }).superRefine((values, ctx) => checkMessages(values.messages, ctx));
-
-/** Réglages d'envoi du mode avancé (fenêtre « Réglages d'envoi » de l'étape Contacter, audit E10). */
-export const CampaignSendingSchema = z.object({
-  campaignId: z.string().uuid(),
-  dailyLimit: z.coerce
-    .number()
-    .int()
-    .min(1, { message: 'outreach.messages.dailyLimitInvalid' })
-    .max(DAILY_LIMIT_MAX, { message: 'outreach.messages.dailyLimitInvalid' }),
-  autoValidation: z.boolean(),
-});

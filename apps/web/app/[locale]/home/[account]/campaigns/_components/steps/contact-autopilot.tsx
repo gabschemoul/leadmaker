@@ -74,6 +74,7 @@ import {
   updateAutopilotAction,
 } from '../../_lib/server/autopilot-actions';
 import { AutopilotLive } from './autopilot-live';
+import { TodoCard, useEnvoiTodo } from './envoi-todo';
 
 // « Me montrer les 3 premiers formulaires avant d'envoyer » : option masquée pour l'instant (ménage du
 // 10/11/2026, choix de Gabriel) ; repasser à `true` pour la réafficher (et la recocher par défaut à la 1re campagne)
@@ -117,9 +118,6 @@ export function ContactAutopilot(props: {
   /** « Un message par groupe » : messages rangés par groupe, tous cochés par défaut */
   perGroup: boolean;
   writeHref: string;
-  advancedHref: string;
-  /** mode Avancé, où se règlent les prises de contact par jour et la validation automatique */
-  sendingSettingsHref: string;
   /** section « Qui envoie ? » (rendue côté serveur) */
   senderSection: React.ReactNode;
   /** « Prénom Nom · Société » de l'expéditeur, pour la confirmation du lancement (null : pas d'expéditeur) */
@@ -178,26 +176,29 @@ export function ContactAutopilot(props: {
 
   if (showSetup) {
     return (
-      <AutopilotSetup
-        key={editing ? `edit-${summary.autopilot_id}` : 'new'}
-        campaignId={props.campaignId}
-        summary={summary}
-        editing={editing && active}
-        messages={props.messages}
-        perGroup={props.perGroup}
-        writeHref={props.writeHref}
-        sendingSettingsHref={props.sendingSettingsHref}
-        senderSection={props.senderSection}
-        senderLabel={props.senderLabel}
-        billingHref={props.billingHref}
-        hasPlan={props.hasPlan}
-        ready={props.ready}
-        onDone={() => {
-          setEditing(false);
-          refreshAll();
-        }}
-        onCancelEdit={editing ? () => setEditing(false) : undefined}
-      />
+      <div className={'flex flex-col gap-4'}>
+        <TodoCard />
+
+        <AutopilotSetup
+          key={editing ? `edit-${summary.autopilot_id}` : 'new'}
+          campaignId={props.campaignId}
+          summary={summary}
+          editing={editing && active}
+          messages={props.messages}
+          perGroup={props.perGroup}
+          writeHref={props.writeHref}
+          senderSection={props.senderSection}
+          senderLabel={props.senderLabel}
+          billingHref={props.billingHref}
+          hasPlan={props.hasPlan}
+          ready={props.ready}
+          onDone={() => {
+            setEditing(false);
+            refreshAll();
+          }}
+          onCancelEdit={editing ? () => setEditing(false) : undefined}
+        />
+      </div>
     );
   }
 
@@ -215,7 +216,6 @@ export function ContactAutopilot(props: {
     <AutopilotRunning
       summary={summary}
       checkedAt={dataUpdatedAt}
-      advancedHref={props.advancedHref}
       senderLabel={props.senderLabel ?? null}
       billingHref={props.billingHref}
       hasPlan={props.hasPlan}
@@ -236,7 +236,6 @@ function AutopilotSetup(props: {
   messages: AutopilotMessage[];
   perGroup: boolean;
   writeHref: string;
-  sendingSettingsHref: string;
   senderSection: React.ReactNode;
   senderLabel: string | null;
   billingHref: string;
@@ -1043,7 +1042,6 @@ function AutopilotRunning(props: {
   summary: AutopilotSummary;
   /** heure du dernier rafraîchissement des compteurs (toutes les 4 s en marche) */
   checkedAt: number;
-  advancedHref: string;
   /** expéditeur en clair, pour le détail d'un envoi */
   senderLabel: string | null;
   billingHref: string;
@@ -1099,6 +1097,7 @@ function AutopilotRunning(props: {
       : t('running');
 
   const progress = target > 0 ? Math.min(1, summary.sent / target) : 0;
+  const todoTotal = useEnvoiTodo()?.total ?? 0;
 
   return (
     <div className={'flex flex-col gap-4'} data-test={'autopilot-running'}>
@@ -1219,16 +1218,13 @@ function AutopilotRunning(props: {
           />
 
           <Kpi
-            label={t('inFlight')}
-            value={format.number(done || paused ? 0 : summary.in_flight)}
-            testId={'autopilot-in-flight'}
-          />
-
-          <Kpi
-            label={t('aside')}
-            value={format.number(summary.aside)}
-            href={summary.aside > 0 ? props.advancedHref : undefined}
-            testId={'autopilot-aside'}
+            label={t('todo')}
+            value={
+              <span className={todoTotal > 0 ? 'text-brand' : undefined}>
+                {format.number(todoTotal)}
+              </span>
+            }
+            testId={'autopilot-todo'}
           />
 
           <Kpi
@@ -1255,6 +1251,8 @@ function AutopilotRunning(props: {
         </div>
       </div>
 
+      <TodoCard />
+
       <AutopilotLive
         autopilotId={autopilotId}
         live={!done && !paused}
@@ -1265,9 +1263,6 @@ function AutopilotRunning(props: {
         timezone={summary.timezone}
         startedAt={summary.started_at}
         senderLabel={props.senderLabel}
-        groupHref={(group) =>
-          `${props.advancedHref.replace(/&statut=[^&]*/, '')}${group === 'ready' ? '' : `&statut=${group}`}`
-        }
       />
     </div>
   );

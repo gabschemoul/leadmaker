@@ -2,17 +2,18 @@
 
 /**
  * Rôle : section « En direct » du pilote automatique (refaite le 11/11/2026 d'après la maquette validée par
- * Gabriel) : les derniers messages envoyés en cartes (clic = détail de l'envoi), le bilan des sites visités par
- * raison (clic = la liste en mode Avancé) et la prévision de fin d'envoi avec le rythme des dernières heures.
- * Données : fetchAutopilotLive (lm_attempts du passage, lu par la RLS), relu toutes les quelques secondes en marche.
+ * Gabriel) : les derniers messages envoyés en cartes (clic = détail de l'envoi, « Voir les N envois » = la liste
+ * complète), le bilan des sites visités par raison et la prévision de fin d'envoi avec le rythme des dernières
+ * heures. 12/11 : plus de mode Avancé, le bilan n'est plus cliquable (ce qui attend l'utilisateur est dans
+ * « À vous de jouer »).
+ * Données : fetchAutopilotLive / fetchAutopilotSent (lm_attempts du passage, lus par la RLS), relus toutes les
+ * quelques secondes en marche.
  * Écritures : aucune.
  */
 import { useState } from 'react';
 
-import Link from 'next/link';
-
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronRight, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 
 import { useSupabase } from '@kit/supabase/hooks/use-supabase';
@@ -24,14 +25,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@kit/ui/sheet';
+import { Spinner } from '@kit/ui/spinner';
 import { cn } from '@kit/ui/utils';
 
-import type { AttemptGroup } from '~/lib/leadmaker/attempts';
 import {
   type AutopilotSentCard,
   displayHost,
   fetchAttemptScreenshot,
   fetchAutopilotLive,
+  fetchAutopilotSent,
 } from '~/lib/leadmaker/autopilot-query';
 
 /** Relecture en marche (même rythme que les compteurs). */
@@ -47,21 +49,18 @@ const TINTS = [
   '#be185d',
 ];
 
-/** Issues d'un site visité, dans l'ordre du bilan, avec leur couleur et la liste du mode Avancé qui les montre. */
+/** Issues d'un site visité, dans l'ordre du bilan, avec leur couleur (maquette du 12/11). */
 const OUTCOMES = [
-  { key: 'sent', color: '#157a40', group: 'sent' },
-  { key: 'quoteOnly', color: '#3d3dff', group: 'no_form' },
-  { key: 'noForm', color: '#8b8bff', group: 'no_form' },
-  { key: 'unreachable', color: '#c8c8ff', group: 'unreachable' },
-  { key: 'captcha', color: '#e8873a', group: 'intervention_required' },
-  { key: 'unknownField', color: '#f3c08f', group: 'incomplete' },
-  { key: 'toCheck', color: '#d6d3cd', group: 'ready' },
-  { key: 'other', color: '#a8a49f', group: 'skipped' },
-] as const satisfies ReadonlyArray<{
-  key: string;
-  color: string;
-  group: AttemptGroup;
-}>;
+  { key: 'sent', color: '#157a40' },
+  { key: 'todo', color: '#3d3dff' },
+  { key: 'quoteOnly', color: '#8b8bff' },
+  { key: 'noForm', color: '#c8c8ff' },
+  { key: 'unreachable', color: '#d6d3cd' },
+  { key: 'other', color: '#a8a49f' },
+] as const;
+
+/** Envois chargés à chaque « Voir plus » de la liste complète. */
+const SENT_PAGE = 50;
 
 export function AutopilotLive(props: {
   autopilotId: string;
@@ -74,14 +73,13 @@ export function AutopilotLive(props: {
   startedAt: string | null;
   /** expéditeur en clair (« Prénom Nom · Société ») */
   senderLabel: string | null;
-  /** lien vers une liste du mode Avancé */
-  groupHref: (group: AttemptGroup) => string;
 }) {
   const t = useTranslations('campaigns.autopilot.live');
   const format = useFormatter();
   const locale = useLocale();
   const client = useSupabase();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [open, setOpen] = useState<AutopilotSentCard | null>(null);
+  const [listOpen, setListOpen] = useState(false);
 
   const { data, dataUpdatedAt } = useQuery({
     queryKey: ['lm-autopilot-live', props.autopilotId, locale],
@@ -164,8 +162,6 @@ export function AutopilotLive(props: {
     startedAt: props.startedAt,
   });
 
-  const open = cards.find((card) => card.id === openId) ?? null;
-
   return (
     <div className={'flex flex-col gap-4'} data-test={'autopilot-live'}>
       <section
@@ -186,12 +182,14 @@ export function AutopilotLive(props: {
           </h3>
 
           {props.sentCount > 0 ? (
-            <Link
-              href={props.groupHref('sent')}
-              className={'text-brand text-sm hover:underline'}
+            <button
+              type={'button'}
+              className={'text-brand cursor-pointer text-sm hover:underline'}
+              data-test={'autopilot-see-all-sent'}
+              onClick={() => setListOpen(true)}
             >
               {t('seeAllSent', { count: props.sentCount })}
-            </Link>
+            </button>
           ) : null}
         </div>
 
@@ -209,10 +207,10 @@ export function AutopilotLive(props: {
                     'bg-card ring-foreground/10 hover:ring-foreground/20 flex h-full w-full cursor-pointer flex-col gap-3.5 rounded-xl p-4 text-left shadow-[0_6px_18px_-12px_rgba(20,20,19,0.25)] ring-1 transition-shadow'
                   }
                   data-test={'autopilot-sent-card'}
-                  onClick={() => setOpenId(card.id)}
+                  onClick={() => setOpen(card)}
                 >
                   <span className={'flex min-w-0 items-center gap-3'}>
-                    <Badge name={card.prospect.name} />
+                    <ProspectBadge name={card.prospect.name} />
 
                     <span className={'flex min-w-0 flex-col'}>
                       <span className={'truncate text-[15px] font-semibold'}>
@@ -309,41 +307,36 @@ export function AutopilotLive(props: {
 
               <ul className={'-mx-2 flex flex-col'}>
                 {breakdown.map((item) => (
-                  <li key={item.key}>
-                    <Link
-                      href={props.groupHref(item.group)}
+                  <li
+                    key={item.key}
+                    className={
+                      'flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm'
+                    }
+                  >
+                    <span
+                      aria-hidden
+                      className={'size-2.5 shrink-0 rounded-[3px]'}
+                      style={{ background: item.color }}
+                    />
+                    <span className={'min-w-0 flex-1 truncate'}>
+                      {t(`outcome.${item.key}`)}
+                    </span>
+                    <span
                       className={
-                        'hover:bg-muted flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm'
+                        'text-muted-foreground w-12 text-right tabular-nums'
                       }
                     >
-                      <span
-                        aria-hidden
-                        className={'size-2.5 shrink-0 rounded-[3px]'}
-                        style={{ background: item.color }}
-                      />
-                      <span className={'min-w-0 flex-1 truncate'}>
-                        {t(`outcome.${item.key}`)}
-                      </span>
-                      <span
-                        className={
-                          'text-muted-foreground w-12 text-right tabular-nums'
-                        }
-                      >
-                        {format.number(item.count)}
-                      </span>
-                      <span
-                        className={
-                          'text-muted-foreground w-11 text-right tabular-nums'
-                        }
-                      >
-                        {format.number(item.count / visited, {
-                          style: 'percent',
-                        })}
-                      </span>
-                      <ChevronRight
-                        className={'text-muted-foreground/60 size-4 shrink-0'}
-                      />
-                    </Link>
+                      {format.number(item.count)}
+                    </span>
+                    <span
+                      className={
+                        'text-muted-foreground w-11 text-right tabular-nums'
+                      }
+                    >
+                      {format.number(item.count / visited, {
+                        style: 'percent',
+                      })}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -395,17 +388,26 @@ export function AutopilotLive(props: {
         </section>
       </div>
 
+      <SentList
+        open={listOpen}
+        autopilotId={props.autopilotId}
+        total={props.sentCount}
+        live={props.live}
+        onOpenChange={setListOpen}
+        onPick={setOpen}
+      />
+
       <SentDetail
         card={open}
         senderLabel={props.senderLabel}
-        onClose={() => setOpenId(null)}
+        onClose={() => setOpen(null)}
       />
     </div>
   );
 }
 
-/** Pastille de couleur avec les initiales. */
-function Badge(props: { name: string; size?: 'lg' }) {
+/** Pastille de couleur avec les initiales (aussi dans « À vous de jouer »). */
+export function ProspectBadge(props: { name: string; size?: 'lg' }) {
   const initials =
     props.name
       .split(/\s+/)
@@ -426,6 +428,114 @@ function Badge(props: { name: string; size?: 'lg' }) {
     >
       {initials}
     </span>
+  );
+}
+
+/** « Voir les N envois » : tous les messages envoyés du passage, les plus récents d'abord (clic = détail). */
+function SentList(props: {
+  open: boolean;
+  autopilotId: string;
+  total: number;
+  live: boolean;
+  onOpenChange: (open: boolean) => void;
+  onPick: (card: AutopilotSentCard) => void;
+}) {
+  const t = useTranslations('campaigns.autopilot.live');
+  const format = useFormatter();
+  const locale = useLocale();
+  const client = useSupabase();
+  const [limit, setLimit] = useState(SENT_PAGE);
+
+  const { data: rows = [], isFetching } = useQuery({
+    queryKey: ['lm-autopilot-sent', props.autopilotId, locale, limit],
+    queryFn: () => fetchAutopilotSent(client, props.autopilotId, locale, limit),
+    enabled: props.open && Boolean(props.autopilotId),
+    placeholderData: (previous) => previous,
+    refetchInterval: props.open && props.live ? POLL_MS * 3 : false,
+  });
+
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return (
+    <Sheet open={props.open} onOpenChange={props.onOpenChange}>
+      <SheetContent
+        className={
+          'w-full gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-[560px]'
+        }
+        data-test={'autopilot-sent-list'}
+      >
+        <div className={'flex flex-col gap-4 p-6'}>
+          <SheetHeader className={'p-0 pr-8'}>
+            <SheetTitle className={'text-xl'}>
+              {t('allSentTitle', { count: props.total })}
+            </SheetTitle>
+          </SheetHeader>
+
+          {rows.length === 0 && isFetching ? (
+            <div className={'flex justify-center py-10'}>
+              <Spinner />
+            </div>
+          ) : (
+            <ul className={'-mx-2 flex flex-col'}>
+              {rows.map((row) => (
+                <li key={row.id}>
+                  <button
+                    type={'button'}
+                    className={
+                      'hover:bg-muted flex w-full cursor-pointer items-center gap-3 rounded-xl px-2 py-2.5 text-left'
+                    }
+                    data-test={'autopilot-sent-row'}
+                    onClick={() => props.onPick(row)}
+                  >
+                    <ProspectBadge name={row.prospect.name} />
+
+                    <span className={'flex min-w-0 flex-1 flex-col'}>
+                      <span className={'truncate text-sm font-medium'}>
+                        {row.prospect.name}
+                      </span>
+                      <span
+                        className={'text-muted-foreground truncate text-[13px]'}
+                      >
+                        {[row.activity, row.prospect.city]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+
+                    {row.sent_at ? (
+                      <span
+                        className={
+                          'text-muted-foreground shrink-0 text-xs tabular-nums'
+                        }
+                      >
+                        {format.dateTime(new Date(row.sent_at), {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          timeZone: zone,
+                        })}
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {rows.length >= limit && rows.length < props.total ? (
+            <Button
+              variant={'outline'}
+              className={'self-center'}
+              loading={isFetching}
+              onClick={() => setLimit((value) => value + SENT_PAGE)}
+            >
+              {t('more')}
+            </Button>
+          ) : null}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -497,7 +607,7 @@ function SentDetail(props: {
         {card ? (
           <div className={'flex flex-col gap-6 p-6'}>
             <SheetHeader className={'flex-row items-start gap-3.5 p-0 pr-8'}>
-              <Badge name={card.prospect.name} size={'lg'} />
+              <ProspectBadge name={card.prospect.name} size={'lg'} />
 
               <div className={'flex min-w-0 flex-col gap-0.5'}>
                 <SheetTitle className={'text-xl leading-tight'}>

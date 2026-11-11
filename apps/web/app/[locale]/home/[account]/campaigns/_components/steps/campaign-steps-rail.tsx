@@ -28,8 +28,6 @@ export function CampaignStepsRail(props: {
   categories: number;
 }) {
   const t = useTranslations('campaigns.steps');
-  // l'étape « Résultats » a ses textes dans son propre fichier (results.json)
-  const tr = useTranslations('results.step');
   const states = stepStates(props.facts);
   const { facts } = props;
   // changement d'étape instantané : l'onglet demandé s'allume dès le clic (campaign-step-navigation.tsx)
@@ -85,10 +83,6 @@ export function CampaignStepsRail(props: {
                       count: facts.attempts.preparing,
                     })
                   : t('sub.contacterTodo'),
-    resultats:
-      facts.attempts.sent > 0
-        ? tr('subSent', { count: facts.attempts.sent })
-        : tr('subTodo'),
   };
 
   return (
@@ -143,7 +137,7 @@ export function CampaignStepsRail(props: {
                 <span className={'tabular-nums'}>{index + 1} ·</span>
               )}
 
-              <span>{step === 'resultats' ? tr('label') : t(step)}</span>
+              <span>{t(step)}</span>
             </Link>
           );
         })}
@@ -162,7 +156,6 @@ export function CampaignStepsRail(props: {
  */
 export function CampaignStepsRailLoading() {
   const t = useTranslations('campaigns.steps');
-  const tr = useTranslations('results.step');
 
   return (
     <div className={'flex flex-col gap-3'} aria-busy={true}>
@@ -179,7 +172,7 @@ export function CampaignStepsRailLoading() {
             }
           >
             <span className={'tabular-nums'}>{index + 1} ·</span>
-            <span>{step === 'resultats' ? tr('label') : t(step)}</span>
+            <span>{t(step)}</span>
           </span>
         ))}
       </div>

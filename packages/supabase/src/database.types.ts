@@ -1458,6 +1458,9 @@ isOneToOne: false
 "lm_add_search_bytes":
 { Args: { "p_bytes": number,"p_task_id": number }; Returns: undefined
                            },
+"lm_approve_attempts":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
 "lm_attempt_counts":
 { Args: { "p_space_id": string }; Returns: {
               "status": Database["public"]['Enums']["lm_attempt_status"],"total": number
@@ -1468,6 +1471,9 @@ isOneToOne: false
                            },
 "lm_attempt_repreparable":
 { Args: { "p_status": Database["public"]['Enums']["lm_attempt_status"] }; Returns: boolean
+                           },
+"lm_attempt_todo_kind":
+{ Args: { "p_autopilot_status": Database["public"]['Enums']["lm_autopilot_status"],"p_detail": string,"p_missing": Json,"p_protection_type": string,"p_status": Database["public"]['Enums']["lm_attempt_status"],"p_validated_by": string }; Returns: string
                            },
 "lm_auto_validation_allowed":
 { Args: { "p_account_id": string }; Returns: boolean
@@ -1565,6 +1571,9 @@ isOneToOne: false
 "lm_autopilot_tick":
 { Args: { "p_only"?: string }; Returns: number
                            },
+"lm_autopilot_todo":
+{ Args: { "p_autopilot_id": string }; Returns: number
+                           },
 "lm_autopilot_validate_clean":
 { Args: { "p_autopilot_id": string }; Returns: number
                            },
@@ -1643,6 +1652,14 @@ isOneToOne: false
                            },
 "lm_campaign_timezone":
 { Args: { "p_campaign_id": string }; Returns: string
+                           },
+"lm_campaign_todo":
+{ Args: { "p_campaign_id": string }; Returns: {
+              "captcha": number,"to_check": number,"unknown_field": number
+            }[]
+                           },
+"lm_campaign_todo_ids":
+{ Args: { "p_campaign_id": string,"p_kind": string }; Returns: string[]
                            },
 "lm_cancel_autopilot":
 { Args: { "p_autopilot_id": string }; Returns: boolean
@@ -1806,6 +1823,9 @@ isOneToOne: false
                            },
 "lm_mark_place_seen":
 { Args: { "p_place_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
+                           },
+"lm_mark_sent_by_hand":
+{ Args: { "p_ids": (string)[] }; Returns: number
                            },
 "lm_measure_sort_price":
 { Args: { "p_campaign_id": string }; Returns: undefined
@@ -1991,6 +2011,9 @@ isOneToOne: false
                            },
 "lm_skip_estimate_search":
 { Args: { "p_estimate_id": string }; Returns: undefined
+                           },
+"lm_skip_todo":
+{ Args: { "p_campaign_id": string,"p_ids"?: (string)[],"p_kind": string }; Returns: number
                            },
 "lm_space_limit":
 { Args: { "p_account_id": string }; Returns: number

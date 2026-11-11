@@ -600,11 +600,8 @@
       "noPlan": "No active plan: the autopilot is waiting.",
       "billing": "See my plan",
       "sent": "Sent",
-      "inFlight": "In progress",
-      "aside": "Set aside",
-      "asideHint": "Set aside: no form, captcha or unknown field.",
-      "seeAdvanced": "See them in Advanced mode",
-      "progress": "Progress"
+      "progress": "Progress",
+      "todo": "Your turn"
     },
     "errors": {
       "generic": "That didn't work. Try again in a moment.",
@@ -650,12 +647,10 @@
       "visitedEmpty": "Prospectigo is visiting the first sites…",
       "outcome": {
         "sent": "Message sent",
+        "todo": "Your turn",
         "quoteOnly": "Quote request form only",
         "noForm": "No contact form",
         "unreachable": "Site unreachable",
-        "captcha": "Protected against robots",
-        "unknownField": "A field not recognized",
-        "toCheck": "To check before sending",
         "other": "Skipped or excluded"
       },
       "forecastLabel": "Forecast",
@@ -685,7 +680,9 @@
         "openForm": "Open the form page",
         "openScreenshot": "See the screenshot of the send",
         "close": "Close"
-      }
+      },
+      "allSentTitle": "{count, plural, one {# message sent} other {# messages sent}}",
+      "more": "Show more"
     }
   },
   "localDiscovery": {
@@ -830,5 +827,61 @@
     "othersEmpty": "No message yet: without it, prospects outside the groups (and in a group with no message) will receive another group's message.",
     "nameTaken": "This name is already used by another message in the campaign.",
     "tooManyVersions": "At most 10 versions per group."
+  },
+  "envoi": {
+    "todo": {
+      "title": "Your turn",
+      "to_check": {
+        "title": "Forms to check before sending",
+        "hint": "Something looks off on the page or in the message",
+        "cta": "Check"
+      },
+      "captcha": {
+        "title": "Sites protected against bots",
+        "hint": "Your message is ready to paste",
+        "cta": "Send it myself"
+      },
+      "unknown_field": {
+        "title": "A form field to fill in",
+        "hint": "The site asks for something we don’t know",
+        "cta": "Fill in"
+      }
+    },
+    "skipAll": {
+      "button": "Skip all",
+      "title": {
+        "to_check": "Skip {count, plural, one {the form to check} other {the # forms to check}}?",
+        "captcha": "Skip {count, plural, one {the protected site} other {the # protected sites}}?",
+        "unknown_field": "Skip {count, plural, one {the form to fill in} other {the # forms to fill in}}?"
+      },
+      "cancel": "Cancel",
+      "confirm": "Skip all",
+      "done": "{count, plural, =0 {Nothing to skip} one {# form skipped} other {# forms skipped}}"
+    },
+    "review": {
+      "back": "Back to sending",
+      "position": "{index} of {total}",
+      "empty": "Nothing left to do here.",
+      "next": "Next",
+      "allDone": "Done, the list is finished",
+      "skip": "Skip",
+      "send": "Send",
+      "sentByHand": "I sent it",
+      "message": "Message",
+      "screenshotAlt": "Form filled in on {name}’s website",
+      "copied": "Message copied",
+      "copyFailed": "Couldn’t copy, select the message by hand",
+      "captcha": {
+        "copyStep": "Copy the message",
+        "copy": "Copy",
+        "openStep": "Open their contact page",
+        "open": "Open the site"
+      }
+    },
+    "errors": {
+      "generic": "That didn’t work. Please try again.",
+      "gone": "This form has already been handled.",
+      "missing": "Fill in every field before sending."
+    }
   }
 }

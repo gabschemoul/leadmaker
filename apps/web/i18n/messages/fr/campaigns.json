@@ -600,11 +600,8 @@
       "noPlan": "Aucun forfait en cours : le pilote attend.",
       "billing": "Voir mon forfait",
       "sent": "Envoyés",
-      "inFlight": "En cours",
-      "aside": "Mis de côté",
-      "asideHint": "Mis de côté : sans formulaire, captcha ou champ inconnu.",
-      "seeAdvanced": "Les voir en mode Avancé",
-      "progress": "Avancement"
+      "progress": "Avancement",
+      "todo": "À vous de jouer"
     },
     "errors": {
       "generic": "L'action n'a pas abouti. Réessayez dans un instant.",
@@ -650,12 +647,10 @@
       "visitedEmpty": "Prospectigo visite les premiers sites…",
       "outcome": {
         "sent": "Message envoyé",
+        "todo": "À vous de jouer",
         "quoteOnly": "Formulaire de devis seulement",
         "noForm": "Pas de formulaire de contact",
         "unreachable": "Site inaccessible",
-        "captcha": "Protégé contre les robots",
-        "unknownField": "Une case non reconnue",
-        "toCheck": "À vérifier avant envoi",
         "other": "Passé ou exclu"
       },
       "forecastLabel": "Prévision",
@@ -685,7 +680,9 @@
         "openForm": "Voir la page du formulaire",
         "openScreenshot": "Voir la capture de l’envoi",
         "close": "Fermer"
-      }
+      },
+      "allSentTitle": "{count, plural, one {# message envoyé} other {# messages envoyés}}",
+      "more": "Voir plus"
     }
   },
   "localDiscovery": {
@@ -830,5 +827,61 @@
     "othersEmpty": "Pas encore de message : sans lui, les prospects hors groupes (et ceux d'un groupe sans message) recevront le message d'un autre groupe.",
     "nameTaken": "Ce nom est déjà pris par un autre message de la campagne.",
     "tooManyVersions": "10 versions au plus par groupe."
+  },
+  "envoi": {
+    "todo": {
+      "title": "À vous de jouer",
+      "to_check": {
+        "title": "Formulaires à vérifier avant envoi",
+        "hint": "Un doute sur la page ou le message",
+        "cta": "Vérifier"
+      },
+      "captcha": {
+        "title": "Sites protégés contre les robots",
+        "hint": "Votre message est prêt à coller",
+        "cta": "Envoyer moi-même"
+      },
+      "unknown_field": {
+        "title": "Une case du formulaire à compléter",
+        "hint": "Le site demande une information inconnue",
+        "cta": "Compléter"
+      }
+    },
+    "skipAll": {
+      "button": "Tout passer",
+      "title": {
+        "to_check": "Passer {count, plural, one {le formulaire à vérifier} other {les # formulaires à vérifier}} ?",
+        "captcha": "Passer {count, plural, one {le site protégé} other {les # sites protégés}} ?",
+        "unknown_field": "Passer {count, plural, one {le formulaire à compléter} other {les # formulaires à compléter}} ?"
+      },
+      "cancel": "Annuler",
+      "confirm": "Tout passer",
+      "done": "{count, plural, =0 {Rien à passer} one {# formulaire passé} other {# formulaires passés}}"
+    },
+    "review": {
+      "back": "Retour à l’envoi",
+      "position": "{index} sur {total}",
+      "empty": "Plus rien à faire ici.",
+      "next": "Suivant",
+      "allDone": "C’est fait, la liste est terminée",
+      "skip": "Passer",
+      "send": "Envoyer",
+      "sentByHand": "C’est envoyé",
+      "message": "Message",
+      "screenshotAlt": "Formulaire rempli sur le site de {name}",
+      "copied": "Message copié",
+      "copyFailed": "Copie impossible, sélectionnez le message à la main",
+      "captcha": {
+        "copyStep": "Copier le message",
+        "copy": "Copier",
+        "openStep": "Ouvrir leur page de contact",
+        "open": "Ouvrir le site"
+      }
+    },
+    "errors": {
+      "generic": "L’action n’a pas abouti. Réessayez.",
+      "gone": "Ce formulaire a déjà été traité.",
+      "missing": "Remplissez toutes les cases avant d’envoyer."
+    }
   }
 }

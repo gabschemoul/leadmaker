@@ -331,14 +331,14 @@ isOneToOne: false
                   ]
                 },"lm_campaign_categories": {
                   Row: {
-                    "abandon_base_kept": number,"abandon_base_searches": number,"abandoned": boolean,"account_id": string,"campaign_id": string,"cards": number,"cards_new": number,"gcid": string,"in_flight": number,"is_generic": boolean,"kept": number,"next_zone_idx": number,"proxy_bytes": number,"recent_kept": number | null,"removed": boolean,"searches": number,"sorted": number,"sorted_kept": number
+                    "abandoned": boolean,"account_id": string,"campaign_id": string,"cards": number,"cards_new": number,"gcid": string,"in_flight": number,"is_generic": boolean,"kept": number,"next_zone_idx": number,"proxy_bytes": number,"recent_kept": number | null,"removed": boolean,"searches": number,"sorted": number,"sorted_kept": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandon_base_kept"?: number,"abandon_base_searches"?: number,"abandoned"?: boolean,"account_id": string,"campaign_id": string,"cards"?: number,"cards_new"?: number,"gcid": string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"recent_kept"?: number | null,"removed"?: boolean,"searches"?: number,"sorted"?: number,"sorted_kept"?: number
+                    "abandoned"?: boolean,"account_id": string,"campaign_id": string,"cards"?: number,"cards_new"?: number,"gcid": string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"recent_kept"?: number | null,"removed"?: boolean,"searches"?: number,"sorted"?: number,"sorted_kept"?: number
                   }
                   Update: {
-                    "abandon_base_kept"?: number,"abandon_base_searches"?: number,"abandoned"?: boolean,"account_id"?: string,"campaign_id"?: string,"cards"?: number,"cards_new"?: number,"gcid"?: string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"recent_kept"?: number | null,"removed"?: boolean,"searches"?: number,"sorted"?: number,"sorted_kept"?: number
+                    "abandoned"?: boolean,"account_id"?: string,"campaign_id"?: string,"cards"?: number,"cards_new"?: number,"gcid"?: string,"in_flight"?: number,"is_generic"?: boolean,"kept"?: number,"next_zone_idx"?: number,"proxy_bytes"?: number,"recent_kept"?: number | null,"removed"?: boolean,"searches"?: number,"sorted"?: number,"sorted_kept"?: number
                   }
                   Relationships: [
                     {

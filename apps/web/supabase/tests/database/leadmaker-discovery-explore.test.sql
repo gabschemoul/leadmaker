@@ -125,7 +125,7 @@ select public.lm_finish_search((select campaign_id from t_ctx), 'gcid:x_c', 4, 3
 set local role postgres;
 select is((select (searches, abandoned)::text from public.lm_campaign_categories
             where campaign_id = (select campaign_id from t_ctx) and gcid = 'gcid:x_c'),
-  '(5,t)', 'Abandonnée à la 5e recherche sans aucun prospect');
+  '(5,f)', 'Plus d''abandon depuis le 11/11/2026 : 5 recherches sans prospect, l''activité continue');
 
 -- Un seul prospect suffit à ne pas être abandonnée par cette règle
 update public.lm_campaign_categories set searches = 4, kept = 0
@@ -145,7 +145,7 @@ select public.lm_finish_search((select campaign_id from t_ctx), 'gcid:x_h', 6, 3
 set local role postgres;
 select is((select abandoned from public.lm_campaign_categories
             where campaign_id = (select campaign_id from t_ctx) and gcid = 'gcid:x_h'),
-  true, '1 prospect en 40 recherches : abandonnée (règle des 5 %)');
+  false, 'Plus d''abandon depuis le 11/11/2026 : 1 prospect en 40 recherches, l''activité continue');
 
 -- Une recherche échouée ne compte pas
 set local role service_role;
@@ -173,7 +173,7 @@ select is((select (searches, in_flight)::text from public.lm_campaign_categories
 
 -- Avancement : activités qui rapportent et abandonnées
 select is((select (productive, abandoned)::text from public.lm_campaign_progress((select campaign_id from t_ctx))),
-  '(4,2)', 'Avancement : 4 activités rapportent (A, B, G, H), 2 abandonnées (C, H)');
+  '(4,0)', 'Avancement : 4 activités rapportent (A, B, G, H), aucune abandonnée (toutes les recherches sont faites)');
 
 -- Campagne terminée quand plus rien n'est à chercher
 update public.lm_campaign_categories set abandoned = true, in_flight = 0

@@ -183,10 +183,6 @@ create table if not exists public.lm_campaign_categories (
   cards integer not null default 0,
   cards_new integer not null default 0,
   kept integer not null default 0,
-  -- Abandon « aucun prospect / trop peu » compté depuis la dernière modification qui a ajouté des villes
-  -- (lm_update_campaign, 11/11/2026) : sans cela, une activité abandonnée à Villeurbanne le restait pour Lyon
-  abandon_base_searches integer not null default 0,
-  abandon_base_kept integer not null default 0,
   -- Trafic réseau réel consommé par les recherches de cette activité (octets, proxy facturé au poids) :
   -- le planificateur classe les activités par prospects par Mo, pas par recherche (« Hotel » rapporte
   -- mais coûte ~35 Mo par recherche, roadmap n°13)
@@ -536,45 +532,50 @@ begin
 
   -- Premier lancement : on fige les villes, les catégories et le tarif (crédits par prospect)
   if not exists (select 1 from public.lm_campaign_zones where campaign_id = p_campaign_id) then
-    -- Le tarif vient de l'estimation faite avec exactement ce ciblage et ces filtres (roadmap n°13).
-    -- Audit A7 : la PLUS CHÈRE des 7 derniers jours (sinon relancer l'estimation jusqu'à tomber sur un
-    -- échantillon favorable faisait baisser le tarif).
-    select e.id, e.credits_per_prospect into v_estimate_id, v_credits
-      from public.lm_estimates e
-     where e.account_id = v_campaign.account_id and e.status = 'done'
-       and e.created_at > now() - interval '7 days'
-       and e.country_code = v_campaign.country_code
-       and e.targeting = v_campaign.targeting
-       and e.filters = (v_campaign.filters - 'paused_reason')
-     order by e.credits_per_prospect desc nulls last, e.created_at desc
-     limit 1;
-
-    if v_estimate_id is not null then
-      update public.lm_campaigns
-         set credits_per_prospect = coalesce(v_credits, 1), estimate_id = v_estimate_id, price_pending = false
-       where id = p_campaign_id;
-    else
-      -- 4/11/2026 : plus aucune attente avant le lancement. Sans estimation terminée, la campagne part tout
-      -- de suite à 1 crédit par prospect ; la mesure (celle en cours, sinon une nouvelle) tourne en parallèle
-      -- et fixe le tarif quand elle se termine (lm_record_estimate_search).
-      select e.id into v_estimate_id
+    -- Campagne avec une cible en mots : son prix se mesure sur les entreprises triées (lm_measure_sort_price).
+    -- Plus de recherches d'essai pour elle (11/11/2026) : elles passaient avant ses vraies recherches dans la file
+    -- des robots (1 à 2 minutes de « 0 recherche faite »), et leurs fiches étaient jetées puis recherchées à nouveau.
+    if nullif(trim(v_campaign.sort_target), '') is null then
+      -- Le tarif vient de l'estimation faite avec exactement ce ciblage et ces filtres (roadmap n°13).
+      -- Audit A7 : la PLUS CHÈRE des 7 derniers jours (sinon relancer l'estimation jusqu'à tomber sur un
+      -- échantillon favorable faisait baisser le tarif).
+      select e.id, e.credits_per_prospect into v_estimate_id, v_credits
         from public.lm_estimates e
-       where e.account_id = v_campaign.account_id and e.status = 'running'
+       where e.account_id = v_campaign.account_id and e.status = 'done'
+         and e.created_at > now() - interval '7 days'
          and e.country_code = v_campaign.country_code
          and e.targeting = v_campaign.targeting
          and e.filters = (v_campaign.filters - 'paused_reason')
-       order by e.created_at desc
-       limit 1
-         for update;
+       order by e.credits_per_prospect desc nulls last, e.created_at desc
+       limit 1;
 
-      if v_estimate_id is null then
-        v_estimate_id := public.lm_create_estimate(v_campaign.account_id, v_campaign.country_code,
-                                                   v_campaign.targeting, v_campaign.filters - 'paused_reason');
+      if v_estimate_id is not null then
+        update public.lm_campaigns
+           set credits_per_prospect = coalesce(v_credits, 1), estimate_id = v_estimate_id, price_pending = false
+         where id = p_campaign_id;
+      else
+        -- 4/11/2026 : plus aucune attente avant le lancement. Sans estimation terminée, la campagne part tout
+        -- de suite à 1 crédit par prospect ; la mesure (celle en cours, sinon une nouvelle) tourne en parallèle
+        -- et fixe le tarif quand elle se termine (lm_record_estimate_search).
+        select e.id into v_estimate_id
+          from public.lm_estimates e
+         where e.account_id = v_campaign.account_id and e.status = 'running'
+           and e.country_code = v_campaign.country_code
+           and e.targeting = v_campaign.targeting
+           and e.filters = (v_campaign.filters - 'paused_reason')
+         order by e.created_at desc
+         limit 1
+           for update;
+
+        if v_estimate_id is null then
+          v_estimate_id := public.lm_create_estimate(v_campaign.account_id, v_campaign.country_code,
+                                                     v_campaign.targeting, v_campaign.filters - 'paused_reason');
+        end if;
+
+        update public.lm_campaigns
+           set credits_per_prospect = 1, estimate_id = v_estimate_id, price_pending = true
+         where id = p_campaign_id;
       end if;
-
-      update public.lm_campaigns
-         set credits_per_prospect = 1, estimate_id = v_estimate_id, price_pending = true
-       where id = p_campaign_id;
     end if;
 
     -- Ordre de passage : chaque ville par son nom (des plus peuplées aux moins peuplées), puis les secteurs
@@ -991,13 +992,9 @@ begin
            else (1 - v_settings.recent_weight) * coalesce(cc.recent_kept, cc.kept::numeric / cc.searches)
                 + v_settings.recent_weight * p_kept
          end,
-         -- compté depuis la dernière relance par ajout de villes (abandon_base_*)
+         -- 11/11/2026 (Gabriel) : toutes les recherches sont faites, une activité n'est plus jamais abandonnée
+         -- faute de résultats (Abbaye à Barcelone s'arrêtait après 10 recherches sur 46)
          abandoned = cc.abandoned
-           or (cc.kept - cc.abandon_base_kept + p_kept = 0
-               and cc.searches - cc.abandon_base_searches + 1 >= v_settings.abandon_zero_after)
-           or (cc.searches - cc.abandon_base_searches + 1 >= v_settings.min_searches
-               and (cc.kept - cc.abandon_base_kept + p_kept)
-                   < v_settings.min_rate * (cc.searches - cc.abandon_base_searches + 1))
    where cc.campaign_id = p_campaign_id and cc.gcid = p_gcid;
 end;
 $$;
@@ -1105,6 +1102,8 @@ as $$
 declare
   v_account_id uuid;
   v_zones integer;
+  -- positions des villes encore ciblées, triées (villes restantes d'une activité : width_bucket)
+  v_positions integer[];
 begin
   select c.account_id into v_account_id from public.lm_campaigns c where c.id = p_campaign_id;
 
@@ -1114,7 +1113,7 @@ begin
     return;
   end if;
 
-  select count(*)::integer into v_zones
+  select count(*)::integer, array_agg(z.pos order by z.pos) into v_zones, v_positions
     from public.lm_campaign_zones z where z.campaign_id = p_campaign_id and not z.removed;
 
   -- 11/11/2026 : recherches comptées sur les villes encore ciblées (une campagne passée de Villeurbanne à Lyon
@@ -1135,16 +1134,13 @@ begin
   )
   select v_zones,
          count(cc.gcid) filter (where not cc.removed)::integer,
-         -- activité relancée sur des villes ajoutées (abandon_base_searches > 0) : elle a sauté les anciennes
-         -- villes jugées vides, son total = faites + en cours + villes restantes à partir de sa position
+         -- par activité : faites + en cours + villes ciblées restantes à partir de sa position (une activité qui a
+         -- sauté des villes, ou abandonnée avant le 11/11/2026, ne les compte pas)
          coalesce(sum(case
                         when cc.abandoned then least(v_zones, cc.done_active + cc.in_flight)
-                        when cc.abandon_base_searches > 0 then
-                          least(v_zones, cc.done_active + cc.in_flight
-                                         + (select count(*) from public.lm_campaign_zones z
-                                             where z.campaign_id = p_campaign_id and not z.removed
-                                               and z.pos >= cc.next_zone_idx))
-                        else v_zones end)
+                        else least(v_zones, cc.done_active + cc.in_flight
+                                            + v_zones - coalesce(width_bucket(cc.next_zone_idx - 1, v_positions), 0))
+                      end)
                     filter (where not cc.removed), 0)::bigint,
          coalesce(sum(cc.done_active) filter (where not cc.removed), 0)::bigint,
          coalesce(sum(cc.in_flight), 0),
@@ -1266,7 +1262,8 @@ begin
   -- Audit A2 : après lancement, changer les filtres ou les activités change la difficulté, donc le tarif.
   -- Une nouvelle mesure est lancée ; d'ici là le tarif actuel s'applique, puis le tarif mesuré
   -- (lm_record_estimate_search). L'ancienne mesure éventuelle est abandonnée.
-  v_reprice := v_launched and (
+  -- 11/11/2026 : pas de recherches d'essai pour une campagne triée (son prix vient du tri IA)
+  v_reprice := v_launched and nullif(trim(v_campaign.sort_target), '') is null and (
     (public.lm_normalize_filters(p_filters) - 'paused_reason') is distinct from (v_campaign.filters - 'paused_reason')
     or array(select t.gcid from public.lm_target_categories(p_targeting) t order by 1)
        is distinct from array(select t.gcid from public.lm_target_categories(v_campaign.targeting) t order by 1));
@@ -1323,15 +1320,13 @@ begin
 
   get diagnostics v_added_zones = row_count;
 
-  -- Activités : même logique. Une activité abandonnée faute du moindre prospect (Abbaye à Villeurbanne, puis Lyon
-  -- ajoutée, 11/11/2026) repart quand des villes sont ajoutées, directement sur ces nouvelles villes (pas sur les
-  -- anciennes déjà jugées vides) ; son abandon se compte depuis maintenant. Celles abandonnées pour faible
-  -- rendement ou écartées par le tri (elles ont des prospects) restent abandonnées : pas de proxy dépensé à nouveau.
+  -- Activités : même logique. Plus d'abandon depuis le 11/11/2026 ; une activité abandonnée avant, faute du moindre
+  -- prospect (Abbaye à Villeurbanne, puis Lyon ajoutée), repart quand des villes sont ajoutées, directement sur ces
+  -- nouvelles villes (pas sur les anciennes déjà jugées vides). Celles abandonnées avec des prospects restent.
   if v_added_zones > 0 then
     update public.lm_campaign_categories cc
-       set abandoned = false, abandon_base_searches = cc.searches, abandon_base_kept = cc.kept,
-           next_zone_idx = greatest(cc.next_zone_idx, v_next_pos)
-     where cc.campaign_id = p_campaign_id and cc.abandoned and cc.kept = cc.abandon_base_kept and cc.sorted = 0;
+       set abandoned = false, next_zone_idx = greatest(cc.next_zone_idx, v_next_pos)
+     where cc.campaign_id = p_campaign_id and cc.abandoned and cc.kept = 0;
   end if;
 
   update public.lm_campaign_categories cc

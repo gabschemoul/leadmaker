@@ -43,7 +43,6 @@ import { CampaignFormsPanel } from './campaign-forms-panel';
 import { CampaignSendingSettings } from './campaign-sending-settings';
 import { type AutopilotMessage, ContactAutopilot } from './contact-autopilot';
 import { PrepareCampaignButton } from './prepare-campaign-button';
-import { SendingSettingsDialog } from './sending-settings-dialog';
 
 export type ContactMode = 'auto' | 'advanced';
 
@@ -88,13 +87,6 @@ export async function ContactStep(props: {
   const autoHref = `${props.basePath}?etape=contacter`;
   const advancedHref = `${props.basePath}?etape=contacter&mode=avance`;
 
-  const senderSection = (
-    <ContactSender
-      campaignId={props.campaignId}
-      spaceId={props.spaceId}
-      basePath={props.basePath}
-    />
-  );
   // expéditeur en clair pour la confirmation du lancement du pilote (analyse UX V-01)
   const campaignSender = await loadCampaignSender(
     getSupabaseServerClient(),
@@ -201,7 +193,7 @@ export async function ContactStep(props: {
           {...props}
           total={total}
           groupHref={groupHref}
-          senderSection={senderSection}
+          senderSection={senderRow}
         />
       )}
     </div>
@@ -216,6 +208,7 @@ async function AdvancedContact(
   },
 ) {
   const t = await getTranslations('campaigns.steps.contact');
+  const tPanel = await getTranslations('campaigns.autopilot.panel');
   const { counts, total } = props;
 
   const canPrepare =
@@ -227,53 +220,68 @@ async function AdvancedContact(
   );
 
   // Mode Avancé refait le 10/11/2026 (« on ne comprend rien ») : une seule carte « Formulaires » — onglets par
-  // étape façon ElevenLabs, « Réglages » (par jour, validation automatique, expéditeur) rangés dans une fenêtre,
-  // « Préparer » en haut à droite. Plus de cartes a/b/c ni de texte d'explication.
+  // étape façon ElevenLabs, « Préparer » en haut à droite. 11/11 : les réglages (expéditeur, par jour, validation
+  // automatique) dans un panneau « Réglages » à droite, comme le pilote automatique (retour de Gabriel).
   return (
-    <CampaignFormsPanel
-      campaignId={props.campaignId}
-      spaceId={props.spaceId}
-      accountId={props.accountId}
-      counts={counts}
-      initialGroup={props.group}
-      initialRows={props.rows}
-      total={total}
-      actions={
-        <>
-          {counts.preparing > 0 ? (
-            <span
-              className={
-                'text-muted-foreground flex items-center gap-2 text-sm'
-              }
-              data-test={'contact-preparing'}
-            >
-              <Loader2 className={'size-4 shrink-0 animate-spin'} />
-              {t('preparingShort', { count: counts.preparing })}
-            </span>
-          ) : null}
-
-          <SendingSettingsDialog>
-            {props.senderSection}
-
-            <div className={'border-t pt-5'}>
-              <CampaignSendingSettings
-                campaignId={props.campaignId}
-                dailyLimit={props.dailyLimit}
-                autoValidation={props.autoValidation}
-                autoValidationAllowed={Boolean(autoValidationAllowed)}
-                contactable={props.autopilot?.contactable ?? null}
-              />
-            </div>
-          </SendingSettingsDialog>
-
-          <PrepareCampaignButton
-            campaignId={props.campaignId}
-            disabled={!canPrepare || counts.preparing > 0}
-            label={total > 0 ? t('prepareAgain') : t('prepareButton')}
-          />
-        </>
+    <div
+      className={
+        'grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]'
       }
-    />
+    >
+      <div className={'min-w-0'}>
+        <CampaignFormsPanel
+          campaignId={props.campaignId}
+          spaceId={props.spaceId}
+          accountId={props.accountId}
+          counts={counts}
+          initialGroup={props.group}
+          initialRows={props.rows}
+          total={total}
+          actions={
+            <>
+              {counts.preparing > 0 ? (
+                <span
+                  className={
+                    'text-muted-foreground flex items-center gap-2 text-sm'
+                  }
+                  data-test={'contact-preparing'}
+                >
+                  <Loader2 className={'size-4 shrink-0 animate-spin'} />
+                  {t('preparingShort', { count: counts.preparing })}
+                </span>
+              ) : null}
+
+              <PrepareCampaignButton
+                campaignId={props.campaignId}
+                disabled={!canPrepare || counts.preparing > 0}
+                label={total > 0 ? t('prepareAgain') : t('prepareButton')}
+              />
+            </>
+          }
+        />
+      </div>
+
+      <aside
+        className={
+          'bg-card ring-foreground/10 flex flex-col gap-5 rounded-2xl p-5 ring-1'
+        }
+        data-test={'advanced-settings'}
+      >
+        <h3 className={'text-[15px] font-medium'}>{tPanel('title')}</h3>
+
+        {props.senderSection}
+
+        <div className={'border-t pt-5'}>
+          <CampaignSendingSettings
+            campaignId={props.campaignId}
+            dailyLimit={props.dailyLimit}
+            autoValidation={props.autoValidation}
+            autoValidationAllowed={Boolean(autoValidationAllowed)}
+            contactable={props.autopilot?.contactable ?? null}
+          />
+        </div>
+      </aside>
+    </div>
   );
 }
 

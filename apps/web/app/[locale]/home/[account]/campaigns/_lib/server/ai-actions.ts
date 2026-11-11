@@ -46,14 +46,11 @@ type CategoryOption = {
 /** Activités trouvées par les mots de la phrase, au plus */
 const MATCH_LIMIT = 300;
 
-/** Activités candidates envoyées à l'IA, au plus (familles entières comprises) */
-const CANDIDATE_LIMIT = 900;
+/** Activités par famille lues au plus (la plus grande en compte ~530) : garde-fou, jamais un plafond réel */
+const FAMILY_READ_LIMIT = 5000;
 
 /** Familles dépliées en entier : celles où tombent le plus d'activités trouvées par les mots */
 const TOP_FAMILIES = 2;
-
-/** Activités proposées au plus (11/11 : 15 laissait de côté pizzerias, brasseries… d'une cible « Restaurants ») */
-const MAX_PICKS = 400;
 
 /** Mots vides ignorés pour retrouver les activités (« Restaurants, sans les chaînes, avec un site »). */
 const STOP_WORDS = new Set([
@@ -126,10 +123,10 @@ On te donne sa phrase (sa cible) et une liste numérotée d'activités possibles
    lieu (pays, ville, région) : la zone se choisit à part.
 2. name : un nom de campagne court et clair, 2 à 5 mots, dans la langue de sa phrase, sans lieu
    (par exemple « Restaurants indépendants », « Agences web », « Plombiers chauffagistes »).
-3. picks : les numéros de TOUTES les activités de la liste qui correspondent à sa cible, sans en oublier :
-   pour « Restaurants », toutes les sortes de restaurants (italien, japonais, pizzeria, brasserie, crêperie…).
-   N'écarte que celles qui ne sont pas sa cible (pour « Restaurants » : boulangerie, bar sans cuisine, épicerie…).
-   Les plus pertinentes d'abord.`;
+3. picks : les numéros de TOUTES les activités de la liste qui correspondent à sa cible, sans exception et sans
+   limite de nombre : pour « Restaurants », toutes les sortes de restaurants (chaque cuisine, pizzeria, brasserie,
+   crêperie, restauration rapide, traiteur avec salle…), même s'il y en a des centaines. En cas de doute, coche.
+   N'écarte que ce qui n'est clairement pas sa cible. Les plus pertinentes d'abord.`;
 
 export const suggestTargetAction = authActionClient
   .inputSchema(SuggestTargetSchema)
@@ -156,7 +153,7 @@ export const suggestTargetAction = authActionClient
 
       const response = await getAiClient().messages.parse({
         model: AI_FAST_MODEL,
-        max_tokens: 4000,
+        max_tokens: 16000,
         system: SYSTEM,
         output_config: { effort: 'low', format: zodOutputFormat(AiSuggestion) },
         messages: [
@@ -173,13 +170,12 @@ export const suggestTargetAction = authActionClient
         return fallback;
       }
 
+      // toutes les activités cochées par l'IA, sans plafond (demande ferme de Gabriel, 11/11)
       const categories = [
         ...new Set(
           parsed.picks.filter((n) => n >= 1 && n <= candidates.length),
         ),
-      ]
-        .slice(0, MAX_PICKS)
-        .map((n) => candidates[n - 1]!);
+      ].map((n) => candidates[n - 1]!);
 
       return {
         refinements: parsed.refinements
@@ -269,7 +265,7 @@ async function preselectCategories(phrase: string): Promise<CategoryOption[]> {
     .in('family', families)
     .order('is_generic', { ascending: false })
     .order('label_fr', { ascending: true })
-    .limit(CANDIDATE_LIMIT);
+    .limit(FAMILY_READ_LIMIT);
 
   if (familyError) {
     await logError(familyError);
@@ -279,15 +275,13 @@ async function preselectCategories(phrase: string): Promise<CategoryOption[]> {
 
   const seen = new Set<string>();
 
-  return [...rows, ...(familyRows ?? [])]
-    .filter((row) => {
-      if (seen.has(row.gcid)) {
-        return false;
-      }
+  return [...rows, ...(familyRows ?? [])].filter((row) => {
+    if (seen.has(row.gcid)) {
+      return false;
+    }
 
-      seen.add(row.gcid);
+    seen.add(row.gcid);
 
-      return true;
-    })
-    .slice(0, CANDIDATE_LIMIT);
+    return true;
+  });
 }

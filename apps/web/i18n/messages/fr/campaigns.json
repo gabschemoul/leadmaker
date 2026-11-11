@@ -735,8 +735,6 @@
     "spentLabel": "Crédits utilisés",
     "launchStep": {
       "preparing": "Préparation de la campagne…",
-      "measuring": "Estimation de la zone : {done, number} recherches d’essai sur {total, number}",
-      "queued": "En attente d’un robot ({count, plural, one {# recherche passe avant la vôtre} other {# recherches passent avant la vôtre}})",
       "starting": "Démarrage de la première recherche…",
       "running": "Première recherche en cours…",
       "resume": "En pause, reprise prévue vers {time}"

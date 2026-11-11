@@ -370,16 +370,12 @@ begin
 
   select * into v_settings from public.lm_discovery_settings where id;
 
-  -- Rendement du tri par activité ; une activité qui ne donne presque que des entreprises hors cible est
-  -- abandonnée (la recherche cesse d'y dépenser du proxy)
+  -- Rendement du tri par activité (le planificateur cherche d'abord les activités qui rapportent). 11/11/2026
+  -- (Gabriel) : toutes les recherches sont faites, une activité n'est plus abandonnée pour rendement trop faible.
   if v_gcid is not null then
     update public.lm_campaign_categories cc
        set sorted = cc.sorted + 1,
-           sorted_kept = cc.sorted_kept + (p_verdict = 'gardee')::integer,
-           abandoned = cc.abandoned
-             or (cc.sorted + 1 >= v_settings.sort_abandon_after
-                 and (cc.sorted_kept + (p_verdict = 'gardee')::integer)
-                       < v_settings.sort_abandon_rate * (cc.sorted + 1))
+           sorted_kept = cc.sorted_kept + (p_verdict = 'gardee')::integer
      where cc.campaign_id = p_campaign_id and cc.gcid = v_gcid;
   end if;
 

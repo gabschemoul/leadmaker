@@ -127,7 +127,7 @@ select is((select status::text || ' / ' || (filters ->> 'paused_reason') || ' / 
             where id = 'e1000000-0000-4000-8000-0000000000c1'), 'paused / too_hard / true', 'Moins de 6 % : pause « trop difficile »');
 select is((select sorted || ' / ' || sorted_kept || ' / ' || abandoned from public.lm_campaign_categories
             where campaign_id = 'e1000000-0000-4000-8000-0000000000c1' and gcid = 'gcid:sc_bakery'),
-  '5 / 0 / true', 'Activité qui ne donne rien de gardé : abandonnée');
+  '5 / 0 / false', 'Activité qui ne donne rien de gardé : continue (plus d''abandon depuis le 11/11/2026)');
 select is(pg_temp.bal(), 100, 'Trop difficile : rien de payé');
 
 -- 8. Nouvelle cible : compteurs remis à zéro, prix de nouveau en attente

@@ -397,17 +397,6 @@ function launchStep(phase: CampaignLive['progress']['phase']): {
     return { key: 'preparing', values: {} };
   }
 
-  if (phase.estimateTotal && phase.estimateTotal > 0) {
-    return {
-      key: 'measuring',
-      values: { done: phase.estimateDone ?? 0, total: phase.estimateTotal },
-    };
-  }
-
-  if (phase.ahead > 0) {
-    return { key: 'queued', values: { count: phase.ahead } };
-  }
-
   return { key: 'starting', values: {} };
 }
 

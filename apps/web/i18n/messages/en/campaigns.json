@@ -735,8 +735,6 @@
     "spentLabel": "Credits used",
     "launchStep": {
       "preparing": "Preparing the campaign…",
-      "measuring": "Sizing up the area: {done, number} of {total, number} trial searches",
-      "queued": "Waiting for a robot ({count, plural, one {# search ahead of yours} other {# searches ahead of yours}})",
       "starting": "Starting the first search…",
       "running": "First search in progress…",
       "resume": "Paused, resuming around {time}"

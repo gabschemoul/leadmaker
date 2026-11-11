@@ -34,6 +34,8 @@ export async function fetchSortedCompanies(
     version: number;
     tab: CompaniesTab;
     page: number;
+    /** langue de l'appli, pour le libellé de l'activité */
+    locale?: string;
   },
 ) {
   const from = params.page * COMPANIES_PAGE_SIZE;
@@ -41,13 +43,14 @@ export async function fetchSortedCompanies(
   let query = client
     .from('lm_campaign_prospects')
     .select(
-      'prospect_id, reason, group_key, sorted_at, prospect:lm_prospects(id, name, category, city, rating, review_count, address, phone, website, found_email, is_chain, source, excluded_at, created_at)',
+      'prospect_id, reason, group_key, sorted_at, gcid, prospect:lm_prospects(id, name, category, city, rating, review_count, address, phone, website, found_email, is_chain, source, excluded_at, created_at)',
     )
     .eq('campaign_id', params.campaignId);
 
   query =
     params.tab === 'kept'
-      ? query.or(keptCompaniesFilter(params.version))
+      ? // payés seulement : au-delà d'un plafond ou sans crédits, un gardé n'est ni payé ni contactable (11/11)
+        query.or(keptCompaniesFilter(params.version)).not('paid_at', 'is', null)
       : query
           .is('client_choice', null)
           .eq('verdict', 'a_verifier')
@@ -62,12 +65,35 @@ export async function fetchSortedCompanies(
     throw error;
   }
 
+  // activité dans la langue de l'appli (la fiche garde le libellé anglais de l'annuaire : « Italian restaurant »)
+  const gcids = [
+    ...new Set((data ?? []).map((row) => row.gcid).filter(Boolean)),
+  ] as string[];
+  const labels = new Map<string, string>();
+
+  if (gcids.length > 0) {
+    const { data: categories } = await client
+      .from('lm_categories')
+      .select('gcid, label_fr, label_en')
+      .in('gcid', gcids);
+
+    for (const category of categories ?? []) {
+      labels.set(
+        category.gcid,
+        params.locale?.startsWith('en') ? category.label_en : category.label_fr,
+      );
+    }
+  }
+
   return (data ?? []).map((row) => ({
     id: row.prospect_id,
     name: row.prospect?.name ?? '',
     city: row.prospect?.city ?? null,
     website: row.prospect?.website ?? null,
-    category: row.prospect?.category ?? null,
+    category:
+      (row.gcid ? labels.get(row.gcid) : undefined) ??
+      row.prospect?.category ??
+      null,
     phone: row.prospect?.phone ?? null,
     /** fiche complète, ouverte au clic (même tiroir que la page Prospects) */
     prospect: row.prospect,

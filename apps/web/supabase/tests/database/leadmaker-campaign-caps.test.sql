@@ -59,6 +59,8 @@ select is((select status::text || ' / ' || (filters ->> 'paused_reason') from pu
             where id = 'ec000000-0000-4000-8000-0000000000a1'), 'paused / cap_reached', 'Campagne en pause « plafond atteint »');
 set local role postgres;
 select makerkit.authenticate_as('cap_owner');
+select is((select kept from public.lm_campaign_sort_summary('ec000000-0000-4000-8000-0000000000a1')), 2,
+  'Onglet « Gardés » : les 2 payés seulement, pas le 3e gardé au-delà du plafond');
 select throws_ok($$ select public.lm_start_campaign('ec000000-0000-4000-8000-0000000000a1') $$,
   'P0001', 'campaign cap reached', 'Reprise refusée tant que le plafond n''est pas monté');
 

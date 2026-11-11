@@ -144,8 +144,11 @@ begin
   select v_campaign.sort_target,
          (select s.offer from public.lm_spaces s where s.id = v_campaign.space_id),
          count(*)::integer,
+         -- gardés PAYÉS seulement (11/11/2026) : au-delà d'un plafond ou sans crédits, un gardé n'est ni payé ni
+         -- contactable, l'onglet « Gardés » ne le compte pas (« Gardés 9 » pour un plafond de 3 payés)
          count(*) filter (where coalesce(cp.client_choice, case when cp.sorted_version = v_campaign.sort_version
-                                                                  then cp.verdict end) = 'gardee')::integer,
+                                                                  then cp.verdict end) = 'gardee'
+                            and cp.paid_at is not null)::integer,
          count(*) filter (where cp.client_choice is null and cp.sorted_version = v_campaign.sort_version
                             and cp.verdict = 'a_verifier')::integer,
          count(*) filter (where cp.client_choice is null

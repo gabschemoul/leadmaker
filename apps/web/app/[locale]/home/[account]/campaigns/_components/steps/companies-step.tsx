@@ -462,6 +462,7 @@ function CompaniesList(props: {
   count: number;
 }) {
   const t = useTranslations();
+  const locale = useLocale();
   const client = useSupabase();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
@@ -475,6 +476,7 @@ function CompaniesList(props: {
     props.version,
     props.tab,
     props.count,
+    locale,
   ];
 
   const query = useInfiniteQuery({
@@ -485,6 +487,7 @@ function CompaniesList(props: {
         version: props.version,
         tab: props.tab,
         page: pageParam,
+        locale,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, pages) =>

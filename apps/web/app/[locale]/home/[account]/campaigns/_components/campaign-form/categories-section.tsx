@@ -225,9 +225,12 @@ export function CategoriesSection(props: {
 
             <ChipList>
               {proposedMissing.length > 0 ? (
-                <Button
+                // même taille que les activités choisies (étiquettes de 28 px), en pointillés : une proposition
+                <button
                   type={'button'}
-                  variant={'chip'}
+                  className={
+                    'text-brand hover:bg-brand-pale/60 inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-dashed border-current/40 px-2.5 text-sm font-medium transition-colors'
+                  }
                   data-test={'campaign-categories-add-proposed'}
                   onClick={() =>
                     field.onChange(
@@ -236,12 +239,12 @@ export function CategoriesSection(props: {
                     )
                   }
                 >
-                  <Plus />
+                  <Plus className={'size-3.5'} />
                   <Trans
                     i18nKey={'campaigns.form.who.addProposed'}
                     values={{ count: proposedMissing.length }}
                   />
-                </Button>
+                </button>
               ) : null}
 
               {categories.slice(0, shown).map((category) => (
@@ -261,7 +264,9 @@ export function CategoriesSection(props: {
                 <Button
                   type={'button'}
                   variant={'link'}
-                  className={'text-brand h-auto self-center p-0 text-sm'}
+                  className={
+                    'text-brand h-auto cursor-pointer self-center p-0 text-sm'
+                  }
                   data-test={'campaign-categories-more'}
                   onClick={() =>
                     setShown((current) => current + CATEGORY_CHIPS_STEP)

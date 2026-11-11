@@ -261,13 +261,13 @@ export const createCampaignAction = authActionClient
 
     revalidatePath('/home/[account]/campaigns', 'layout');
 
-    // « Enregistrer en brouillon » : rien n'est lancé, on reste sur le formulaire du brouillon (retour du 11/11 :
-    // pas de retour à la liste) ; la page du brouillon si l'offre n'a pas pu être enregistrée (elle dit pourquoi)
+    // « Enregistrer en brouillon » : rien n'est lancé ; on ouvre la page du brouillon (Cible, Prospects… et
+    // « Lancer la recherche »), qui dit aussi pourquoi si l'offre n'a pas pu être enregistrée (retour du 11/11)
     if (!values.launch) {
       redirect(
         saveError
           ? companiesHref(values.accountSlug, data.id, saveError)
-          : `/home/${values.accountSlug}/campaigns/${data.id}/edit`,
+          : `/home/${values.accountSlug}/campaigns/${data.id}`,
       );
     }
 
@@ -348,9 +348,7 @@ export const updateCampaignAction = authActionClient
     if (isDraft && !values.launch) {
       revalidatePath('/home/[account]/campaigns', 'layout');
 
-      redirect(
-        `/home/${values.accountSlug}/campaigns/${values.campaignId}/edit`,
-      );
+      redirect(`/home/${values.accountSlug}/campaigns/${values.campaignId}`);
     }
 
     if (!launchError && isDraft && sortTarget.length > 0) {

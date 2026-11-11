@@ -186,7 +186,8 @@
       "addProposed": "Add {count, plural, one {# suggested activity} other {# suggested activities}}"
     },
     "cancel": "Cancel",
-    "saveDraft": "Save as draft"
+    "saveDraft": "Save as draft",
+    "draftSaved": "Draft saved"
   },
   "estimate": {
     "title": "Estimate",

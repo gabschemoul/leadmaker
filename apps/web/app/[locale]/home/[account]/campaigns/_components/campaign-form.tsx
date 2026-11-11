@@ -33,6 +33,7 @@ import {
 import { If } from '@kit/ui/if';
 import { Input } from '@kit/ui/input';
 import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
+import { toast } from '@kit/ui/sonner';
 import { Trans } from '@kit/ui/trans';
 
 import type { CountryOption } from '~/lib/leadmaker/countries';
@@ -130,8 +131,16 @@ function CampaignFormBody(props: {
 
   const showSpaceSelect = props.spaces.length > 1;
 
+  // brouillon enregistré : on arrive sur sa page, un message le confirme (retour du 11/11 : aucune indication)
+  const confirmDraft = ({ input }: { input: { launch?: boolean } }) => {
+    if (input.launch === false) {
+      toast.success(t('form.draftSaved'));
+    }
+  };
+
   const create = useAction(createCampaignAction, {
     onExecute: () => setError(null),
+    onNavigation: confirmDraft,
     onError: ({ error }) => {
       setError(error.serverError ?? 'campaigns.errors.createFailed');
     },
@@ -139,6 +148,7 @@ function CampaignFormBody(props: {
 
   const update = useAction(updateCampaignAction, {
     onExecute: () => setError(null),
+    onNavigation: confirmDraft,
     onError: ({ error }) => {
       setError(error.serverError ?? 'campaigns.errors.updateFailed');
     },

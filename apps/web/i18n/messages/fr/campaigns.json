@@ -186,7 +186,8 @@
       "addProposed": "Ajouter {count, plural, one {# activité proposée} other {# activités proposées}}"
     },
     "cancel": "Annuler",
-    "saveDraft": "Enregistrer en brouillon"
+    "saveDraft": "Enregistrer en brouillon",
+    "draftSaved": "Brouillon enregistré"
   },
   "estimate": {
     "title": "Estimation",

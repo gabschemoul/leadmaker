@@ -29,20 +29,24 @@ const SuggestTargetSchema = z.object({
   locale: z.enum(['fr', 'en']).default('fr'),
 });
 
-const AiSuggestion = z.object({
+/** Réponse rapide (Haiku, ~1 s) : précisions, nom, lieux — séparée des activités (5 à 10 s) pour que le nom et la
+ * zone suivent la phrase tout de suite (retour du 11/11 : rien ne changeait après la première phrase). */
+const AiTarget = z.object({
   refinements: z.array(z.string()).max(5),
-  /** nom de campagne : les mots du client, raccourcis, sans rien inventer */
+  /** nom de campagne : résume la cible, sans rien inventer */
   name: z.string(),
-  /** lieu cité dans la phrase (« Restaurants à Lyon ») : ville et code pays ISO, sinon null */
-  place: z.object({
-    city: z.string().nullable(),
+  /** villes citées dans la phrase (« Restaurants à Lyon et Villeurbanne ») et code pays ISO */
+  places: z.object({
+    cities: z.array(z.string()),
     country_code: z.string().nullable(),
   }),
-  /**
-   * Choix famille par famille (11/11 : une liste de numéros à cocher un par un oubliait des activités, comme
-   * « Brasserie » pour « Restaurants ») : toute la famille sauf quelques-unes, ou seulement quelques-unes.
-   * Essayé sur le vrai catalogue : « Restaurants » → 488 activités (brasserie, pizzeria, crêperie…), 40 écartées.
-   */
+});
+
+/**
+ * Choix famille par famille (11/11 : une liste de numéros à cocher un par un oubliait des activités, comme
+ * « Brasserie » pour « Restaurants ») : toute la famille sauf quelques-unes, ou seulement quelques-unes.
+ */
+const AiActivities = z.object({
   families: z.array(
     z.object({
       family: z.string(),
@@ -127,29 +131,33 @@ const STOP_WORDS = new Set([
   'grandes',
 ]);
 
-const SYSTEM = `Tu aides un client de Prospectigo à décrire les entreprises qu'il veut contacter.
-On te donne sa phrase (sa cible) et des activités possibles, rangées par famille et numérotées
-(numéro | libellé français / libellé anglais).
+const TARGET_SYSTEM = `Tu aides un client de Prospectigo à décrire les entreprises qu'il veut contacter. On te donne sa
+phrase (sa cible).
 
 1. refinements : 3 à 5 précisions courtes qui rendraient sa cible plus nette, chacune un bout de phrase à
    ajouter tel quel à sa phrase (par exemple « sans celles qui font du web », « 2 personnes ou plus »).
    Dans la langue de sa phrase, sans répéter ce qu'elle dit déjà. Jamais de précision de lieu.
 2. name : un nom de campagne court (2 à 6 mots), naturel, qui RÉSUME intelligemment la cible comme le ferait un
-   commercial : reformule, regroupe, retire le superflu, garde le lieu s'il y en a un. N'ajoute JAMAIS un critère
+   commercial : reformule, regroupe, retire le superflu, garde les lieux s'il y en a. N'ajoute JAMAIS un critère
    que le client n'a pas donné. Exemples : « Restaurants, sans les chaînes nationales, avec une carte en ligne ou
    un site web » → « Restaurants hors chaînes avec site » ; « je cherche des plombiers et des chauffagistes sur
    Lyon et autour » → « Plombiers et chauffagistes Lyon » ; « Brasseries en France » → « Brasseries en France ».
-3. place : la ville citée dans la phrase (« Restaurants à Lyon » → city « Lyon », country_code « FR »), sinon
-   city null ; country_code = code ISO du pays cité ou de la ville, sinon null.
-4. families : pour CHAQUE famille de la liste :
-   - take_all = true quand la cible couvre la plupart des activités de la famille (« Restaurants » : la famille
-     Restauration). Alors drop = les numéros des SEULES activités qui ne sont pas du tout la cible (pour
-     « Restaurants » : boulangerie, épicerie, magasin de mobilier, fabrication de bière, glacier sans salle…).
-     Tout ce qui n'est pas dans drop est coché : chaque sorte de restaurant (italien, grec, burgers, sushis,
-     brasserie, pizzeria, crêperie…) doit rester hors de drop. keep = [].
-   - take_all = false sinon. Alors keep = les numéros de TOUTES les activités qui correspondent à la cible (pour
-     « Brasseries » : chaque activité de brasserie et de bar à bière), drop = []. keep vide si rien ne correspond.
-   En cas de doute sur une activité, coche-la.`;
+3. places : cities = TOUTES les villes citées dans la phrase (« Restaurants à Lyon et Villeurbanne » → ["Lyon",
+   "Villeurbanne"]), [] s'il n'y en a pas ; country_code = code ISO du pays cité ou de ces villes, sinon null.`;
+
+const ACTIVITIES_SYSTEM = `Tu aides un client de Prospectigo à choisir les activités des entreprises qu'il veut contacter.
+On te donne sa phrase (sa cible) et des activités possibles, rangées par famille et numérotées
+(numéro | libellé français / libellé anglais).
+
+families : pour CHAQUE famille de la liste :
+- take_all = true quand la cible couvre la plupart des activités de la famille (« Restaurants » : la famille
+  Restauration). Alors drop = les numéros des SEULES activités qui ne sont pas du tout la cible (pour
+  « Restaurants » : boulangerie, épicerie, magasin de mobilier, fabrication de bière, glacier sans salle…).
+  Tout ce qui n'est pas dans drop est coché : chaque sorte de restaurant (italien, grec, burgers, sushis,
+  brasserie, pizzeria, crêperie…) doit rester hors de drop. keep = [].
+- take_all = false sinon. Alors keep = les numéros de TOUTES les activités qui correspondent à la cible (pour
+  « Brasseries » : chaque activité de brasserie et de bar à bière), drop = []. keep vide si rien ne correspond.
+En cas de doute sur une activité, coche-la. Le lieu cité dans la phrase ne compte pas ici.`;
 
 /** Familles choisies par l'IA (numéros dans la liste des familles) */
 const AiFamilies = z.object({ families: z.array(z.number().int()) });
@@ -167,6 +175,69 @@ const FAMILIES_SYSTEM = `On te donne la cible d'un client et la liste numéroté
 Donne les NUMÉROS de TOUTES les familles qui peuvent contenir des entreprises de sa cible (en cas de doute, inclus-la).`;
 
 /**
+ * Précisions, nom de la campagne et villes citées, d'après la phrase (Claude Haiku, ~1 s).
+ */
+export const suggestTargetAction = authActionClient
+  .inputSchema(SuggestTargetSchema)
+  .action(async ({ parsedInput: { phrase, locale } }) => {
+    const empty = {
+      refinements: [] as string[],
+      name: '',
+      places: null as { cities: string[]; countryCode: string | null } | null,
+    };
+
+    if (!aiEnabled()) {
+      return empty;
+    }
+
+    try {
+      const response = await getAiClient().messages.parse({
+        model: AI_FAST_MODEL,
+        max_tokens: 2000,
+        system: TARGET_SYSTEM,
+        output_config: { effort: 'low', format: zodOutputFormat(AiTarget) },
+        messages: [
+          { role: 'user', content: `Phrase du client (${locale}) : ${phrase}` },
+        ],
+      });
+      const parsed = response.parsed_output;
+
+      if (!parsed) {
+        return empty;
+      }
+
+      const cities = parsed.places.cities
+        .map((city) => city.trim().slice(0, 100))
+        .filter(Boolean)
+        .slice(0, 20);
+      const countryCode =
+        parsed.places.country_code?.trim().toUpperCase() || null;
+
+      return {
+        refinements: parsed.refinements
+          .map((r) => r.trim())
+          .filter((r) => r.length > 0 && r.length <= 80),
+        name: parsed.name.trim().slice(0, 80),
+        places:
+          cities.length > 0
+            ? {
+                cities,
+                countryCode:
+                  countryCode && /^[A-Z]{2}$/.test(countryCode)
+                    ? countryCode
+                    : null,
+              }
+            : null,
+      };
+    } catch (error) {
+      const logger = await getLogger();
+      logger.warn({ name: 'leadmaker.ai.target', error }, 'AI target failed');
+
+      return empty;
+    }
+  });
+
+/**
  * Activités proposées d'après la phrase, en deux étapes (11/11/2026, mesuré sur 18 cibles variées contre une
  * relecture exhaustive du catalogue : 91 % des bonnes activités trouvées, contre ~55 % en ne regardant que les
  * activités dont le nom contient un mot de la phrase — « Entreprises du BTP » en trouvait 0) :
@@ -174,7 +245,7 @@ Donne les NUMÉROS de TOUTES les familles qui peuvent contenir des entreprises d
  * 2. Claude Sonnet voit TOUTES les activités de ces familles et choisit famille par famille (deux passes réunies :
  *    le client préfère trop que pas assez).
  */
-export const suggestTargetAction = authActionClient
+export const suggestActivitiesAction = authActionClient
   .inputSchema(SuggestTargetSchema)
   .action(async ({ parsedInput: { phrase, locale } }) => {
     const client = getSupabaseServerClient();
@@ -182,13 +253,7 @@ export const suggestTargetAction = authActionClient
       preselectCategories(phrase),
       loadCatalog(client),
     ]);
-    const fallback = {
-      refinements: [] as string[],
-      name: '',
-      place: null as { city: string; countryCode: string | null } | null,
-      categories: words.slice(0, 10),
-      ai: false,
-    };
+    const fallback = { categories: words.slice(0, 10), ai: false };
 
     if (!aiEnabled() || !catalog.data || catalog.data.length === 0) {
       return fallback;
@@ -284,10 +349,10 @@ export const suggestTargetAction = authActionClient
             .parse({
               model: AI_WRITER_MODEL,
               max_tokens: 16000,
-              system: SYSTEM,
+              system: ACTIVITIES_SYSTEM,
               output_config: {
                 effort: 'low',
-                format: zodOutputFormat(AiSuggestion),
+                format: zodOutputFormat(AiActivities),
               },
               messages: [
                 {
@@ -331,24 +396,7 @@ export const suggestTargetAction = authActionClient
       const categories = [...chosen]
         .sort((a, b) => a - b)
         .map((i) => candidates[i]!);
-      const city = parsed.place.city?.trim() || null;
-      const countryCode =
-        parsed.place.country_code?.trim().toUpperCase() || null;
-
       return {
-        refinements: parsed.refinements
-          .map((r) => r.trim())
-          .filter((r) => r.length > 0 && r.length <= 80),
-        name: parsed.name.trim().slice(0, 80),
-        place: city
-          ? {
-              city: city.slice(0, 100),
-              countryCode:
-                countryCode && /^[A-Z]{2}$/.test(countryCode)
-                  ? countryCode
-                  : null,
-            }
-          : null,
         categories,
         ai: true,
       };

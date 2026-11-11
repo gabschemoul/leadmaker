@@ -41,7 +41,10 @@ import {
   OFFER_MAX,
   SORT_TARGET_MAX,
 } from '../../_lib/schema/campaign.schema';
-import { suggestTargetAction } from '../../_lib/server/ai-actions';
+import {
+  suggestActivitiesAction,
+  suggestTargetAction,
+} from '../../_lib/server/ai-actions';
 import { searchCitiesAction } from '../../_lib/server/geo-actions';
 import { useDebouncedValue } from '../../_lib/use-debounced-value';
 import { CategoriesSection } from './categories-section';
@@ -83,7 +86,8 @@ export function WhoSection(props: {
   const settled = useDebouncedValue(phrase.trim(), SUGGEST_DELAY);
   const lang = locale.startsWith('fr') ? 'fr' : 'en';
 
-  const suggestions = useQuery({
+  // nom, zone et précisions : réponse rapide (~1 s) ; activités : réponse approfondie (5 à 10 s), à part
+  const target = useQuery({
     queryKey: ['lm-suggest-target', settled, lang],
     enabled: settled.length >= 3,
     queryFn: async () => {
@@ -103,32 +107,56 @@ export function WhoSection(props: {
     placeholderData: keepPreviousData,
   });
 
+  const activities = useQuery({
+    queryKey: ['lm-suggest-activities', settled, lang],
+    enabled: settled.length >= 3,
+    queryFn: async () => {
+      const result = await suggestActivitiesAction({
+        phrase: settled.slice(0, SUGGEST_MAX),
+        locale: lang,
+      });
+
+      if (!result?.data) {
+        throw new Error(result?.serverError ?? 'suggest failed');
+      }
+
+      return result.data;
+    },
+    staleTime: Infinity,
+    retry: false,
+    placeholderData: keepPreviousData,
+  });
+
   const proposed = useSuggestedCategories(
-    suggestions.data?.categories,
+    activities.data?.categories,
     props.categoryLimit,
   );
 
-  usePlaceFromPhrase(suggestions.data?.place ?? null, settled, props.editing);
+  usePlacesFromPhrase(
+    target.data && !target.isPlaceholderData ? target.data.places : undefined,
+    settled,
+    props.editing,
+  );
 
   useAutoName({
     editing: props.editing,
     phrase,
     settled,
-    aiName: suggestions.isError
+    aiName: target.isError
       ? ''
-      : suggestions.data && !suggestions.isPlaceholderData
-        ? suggestions.data.name
+      : target.data && !target.isPlaceholderData
+        ? target.data.name
         : null,
   });
 
-  const updating =
-    phrase.trim().length >= 3 &&
-    (phrase.trim() !== settled || suggestions.isFetching);
+  const typing = phrase.trim().length >= 3 && phrase.trim() !== settled;
+  const updating = typing || target.isFetching;
+  const suggestingActivities = typing || activities.isFetching;
 
   const chips = [
     ...new Set([
       ...state.added.filter((item) => hasRefinement(phrase, item)),
-      ...(settled.length >= 3 ? (suggestions.data?.refinements ?? []) : []),
+      ...(settled.length >= 3 ? (target.data?.refinements ?? []) : []),
     ]),
   ].slice(0, MAX_CHIPS);
 
@@ -238,7 +266,7 @@ export function WhoSection(props: {
 
         <CategoriesSection
           limit={props.categoryLimit}
-          suggesting={updating}
+          suggesting={suggestingActivities}
           proposed={proposed}
         />
 
@@ -357,56 +385,89 @@ function useSuggestedCategories(
 }
 
 /**
- * Lieu cité dans la phrase (« Restaurants à Lyon ») : reporté dans « Où ? » (pays, puis la ville en « Villes
- * précises »), seulement tant que le client n'a pas choisi de zone lui-même (tout le pays, aucune ville). Une fois
- * par phrase. Jamais en modification (le pays d'une campagne lancée est figé).
+ * Villes citées dans la phrase (« Restaurants à Lyon et Villeurbanne ») : reportées dans « Où ? » (pays, puis les
+ * villes en « Villes précises »), tant que le client n'a pas choisi sa zone lui-même : zone jamais touchée, ou
+ * encore celle posée ici d'après une phrase précédente (elle suit alors la nouvelle phrase). Jamais en
+ * modification (le pays d'une campagne lancée est figé).
  *
  * useEffect justifié : recopier dans le formulaire le résultat de requêtes asynchrones (IA puis villes).
  */
-function usePlaceFromPhrase(
-  place: { city: string; countryCode: string | null } | null,
+function usePlacesFromPhrase(
+  places: { cities: string[]; countryCode: string | null } | null | undefined,
   settled: string,
   editing: boolean,
 ) {
   const { getValues, setValue } = useFormContext<CampaignFormValues>();
-  const applied = useRef<string | null>(null);
+  const applied = useRef<{ phrase: string | null; cities: string | null }>({
+    phrase: null,
+    cities: null,
+  });
 
   useEffect(() => {
-    if (editing || !place || applied.current === settled) {
+    if (editing || places === undefined || applied.current.phrase === settled) {
       return;
     }
 
+    const currentCities = (getValues('cities') ?? [])
+      .map((city) => city.geonameId)
+      .join(',');
     const untouched =
       getValues('citiesMode') === 'country' &&
-      (getValues('cities') ?? []).length === 0 &&
+      currentCities === '' &&
       !getValues('radiusCity');
+    const ours =
+      getValues('citiesMode') === 'list' &&
+      applied.current.cities !== null &&
+      currentCities === applied.current.cities;
 
-    if (!untouched) {
+    if (!untouched && !ours) {
       return;
     }
 
-    applied.current = settled;
+    applied.current.phrase = settled;
 
-    const countryCode = place.countryCode ?? getValues('countryCode');
+    // plus de ville dans la phrase : la zone posée ici revient à « Tout le pays »
+    if (!places) {
+      if (ours) {
+        setValue('citiesMode', 'country', { shouldDirty: true });
+        setValue('cities', [], { shouldDirty: true });
+        applied.current.cities = null;
+      }
 
-    void searchCitiesAction({ countryCode, query: place.city }).then(
-      (result) => {
-        const city = result?.data?.[0];
+      return;
+    }
 
-        if (!city || applied.current !== settled) {
-          return;
-        }
+    const countryCode = places.countryCode ?? getValues('countryCode');
 
-        if (countryCode !== getValues('countryCode')) {
-          setValue('countryCode', countryCode, { shouldValidate: true });
-          setValue('radiusCity', null);
-        }
+    void Promise.all(
+      places.cities.map((city) =>
+        searchCitiesAction({ countryCode, query: city }).then(
+          (result) => result?.data?.[0] ?? null,
+        ),
+      ),
+    ).then((found) => {
+      const cities = found.filter(
+        (city): city is NonNullable<typeof city> => city !== null,
+      );
 
-        setValue('citiesMode', 'list', { shouldDirty: true });
-        setValue('cities', [city], { shouldDirty: true, shouldValidate: true });
-      },
-    );
-  }, [place, settled, editing, getValues, setValue]);
+      if (cities.length === 0 || applied.current.phrase !== settled) {
+        return;
+      }
+
+      if (countryCode !== getValues('countryCode')) {
+        setValue('countryCode', countryCode, { shouldValidate: true });
+        setValue('radiusCity', null);
+      }
+
+      const unique = [
+        ...new Map(cities.map((city) => [city.geonameId, city])).values(),
+      ];
+
+      applied.current.cities = unique.map((city) => city.geonameId).join(',');
+      setValue('citiesMode', 'list', { shouldDirty: true });
+      setValue('cities', unique, { shouldDirty: true, shouldValidate: true });
+    });
+  }, [places, settled, editing, getValues, setValue]);
 }
 
 /**

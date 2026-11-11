@@ -68,7 +68,7 @@ select public.lm_record_prospect('e2000000-0000-4000-8000-0000000000d1',
 select public.lm_finish_sort('e2000000-0000-4000-8000-0000000000d1', pg_temp.pid(n || '.fr'), 1, v, null, 'x')
   from (values ('d1', 'gardee'), ('d2', 'gardee'), ('d3', 'ecartee')) x(n, v);
 select ok((pg_temp.camp('e2000000-0000-4000-8000-0000000000d1')).price_pending, 'S-01 : recherche en cours, prix toujours en mesure');
-select is(pg_temp.bal(), 100, 'S-01 : rien de payé pendant la mesure');
+select is(pg_temp.bal(), 98, 'S-01 : les 2 gardées payées tout de suite pendant la mesure (1 crédit, choix du 11/11)');
 
 set local role postgres;
 update public.lm_campaigns set status = 'completed' where id = 'e2000000-0000-4000-8000-0000000000d1';

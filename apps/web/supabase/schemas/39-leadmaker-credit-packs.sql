@@ -128,7 +128,7 @@ begin
   for v_campaign in
     select c.id
       from public.lm_campaigns c
-     where c.account_id = p_account_id and c.status <> 'archived' and not c.price_pending
+     where c.account_id = p_account_id and c.status <> 'archived'
        and nullif(trim(c.sort_target), '') is not null
        and exists (select 1 from public.lm_campaign_prospects cp
                     where cp.campaign_id = c.id and cp.paid_at is null

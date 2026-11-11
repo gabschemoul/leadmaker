@@ -160,7 +160,7 @@
     },
     "categoriesSelectAll": "Select all",
     "categoriesDeselectAll": "Deselect all",
-    "categoriesMore": "Show more ({count, number} more)",
+    "categoriesMore": "+ {count, plural, one {# more activity} other {# more activities}}",
     "whereTitle": "Where?",
     "moreCriteriaTitle": "Advanced settings",
     "launch": "Launch the search",

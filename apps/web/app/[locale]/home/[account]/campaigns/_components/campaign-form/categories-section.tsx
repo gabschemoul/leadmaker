@@ -260,9 +260,8 @@ export function CategoriesSection(props: {
               <If condition={categories.length > shown}>
                 <Button
                   type={'button'}
-                  size={'sm'}
-                  variant={'ghost'}
-                  className={'self-center'}
+                  variant={'link'}
+                  className={'text-brand h-auto self-center p-0 text-sm'}
                   data-test={'campaign-categories-more'}
                   onClick={() =>
                     setShown((current) => current + CATEGORY_CHIPS_STEP)

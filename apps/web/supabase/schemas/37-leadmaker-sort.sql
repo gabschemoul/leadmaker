@@ -8,7 +8,8 @@
  * « Écartées »).
  * Crédit unique (§5, étape 4) : 1 crédit = 1 entreprise gardée, prise de contact comprise. Le prix d'une
  * entreprise gardée (1, 2 ou 4 crédits) est mesuré sur les premières entreprises triées (part de gardées), puis
- * figé ; les gardées pendant la mesure sont payées au palier final (lm_settle_kept). Sous 6 % de gardées, la
+ * figé ; depuis le 11/11/2026 les gardées sont payées tout de suite, au tarif du moment (1 crédit pendant la
+ * mesure, puis le palier mesuré) (lm_settle_kept). Sous 6 % de gardées, la
  * campagne se met en pause (« too_hard ») : le client doit préciser sa cible.
  * -------------------------------------------------------
  */
@@ -267,7 +268,10 @@ declare
 begin
   select * into v_campaign from public.lm_campaigns where id = p_campaign_id;
 
-  if v_campaign.id is null or v_campaign.price_pending then
+  -- 11/11/2026 (Gabriel, choix 2) : un gardé est payé tout de suite, même pendant la mesure du prix, au tarif du
+  -- moment (1 crédit au départ) ; une fois le prix mesuré, les suivants le sont au prix mesuré. Avant, les gardés
+  -- attendaient 300 triés pour être payés, donc contactables (« 3 à contacter » sur 69 gardés).
+  if v_campaign.id is null then
     return 0;
   end if;
 

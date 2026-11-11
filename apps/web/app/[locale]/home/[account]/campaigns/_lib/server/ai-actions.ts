@@ -3,8 +3,8 @@
 /**
  * Rôle : propositions de l'IA sur l'écran « Qui ? » (CDC-PARCOURS-TRI-ANNUAIRE §3) : précisions de la cible en
  * puces et activités à chercher, d'après la phrase du client.
- * Données : lm_categories (présélection par recherche texte, client Supabase de l'utilisateur) puis Claude Haiku
- * (ai.service.ts). Sans clé IA : présélection seule, sans précisions.
+ * Données : catalogue lm_categories (catalog.ts, client Supabase de l'utilisateur), Claude Haiku (familles) puis
+ * Claude Sonnet (activités, nom, lieu) (ai.service.ts). Sans clé IA : activités trouvées par les mots seulement.
  * Écritures : aucune. Le client choisit toujours lui-même ses activités (règle n°10).
  */
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
@@ -16,10 +16,12 @@ import { getSupabaseServerClient } from '@kit/supabase/server-client';
 
 import {
   AI_FAST_MODEL,
+  AI_WRITER_MODEL,
   aiEnabled,
   getAiClient,
 } from '~/lib/server/leadmaker/ai.service';
 
+import { loadCatalog } from './catalog';
 import { foldSearch } from './search-text';
 
 const SuggestTargetSchema = z.object({
@@ -62,12 +64,6 @@ type CategoryOption = {
 
 /** Activités trouvées par les mots de la phrase, au plus */
 const MATCH_LIMIT = 300;
-
-/** Activités par famille lues au plus (la plus grande en compte ~530) : garde-fou, jamais un plafond réel */
-const FAMILY_READ_LIMIT = 5000;
-
-/** Familles dépliées en entier : celles où tombent le plus d'activités trouvées par les mots */
-const TOP_FAMILIES = 2;
 
 /** Mots vides ignorés pour retrouver les activités (« Restaurants, sans les chaînes, avec un site »). */
 const STOP_WORDS = new Set([
@@ -138,9 +134,11 @@ On te donne sa phrase (sa cible) et des activités possibles, rangées par famil
 1. refinements : 3 à 5 précisions courtes qui rendraient sa cible plus nette, chacune un bout de phrase à
    ajouter tel quel à sa phrase (par exemple « sans celles qui font du web », « 2 personnes ou plus »).
    Dans la langue de sa phrase, sans répéter ce qu'elle dit déjà. Jamais de précision de lieu.
-2. name : le nom de la campagne = les mots du client, raccourcis à 2 à 6 mots, SANS RIEN INVENTER ni ajouter
-   (« Brasseries en France » → « Brasseries en France » ; « Restaurants, sans les chaînes nationales, avec un
-   site » → « Restaurants sans chaînes »). Garde le lieu s'il est dans la phrase.
+2. name : un nom de campagne court (2 à 6 mots), naturel, qui RÉSUME intelligemment la cible comme le ferait un
+   commercial : reformule, regroupe, retire le superflu, garde le lieu s'il y en a un. N'ajoute JAMAIS un critère
+   que le client n'a pas donné. Exemples : « Restaurants, sans les chaînes nationales, avec une carte en ligne ou
+   un site web » → « Restaurants hors chaînes avec site » ; « je cherche des plombiers et des chauffagistes sur
+   Lyon et autour » → « Plombiers et chauffagistes Lyon » ; « Brasseries en France » → « Brasseries en France ».
 3. place : la ville citée dans la phrase (« Restaurants à Lyon » → city « Lyon », country_code « FR »), sinon
    city null ; country_code = code ISO du pays cité ou de la ville, sinon null.
 4. families : pour CHAQUE famille de la liste :
@@ -153,30 +151,120 @@ On te donne sa phrase (sa cible) et des activités possibles, rangées par famil
      « Brasseries » : chaque activité de brasserie et de bar à bière), drop = []. keep vide si rien ne correspond.
    En cas de doute sur une activité, coche-la.`;
 
+/** Familles choisies par l'IA (numéros dans la liste des familles) */
+const AiFamilies = z.object({ families: z.array(z.number().int()) });
+
+/** Exemples d'activités montrés pour chaque famille à la première étape */
+const FAMILY_EXAMPLES = 25;
+
+/** Familles ajoutées d'office : celles où tombent le plus d'activités trouvées par les mots de la phrase */
+const WORD_FAMILIES = 3;
+
+/** Passes de la seconde étape, réunies (11/11 : une seule passe oubliait des activités d'une fois sur l'autre) */
+const PICK_RUNS = 2;
+
+const FAMILIES_SYSTEM = `On te donne la cible d'un client et la liste numérotée des familles d'activités (avec des exemples).
+Donne les NUMÉROS de TOUTES les familles qui peuvent contenir des entreprises de sa cible (en cas de doute, inclus-la).`;
+
+/**
+ * Activités proposées d'après la phrase, en deux étapes (11/11/2026, mesuré sur 18 cibles variées contre une
+ * relecture exhaustive du catalogue : 91 % des bonnes activités trouvées, contre ~55 % en ne regardant que les
+ * activités dont le nom contient un mot de la phrase — « Entreprises du BTP » en trouvait 0) :
+ * 1. Claude Haiku choisit les familles concernées (+ les familles des mots de la phrase) ;
+ * 2. Claude Sonnet voit TOUTES les activités de ces familles et choisit famille par famille (deux passes réunies :
+ *    le client préfère trop que pas assez).
+ */
 export const suggestTargetAction = authActionClient
   .inputSchema(SuggestTargetSchema)
   .action(async ({ parsedInput: { phrase, locale } }) => {
-    const candidates = await preselectCategories(phrase);
+    const client = getSupabaseServerClient();
+    const [words, catalog] = await Promise.all([
+      preselectCategories(phrase),
+      loadCatalog(client),
+    ]);
     const fallback = {
       refinements: [] as string[],
       name: '',
       place: null as { city: string; countryCode: string | null } | null,
-      categories: candidates.slice(0, 10),
+      categories: words.slice(0, 10),
       ai: false,
     };
 
-    if (!aiEnabled() || candidates.length === 0) {
+    if (!aiEnabled() || !catalog.data || catalog.data.length === 0) {
       return fallback;
     }
 
-    try {
-      const byFamily = new Map<string, number[]>();
+    const byFamily = new Map<string, CategoryOption[]>();
 
-      candidates.forEach((c, index) => {
-        byFamily.set(c.family, [...(byFamily.get(c.family) ?? []), index]);
+    for (const row of catalog.data) {
+      byFamily.set(row.family, [...(byFamily.get(row.family) ?? []), row]);
+    }
+
+    const familyNames = [...byFamily.keys()].sort((a, b) =>
+      a.localeCompare(b, 'fr'),
+    );
+
+    try {
+      const ai = getAiClient();
+      const familyList = familyNames
+        .map(
+          (family, index) =>
+            `${index + 1}. ${family} (ex. : ${(byFamily.get(family) ?? [])
+              .slice(0, FAMILY_EXAMPLES)
+              .map((c) => c.label_fr)
+              .join(', ')})`,
+        )
+        .join('\n');
+
+      const step1 = await ai.messages.parse({
+        model: AI_FAST_MODEL,
+        max_tokens: 4000,
+        system: FAMILIES_SYSTEM,
+        output_config: { effort: 'low', format: zodOutputFormat(AiFamilies) },
+        messages: [
+          {
+            role: 'user',
+            content: `Cible : ${phrase}\n\nFamilles :\n${familyList}`,
+          },
+        ],
       });
 
-      const list = [...byFamily.entries()]
+      const families = new Set(
+        (step1.parsed_output?.families ?? [])
+          .filter((n) => n >= 1 && n <= familyNames.length)
+          .map((n) => familyNames[n - 1]!),
+      );
+
+      const wordFamilies = new Map<string, number>();
+
+      for (const row of words) {
+        wordFamilies.set(row.family, (wordFamilies.get(row.family) ?? 0) + 1);
+      }
+
+      [...wordFamilies.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, WORD_FAMILIES)
+        .forEach(([family]) => families.add(family));
+
+      if (families.size === 0) {
+        return fallback;
+      }
+
+      const candidates = [...families].flatMap((family) =>
+        [...(byFamily.get(family) ?? [])].sort((a, b) =>
+          a.label_fr.localeCompare(b.label_fr, 'fr'),
+        ),
+      );
+      const indexesByFamily = new Map<string, number[]>();
+
+      candidates.forEach((c, index) => {
+        indexesByFamily.set(c.family, [
+          ...(indexesByFamily.get(c.family) ?? []),
+          index,
+        ]);
+      });
+
+      const list = [...indexesByFamily.entries()]
         .map(
           ([family, indexes]) =>
             `## Famille : ${family}\n` +
@@ -190,41 +278,53 @@ export const suggestTargetAction = authActionClient
         )
         .join('\n\n');
 
-      const response = await getAiClient().messages.parse({
-        model: AI_FAST_MODEL,
-        max_tokens: 8000,
-        system: SYSTEM,
-        output_config: { effort: 'low', format: zodOutputFormat(AiSuggestion) },
-        messages: [
-          {
-            role: 'user',
-            content: `Phrase du client (${locale}) : ${phrase}\n\nActivités possibles :\n${list}`,
-          },
-        ],
-      });
+      const runs = await Promise.all(
+        Array.from({ length: PICK_RUNS }, () =>
+          ai.messages
+            .parse({
+              model: AI_WRITER_MODEL,
+              max_tokens: 16000,
+              system: SYSTEM,
+              output_config: {
+                effort: 'low',
+                format: zodOutputFormat(AiSuggestion),
+              },
+              messages: [
+                {
+                  role: 'user',
+                  content: `Phrase du client (${locale}) : ${phrase}\n\nActivités possibles :\n${list}`,
+                },
+              ],
+            })
+            .then((response) => response.parsed_output)
+            .catch(() => null),
+        ),
+      );
 
-      const parsed = response.parsed_output;
+      const parsed = runs.find((run) => run !== null);
 
       if (!parsed) {
         return fallback;
       }
 
-      // toutes les activités retenues, sans plafond (demande ferme de Gabriel, 11/11)
+      // toutes les activités retenues par l'une ou l'autre passe, sans plafond (demande ferme de Gabriel, 11/11)
       const chosen = new Set<number>();
 
-      for (const [family, indexes] of byFamily) {
-        const choice = parsed.families.find((f) => f.family === family);
+      for (const run of runs) {
+        for (const [family, indexes] of indexesByFamily) {
+          const choice = run?.families.find((f) => f.family === family);
 
-        if (!choice) {
-          continue;
-        }
+          if (!choice) {
+            continue;
+          }
 
-        if (choice.take_all) {
-          const drop = new Set(choice.drop.map((n) => n - 1));
-          indexes.filter((i) => !drop.has(i)).forEach((i) => chosen.add(i));
-        } else {
-          const keep = new Set(choice.keep.map((n) => n - 1));
-          indexes.filter((i) => keep.has(i)).forEach((i) => chosen.add(i));
+          if (choice.take_all) {
+            const drop = new Set(choice.drop.map((n) => n - 1));
+            indexes.filter((i) => !drop.has(i)).forEach((i) => chosen.add(i));
+          } else {
+            const keep = new Set(choice.keep.map((n) => n - 1));
+            indexes.filter((i) => keep.has(i)).forEach((i) => chosen.add(i));
+          }
         }
       }
 
@@ -264,9 +364,8 @@ export const suggestTargetAction = authActionClient
   });
 
 /**
- * Activités candidates : celles dont le libellé contient un mot utile de la phrase (mots vides et pluriel simple
- * retirés), puis toutes les activités des familles où elles tombent le plus (« Restaurants » amène toute la
- * famille Restauration : pizzerias, brasseries, crêperies… que les mots seuls ne trouvent pas). Activités exclues
+ * Activités dont le libellé contient un mot utile de la phrase (mots vides et pluriel simple retirés) : servent
+ * à ajouter leurs familles à celles choisies par l'IA, et de repli quand l'IA ne répond pas. Activités exclues
  * (administrations, banques) écartées.
  */
 async function preselectCategories(phrase: string): Promise<CategoryOption[]> {
@@ -287,15 +386,7 @@ async function preselectCategories(phrase: string): Promise<CategoryOption[]> {
     return [];
   }
 
-  const logError = async (error: unknown) => {
-    const logger = await getLogger();
-    logger.error(
-      { name: 'leadmaker.ai.preselect', error },
-      'Category preselection failed',
-    );
-  };
-
-  const { data: matched, error } = await client
+  const { data, error } = await client
     .from('lm_categories')
     .select('gcid, label_fr, label_en, family')
     .eq('is_excluded', false)
@@ -304,51 +395,14 @@ async function preselectCategories(phrase: string): Promise<CategoryOption[]> {
     .limit(MATCH_LIMIT);
 
   if (error) {
-    await logError(error);
+    const logger = await getLogger();
+    logger.error(
+      { name: 'leadmaker.ai.preselect', error },
+      'Category preselection failed',
+    );
 
     return [];
   }
 
-  const rows = matched ?? [];
-  const perFamily = new Map<string, number>();
-
-  for (const row of rows) {
-    perFamily.set(row.family, (perFamily.get(row.family) ?? 0) + 1);
-  }
-
-  const families = [...perFamily.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, TOP_FAMILIES)
-    .map(([family]) => family);
-
-  if (families.length === 0) {
-    return rows;
-  }
-
-  const { data: familyRows, error: familyError } = await client
-    .from('lm_categories')
-    .select('gcid, label_fr, label_en, family')
-    .eq('is_excluded', false)
-    .in('family', families)
-    .order('is_generic', { ascending: false })
-    .order('label_fr', { ascending: true })
-    .limit(FAMILY_READ_LIMIT);
-
-  if (familyError) {
-    await logError(familyError);
-
-    return rows;
-  }
-
-  const seen = new Set<string>();
-
-  return [...rows, ...(familyRows ?? [])].filter((row) => {
-    if (seen.has(row.gcid)) {
-      return false;
-    }
-
-    seen.add(row.gcid);
-
-    return true;
-  });
+  return data ?? [];
 }

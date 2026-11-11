@@ -13,6 +13,7 @@ import {
   FamilyCategoriesSchema,
   SearchCategoriesSchema,
 } from '../schema/campaign.schema';
+import { loadCatalog } from './catalog';
 import { getCategoryLimit } from './power-user';
 import { foldSearch } from './search-text';
 
@@ -43,44 +44,6 @@ export const listCategoryFamiliesAction = authActionClient.action(async () => {
     .map(([family, count]) => ({ family, count }))
     .sort((a, b) => a.family.localeCompare(b.family, 'fr'));
 });
-
-/** Lignes par requête : l'API de la base n'en renvoie pas plus (max_rows). */
-const CATALOG_PAGE = 1000;
-
-/**
- * Tout le catalogue d'activités (hors activités exclues), lu par pages de
- * CATALOG_PAGE : une seule requête s'arrêtait aux 1 000 premières des ~3 900.
- */
-async function loadCatalog(client: ReturnType<typeof getSupabaseServerClient>) {
-  const rows: {
-    gcid: string;
-    label_fr: string;
-    label_en: string;
-    family: string;
-  }[] = [];
-
-  // 20 pages au plus : garde-fou si le catalogue grossissait démesurément
-  for (let page = 0; page < 20; page++) {
-    const { data, error } = await client
-      .from('lm_categories')
-      .select('gcid, label_fr, label_en, family')
-      .eq('is_excluded', false)
-      .order('gcid', { ascending: true })
-      .range(page * CATALOG_PAGE, (page + 1) * CATALOG_PAGE - 1);
-
-    if (error) {
-      return { data: null, error };
-    }
-
-    rows.push(...data);
-
-    if (data.length < CATALOG_PAGE) {
-      break;
-    }
-  }
-
-  return { data: rows, error: null };
-}
 
 /**
  * Toutes les activités du catalogue, pour « Tout sélectionner » (utilisateurs

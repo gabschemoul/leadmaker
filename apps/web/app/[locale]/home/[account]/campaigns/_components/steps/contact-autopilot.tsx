@@ -1274,6 +1274,10 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
   const ago = (date: Date, now: number) => {
     const seconds = Math.max(0, Math.round((now - date.getTime()) / 1000));
 
+    if (seconds < 5) {
+      return t('ago.now');
+    }
+
     if (seconds < 60) {
       return t('ago.seconds', { count: seconds });
     }

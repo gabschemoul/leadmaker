@@ -629,7 +629,8 @@
       },
       "ago": {
         "seconds": "il y a {count} s",
-        "minutes": "il y a {count} min"
+        "minutes": "il y a {count} min",
+        "now": "à l'instant"
       }
     },
     "errors": {

@@ -629,7 +629,8 @@
       },
       "ago": {
         "seconds": "{count}s ago",
-        "minutes": "{count} min ago"
+        "minutes": "{count} min ago",
+        "now": "just now"
       }
     },
     "errors": {

@@ -2,7 +2,7 @@
   "step": {
     "label": "Results",
     "subTodo": "Nothing sent yet",
-    "subSent": "{count, plural, one {# company contacted} other {# companies contacted}}"
+    "subSent": "{count, plural, one {# prospect contacted} other {# prospects contacted}}"
   },
   "kpi": {
     "contacted": "Contacted",

@@ -68,7 +68,7 @@
     "profile": "Profil",
     "application": "Application",
     "campaigns": "Campagnes",
-    "prospects": "Entreprises",
+    "prospects": "Prospects",
     "spaces": "Dossiers clients",
     "new": "Nouvelle",
     "sender": "Expéditeurs",
@@ -128,7 +128,7 @@
   "error": "Erreur",
   "themeDescription": "Choisissez l'apparence de l'application",
   "topBar": {
-    "search": "Rechercher une entreprise…",
+    "search": "Rechercher un prospect…",
     "credits": "{count} crédits"
   }
 }

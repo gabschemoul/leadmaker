@@ -1,5 +1,5 @@
 {
-  "pageTitle": "Entreprises",
+  "pageTitle": "Prospects",
   "columns": {
     "name": "Nom",
     "category": "Activité",
@@ -12,7 +12,7 @@
     "email": "E-mail",
     "source": "Origine",
     "campaign": "Campagne",
-    "date": "Ajoutée le"
+    "date": "Ajouté le"
   },
   "columnsMenu": {
     "button": "Colonnes",
@@ -24,16 +24,16 @@
     "csv": "Import"
   },
   "chainBadge": "Chaîne",
-  "excludedBadge": "Exclue",
+  "excludedBadge": "Exclu",
   "selectAll": "Tout sélectionner sur cette page",
   "selectRow": "Sélectionner cette ligne",
-  "total": "{count, plural, =0 {Aucune entreprise} one {# entreprise} other {# entreprises}}",
+  "total": "{count, plural, =0 {Aucun prospect} one {# prospect} other {# prospects}}",
   "pageOf": "Page {page} sur {count}",
   "previousPage": "Précédente",
   "nextPage": "Suivante",
-  "empty": "Aucune entreprise pour l'instant.",
-  "noMatch": "Aucune entreprise ne correspond à vos filtres.",
-  "campaignLink": "Voir toutes les entreprises de cette campagne",
+  "empty": "Aucun prospect pour l'instant.",
+  "noMatch": "Aucun prospect ne correspond à vos filtres.",
+  "campaignLink": "Voir tous les prospects de cette campagne",
   "filters": {
     "folder": "Dossier client",
     "searchPlaceholder": "Nom, adresse, site, téléphone…",
@@ -57,9 +57,9 @@
     "source": "Origine",
     "sourceAll": "Toutes les origines",
     "status": "Statut",
-    "statusActive": "Actives",
-    "statusExcluded": "Exclues",
-    "statusAll": "Actives et exclues",
+    "statusActive": "Actifs",
+    "statusExcluded": "Exclus",
+    "statusAll": "Actifs et exclus",
     "reset": "Réinitialiser",
     "remove": "Retirer ce filtre",
     "more": "Filtres"
@@ -75,7 +75,7 @@
     "source": "Origine : {value}"
   },
   "selection": {
-    "count": "{count, plural, one {# sélectionnée} other {# sélectionnées}}",
+    "count": "{count, plural, one {# sélectionné} other {# sélectionnés}}",
     "clear": "Annuler la sélection",
     "export": "Exporter la sélection",
     "exclude": "Exclure",
@@ -84,29 +84,29 @@
     "findEmails": "Chercher les e-mails"
   },
   "confirm": {
-    "excludeTitle": "Exclure {count, plural, one {cette entreprise} other {ces # entreprises}} ?",
-    "excludeDescription": "Ces entreprises ne seront jamais contactées, même si une autre campagne les retrouve. Vous pourrez les rétablir à tout moment.",
+    "excludeTitle": "Exclure {count, plural, one {ce prospect} other {ces # prospects}} ?",
+    "excludeDescription": "Ces prospects ne seront jamais contactés, même si une autre campagne les retrouve. Vous pourrez les rétablir à tout moment.",
     "excludeSubmit": "Exclure",
-    "restoreTitle": "Rétablir {count, plural, one {cette entreprise} other {ces # entreprises}} ?",
-    "restoreDescription": "Ces entreprises pourront de nouveau être contactées.",
+    "restoreTitle": "Rétablir {count, plural, one {ce prospect} other {ces # prospects}} ?",
+    "restoreDescription": "Ces prospects pourront de nouveau être contactés.",
     "restoreSubmit": "Rétablir",
-    "deleteTitle": "Supprimer {count, plural, one {cette entreprise} other {ces # entreprises}} ?",
-    "deleteDescription": "La suppression est définitive : ces entreprises disparaissent de votre liste et ne peuvent pas être récupérées. Si une campagne les retrouve, elles seront ajoutées de nouveau. Pour ne plus jamais les contacter, préférez « Exclure ».",
+    "deleteTitle": "Supprimer {count, plural, one {ce prospect} other {ces # prospects}} ?",
+    "deleteDescription": "La suppression est définitive : ces prospects disparaissent de votre liste et ne peuvent pas être récupérés. Si une campagne les retrouve, ils seront ajoutés de nouveau. Pour ne plus jamais les contacter, préférez « Exclure ».",
     "deleteSubmit": "Supprimer définitivement",
     "working": "Un instant…"
   },
   "actions": {
-    "excludeDone": "{count, plural, one {# entreprise exclue} other {# entreprises exclues}}",
-    "restoreDone": "{count, plural, one {# entreprise rétablie} other {# entreprises rétablies}}",
-    "deleteDone": "{count, plural, one {# entreprise supprimée} other {# entreprises supprimées}}",
-    "nothingDone": "Aucune entreprise n'a été modifiée.",
+    "excludeDone": "{count, plural, one {# prospect exclu} other {# prospects exclus}}",
+    "restoreDone": "{count, plural, one {# prospect rétabli} other {# prospects rétablis}}",
+    "deleteDone": "{count, plural, one {# prospect supprimé} other {# prospects supprimés}}",
+    "nothingDone": "Aucun prospect n'a été modifié.",
     "excludeFailed": "L'exclusion a échoué. Réessayez dans un instant.",
     "restoreFailed": "Le rétablissement a échoué. Réessayez dans un instant.",
     "deleteFailed": "La suppression a échoué. Réessayez dans un instant.",
     "findEmailsDone": "{count, plural, one {# recherche lancée} other {# recherches lancées}} : les adresses apparaîtront dans la colonne E-mail d'ici quelques minutes (rechargez la page).",
-    "findEmailsNothing": "Rien à chercher : ces entreprises ont déjà un e-mail, n'ont pas de site ou sont déjà en cours de recherche.",
+    "findEmailsNothing": "Rien à chercher : ces prospects ont déjà un e-mail, n'ont pas de site ou sont déjà en cours de recherche.",
     "findEmailsFailed": "La recherche d'e-mails n'a pas pu démarrer. Réessayez dans un instant.",
-    "noPlan": "Choisissez un forfait pour rechercher les e-mails des entreprises."
+    "noPlan": "Choisissez un forfait pour rechercher les e-mails des prospects."
   },
   "export": {
     "button": "Exporter en CSV",

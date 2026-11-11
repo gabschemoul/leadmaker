@@ -129,7 +129,7 @@
     "growth": {
       "description": "For a business prospecting for itself",
       "features": {
-        "discovery": "15,000 credits per month (1 credit = 1 business kept)",
+        "discovery": "15,000 credits per month (1 credit = 1 prospect kept)",
         "outreach": "Contacting included, no extra credit",
         "seats": "1 seat",
         "campaigns": "1 active campaign",
@@ -139,7 +139,7 @@
     "business": {
       "description": "The main plan for agencies",
       "features": {
-        "discovery": "40,000 credits per month (1 credit = 1 business kept)",
+        "discovery": "40,000 credits per month (1 credit = 1 prospect kept)",
         "outreach": "Contacting included, no extra credit",
         "seats": "3 seats",
         "campaigns": "3 active campaigns",
@@ -149,7 +149,7 @@
     "scale": {
       "description": "For high-volume agencies and networks",
       "features": {
-        "discovery": "100,000 credits per month (1 credit = 1 business kept)",
+        "discovery": "100,000 credits per month (1 credit = 1 prospect kept)",
         "outreach": "Contacting included, no extra credit",
         "seats": "6 seats",
         "campaigns": "10 active campaigns",

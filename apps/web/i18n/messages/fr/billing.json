@@ -129,7 +129,7 @@
     "growth": {
       "description": "Pour une PME qui prospecte pour elle-même",
       "features": {
-        "discovery": "15 000 crédits par mois (1 crédit = 1 entreprise gardée)",
+        "discovery": "15 000 crédits par mois (1 crédit = 1 prospect gardé)",
         "outreach": "Prise de contact incluse, sans crédit en plus",
         "seats": "1 siège",
         "campaigns": "1 campagne active",
@@ -139,7 +139,7 @@
     "business": {
       "description": "L'offre principale pour les agences",
       "features": {
-        "discovery": "40 000 crédits par mois (1 crédit = 1 entreprise gardée)",
+        "discovery": "40 000 crédits par mois (1 crédit = 1 prospect gardé)",
         "outreach": "Prise de contact incluse, sans crédit en plus",
         "seats": "3 sièges",
         "campaigns": "3 campagnes actives",
@@ -149,7 +149,7 @@
     "scale": {
       "description": "Pour les agences et réseaux à fort volume",
       "features": {
-        "discovery": "100 000 crédits par mois (1 crédit = 1 entreprise gardée)",
+        "discovery": "100 000 crédits par mois (1 crédit = 1 prospect gardé)",
         "outreach": "Prise de contact incluse, sans crédit en plus",
         "seats": "6 sièges",
         "campaigns": "10 campagnes actives",

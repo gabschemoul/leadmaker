@@ -2,12 +2,12 @@
   "step": {
     "label": "Résultats",
     "subTodo": "Pas encore d'envoi",
-    "subSent": "{count, plural, one {# entreprise contactée} other {# entreprises contactées}}"
+    "subSent": "{count, plural, one {# prospect contacté} other {# prospects contactés}}"
   },
   "kpi": {
-    "contacted": "Contactées",
+    "contacted": "Contactés",
     "toVerify": "À vérifier",
-    "remaining": "Pas encore contactées",
+    "remaining": "Pas encore contactés",
     "progress": "Avancement"
   },
   "contacted": {
@@ -17,8 +17,8 @@
   "byGroup": {
     "title": "Par groupe",
     "group": "Groupe",
-    "kept": "Gardées",
-    "contacted": "Contactées",
+    "kept": "Gardés",
+    "contacted": "Contactés",
     "toVerify": "À vérifier",
     "progress": "Avancement",
     "outside": "Hors groupes"
@@ -26,7 +26,7 @@
   "versions": {
     "title": "Par version",
     "version": "Version",
-    "contacted": "Contactées",
+    "contacted": "Contactés",
     "toVerify": "À vérifier",
     "versionLabel": "Version {letter}",
     "other": "Versions modifiées ou retirées"

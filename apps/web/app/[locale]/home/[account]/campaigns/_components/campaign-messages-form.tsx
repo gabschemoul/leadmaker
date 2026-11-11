@@ -821,9 +821,13 @@ export function CampaignMessagesForm(props: {
                     'flex flex-wrap items-center justify-between gap-3'
                   }
                 >
-                  <div className={'flex items-center gap-1'}>
+                  {/* une seule rangée alignée à gauche, « + » collé à la dernière version ; défile si elle déborde
+                      (11/11 : à 7 versions, la rangée passait sur deux lignes centrées) */}
+                  <div className={'flex min-w-0 flex-1 items-center gap-1'}>
                     <TabsList
-                      className={'flex-wrap'}
+                      className={
+                        'max-w-full [scrollbar-width:none] justify-start overflow-x-auto'
+                      }
                       aria-label={tm('versionsLabel')}
                     >
                       {Array.from({ length: versionCount }, (_, index) => (
@@ -832,7 +836,12 @@ export function CampaignMessagesForm(props: {
                           value={String(slotIndex(view.tab, index))}
                           data-test={`messages-tab-${index}`}
                         >
-                          {tm('versionTab', { letter: versionLetter(index) })}
+                          {/* au-delà de 4 versions, la lettre seule : la rangée tient sur une ligne */}
+                          {versionCount > 4
+                            ? versionLetter(index)
+                            : tm('versionTab', {
+                                letter: versionLetter(index),
+                              })}
                           {values.messages?.[
                             slotIndex(view.tab, index)
                           ]?.body?.trim()
@@ -847,6 +856,7 @@ export function CampaignMessagesForm(props: {
                         type={'button'}
                         size={'icon-sm'}
                         variant={'ghost'}
+                        className={'shrink-0'}
                         aria-label={tm('addVersion')}
                         title={tm('addVersion')}
                         data-test={'messages-add-version'}

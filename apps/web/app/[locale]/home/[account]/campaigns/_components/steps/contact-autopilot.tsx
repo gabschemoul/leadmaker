@@ -1269,7 +1269,8 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
   const format = useFormatter();
   const client = useSupabase();
 
-  const { data: rows = [] } = useQuery({
+  // « maintenant » = heure de la dernière lecture du fil (pas d'appel à l'horloge pendant l'affichage)
+  const { data: rows = [], dataUpdatedAt } = useQuery({
     queryKey: ['lm-autopilot-feed', props.autopilotId],
     queryFn: () => fetchAutopilotFeed(client, props.autopilotId),
     enabled: Boolean(props.autopilotId),
@@ -1353,7 +1354,10 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
                     'text-muted-foreground hidden w-20 shrink-0 text-right text-xs tabular-nums sm:block'
                   }
                 >
-                  {format.relativeTime(new Date(row.updated_at), new Date())}
+                  {format.relativeTime(
+                    new Date(row.updated_at),
+                    new Date(dataUpdatedAt),
+                  )}
                 </span>
               </li>
             );

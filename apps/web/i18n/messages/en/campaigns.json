@@ -608,20 +608,25 @@
     },
     "feed": {
       "title": "Live",
-      "empty": "Visiting the first websites…",
-      "sent": "Message sent to {name}",
-      "toVerify": "Message sent to {name} (confirmation to check)",
-      "sending": "Sending: {name}",
-      "found": "Form found on {site}",
-      "doubt": "Doubt on {site}: set aside",
-      "visiting": "Visiting {site}",
-      "queued": "Queued: {site}",
-      "captcha": "Captcha on {site}: set aside",
-      "unknownField": "Unknown field on {site}: set aside",
-      "noForm": "No form on {site}: skipped",
-      "skipped": "{name}: skipped",
-      "excluded": "{name}: excluded",
-      "unreachable": "Website unreachable: {site}, skipped"
+      "empty": "Prospectigo is visiting the first sites…",
+      "state": {
+        "ok": "Contacted",
+        "busy": "In progress",
+        "aside": "Set aside"
+      },
+      "reason": {
+        "sent": "Message sent",
+        "sentToVerify": "Message sent, confirmation to check",
+        "sending": "Sending the message",
+        "visiting": "Looking for the contact form",
+        "doubt": "To check before sending",
+        "captcha": "Protected against robots",
+        "unknownField": "A form field could not be filled",
+        "quoteOnly": "Only a quote request form",
+        "noForm": "No contact form",
+        "skipped": "Skipped",
+        "unreachable": "Site unreachable"
+      }
     },
     "errors": {
       "generic": "That didn't work. Try again in a moment.",

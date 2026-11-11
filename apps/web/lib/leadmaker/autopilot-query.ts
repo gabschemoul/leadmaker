@@ -76,16 +76,20 @@ export function isAutopilotActive(status: AutopilotStatus | null | undefined) {
   return status === 'preview' || status === 'running' || status === 'paused';
 }
 
-/** Dernières tentatives du passage, pour le fil « En direct » (vrais événements uniquement). */
+/**
+ * Derniers prospects traités par le passage, pour le fil « En direct » : contactés, en cours, mis de côté (11/11 :
+ * les tentatives encore en file d'attente ne sont plus listées, elles n'apprennent rien au client).
+ */
 export async function fetchAutopilotFeed(client: Client, autopilotId: string) {
   const { data, error } = await client
     .from('lm_attempts')
     .select(
-      'id, status, detail, protection_type, missing, form_url, updated_at, prospect:lm_prospects!inner(name, website)',
+      'id, status, detail, protection_type, missing, form_url, updated_at, prospect:lm_prospects!inner(name, website, city)',
     )
     .eq('autopilot_id', autopilotId)
+    .neq('status', 'pending')
     .order('updated_at', { ascending: false })
-    .limit(9);
+    .limit(8);
 
   if (error) {
     throw error;

@@ -1259,7 +1259,11 @@ function AutopilotRunning(props: {
   );
 }
 
-/** Fil « En direct » : une ligne par vrai événement (dernières tentatives du passage). */
+/**
+ * Fil « En direct » (repensé le 11/11/2026 : l'ancien journal « En file d'attente : dbelectric.net » faisait
+ * terminal) : les derniers prospects traités, comme une liste de contacts — initiale, nom, ville, état en clair
+ * (Contacté / En cours / Mis de côté), raison en mots simples et heure relative.
+ */
 function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
   const t = useTranslations('campaigns.autopilot.feed');
   const format = useFormatter();
@@ -1281,7 +1285,7 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
     >
       <h3
         className={
-          'flex items-center gap-2 px-5 pt-4 pb-2 text-[15px] font-medium'
+          'flex items-center gap-2 px-5 pt-4 pb-3 text-[15px] font-medium'
         }
       >
         {t('title')}
@@ -1293,89 +1297,113 @@ function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
         ) : null}
       </h3>
 
-      <ol className={'flex flex-col text-sm'}>
-        {rows.length === 0 ? (
-          <li className={'text-muted-foreground px-5 pt-1 pb-4'}>
-            {t('empty')}
-          </li>
-        ) : (
-          rows.map((row) => {
-            const line = feedLine(row);
+      {rows.length === 0 ? (
+        <p className={'text-muted-foreground px-5 pb-5 text-sm'}>
+          {t('empty')}
+        </p>
+      ) : (
+        <ul className={'flex flex-col pb-2'}>
+          {rows.map((row) => {
+            const state = feedState(row);
 
             return (
               <li
                 key={row.id}
-                className={'flex items-center gap-3 border-t px-5 py-2.5'}
+                className={'flex items-center gap-3 px-5 py-2.5'}
+                data-test={'autopilot-feed-row'}
               >
                 <span
-                  className={'text-muted-foreground w-11 shrink-0 tabular-nums'}
+                  aria-hidden
+                  className={
+                    'bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-medium'
+                  }
                 >
-                  {format.dateTime(new Date(row.updated_at), {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    // heure de l'utilisateur (le fil n'est rendu que dans le navigateur)
-                    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                  })}
+                  {initial(row.prospect.name)}
+                </span>
+
+                <span className={'flex min-w-0 flex-1 flex-col'}>
+                  <span className={'truncate text-sm font-medium'}>
+                    {row.prospect.name}
+                  </span>
+
+                  <span className={'text-muted-foreground truncate text-xs'}>
+                    {[t(`reason.${state.reason}`), row.prospect.city]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
                 </span>
 
                 <span
-                  aria-hidden
                   className={cn(
-                    'size-1.5 shrink-0 rounded-full',
-                    line.kind === 'ok' && 'bg-ok',
-                    line.kind === 'warn' && 'bg-amber-500',
-                    line.kind === 'info' && 'bg-foreground/25',
+                    'inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium',
+                    state.kind === 'ok' && 'bg-ok-pale text-ok',
+                    state.kind === 'busy' && 'bg-brand-pale text-brand-hover',
+                    state.kind === 'aside' &&
+                      'bg-amber-500/10 text-amber-700 dark:text-amber-400',
                   )}
-                />
+                >
+                  {state.kind === 'busy' ? (
+                    <Loader2 className={'size-3 animate-spin'} />
+                  ) : null}
+                  {t(`state.${state.kind}`)}
+                </span>
 
-                <span className={'min-w-0 truncate'}>
-                  {t(line.key, {
-                    name: row.prospect.name,
-                    site: displayHost(row.form_url ?? row.prospect.website),
-                  })}
+                <span
+                  className={
+                    'text-muted-foreground hidden w-20 shrink-0 text-right text-xs tabular-nums sm:block'
+                  }
+                >
+                  {format.relativeTime(new Date(row.updated_at), new Date())}
                 </span>
               </li>
             );
-          })
-        )}
-      </ol>
+          })}
+        </ul>
+      )}
     </section>
   );
 }
 
-function feedLine(row: AutopilotFeedRow): {
-  key: string;
-  kind: 'ok' | 'warn' | 'info';
+/** Première lettre du nom (pastille). */
+function initial(name: string) {
+  return (name.trim()[0] ?? '?').toLocaleUpperCase();
+}
+
+/** État d'un prospect dans le fil : contacté, en cours, mis de côté, et la raison en mots simples. */
+function feedState(row: AutopilotFeedRow): {
+  kind: 'ok' | 'busy' | 'aside';
+  reason: string;
 } {
+  const detail = (row.detail ?? '').toLowerCase();
+
   switch (row.status) {
     case 'sent':
-      return { key: 'sent', kind: 'ok' };
+      return { kind: 'ok', reason: 'sent' };
     case 'to_verify':
-      return { key: 'toVerify', kind: 'ok' };
+      return { kind: 'ok', reason: 'sentToVerify' };
     case 'sending':
-      return { key: 'sending', kind: 'info' };
     case 'validated':
-      return { key: 'found', kind: 'info' };
+      return { kind: 'busy', reason: 'sending' };
     case 'ready':
       return isCleanAttempt(row)
-        ? { key: 'found', kind: 'info' }
-        : { key: 'doubt', kind: 'warn' };
+        ? { kind: 'busy', reason: 'sending' }
+        : { kind: 'aside', reason: 'doubt' };
     case 'preparing':
-      return { key: 'visiting', kind: 'info' };
-    case 'pending':
-      return { key: 'queued', kind: 'info' };
+      return { kind: 'busy', reason: 'visiting' };
     case 'intervention_required':
-      return { key: 'captcha', kind: 'warn' };
+      return { kind: 'aside', reason: 'captcha' };
     case 'incomplete':
-      return { key: 'unknownField', kind: 'warn' };
+      return { kind: 'aside', reason: 'unknownField' };
     case 'no_form':
-      return { key: 'noForm', kind: 'warn' };
+      return {
+        kind: 'aside',
+        reason: detail.includes('devis') ? 'quoteOnly' : 'noForm',
+      };
     case 'skipped':
-      return { key: 'skipped', kind: 'warn' };
     case 'excluded':
-      return { key: 'excluded', kind: 'warn' };
+      return { kind: 'aside', reason: 'skipped' };
     default:
-      return { key: 'unreachable', kind: 'warn' };
+      return { kind: 'aside', reason: 'unreachable' };
   }
 }
 

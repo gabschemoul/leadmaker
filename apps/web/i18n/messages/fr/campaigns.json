@@ -608,20 +608,25 @@
     },
     "feed": {
       "title": "En direct",
-      "empty": "Les premiers sites sont en cours de visite…",
-      "sent": "Message envoyé à {name}",
-      "toVerify": "Message envoyé à {name} (confirmation à vérifier)",
-      "sending": "Envoi en cours : {name}",
-      "found": "Formulaire trouvé sur {site}",
-      "doubt": "Doute sur {site} : mis de côté",
-      "visiting": "Visite de {site}",
-      "queued": "En file d'attente : {site}",
-      "captcha": "Captcha sur {site} : mis de côté",
-      "unknownField": "Champ inconnu sur {site} : mis de côté",
-      "noForm": "Pas de formulaire sur {site} : passé",
-      "skipped": "{name} : passé",
-      "excluded": "{name} : exclu",
-      "unreachable": "Site inaccessible : {site}, passé"
+      "empty": "Prospectigo visite les premiers sites…",
+      "state": {
+        "ok": "Contacté",
+        "busy": "En cours",
+        "aside": "Mis de côté"
+      },
+      "reason": {
+        "sent": "Message envoyé",
+        "sentToVerify": "Message envoyé, confirmation à vérifier",
+        "sending": "Envoi du message",
+        "visiting": "Recherche du formulaire de contact",
+        "doubt": "À vérifier avant envoi",
+        "captcha": "Protégé contre les robots",
+        "unknownField": "Une case du formulaire n’a pas pu être remplie",
+        "quoteOnly": "Seulement un formulaire de devis",
+        "noForm": "Pas de formulaire de contact",
+        "skipped": "Passé",
+        "unreachable": "Site inaccessible"
+      }
     },
     "errors": {
       "generic": "L'action n'a pas abouti. Réessayez dans un instant.",

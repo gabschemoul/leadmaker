@@ -50,14 +50,11 @@ import { toast } from '@kit/ui/sonner';
 import { cn } from '@kit/ui/utils';
 
 import {
-  type AutopilotFeedRow,
   type AutopilotSummary,
   displayHost,
-  fetchAutopilotFeed,
   fetchAutopilotPreview,
   fetchAutopilotSummary,
   isAutopilotActive,
-  isCleanAttempt,
 } from '~/lib/leadmaker/autopilot-query';
 import { MAX_MESSAGES } from '~/lib/leadmaker/templates';
 
@@ -76,6 +73,7 @@ import {
   startAutopilotAction,
   updateAutopilotAction,
 } from '../../_lib/server/autopilot-actions';
+import { AutopilotLive } from './autopilot-live';
 
 // « Me montrer les 3 premiers formulaires avant d'envoyer » : option masquée pour l'instant (ménage du
 // 10/11/2026, choix de Gabriel) ; repasser à `true` pour la réafficher (et la recocher par défaut à la 1re campagne)
@@ -164,7 +162,7 @@ export function ContactAutopilot(props: {
 
   const refreshAll = () => {
     void queryClient.invalidateQueries({ queryKey: ['lm-autopilot'] });
-    void queryClient.invalidateQueries({ queryKey: ['lm-autopilot-feed'] });
+    void queryClient.invalidateQueries({ queryKey: ['lm-autopilot-live'] });
     void queryClient.invalidateQueries({ queryKey: ['lm-autopilot-preview'] });
     router.refresh();
   };
@@ -218,6 +216,7 @@ export function ContactAutopilot(props: {
       summary={summary}
       checkedAt={dataUpdatedAt}
       advancedHref={props.advancedHref}
+      senderLabel={props.senderLabel ?? null}
       billingHref={props.billingHref}
       hasPlan={props.hasPlan}
       onEdit={() => setEditing(true)}
@@ -1045,6 +1044,8 @@ function AutopilotRunning(props: {
   /** heure du dernier rafraîchissement des compteurs (toutes les 4 s en marche) */
   checkedAt: number;
   advancedHref: string;
+  /** expéditeur en clair, pour le détail d'un envoi */
+  senderLabel: string | null;
   billingHref: string;
   hasPlan: boolean;
   onEdit: () => void;
@@ -1254,181 +1255,22 @@ function AutopilotRunning(props: {
         </div>
       </div>
 
-      <AutopilotFeed autopilotId={autopilotId} live={!done && !paused} />
+      <AutopilotLive
+        autopilotId={autopilotId}
+        live={!done && !paused}
+        target={target}
+        sentCount={summary.sent}
+        schedule={summary.schedule}
+        spreadDays={summary.spread_days}
+        timezone={summary.timezone}
+        startedAt={summary.started_at}
+        senderLabel={props.senderLabel}
+        groupHref={(group) =>
+          `${props.advancedHref.replace(/&statut=[^&]*/, '')}${group === 'ready' ? '' : `&statut=${group}`}`
+        }
+      />
     </div>
   );
-}
-
-/**
- * Fil « En direct » (repensé le 11/11/2026 : l'ancien journal « En file d'attente : dbelectric.net » faisait
- * terminal) : les derniers prospects traités, comme une liste de contacts — initiale, nom, ville, état en clair
- * (Contacté / En cours / Mis de côté), raison en mots simples et heure relative.
- */
-function AutopilotFeed(props: { autopilotId: string; live: boolean }) {
-  const t = useTranslations('campaigns.autopilot.feed');
-  const format = useFormatter();
-  const client = useSupabase();
-
-  // « maintenant » = heure de la dernière lecture du fil (pas d'appel à l'horloge pendant l'affichage)
-  // « il y a 4 s », « il y a 2 min », puis l'heure (« 22:53 ») au-delà d'une heure
-  const ago = (date: Date, now: number) => {
-    const seconds = Math.max(0, Math.round((now - date.getTime()) / 1000));
-
-    if (seconds < 5) {
-      return t('ago.now');
-    }
-
-    if (seconds < 60) {
-      return t('ago.seconds', { count: seconds });
-    }
-
-    if (seconds < 3600) {
-      return t('ago.minutes', { count: Math.floor(seconds / 60) });
-    }
-
-    return format.dateTime(date, {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    });
-  };
-
-  const { data: rows = [], dataUpdatedAt } = useQuery({
-    queryKey: ['lm-autopilot-feed', props.autopilotId],
-    queryFn: () => fetchAutopilotFeed(client, props.autopilotId),
-    enabled: Boolean(props.autopilotId),
-    refetchInterval: props.live ? POLL_MS : false,
-  });
-
-  return (
-    <section
-      className={
-        'bg-card ring-foreground/10 flex flex-col overflow-hidden rounded-2xl ring-1'
-      }
-      data-test={'autopilot-feed'}
-    >
-      <h3
-        className={
-          'flex items-center gap-2 px-5 pt-4 pb-3 text-[15px] font-medium'
-        }
-      >
-        {t('title')}
-        {props.live ? (
-          <span
-            aria-hidden
-            className={'bg-ok size-1.5 animate-pulse rounded-full'}
-          />
-        ) : null}
-      </h3>
-
-      {rows.length === 0 ? (
-        <p className={'text-muted-foreground px-5 pb-5 text-sm'}>
-          {t('empty')}
-        </p>
-      ) : (
-        <ul className={'flex flex-col pb-2'}>
-          {rows.map((row) => {
-            const state = feedState(row);
-
-            return (
-              <li
-                key={row.id}
-                className={'flex items-center gap-3 px-5 py-2.5'}
-                data-test={'autopilot-feed-row'}
-              >
-                <span
-                  aria-hidden
-                  className={
-                    'bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-medium'
-                  }
-                >
-                  {initial(row.prospect.name)}
-                </span>
-
-                <span className={'flex min-w-0 flex-1 flex-col'}>
-                  <span className={'truncate text-sm font-medium'}>
-                    {row.prospect.name}
-                  </span>
-
-                  <span className={'text-muted-foreground truncate text-xs'}>
-                    {[t(`reason.${state.reason}`), row.prospect.city]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </span>
-                </span>
-
-                <span
-                  className={cn(
-                    'inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium',
-                    state.kind === 'ok' && 'bg-ok-pale text-ok',
-                    state.kind === 'busy' && 'bg-brand-pale text-brand-hover',
-                    state.kind === 'aside' &&
-                      'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-                  )}
-                >
-                  {state.kind === 'busy' ? (
-                    <Loader2 className={'size-3 animate-spin'} />
-                  ) : null}
-                  {t(`state.${state.kind}`)}
-                </span>
-
-                <span
-                  className={
-                    'text-muted-foreground hidden w-24 shrink-0 text-right text-xs whitespace-nowrap tabular-nums sm:block'
-                  }
-                >
-                  {ago(new Date(row.updated_at), dataUpdatedAt)}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-/** Première lettre du nom (pastille). */
-function initial(name: string) {
-  return (name.trim()[0] ?? '?').toLocaleUpperCase();
-}
-
-/** État d'un prospect dans le fil : contacté, en cours, mis de côté, et la raison en mots simples. */
-function feedState(row: AutopilotFeedRow): {
-  kind: 'ok' | 'busy' | 'aside';
-  reason: string;
-} {
-  const detail = (row.detail ?? '').toLowerCase();
-
-  switch (row.status) {
-    case 'sent':
-      return { kind: 'ok', reason: 'sent' };
-    case 'to_verify':
-      return { kind: 'ok', reason: 'sentToVerify' };
-    case 'sending':
-    case 'validated':
-      return { kind: 'busy', reason: 'sending' };
-    case 'ready':
-      return isCleanAttempt(row)
-        ? { kind: 'busy', reason: 'sending' }
-        : { kind: 'aside', reason: 'doubt' };
-    case 'preparing':
-      return { kind: 'busy', reason: 'visiting' };
-    case 'intervention_required':
-      return { kind: 'aside', reason: 'captcha' };
-    case 'incomplete':
-      return { kind: 'aside', reason: 'unknownField' };
-    case 'no_form':
-      return {
-        kind: 'aside',
-        reason: detail.includes('devis') ? 'quoteOnly' : 'noForm',
-      };
-    case 'skipped':
-    case 'excluded':
-      return { kind: 'aside', reason: 'skipped' };
-    default:
-      return { kind: 'aside', reason: 'unreachable' };
-  }
 }
 
 /** Compare deux libellés sans tenir compte des apostrophes typographiques, de la casse ni des espaces. */

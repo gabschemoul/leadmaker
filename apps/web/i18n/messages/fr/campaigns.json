@@ -606,33 +606,6 @@
       "seeAdvanced": "Les voir en mode Avancé",
       "progress": "Avancement"
     },
-    "feed": {
-      "title": "En direct",
-      "empty": "Prospectigo visite les premiers sites…",
-      "state": {
-        "ok": "Contacté",
-        "busy": "En cours",
-        "aside": "Mis de côté"
-      },
-      "reason": {
-        "sent": "Message envoyé",
-        "sentToVerify": "Message envoyé, confirmation à vérifier",
-        "sending": "Envoi du message",
-        "visiting": "Recherche du formulaire de contact",
-        "doubt": "À vérifier avant envoi",
-        "captcha": "Protégé contre les robots",
-        "unknownField": "Une case du formulaire n’a pas pu être remplie",
-        "quoteOnly": "Seulement un formulaire de devis",
-        "noForm": "Pas de formulaire de contact",
-        "skipped": "Passé",
-        "unreachable": "Site inaccessible"
-      },
-      "ago": {
-        "seconds": "il y a {count} s",
-        "minutes": "il y a {count} min",
-        "now": "à l'instant"
-      }
-    },
     "errors": {
       "generic": "L'action n'a pas abouti. Réessayez dans un instant.",
       "notFound": "Campagne introuvable.",
@@ -666,6 +639,53 @@
       "note": "Les premiers formulaires partent dans une dizaine de minutes. Un message envoyé ne peut pas être repris ; vous pouvez mettre le pilote en pause à tout moment.",
       "cancel": "Annuler",
       "launch": "Oui, lancer"
+    },
+    "live": {
+      "sentTitle": "Derniers messages envoyés",
+      "seeAllSent": "Voir {count, plural, one {l’envoi} other {les # envois}}",
+      "sentEmptyLive": "Les premiers messages partent dans quelques minutes…",
+      "sentEmpty": "Aucun message envoyé pour l’instant.",
+      "received": "Reçu par leur formulaire",
+      "visitedTitle": "{count, plural, =0 {Sites visités} one {Sur # site visité} other {Sur # sites visités}}",
+      "visitedEmpty": "Prospectigo visite les premiers sites…",
+      "outcome": {
+        "sent": "Message envoyé",
+        "quoteOnly": "Formulaire de devis seulement",
+        "noForm": "Pas de formulaire de contact",
+        "unreachable": "Site inaccessible",
+        "captcha": "Protégé contre les robots",
+        "unknownField": "Une case non reconnue",
+        "toCheck": "À vérifier avant envoi",
+        "other": "Passé ou exclu"
+      },
+      "forecastLabel": "Prévision",
+      "forecastDate": "Vos {target} messages seront envoyés d’ici {when}",
+      "forecastDone": "Tous vos messages sont envoyés",
+      "forecastSoon": "La date de fin s’affiche après les premiers envois",
+      "pace": "Environ {count, plural, one {# message envoyé} other {# messages envoyés}} par heure",
+      "today": "aujourd’hui vers {time}",
+      "tomorrow": "demain",
+      "ago": {
+        "now": "à l’instant",
+        "seconds": "il y a {count} s",
+        "minutes": "il y a {count} min"
+      },
+      "detail": {
+        "banner": "Message reçu par leur formulaire de contact · {when}",
+        "stepsTitle": "Ce que Prospectigo a fait",
+        "visited": "Site visité",
+        "formFound": "Formulaire de contact trouvé",
+        "formFoundOn": "Formulaire de contact trouvé ({page})",
+        "filled": "Formulaire rempli avec votre message",
+        "sent": "Envoyé : le site a affiché sa confirmation",
+        "sentToVerify": "Envoyé : confirmation du site à vérifier",
+        "message": "Message envoyé",
+        "messageVersion": "Message envoyé · version « {name} »",
+        "sender": "Envoyé au nom de",
+        "openForm": "Voir la page du formulaire",
+        "openScreenshot": "Voir la capture de l’envoi",
+        "close": "Fermer"
+      }
     }
   },
   "localDiscovery": {

@@ -606,33 +606,6 @@
       "seeAdvanced": "See them in Advanced mode",
       "progress": "Progress"
     },
-    "feed": {
-      "title": "Live",
-      "empty": "Prospectigo is visiting the first sites…",
-      "state": {
-        "ok": "Contacted",
-        "busy": "In progress",
-        "aside": "Set aside"
-      },
-      "reason": {
-        "sent": "Message sent",
-        "sentToVerify": "Message sent, confirmation to check",
-        "sending": "Sending the message",
-        "visiting": "Looking for the contact form",
-        "doubt": "To check before sending",
-        "captcha": "Protected against robots",
-        "unknownField": "A form field could not be filled",
-        "quoteOnly": "Only a quote request form",
-        "noForm": "No contact form",
-        "skipped": "Skipped",
-        "unreachable": "Site unreachable"
-      },
-      "ago": {
-        "seconds": "{count}s ago",
-        "minutes": "{count} min ago",
-        "now": "just now"
-      }
-    },
     "errors": {
       "generic": "That didn't work. Try again in a moment.",
       "notFound": "Campaign not found.",
@@ -666,6 +639,53 @@
       "note": "The first forms go out in about ten minutes. A sent message cannot be taken back; you can pause the autopilot at any time.",
       "cancel": "Cancel",
       "launch": "Yes, launch"
+    },
+    "live": {
+      "sentTitle": "Latest messages sent",
+      "seeAllSent": "See {count, plural, one {the send} other {all # sends}}",
+      "sentEmptyLive": "The first messages go out in a few minutes…",
+      "sentEmpty": "No message sent yet.",
+      "received": "Received through their form",
+      "visitedTitle": "{count, plural, =0 {Sites visited} one {Out of # site visited} other {Out of # sites visited}}",
+      "visitedEmpty": "Prospectigo is visiting the first sites…",
+      "outcome": {
+        "sent": "Message sent",
+        "quoteOnly": "Quote request form only",
+        "noForm": "No contact form",
+        "unreachable": "Site unreachable",
+        "captcha": "Protected against robots",
+        "unknownField": "A field not recognized",
+        "toCheck": "To check before sending",
+        "other": "Skipped or excluded"
+      },
+      "forecastLabel": "Forecast",
+      "forecastDate": "Your {target} messages will be sent by {when}",
+      "forecastDone": "All your messages are sent",
+      "forecastSoon": "The end date shows after the first sends",
+      "pace": "About {count, plural, one {# message sent} other {# messages sent}} per hour",
+      "today": "today around {time}",
+      "tomorrow": "tomorrow",
+      "ago": {
+        "now": "just now",
+        "seconds": "{count}s ago",
+        "minutes": "{count} min ago"
+      },
+      "detail": {
+        "banner": "Message received through their contact form · {when}",
+        "stepsTitle": "What Prospectigo did",
+        "visited": "Site visited",
+        "formFound": "Contact form found",
+        "formFoundOn": "Contact form found ({page})",
+        "filled": "Form filled with your message",
+        "sent": "Sent: the site showed its confirmation",
+        "sentToVerify": "Sent: site confirmation to check",
+        "message": "Message sent",
+        "messageVersion": "Message sent · version “{name}”",
+        "sender": "Sent on behalf of",
+        "openForm": "Open the form page",
+        "openScreenshot": "See the screenshot of the send",
+        "close": "Close"
+      }
     }
   },
   "localDiscovery": {

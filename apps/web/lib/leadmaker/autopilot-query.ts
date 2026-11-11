@@ -76,32 +76,6 @@ export function isAutopilotActive(status: AutopilotStatus | null | undefined) {
   return status === 'preview' || status === 'running' || status === 'paused';
 }
 
-/**
- * Derniers prospects traités par le passage, pour le fil « En direct » : contactés, en cours, mis de côté (11/11 :
- * les tentatives encore en file d'attente ne sont plus listées, elles n'apprennent rien au client).
- */
-export async function fetchAutopilotFeed(client: Client, autopilotId: string) {
-  const { data, error } = await client
-    .from('lm_attempts')
-    .select(
-      'id, status, detail, protection_type, missing, form_url, updated_at, prospect:lm_prospects!inner(name, website, city)',
-    )
-    .eq('autopilot_id', autopilotId)
-    .neq('status', 'pending')
-    .order('updated_at', { ascending: false })
-    .limit(8);
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? [];
-}
-
-export type AutopilotFeedRow = Awaited<
-  ReturnType<typeof fetchAutopilotFeed>
->[number];
-
 export function isCleanAttempt(row: {
   status: string;
   detail: string | null;
@@ -178,4 +152,85 @@ export function displayHost(url: string | null | undefined) {
   } catch {
     return url;
   }
+}
+
+/**
+ * Section « En direct » du pilote (refaite le 11/11/2026) : les 3 derniers messages envoyés (cartes), l'issue de
+ * chaque site visité (bilan par raison) et les heures d'envoi (rythme et prévision). Activité des prospects dans
+ * la langue de l'appli quand l'annuaire la connaît.
+ */
+export async function fetchAutopilotLive(
+  client: Client,
+  autopilotId: string,
+  locale: string,
+) {
+  const [recent, outcomes] = await Promise.all([
+    client
+      .from('lm_attempts')
+      .select(
+        'id, status, subject, body, template_name, form_url, sent_at, updated_at, screenshot_after, prospect:lm_prospects!inner(id, name, website, city, category)',
+      )
+      .eq('autopilot_id', autopilotId)
+      .in('status', ['sent', 'to_verify'])
+      .order('sent_at', { ascending: false, nullsFirst: false })
+      .limit(3),
+    client
+      .from('lm_attempts')
+      .select('status, detail, protection_type, missing, sent_at')
+      .eq('autopilot_id', autopilotId)
+      .limit(10000),
+  ]);
+
+  if (recent.error) throw recent.error;
+  if (outcomes.error) throw outcomes.error;
+
+  // libellé de l'activité dans la langue de l'appli (la fiche garde celui de l'annuaire, en anglais)
+  const english = [
+    ...new Set(
+      (recent.data ?? [])
+        .map((row) => row.prospect.category)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ];
+  const labels = new Map<string, string>();
+
+  if (english.length > 0 && !locale.startsWith('en')) {
+    const { data } = await client
+      .from('lm_categories')
+      .select('label_en, label_fr')
+      .in('label_en', english);
+
+    for (const row of data ?? []) {
+      labels.set(row.label_en, row.label_fr);
+    }
+  }
+
+  return {
+    sent: (recent.data ?? []).map((row) => ({
+      ...row,
+      activity: row.prospect.category
+        ? (labels.get(row.prospect.category) ?? row.prospect.category)
+        : null,
+    })),
+    outcomes: outcomes.data ?? [],
+  };
+}
+
+export type AutopilotLiveData = Awaited<ReturnType<typeof fetchAutopilotLive>>;
+export type AutopilotSentCard = AutopilotLiveData['sent'][number];
+
+/** Lien signé (1 h) vers la capture de l'envoi, null si aucune. */
+export async function fetchAttemptScreenshot(
+  client: Client,
+  path: string | null,
+) {
+  if (!path) {
+    return null;
+  }
+
+  const { data } = await client.storage
+    .from('lm_screenshots')
+    .createSignedUrl(path, SIGNED_URL_SECONDS);
+
+  return data?.signedUrl ?? null;
 }

@@ -456,12 +456,51 @@ export const startCampaignAction = authActionClient
       });
     }
 
+    // « Reprendre » relance aussi les envois mis en pause avec la campagne
+    await setAutopilotRunning(client, campaignId, true, ctx.user.id);
+
     revalidatePath('/home/[account]/campaigns', 'layout');
 
     return { success: true };
   });
 
-/** Met une campagne en pause. */
+/**
+ * Pilote automatique de la campagne mis en pause ou repris avec elle (analyse UX E-12, 11/11/2026 : « Mettre en
+ * pause » n'arrêtait que la recherche, le pilote continuait d'envoyer). Un échec ne bloque pas la pause/reprise
+ * de la recherche : il est seulement noté dans les journaux.
+ */
+async function setAutopilotRunning(
+  client: Client,
+  campaignId: string,
+  running: boolean,
+  userId: string,
+) {
+  const { data: autopilot } = await client
+    .from('lm_autopilots')
+    .select('id')
+    .eq('campaign_id', campaignId)
+    .eq('status', running ? 'paused' : 'running')
+    .maybeSingle();
+
+  if (!autopilot) {
+    return;
+  }
+
+  const { error } = await client.rpc(
+    running ? 'lm_resume_autopilot' : 'lm_pause_autopilot',
+    { p_autopilot_id: autopilot.id },
+  );
+
+  if (error) {
+    await logLaunchError(
+      running ? 'autopilotResume' : 'autopilotPause',
+      { campaignId, userId },
+      error,
+    );
+  }
+}
+
+/** Met une campagne en pause : la recherche et les envois du pilote automatique. */
 export const pauseCampaignAction = authActionClient
   .inputSchema(CampaignIdSchema)
   .action(async ({ parsedInput: { campaignId }, ctx }) => {
@@ -480,6 +519,8 @@ export const pauseCampaignAction = authActionClient
         context: { campaignId, userId: ctx.user.id },
       });
     }
+
+    await setAutopilotRunning(client, campaignId, false, ctx.user.id);
 
     revalidatePath('/home/[account]/campaigns', 'layout');
 

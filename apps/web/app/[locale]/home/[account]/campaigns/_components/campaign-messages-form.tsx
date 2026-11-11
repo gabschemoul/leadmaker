@@ -16,6 +16,7 @@
 import {
   type BaseSyntheticEvent,
   type ReactNode,
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -330,6 +331,66 @@ export function CampaignMessagesForm(props: {
       toast.error(tm(`ai.${known}`));
     },
   });
+
+  // Message tapé gardé quand on quitte l'étape sans enregistrer (analyse UX M-02, 11/11/2026 : un clic sur une
+  // autre étape ou sur « Modifier l'expéditeur » le perdait). useEffect justifié : enregistrer au départ de l'étape
+  // (nettoyage), et prévenir le navigateur si l'onglet se ferme avec un message non enregistré.
+  const leaveSave = useRef<() => void>(() => undefined);
+
+  useEffect(() => {
+    leaveSave.current = () => {
+      if (!form.formState.isDirty || save.isPending) {
+        return;
+      }
+
+      const data = form.getValues();
+
+      if (!CampaignTemplatesFormSchema.safeParse(data).success) {
+        return;
+      }
+
+      const filled = data.messages.filter(
+        (message) => message.body.trim() !== '',
+      );
+      const hiddenNames = new Set(
+        hidden.map((message) => message.name.trim().toLowerCase()),
+      );
+
+      if (
+        filled.some((message) =>
+          hiddenNames.has(message.name.trim().toLowerCase()),
+        )
+      ) {
+        return;
+      }
+
+      void saveCampaignTemplatesAction({
+        ...data,
+        messages: [...filled, ...hidden],
+        accountId: props.accountId,
+        campaignId: props.campaignId,
+      }).then((result) => {
+        if (result?.data) {
+          toast.success(t('saved', { count: result.data.count ?? 0 }));
+        }
+      });
+    };
+  });
+
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (form.formState.isDirty) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('beforeunload', warn);
+
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      leaveSave.current();
+    };
+  }, [form]);
 
   const saving = save.isPending || form.formState.isSubmitting;
   // lu pendant le rendu pour que react-hook-form suive l'état « modifié » (utilisé par « Suivant »)

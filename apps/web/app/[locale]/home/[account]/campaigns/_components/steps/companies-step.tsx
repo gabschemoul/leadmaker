@@ -44,8 +44,11 @@ import {
   type SortedCompany,
   fetchSortedCompanies,
 } from '~/lib/leadmaker/sorted-companies-query';
+import { websiteHref, websiteLabel } from '~/lib/leadmaker/website';
 
 import { CampaignStatusBadge } from '../../../_components/leadmaker/campaign-status-badge';
+import { ProspectDrawer } from '../../../_components/leadmaker/prospect-drawer';
+import type { ProspectRow } from '../../../_components/leadmaker/prospects-table';
 import { type CampaignLive, fetchCampaignLive } from '../../_lib/campaign-live';
 import { chooseProspectsAction } from '../../_lib/server/sort-actions';
 import { CampaignGroups, groupLabels } from './campaign-groups';
@@ -457,6 +460,8 @@ function CompaniesList(props: {
   const client = useSupabase();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
+  // fiche ouverte dans le tiroir (même fiche que la page Prospects)
+  const [openId, setOpenId] = useState<string | null>(null);
   const choosable = props.tab === 'toCheck';
 
   const listKey = [
@@ -639,6 +644,7 @@ function CompaniesList(props: {
             pending={pendingIds.includes(row.id)}
             disabled={choose.isPending}
             onChoose={(choice) => execute([row.id], choice)}
+            onOpen={() => setOpenId(row.id)}
           />
         ))}
       </ul>
@@ -656,6 +662,20 @@ function CompaniesList(props: {
           </Button>
         </div>
       ) : null}
+
+      <ProspectDrawer
+        prospect={
+          (rows.find((row) => row.id === openId)?.prospect as
+            | ProspectRow
+            | null
+            | undefined) ?? null
+        }
+        onOpenChange={(open) => {
+          if (!open) {
+            setOpenId(null);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -670,8 +690,10 @@ function CompanyRow(props: {
   pending: boolean;
   disabled: boolean;
   onChoose: (choice: 'gardee' | 'ecartee') => void;
+  onOpen: () => void;
 }) {
   const { row } = props;
+  const site = websiteHref(row.website);
 
   return (
     <li
@@ -689,7 +711,15 @@ function CompanyRow(props: {
 
       <div className={'flex min-w-0 flex-1 flex-col gap-0.5'}>
         <div className={'flex flex-wrap items-baseline gap-x-2'}>
-          <span className={'font-medium'}>{row.name}</span>
+          {/* clic : fiche complète (analyse UX E-03 : voir ce qu'on paie avant de « Garder ») */}
+          <button
+            type={'button'}
+            className={'cursor-pointer text-left font-medium hover:underline'}
+            data-test={'campaign-company-open'}
+            onClick={props.onOpen}
+          >
+            {row.name}
+          </button>
 
           {row.city ? (
             <span className={'text-muted-foreground text-sm'}>{row.city}</span>
@@ -704,6 +734,34 @@ function CompanyRow(props: {
             </span>
           ) : null}
         </div>
+
+        {row.category || site || row.phone ? (
+          <p
+            className={
+              'text-muted-foreground flex flex-wrap items-baseline gap-x-2 text-sm'
+            }
+            data-test={'campaign-company-details'}
+          >
+            {row.category ? <span>{row.category}</span> : null}
+
+            {site ? (
+              <a
+                href={site}
+                target={'_blank'}
+                rel={'noreferrer noopener'}
+                className={'text-brand hover:underline'}
+              >
+                {websiteLabel(row.website ?? site)}
+              </a>
+            ) : null}
+
+            {row.phone ? (
+              <a href={`tel:${row.phone}`} className={'hover:underline'}>
+                {row.phone}
+              </a>
+            ) : null}
+          </p>
+        ) : null}
 
         {row.reason ? (
           <p className={'text-muted-foreground text-sm'}>{row.reason}</p>

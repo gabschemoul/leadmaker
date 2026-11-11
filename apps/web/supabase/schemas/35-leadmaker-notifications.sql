@@ -162,8 +162,15 @@ security definer
 as $$
 begin
   if new.status = 'completed' and old.status is distinct from 'completed' then
+    -- campagne triée : aussi le nombre de prospects gardés, annoncé dans l'e-mail à la place des fiches trouvées
+    -- (11/11/2026 : « 113 prospects trouvés » alors que 69 seulement correspondaient)
     perform public.lm_notify('search_done', new.account_id, new.id,
-      jsonb_build_object('prospects', (select count(*) from public.lm_prospects p where p.campaign_id = new.id)),
+      jsonb_build_object('prospects', (select count(*) from public.lm_prospects p where p.campaign_id = new.id))
+      || case when nullif(trim(new.sort_target), '') is not null
+              then jsonb_build_object('kept', (select count(*) from public.lm_campaign_prospects cp
+                                                where cp.campaign_id = new.id
+                                                  and coalesce(cp.client_choice, cp.verdict) = 'gardee'))
+              else '{}'::jsonb end,
       'search_done:' || new.id::text || ':' || current_date::text);
   elsif new.status = 'paused' and new.filters ->> 'paused_reason' = 'no_credits'
         and not (old.status = 'paused' and old.filters ->> 'paused_reason' = 'no_credits') then

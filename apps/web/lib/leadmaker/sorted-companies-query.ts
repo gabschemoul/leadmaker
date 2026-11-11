@@ -41,7 +41,7 @@ export async function fetchSortedCompanies(
   let query = client
     .from('lm_campaign_prospects')
     .select(
-      'prospect_id, reason, group_key, sorted_at, prospect:lm_prospects(name, city, website)',
+      'prospect_id, reason, group_key, sorted_at, prospect:lm_prospects(id, name, category, city, rating, review_count, address, phone, website, found_email, is_chain, source, excluded_at, created_at)',
     )
     .eq('campaign_id', params.campaignId);
 
@@ -67,6 +67,10 @@ export async function fetchSortedCompanies(
     name: row.prospect?.name ?? '',
     city: row.prospect?.city ?? null,
     website: row.prospect?.website ?? null,
+    category: row.prospect?.category ?? null,
+    phone: row.prospect?.phone ?? null,
+    /** fiche complète, ouverte au clic (même tiroir que la page Prospects) */
+    prospect: row.prospect,
     reason: row.reason,
     /** groupe de l'entreprise (CDC §4.3), null tant que la campagne n'a pas de groupes */
     groupKey: row.group_key,

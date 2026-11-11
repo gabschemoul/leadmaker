@@ -175,8 +175,13 @@ async function buildEmail(notification: ClaimedNotification, language: string) {
       ctaUrl = `${campaignUrl}?etape=contacter`;
       break;
     case 'search_done':
-      kind = 'searchDone';
-      values = { campaign, prospects: count('prospects') };
+      // campagne triée : les prospects gardés (ceux qui correspondent), pas toutes les fiches trouvées (11/11)
+      kind = typeof payload.kept === 'number' ? 'searchDoneKept' : 'searchDone';
+      values = {
+        campaign,
+        prospects:
+          typeof payload.kept === 'number' ? count('kept') : count('prospects'),
+      };
       ctaUrl = `${campaignUrl}?etape=contacter`;
       break;
     case 'search_no_credits':

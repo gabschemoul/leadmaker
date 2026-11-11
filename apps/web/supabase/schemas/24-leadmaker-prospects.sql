@@ -25,6 +25,9 @@ create table if not exists public.lm_prospects (
   is_chain boolean not null default false,
   city text,                           -- ville ciblée par la recherche (ou colonne du fichier importé)
   excluded_at timestamptz,             -- exclu par l'utilisateur : jamais contacté, site en liste d'opposition
+  -- Affiché sur la page Prospects (11/11/2026) : faux pour une fiche trouvée par une campagne triée tant qu'elle
+  -- n'est pas payée (écartée ou à vérifier) ; elle reste en base et dans l'annuaire commun (lm_places).
+  listed boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users on delete set null,
@@ -66,6 +69,11 @@ create index if not exists ix_lm_prospects_space_id_created_at
 create index if not exists ix_lm_prospects_space_list
   on public.lm_prospects (space_id, created_at desc nulls last, id) include (account_id)
   where excluded_at is null;
+
+-- Page Prospects : seulement les fiches affichées (listed), même ordre
+create index if not exists ix_lm_prospects_space_listed
+  on public.lm_prospects (space_id, created_at desc nulls last, id) include (account_id)
+  where excluded_at is null and listed;
 
 create index if not exists ix_lm_prospects_space_id_google_place_id
   on public.lm_prospects (space_id, google_place_id);
@@ -195,14 +203,14 @@ as $$
     select s.id from public.lm_spaces s where s.id = p_space_id and public.lm_member(s.account_id)
   )
   select 'category', p.category, count(*) from public.lm_prospects p
-   where p.space_id = (select id from allowed) and p.category is not null group by p.category
+   where p.space_id = (select id from allowed) and p.listed and p.category is not null group by p.category
   union all
   select 'city', p.city, count(*) from public.lm_prospects p
-   where p.space_id = (select id from allowed) and p.city is not null group by p.city
+   where p.space_id = (select id from allowed) and p.listed and p.city is not null group by p.city
   union all
   select 'campaign', c.id::text, count(*) from public.lm_prospects p
     join public.lm_campaigns c on c.id = p.campaign_id
-   where p.space_id = (select id from allowed) group by c.id
+   where p.space_id = (select id from allowed) and p.listed group by c.id
   order by 1, 3 desc, 2;
 $$;
 
@@ -457,6 +465,27 @@ revoke all on function public.lm_check_campaign_prospect() from public;
 create trigger lm_campaign_prospects_check_space
   before insert or update of campaign_id, prospect_id, account_id, space_id on public.lm_campaign_prospects
   for each row execute function public.lm_check_campaign_prospect();
+
+-- Fiche payée (gardée par le tri, ou par le client) : elle apparaît sur la page Prospects (lm_prospects.listed).
+-- Appelant : déclencheur (trigger).
+create or replace function public.lm_campaign_prospect_listed() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+begin
+  update public.lm_prospects set listed = true where id = new.prospect_id and not listed;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.lm_campaign_prospect_listed() from public;
+
+create trigger lm_campaign_prospects_listed
+  after insert or update of paid_at on public.lm_campaign_prospects
+  for each row when (new.paid_at is not null)
+  execute function public.lm_campaign_prospect_listed();
 
 -- Garantie : une entreprise rattachée à une campagne (lm_prospects.campaign_id) a toujours son lien, quel que
 -- soit le chemin par lequel elle arrive (les écrans de contact lisent les liens depuis le 9/11/2026).

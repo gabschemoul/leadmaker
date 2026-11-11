@@ -25,6 +25,12 @@
     "body": "The search of the “{campaign}” campaign is finished: {prospects} businesses found. You can now contact them.",
     "cta": "Contact the businesses"
   },
+  "searchDoneKept": {
+    "subject": "Search finished: {prospects} prospects kept",
+    "heading": "Search finished",
+    "body": "The search of the “{campaign}” campaign is finished: {prospects} prospects kept, the ones matching your target. You can now contact them.",
+    "cta": "Contact the prospects"
+  },
   "searchNoCredits": {
     "subject": "Search stopped: no credits left",
     "heading": "Your search is paused",

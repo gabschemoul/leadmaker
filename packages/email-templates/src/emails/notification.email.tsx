@@ -20,6 +20,7 @@ export type NotificationEmailKind =
   | 'autopilotDoneTarget'
   | 'autopilotDoneEmpty'
   | 'searchDone'
+  | 'searchDoneKept'
   | 'searchNoCredits'
   | 'creditsLowDiscovery'
   | 'adminSignup'

@@ -921,6 +921,8 @@ begin
       return 'no_credits';
     end if;
     v_credits := 0;
+    -- pas sur la page Prospects tant qu'elle n'est pas payée (lm_campaign_prospect_listed la rend visible)
+    update public.lm_prospects set listed = false where id = v_id;
   else
     v_credits := greatest(v_campaign.credits_per_prospect, 1);
 

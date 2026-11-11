@@ -235,7 +235,7 @@ export const EMPTY_PROSPECTS_FILTERS: ProspectsFilters = {
  * supabase-js sans en répéter les génériques.
  */
 export interface ProspectsFilterBuilder {
-  eq(column: string, value: string): this;
+  eq(column: string, value: string | boolean): this;
   neq(column: string, value: string): this;
   in(column: string, values: readonly string[]): this;
   gte(column: string, value: number): this;
@@ -322,5 +322,7 @@ export function applyProspectsFilters<Builder extends ProspectsFilterBuilder>(
     query = query.not('excluded_at', 'is', null);
   }
 
-  return query;
+  // fiches écartées (ou à vérifier) d'une campagne triée, jamais payées : pas sur la page Prospects ni dans ses
+  // exports (11/11/2026) ; elles restent en base et dans l'annuaire commun
+  return query.eq('listed', true);
 }

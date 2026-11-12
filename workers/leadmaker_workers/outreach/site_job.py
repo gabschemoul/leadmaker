@@ -14,12 +14,13 @@ import json
 import os
 import signal
 import sys
+import time
 from urllib.parse import urlparse
 
 from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
 from ..discovery.scraper import USER_AGENT, proxy_from_env
-from . import netguard
+from . import ai_check, netguard
 from .formfill import (CONTACT_PATHS, QUOTE_DETAIL, Sender, SiteDown, SiteGone, _check_alive, _contact_links, _dismiss_cookies,
                        _dismiss_overlays,
                        _same_site, best_email, detect_protection, fill_form, harvest_emails, legal_links, open_contact_form,
@@ -41,6 +42,112 @@ def _arm_watchdog() -> None:
 
     signal.signal(signal.SIGALRM, _hang)
     signal.alarm(SOFT_DEADLINE)
+
+
+# Boucle IA (12/11/2026) : contrôle pendant que le formulaire est ouvert ; corrections limitées aux données de l'agence,
+# à l'objet et aux choix des listes ; 2 tours de correction au plus, dans un temps borné (le travail entier est coupé à
+# PREPARE_TIMEOUT par le robot parent).
+AI_ROUNDS = 2
+AI_START_MAX = float(os.environ.get("AI_LOOP_START_MAX", "55"))   # au-delà (page lente), contrôle simple par le robot parent
+AI_LOOP_BUDGET = int(os.environ.get("AI_LOOP_BUDGET", "40"))
+
+FIELD_VALUES_JS = r"""() => {
+  const out = {};
+  document.querySelectorAll('[data-ff-i]').forEach(el => {
+    const i = el.getAttribute('data-ff-i'); const t = (el.type || '').toLowerCase();
+    out[i] = (t === 'checkbox' || t === 'radio') ? (el.checked ? 'coché' : 'non coché')
+      : el.tagName === 'SELECT' ? ((el.options[el.selectedIndex] || {}).text || '').trim() : (el.value || '');
+  });
+  return out;
+}"""
+
+
+def _ai_fields(frame) -> list[dict]:
+    from .formfill import DESCRIBE_JS
+    fields = frame.evaluate(DESCRIBE_JS)
+    values = frame.evaluate(FIELD_VALUES_JS)
+    out = []
+    for f in fields:
+        if not f.get("visible") or f.get("type") in ("hidden", "submit", "button", "file", "password", "image", "reset"):
+            continue
+        key = f.get("label") or f.get("placeholder") or f.get("name") or f.get("id")
+        if not key:
+            continue
+        out.append({**f, "key": key, "value": values.get(str(f["i"]), "")})
+    return out
+
+
+def _agency(sender: Sender, subject: str) -> dict[str, str]:
+    return {"prénom": sender.first_name, "nom": sender.last_name, "nom complet": f"{sender.first_name} {sender.last_name}".strip(),
+            "société": sender.company, "e-mail": sender.email, "téléphone": sender.phone, "site": sender.website,
+            "adresse": sender.address, "code postal": sender.zip, "ville": sender.city,
+            "pays": sender.country_names[0] if sender.country_names else "", "objet": subject}
+
+
+def _valid_fixes(fixes, fields: list[dict], agency: dict[str, str]) -> dict[str, str]:
+    """Ne garde que les corrections sûres : champ connu et visible, valeur prise dans les données de l'agence, « oui »
+    pour une case, ou un des choix de la liste. Renvoie {libellé du champ: valeur} (format « extra » du robot)."""
+    by_i = {f["i"]: f for f in fields}
+    allowed = {v.strip() for v in agency.values() if v and v.strip()}
+    out: dict[str, str] = {}
+    for fx in fixes or []:
+        f = by_i.get(fx.field)
+        val = (fx.value or "").strip()
+        if not f or not val:
+            continue
+        if f["type"] in ("checkbox", "radio"):
+            if val.lower() in ("oui", "yes"):
+                out[f["key"]] = "oui"
+        elif f["tag"] == "select":
+            match = next((o for o in f.get("options", []) if o.strip().lower() == val.lower()), None)
+            if match:
+                out[f["key"]] = match
+        elif val in allowed:
+            out[f["key"]] = val
+    return out
+
+
+def _ai_loop(page, frame, sender: Sender, job: dict, out: dict) -> None:
+    """Contrôle IA avec corrections. Écrit dans out : ai_checked, ai_alert (None = bon), ai_fixes, et met à jour
+    filled / missing / capture / contexte / statut après correction."""
+    out["ai_checked"] = True
+    agency = _agency(sender, job.get("subject", ""))
+    extra = dict(job.get("extra") or {})
+    done: dict[str, str] = {}
+    signal.alarm(AI_LOOP_BUDGET)
+    try:
+        for rnd in range(AI_ROUNDS + 1):
+            fields = _ai_fields(frame)
+            v = ai_check.review_fix(out.get("form_url") or "", out.get("filled") or {}, out.get("context"),
+                                    out.get("screenshot_b64") or "", fields, agency)
+            if v is None:
+                out["ai_alert"] = ai_check.UNAVAILABLE
+                break
+            if ai_check.passes(v):
+                out["ai_alert"] = None
+                break
+            fixes = {k: val for k, val in _valid_fixes(v.fixes, fields, agency).items() if extra.get(k) != val}
+            if not fixes or rnd == AI_ROUNDS:
+                out["ai_alert"] = ai_check.BLOCKED + (v.reason.strip() or v.form_type)[:300]
+                break
+            extra.update(fixes)
+            done.update(fixes)
+            r = fill_form(frame, sender, job.get("subject", ""), job["body"], extra,
+                          short_message=job.get("short_body", ""), locale=job.get("locale", ""))
+            out.update(filled=r.filled, missing=r.missing, short=r.short, screenshot_b64=_screenshot(page, frame))
+            out["context"] = _context(page, frame)
+            if r.missing:
+                out["status"] = "incomplete"
+    except SiteHang:
+        out["ai_alert"] = "à vérifier — contrôle IA interrompu (page trop lente)"
+    except Exception as exc:
+        out["ai_alert"] = f"à vérifier — contrôle IA interrompu ({type(exc).__name__})"
+    finally:
+        signal.alarm(0)
+    if done:
+        out["ai_fixes"] = done
+        note = "corrigé par l'IA : " + ", ".join(f"« {k[:40]} » ← {v[:40]}" for k, v in done.items())
+        out["detail"] = "; ".join(filter(None, [out.get("detail"), note]))
 
 
 def _screenshot(page, frame) -> str:
@@ -116,6 +223,7 @@ def _same_page(a: str, b: str) -> bool:
 
 
 def prepare(job: dict) -> dict:
+    started = time.monotonic()
     sender = Sender(**job["sender"])
     emails: set[str] = set()
     visited: list[str] = []
@@ -166,6 +274,9 @@ def prepare(job: dict) -> dict:
                            protection_type=protection, short=r.short, screenshot_b64=_screenshot(page, frame))
                 if status == "ready":
                     out["context"] = _context(page, frame)
+                    if ai_check.enabled() and time.monotonic() - started < AI_START_MAX:
+                        signal.alarm(0)  # le chien de garde de la page laisse la place à celui de la boucle IA
+                        _ai_loop(page, frame, sender, job, out)
         except SiteDown as e:
             out.update(status="unreachable", detail=f"site hors ligne ou en construction (« {e} »)",
                        site_dead=isinstance(e, SiteGone))

@@ -90,11 +90,80 @@ def describe(filled: dict) -> str:
         if " = " in v and k.startswith(("liste", "radio", "choix")):
             lab, ch = v.split(" = ", 1)
             out.append(f"- liste ou bouton « {lab[:80]} » : choix « {ch[:60]} »")
+        elif k.startswith("saisi"):  # valeur saisie à la main ou corrigée par l'IA (sa vraie valeur est dans la liste des champs)
+            out.append(f"- champ « {v[:80]} » ← valeur corrigée (voir sa valeur dans la liste des champs)")
         elif k == "consentement" or k.startswith("case"):
             out.append(f"- case cochée : « {v[:100]} »")
         else:
             out.append(f"- champ « {v[:80]} » ← {WHAT.get(k, k)}")
     return "\n".join(out) or "(rien)"
+
+
+# Boucle de correction (12/11/2026, idée de Gabriel) : le contrôle se fait pendant que le formulaire est encore ouvert ;
+# si un champ est mal rempli, l'IA dit lequel corriger et avec quoi, le robot corrige, l'IA revérifie (2 tours au plus).
+FIX_RULES = """
+
+CORRECTIONS. Tu reçois aussi la liste numérotée des champs du formulaire (n°, type, libellé, obligatoire, valeur
+actuelle, choix possibles) et les données de l'agence. Si c'est bien un formulaire de contact mais qu'un champ est mal
+rempli (valeur dans le mauvais champ, champ obligatoire vide, case obligatoire non cochée, choix de liste qui ferait
+croire à un client alors qu'un choix neutre existe), mets send=false et donne les corrections dans « fixes » :
+le n° du champ et la valeur EXACTE à y mettre. Valeurs permises, et rien d'autre :
+- une des données de l'agence fournies (recopiée telle quelle) ou l'objet du message ;
+- « oui » pour cocher une case ou un bouton ;
+- pour une liste, exactement un des choix proposés pour ce champ.
+N'invente jamais d'autre donnée (pas de budget, de date, de surface, de type de travaux). Si le formulaire n'est pas un
+formulaire de contact (devis, rappel, inscription…), ou si rien ne peut être corrigé avec ces valeurs, « fixes » reste
+vide. Si tout est bon, send=true et « fixes » vide."""
+
+
+class Fix(BaseModel):
+    field: int
+    value: str
+
+
+class FixVerdict(BaseModel):
+    form_type: Literal["contact", "devis_ou_demande_client", "rappel", "newsletter_ou_inscription", "autre"]
+    values_ok: bool
+    list_choice_ok: bool
+    send: bool
+    reason: str
+    fixes: list[Fix]
+
+
+def passes(v) -> bool:
+    return bool(v.send and v.form_type == "contact" and v.values_ok and v.list_choice_ok)
+
+
+def review_fix(form_url: str, filled: dict, context: dict | None, screenshot_b64: str, fields: list[dict],
+               agency: dict[str, str]) -> FixVerdict | None:
+    """Contrôle avec corrections possibles. None si l'IA ne répond pas (le formulaire reste alors « à vérifier »)."""
+    c = context or {}
+    rows = []
+    for f in fields:
+        opts = (" | choix : " + " ; ".join(o[:40] for o in f.get("options", [])[:25])) if f.get("options") else ""
+        rows.append(f"{f['i']} | {f['type'] or f['tag']} | « {f['key'][:80]} » | {'obligatoire' if f['required'] else 'facultatif'}"
+                    f" | valeur : {(f.get('value') or '(vide)')[:80]}{opts}")
+    data = "\n".join(f"- {k} : {v}" for k, v in agency.items() if v)
+    text = (f"Adresse de la page : {form_url}\nTitre de la page : {c.get('title', '')}\n"
+            f"Titres juste au-dessus du formulaire (les titres ailleurs dans la page sont ignorés) : {' | '.join(c.get('before') or []) or '(aucun)'}\n"
+            f"Texte du formulaire (libellés, choix des listes) : {(c.get('form') or '(non disponible)')[:1500]}\n\n"
+            f"Ce que le robot a rempli :\n{describe(filled)}\n\nChamps du formulaire (n° | type | libellé | obligatoire | "
+            f"valeur actuelle | choix) :\n" + "\n".join(rows) + f"\n\nDonnées de l'agence :\n{data}\n\n"
+            "La capture montre le formulaire rempli.")
+    content: list = [{"type": "text", "text": text}]
+    if screenshot_b64:
+        content.insert(0, {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": screenshot_b64}})
+    try:
+        r = _get_client().messages.parse(model=MODEL, max_tokens=1500, system=SYSTEM + FIX_RULES, output_format=FixVerdict,
+                                         messages=[{"role": "user", "content": content}], timeout=25.0)
+        v = r.parsed_output
+    except Exception as exc:
+        log.warning("contrôle IA indisponible pour %s : %s", form_url, str(exc)[:200])
+        return None
+    if v is not None:
+        log.info("IA %s → %s (%s) %s ; corrections : %s", form_url, "ok" if passes(v) else "bloqué", v.form_type,
+                 v.reason[:120], [(x.field, x.value[:30]) for x in v.fixes])
+    return v
 
 
 def enabled() -> bool:

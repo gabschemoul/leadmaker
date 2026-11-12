@@ -290,7 +290,10 @@ class PrepareRunner:
             template_used = template["name"]
 
         # contrôle IA avant « prêt » (ai_check.py) : un doute → alerte, jamais validé automatiquement
-        if result["status"] == "ready" and ai_check.enabled():
+        if result.get("ai_checked"):  # contrôle (et corrections) déjà faits pendant que le formulaire était ouvert
+            if result.get("ai_alert"):
+                result["detail"] = "; ".join(filter(None, [result["ai_alert"], result.get("detail", "")]))
+        elif result["status"] == "ready" and ai_check.enabled():
             alert = ai_check.review(result.get("form_url") or "", result.get("filled") or {}, result.get("context"),
                                     result.get("screenshot_b64") or "")
             if alert:
@@ -313,6 +316,10 @@ class PrepareRunner:
             "site_dead": bool(result.get("site_dead")),
         }
         conn.execute("select public.lm_finish_prepare(%s, %s)", (attempt_id, Jsonb(finish)))
+        if result.get("ai_fixes"):
+            # corrections de l'IA gardées comme saisies à la main : l'envoi les rejoue à l'identique
+            conn.execute("update public.lm_attempts set extra = coalesce(extra, '{}'::jsonb) || %s where id = %s",
+                         (Jsonb(result["ai_fixes"]), attempt_id))
         log.info("%s → %s (%.1fs) %s", prospect["website"], result["status"], time.monotonic() - started,
                  (result.get("detail") or "")[:120])
         return {"status": result["status"], "found_email": result.get("found_email")}

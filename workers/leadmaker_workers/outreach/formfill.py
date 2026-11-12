@@ -355,7 +355,11 @@ FIND_FORM_JS = r"""
   };
   let best = -1, bestScore = 0, quote = null;
   containers.forEach((f, i) => {
-    const fields = qsa(f, FIELD).filter(e => !['submit', 'button', 'image', 'reset'].includes(e.type));
+    // case cachée d'une protection anti-robots (reCAPTCHA, hCaptcha, Turnstile) : jamais une zone de message
+    // (12/11/2026 : bestnycelectricianmanhattan.com, demande de rappel nom + tél + e-mail retenue sur l'accueil
+    // grâce à « g-recaptcha-response », alors que /contact/ a un vrai formulaire avec message)
+    const fields = qsa(f, FIELD).filter(e => !['submit', 'button', 'image', 'reset'].includes(e.type)
+      && !/^(g-recaptcha|h-captcha|cf-turnstile)-response/i.test(e.name || e.id || ''));
     if (fields.length < 2) return;
     const visible = fields.filter(vis).length;
     const ta = fields.filter(e => e.tagName === 'TEXTAREA').length;

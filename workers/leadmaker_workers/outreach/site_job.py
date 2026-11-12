@@ -117,7 +117,8 @@ def prepare(job: dict) -> dict:
         page = ctx.new_page()
         _arm_watchdog()
         try:
-            frame = open_contact_form(page, job["site"], emails=emails, visited=visited, quotes=quotes)
+            frame = open_contact_form(page, job["site"], emails=emails, visited=visited, quotes=quotes,
+                                      contact_first=True)
             if not frame and quotes:  # seulement des formulaires de devis / rendez-vous : jamais remplis
                 out.update(status="no_form", detail=f"{QUOTE_DETAIL} ({_quote_reason(quotes)} ; pages vues : "
                            + ", ".join(dict.fromkeys(visited)) + ")")

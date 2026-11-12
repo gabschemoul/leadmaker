@@ -872,10 +872,12 @@ def _check_alive(page: Page, final: bool = False) -> None:
 
 
 def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[str] | None = None,
-                      visited: list[str] | None = None, quotes: list | None = None) -> Frame | None:
+                      visited: list[str] | None = None, quotes: list | None = None,
+                      contact_first: bool = False) -> Frame | None:
     """Ouvre le site et renvoie le cadre contenant le formulaire de contact (ou None).
     `visited` reçoit les pages explorées (pour expliquer un échec), `quotes` les formulaires de devis écartés
-    (adresse de la page, raison)."""
+    (adresse de la page, raison). `contact_first` (préparation seulement) : une page « Contact » passe avant le
+    formulaire de l'accueil ; jamais à l'envoi, qui doit rouvrir exactement le formulaire validé."""
     emails = emails if emails is not None else set()
     visited = visited if visited is not None else []
     quotes = quotes if quotes is not None else []
@@ -886,7 +888,7 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
     harvest_emails(page, site, emails)
     frame = _find_form(page, quotes) or _find_form_late(page, quotes)
     if frame:
-        return _contact_page_first(page, frame, timeout, emails, visited, started)
+        return _contact_page_first(page, frame, timeout, emails, visited, started) if contact_first else frame
     _check_alive(page, final=True)
     home = page.url
     frame = _find_form_after_click(page, visited, quotes)

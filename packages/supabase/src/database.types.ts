@@ -599,14 +599,14 @@ isOneToOne: false
                   ]
                 },"lm_discovery_settings": {
                   Row: {
-                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"places_max_age_days": number,"places_missed_to_close": number,"prior": number,"recent_weight": number,"replay_pacing": NonNullable<Json>,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
+                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"places_max_age_days": number,"places_missed_to_close": number,"prior": number,"recent_weight": number,"replay_pacing": NonNullable<Json>,"site_forms_trust_since": string,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"site_forms_trust_since"?: string,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"site_forms_trust_since"?: string,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -1022,6 +1022,20 @@ isOneToOne: false
       referencedRelation: "lm_spaces"
       referencedColumns: ["id"]
     }
+                  ]
+                },"lm_site_forms": {
+                  Row: {
+                    "checked_at": string,"form_url": string | null,"site_key": string,"source": string,"status": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checked_at"?: string,"form_url"?: string | null,"site_key": string,"source"?: string,"status": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "checked_at"?: string,"form_url"?: string | null,"site_key"?: string,"source"?: string,"status"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"lm_spaces": {
                   Row: {
@@ -2005,8 +2019,14 @@ isOneToOne: false
 "lm_settle_kept":
 { Args: { "p_campaign_id": string,"p_prospect_id"?: string }; Returns: number
                            },
+"lm_site_form_status":
+{ Args: { "p_status": Database["public"]['Enums']["lm_attempt_status"] }; Returns: string
+                           },
 "lm_site_known":
 { Args: { "p_site_key": string,"p_space_id": string }; Returns: boolean
+                           },
+"lm_site_known_no_form":
+{ Args: { "p_site_key": string }; Returns: string
                            },
 "lm_site_suppressed":
 { Args: { "p_account_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean

@@ -60,6 +60,18 @@ def _social_host(url: str) -> bool:
     return any(host == h or host.endswith("." + h) for h in NO_FORM_HOSTS)
 
 
+def _known_no_form(conn: psycopg.Connection, prospect_id: Any):
+    """Date du dernier constat « pas de formulaire » sur ce site (tous clients, lm_site_known_no_form), ou None.
+    Ne fait jamais échouer la préparation : fonction absente (base pas à jour) ou erreur → le site est visité."""
+    try:
+        row = conn.execute("select public.lm_site_known_no_form(p.site_key) as d from public.lm_prospects p where p.id = %s",
+                           (prospect_id,)).fetchone()
+        return row["d"] if row else None
+    except Exception as exc:
+        log.warning("constat des formulaires indisponible (%s) : site visité", str(exc).splitlines()[0][:120])
+        return None
+
+
 def _timeout() -> int:
     return int(os.environ.get("PREPARE_TIMEOUT", "100"))
 
@@ -278,6 +290,10 @@ class PrepareRunner:
         timeout = _timeout()
         if _social_host(prospect["website"] or ""):
             result = {"status": "no_form", "detail": "page sur un réseau social ou un annuaire : pas de formulaire de contact"}
+        elif seen := _known_no_form(conn, row["prospect_id"]):
+            # Déjà visité sans formulaire (par n'importe quel client) : pas de nouvelle visite (« déjà vérifié… » :
+            # le constat n'est pas prolongé, voir lm_attempts_record_site_form)
+            result = {"status": "no_form", "detail": f"déjà vérifié le {seen:%d/%m/%Y} : pas de formulaire de contact"}
         else:
             result = run_site_job(job, timeout)
         if result is None:

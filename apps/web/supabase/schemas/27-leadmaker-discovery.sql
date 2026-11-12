@@ -93,6 +93,10 @@ create table if not exists public.lm_discovery_settings (
   -- Annuaire, étape 3 : absences d'une fiche dans de nouvelles recherches complètes de sa zone avant de la
   -- considérer fermée (CDC §8.5). 2 : Google varie un peu d'une recherche à l'autre.
   places_missed_to_close integer not null default 2,
+  -- Formulaires testés (lm_site_forms, 12/11/2026) : un site vu « sans formulaire » par le robot de préparation
+  -- depuis cette date (et depuis moins de places_max_age_days jours) n'est plus revisité, quel que soit le client.
+  -- Avancer la date quand la détection du robot s'améliore : les constats plus anciens seront refaits.
+  site_forms_trust_since timestamptz not null default '2026-11-12 11:30:00+00',
   -- Arrivée progressive des fiches reprises de l'annuaire (CDC §8.4, décidé le 9/11) : premières fiches après
   -- first_delay secondes (tirage), puis des paquets de batch fiches examinées toutes les pause secondes (tirage
   -- à chaque paquet), une campagne entièrement reprise ne finissant jamais en moins de min_total secondes

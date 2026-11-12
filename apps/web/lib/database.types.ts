@@ -599,14 +599,14 @@ isOneToOne: false
                   ]
                 },"lm_discovery_settings": {
                   Row: {
-                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"places_max_age_days": number,"places_missed_to_close": number,"prior": number,"recent_weight": number,"replay_pacing": NonNullable<Json>,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
+                    "abandon_zero_after": number,"chain_min": number,"created_at": string,"credit_tiers": NonNullable<Json>,"default_rate": number,"default_search_mb": number,"explore_share": number,"id": boolean,"max_results": number,"min_rate": number,"min_searches": number,"over_budget_tasks_per_account": number,"places_max_age_days": number,"places_missed_to_close": number,"prior": number,"recent_weight": number,"replay_pacing": NonNullable<Json>,"site_forms_trust_since": string,"sort_abandon_after": number,"sort_abandon_rate": number,"sort_credit_tiers": NonNullable<Json>,"sort_groups_after": number,"sort_measure_size": number,"sort_pause_rate": number,"tasks_per_campaign": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"site_forms_trust_since"?: string,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
+                    "abandon_zero_after"?: number,"chain_min"?: number,"created_at"?: string,"credit_tiers"?: NonNullable<Json>,"default_rate"?: number,"default_search_mb"?: number,"explore_share"?: number,"id"?: boolean,"max_results"?: number,"min_rate"?: number,"min_searches"?: number,"over_budget_tasks_per_account"?: number,"places_max_age_days"?: number,"places_missed_to_close"?: number,"prior"?: number,"recent_weight"?: number,"replay_pacing"?: NonNullable<Json>,"site_forms_trust_since"?: string,"sort_abandon_after"?: number,"sort_abandon_rate"?: number,"sort_credit_tiers"?: NonNullable<Json>,"sort_groups_after"?: number,"sort_measure_size"?: number,"sort_pause_rate"?: number,"tasks_per_campaign"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -1022,6 +1022,20 @@ isOneToOne: false
       referencedRelation: "lm_spaces"
       referencedColumns: ["id"]
     }
+                  ]
+                },"lm_site_forms": {
+                  Row: {
+                    "checked_at": string,"form_url": string | null,"site_key": string,"source": string,"status": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checked_at"?: string,"form_url"?: string | null,"site_key": string,"source"?: string,"status": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "checked_at"?: string,"form_url"?: string | null,"site_key"?: string,"source"?: string,"status"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"lm_spaces": {
                   Row: {
@@ -1458,6 +1472,9 @@ isOneToOne: false
 "lm_add_search_bytes":
 { Args: { "p_bytes": number,"p_task_id": number }; Returns: undefined
                            },
+"lm_approve_attempts":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
 "lm_attempt_counts":
 { Args: { "p_space_id": string }; Returns: {
               "status": Database["public"]['Enums']["lm_attempt_status"],"total": number
@@ -1468,6 +1485,9 @@ isOneToOne: false
                            },
 "lm_attempt_repreparable":
 { Args: { "p_status": Database["public"]['Enums']["lm_attempt_status"] }; Returns: boolean
+                           },
+"lm_attempt_todo_kind":
+{ Args: { "p_autopilot_status": Database["public"]['Enums']["lm_autopilot_status"],"p_detail": string,"p_missing": Json,"p_protection_type": string,"p_status": Database["public"]['Enums']["lm_attempt_status"],"p_validated_by": string }; Returns: string
                            },
 "lm_auto_validation_allowed":
 { Args: { "p_account_id": string }; Returns: boolean
@@ -1565,6 +1585,9 @@ isOneToOne: false
 "lm_autopilot_tick":
 { Args: { "p_only"?: string }; Returns: number
                            },
+"lm_autopilot_todo":
+{ Args: { "p_autopilot_id": string }; Returns: number
+                           },
 "lm_autopilot_validate_clean":
 { Args: { "p_autopilot_id": string }; Returns: number
                            },
@@ -1600,6 +1623,11 @@ isOneToOne: false
 "lm_campaign_progress":
 { Args: { "p_campaign_id": string }; Returns: {
               "abandoned": number,"cards": number,"categories": number,"in_flight": number,"last_search_at": string,"productive": number,"prospects": number,"searches_done": number,"searches_total": number,"zones": number
+            }[]
+                           },
+"lm_campaign_prospect_counts":
+{ Args: { "p_account_id": string }; Returns: {
+              "campaign_id": string,"prospects": number
             }[]
                            },
 "lm_campaign_search_phase":
@@ -1643,6 +1671,14 @@ isOneToOne: false
                            },
 "lm_campaign_timezone":
 { Args: { "p_campaign_id": string }; Returns: string
+                           },
+"lm_campaign_todo":
+{ Args: { "p_campaign_id": string }; Returns: {
+              "captcha": number,"to_check": number,"unknown_field": number
+            }[]
+                           },
+"lm_campaign_todo_ids":
+{ Args: { "p_campaign_id": string,"p_kind": string }; Returns: string[]
                            },
 "lm_cancel_autopilot":
 { Args: { "p_autopilot_id": string }; Returns: boolean
@@ -1806,6 +1842,9 @@ isOneToOne: false
                            },
 "lm_mark_place_seen":
 { Args: { "p_place_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
+                           },
+"lm_mark_sent_by_hand":
+{ Args: { "p_ids": (string)[] }; Returns: number
                            },
 "lm_measure_sort_price":
 { Args: { "p_campaign_id": string }; Returns: undefined
@@ -1980,8 +2019,14 @@ isOneToOne: false
 "lm_settle_kept":
 { Args: { "p_campaign_id": string,"p_prospect_id"?: string }; Returns: number
                            },
+"lm_site_form_status":
+{ Args: { "p_status": Database["public"]['Enums']["lm_attempt_status"] }; Returns: string
+                           },
 "lm_site_known":
 { Args: { "p_site_key": string,"p_space_id": string }; Returns: boolean
+                           },
+"lm_site_known_no_form":
+{ Args: { "p_site_key": string }; Returns: string
                            },
 "lm_site_suppressed":
 { Args: { "p_account_id": string,"p_site_key": string,"p_space_id": string }; Returns: boolean
@@ -1991,6 +2036,9 @@ isOneToOne: false
                            },
 "lm_skip_estimate_search":
 { Args: { "p_estimate_id": string }; Returns: undefined
+                           },
+"lm_skip_todo":
+{ Args: { "p_campaign_id": string,"p_ids"?: (string)[],"p_kind": string }; Returns: number
                            },
 "lm_space_limit":
 { Args: { "p_account_id": string }; Returns: number

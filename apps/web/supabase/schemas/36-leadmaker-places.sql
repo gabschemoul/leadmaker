@@ -340,3 +340,120 @@ $$;
 revoke all on function public.lm_replay_search(text, text, integer, double precision, double precision, integer) from public;
 
 grant execute on function public.lm_replay_search(text, text, integer, double precision, double precision, integer) to service_role;
+
+/*
+ * -------------------------------------------------------
+ * Section: formulaires de contact testés (12/11/2026, décision de Gabriel)
+ * Dernier constat du robot de préparation pour chaque site (site_key), quel que soit le client : formulaire
+ * trouvé, pas de formulaire, site protégé (captcha), site injoignable. Sert à ne jamais retester un site sans
+ * formulaire (lm_site_known_no_form), et plus tard à la « base qualifiée ». Infos publiques seulement : aucune trace
+ * du client, de son message ni de l'envoi (« sent » est rangé comme « form »). Robots seulement (rôle service).
+ * -------------------------------------------------------
+ */
+create table if not exists public.lm_site_forms (
+  site_key text not null,
+  status text not null,
+  -- Page du formulaire trouvé (status form ou protected)
+  form_url varchar(2000),
+  checked_at timestamptz not null default now(),
+  -- app : robot de préparation de l'appli ; old_tool : ancien outil (28/10 → 1/11), gardé pour information
+  source text not null default 'app',
+  updated_at timestamptz not null default now(),
+  primary key (site_key),
+  constraint lm_site_forms_status check (status in ('form', 'no_form', 'protected', 'unreachable')),
+  constraint lm_site_forms_source check (source in ('app', 'old_tool'))
+);
+
+comment on table public.lm_site_forms is 'Annuaire commun : dernier constat sur le formulaire de contact de chaque site (robots seulement)';
+
+alter table public.lm_site_forms enable row level security;
+
+revoke all on public.lm_site_forms from anon, authenticated, service_role;
+
+grant select, insert, update, delete on table public.lm_site_forms to service_role;
+
+-- Statut d'une tentative → constat sur le formulaire du site (null : rien à retenir)
+create or replace function public.lm_site_form_status(p_status public.lm_attempt_status) returns text
+set search_path = ''
+language sql
+immutable
+as $$
+  select case p_status
+           when 'no_form' then 'no_form'
+           when 'unreachable' then 'unreachable'
+           when 'intervention_required' then 'protected'
+           when 'ready' then 'form'
+           when 'incomplete' then 'form'
+           when 'validated' then 'form'
+           when 'to_verify' then 'form'
+           when 'sent' then 'form'
+         end;
+$$;
+
+revoke all on function public.lm_site_form_status(public.lm_attempt_status) from public;
+
+grant execute on function public.lm_site_form_status(public.lm_attempt_status) to service_role;
+
+-- Déclencheur : chaque changement de statut d'une tentative met à jour le constat du site. Un « pas de formulaire »
+-- repris du constat lui-même (détail « déjà vérifié… », lm_site_known_no_form) ne le prolonge pas.
+create or replace function public.lm_attempts_record_site_form() returns trigger
+set search_path = ''
+language plpgsql
+security definer
+as $$
+declare
+  v_status text := public.lm_site_form_status(new.status);
+  v_key text;
+begin
+  if v_status is null
+     or (tg_op = 'UPDATE' and new.status is not distinct from old.status)
+     or coalesce(new.detail, '') like 'déjà vérifié%' then
+    return null;
+  end if;
+
+  select p.site_key into v_key from public.lm_prospects p where p.id = new.prospect_id;
+
+  if v_key is null or v_key like 'maps:%' or v_key like 'tel:%' then
+    return null;
+  end if;
+
+  insert into public.lm_site_forms as f (site_key, status, form_url, checked_at, source)
+  values (v_key, v_status, case when v_status in ('form', 'protected') then left(new.form_url, 2000) end, now(), 'app')
+  on conflict (site_key) do update
+    set status = excluded.status,
+        form_url = coalesce(excluded.form_url, case when excluded.status in ('form', 'protected') then f.form_url end),
+        checked_at = excluded.checked_at,
+        source = 'app',
+        updated_at = now();
+
+  return null;
+end;
+$$;
+
+revoke all on function public.lm_attempts_record_site_form() from public;
+
+drop trigger if exists lm_attempts_record_site_form on public.lm_attempts;
+
+create trigger lm_attempts_record_site_form
+  after insert or update of status on public.lm_attempts
+  for each row execute function public.lm_attempts_record_site_form();
+
+-- Le robot de préparation demande si un site a déjà été vu sans formulaire, assez récemment et par une version
+-- du robot à laquelle on se fie (lm_discovery_settings.site_forms_trust_since) : date du constat, sinon null.
+-- Les constats de l'ancien outil (source old_tool) ne comptent pas. Appelant : robots (rôle service).
+create or replace function public.lm_site_known_no_form(p_site_key text) returns timestamptz
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select f.checked_at
+    from public.lm_site_forms f, public.lm_discovery_settings s
+   where s.id and f.site_key = p_site_key and f.status = 'no_form' and f.source = 'app'
+     and f.checked_at >= s.site_forms_trust_since
+     and f.checked_at > now() - make_interval(days => s.places_max_age_days);
+$$;
+
+revoke all on function public.lm_site_known_no_form(text) from public;
+
+grant execute on function public.lm_site_known_no_form(text) to service_role;

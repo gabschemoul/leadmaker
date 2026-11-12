@@ -32,12 +32,13 @@ Règle absolue : le robot ne remplit QUE des formulaires de contact généraux. 
   de réclamation ;
 - un formulaire dont le titre mélange contact et devis (« Devis / Contact », « Contact - Demande de devis »,
   « Une question, un devis ? ») ;
-- un formulaire qui demande des détails d'un projet de client (type de travaux, surface, budget, dimensions, adresse
-  du chantier, date de l'événement, service souhaité, photos de l'objet, « Votre projet »…) : l'entreprise croirait
-  à un client ;
-- un formulaire dont le titre de la page ou un titre au-dessus parle d'un projet ou d'un besoin de client (« Un
-  projet ? Parlons-en », « Parlez-nous de votre projet », « Un projet de toiture ? Une question ? », « Besoin d'un
-  couvreur ? », « Intervention urgence ») ou de devis (« Devis cuisine sur mesure », « Demander un devis gratuit ») ;
+- un formulaire dont un champ OBLIGATOIRE demande un détail de projet de client (type de travaux, surface, budget,
+  dimensions, adresse du chantier, date de l'événement, service souhaité, photos de l'objet) : l'entreprise
+  croirait à un client ;
+- un formulaire dont le titre parle de devis ou d'estimation (« Devis cuisine sur mesure », « Demander un devis
+  gratuit », « Get a quote », « Free estimate ») ou d'intervention urgente (« Intervention urgence ») ;
+- hors de la page contact du site : un formulaire dont le titre parle d'un projet ou d'un besoin de client (« Un
+  projet ? Parlons-en », « Besoin d'un couvreur ? ») ;
 - un formulaire d'avis, de commentaire de blog ou d'inscription à une lettre d'information.
 Le robot ne doit pas non plus envoyer si une valeur est dans le mauvais champ (un nom dans « Dimensions », un
 téléphone dans « Nom »…), si un champ obligatoire visible reste vide, ou si un choix de liste ou un bouton coché
@@ -49,7 +50,13 @@ Ce qui est NORMAL dans un formulaire de contact (ne bloque pas pour ça) :
 - un choix de liste neutre : information, renseignement, question, demande générale, contact, autre,
   partenariat, professionnel ; une liste facultative laissée sur « Sélectionnez » ;
 - une phrase générale sous le titre (« N'hésitez pas à nous contacter ») ou un bouton « Devis » ailleurs dans le
-  menu du site, tant que CE formulaire est un formulaire de contact.
+  menu du site, tant que CE formulaire est un formulaire de contact ;
+- sur la page contact du site (adresse avec « contact »), un titre accrocheur qui parle du projet du visiteur
+  (« Let's talk about your project », « Get a Free Consultation », « Ready to Shape Your Space? », « Un projet ?
+  Parlons-en ») quand le formulaire a une vraie zone de message libre où part le message : le message dit tout de
+  suite qui écrit. Dans ce cas seuls les champs comptent (règle des champs obligatoires ci-dessus) ;
+- une case « Project », « Votre projet » ou « Request » facultative laissée vide, ou obligatoire remplie par le
+  robot avec l'objet du message de l'agence.
 Ne juge pas le contenu du message ni les coordonnées écrites (texte de prospection déjà validé, parfois un texte de
 test) ni les captchas (gérés à part).
 La liste « Ce que le robot a rempli » est fiable : si la capture ne montre pas un champ (bandeau de cookies par-dessus,
@@ -69,7 +76,7 @@ class Verdict(BaseModel):
 WHAT = {"full_name": "nom complet de l'agence", "first_name": "prénom", "last_name": "nom", "email": "e-mail",
         "phone": "téléphone", "company": "nom de l'agence", "city": "ville de l'agence", "zip": "code postal de l'agence",
         "subject": "objet du message", "website": "site de l'agence", "message": "message de prospection",
-        "job_title": "fonction", "address": "adresse de l'agence", "civility": "civilité", "country": "pays"}
+        "job_title": "fonction", "project": "objet du message de l'agence (case de projet obligatoire)", "address": "adresse de l'agence", "civility": "civilité", "country": "pays"}
 
 
 def describe(filled: dict) -> str:

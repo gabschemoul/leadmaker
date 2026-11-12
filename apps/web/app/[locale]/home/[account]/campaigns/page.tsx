@@ -197,7 +197,8 @@ async function CampaignsList({
         )}`,
         folderLabel: folderLabel(campaign.spaceId),
         countryLabel: countryName(campaign.countryCode),
-        prospectsLabel: format.number(campaign.prospects),
+        prospectsLabel:
+          campaign.prospects === null ? '' : format.number(campaign.prospects),
       }))}
       campaignsPath={campaignsPath}
       showFolders={showFolders}

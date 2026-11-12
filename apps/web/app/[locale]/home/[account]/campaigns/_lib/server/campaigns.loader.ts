@@ -1,6 +1,6 @@
 /**
  * Rôle : chargeurs serveur des pages campagnes (liste, détail, formulaire de modification, aperçu, réglages).
- * Données : lm_campaigns, lm_geo_cities, lm_categories, lm_prospects, lm_campaign_prospects (aperçu des gardées) ; RPC lm_local_discovery_state, lm_auto_validation_allowed.
+ * Données : lm_campaigns, lm_geo_cities, lm_categories, lm_prospects, lm_campaign_prospects (aperçu des gardées) ; RPC lm_campaign_prospect_counts, lm_local_discovery_state, lm_auto_validation_allowed.
  * Écritures : aucune (lecture seule, client Supabase de l'utilisateur).
  */
 
@@ -13,15 +13,21 @@ import { keptCompaniesFilter } from '~/lib/leadmaker/sorted-companies-query';
 
 type Client = SupabaseClient<Database>;
 
-/** Campagnes de l'organisation, avec leur dossier client et le nombre de prospects trouvés. */
+/**
+ * Campagnes de l'organisation, avec leur dossier client et le nombre de prospects trouvés.
+ * Le nombre vient de lm_campaign_prospect_counts (un parcours d'index par campagne) : le comptage embarqué de
+ * PostgREST passait par la RLS ligne à ligne et dépassait le délai de 8 s (12/11/2026, 261 000 fiches, erreur 500).
+ * Un comptage en échec ne bloque jamais la liste : la colonne reste vide.
+ */
 export async function loadCampaigns(client: Client, accountId: string) {
-  const { data, error } = await client
-    .from('lm_campaigns')
-    .select(
-      'id, name, status, country_code, created_at, space_id, prospects:lm_prospects!lm_prospects_campaign_id_fkey(count)',
-    )
-    .eq('account_id', accountId)
-    .order('created_at', { ascending: false });
+  const [{ data, error }, counts] = await Promise.all([
+    client
+      .from('lm_campaigns')
+      .select('id, name, status, country_code, created_at, space_id')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false }),
+    loadCampaignProspectCounts(client, accountId),
+  ]);
 
   if (error) {
     throw error;
@@ -34,8 +40,21 @@ export async function loadCampaigns(client: Client, accountId: string) {
     countryCode: campaign.country_code,
     createdAt: campaign.created_at,
     spaceId: campaign.space_id,
-    prospects: campaign.prospects?.[0]?.count ?? 0,
+    prospects: counts?.get(campaign.id) ?? null,
   }));
+}
+
+async function loadCampaignProspectCounts(client: Client, accountId: string) {
+  const { data, error } = await client.rpc('lm_campaign_prospect_counts', {
+    p_account_id: accountId,
+  });
+
+  if (error) {
+    console.error('lm_campaign_prospect_counts', error);
+    return null;
+  }
+
+  return new Map(data.map((row) => [row.campaign_id, row.prospects]));
 }
 
 /** Une campagne (null si absente ou hors de l'organisation, grâce au RLS). */

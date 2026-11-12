@@ -1611,6 +1611,11 @@ isOneToOne: false
               "abandoned": number,"cards": number,"categories": number,"in_flight": number,"last_search_at": string,"productive": number,"prospects": number,"searches_done": number,"searches_total": number,"zones": number
             }[]
                            },
+"lm_campaign_prospect_counts":
+{ Args: { "p_account_id": string }; Returns: {
+              "campaign_id": string,"prospects": number
+            }[]
+                           },
 "lm_campaign_search_phase":
 { Args: { "p_campaign_id": string }; Returns: {
               "ahead": number,"estimate_done": number,"estimate_total": number,"queued": number,"resume_at": string,"running": number

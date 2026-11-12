@@ -649,3 +649,23 @@ grant execute on function public.lm_site_suppressed(uuid, uuid, text) to service
 
 -- Affichage en direct des prospects trouvés (Supabase Realtime, filtré par la RLS)
 alter publication supabase_realtime add table public.lm_prospects;
+
+-- Nombre de prospects de chaque campagne d'une organisation, pour la liste des campagnes (12/11/2026 : le comptage
+-- embarqué de PostgREST passait par la RLS ligne à ligne, 261 000 fiches chez Studio Namma → délai de 8 s dépassé,
+-- page Campagnes en erreur 500). Ici : un parcours d'index par campagne. Membres de l'organisation seulement.
+create or replace function public.lm_campaign_prospect_counts(p_account_id uuid)
+returns table (campaign_id uuid, prospects bigint)
+set search_path = ''
+language sql
+stable
+security definer
+as $$
+  select c.id, (select count(*) from public.lm_prospects p where p.campaign_id = c.id)
+    from public.lm_campaigns c
+   where c.account_id = p_account_id
+     and public.lm_member(p_account_id);
+$$;
+
+revoke all on function public.lm_campaign_prospect_counts(uuid) from public, anon;
+
+grant execute on function public.lm_campaign_prospect_counts(uuid) to authenticated, service_role;

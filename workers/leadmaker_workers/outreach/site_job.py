@@ -211,7 +211,10 @@ def send(job: dict) -> dict:
                 r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
                               short_message=job.get("short_body", ""), locale=job.get("locale", ""))
                 protection = r.protection or detect_protection(frame)
-                if protection:
+                if "message" not in r.filled and r.status != "error":
+                    # même règle qu'à la préparation : sans zone de message, rien ne part jamais
+                    out.update(status="no_form", detail=f"{NO_MESSAGE} (au moment de l'envoi)")
+                elif protection:
                     out.update(status="intervention_required", protection_type=protection,
                                detail=f"protection anti-robot au moment de l'envoi : {protection}",
                                screenshot_b64=_screenshot(page, frame))

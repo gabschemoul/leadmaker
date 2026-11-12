@@ -155,12 +155,48 @@ export function displayHost(url: string | null | undefined) {
 }
 
 /**
- * Derniers messages envoyés d'un passage du pilote (cartes, liste complète), activité des prospects dans la langue
- * de l'appli quand l'annuaire la connaît.
+ * Derniers messages envoyés d'un passage du pilote (cartes), activité des prospects dans la langue de l'appli quand
+ * l'annuaire la connaît.
  */
-export async function fetchAutopilotSent(
+export function fetchAutopilotSent(
   client: Client,
   autopilotId: string,
+  locale: string,
+  limit: number,
+) {
+  return fetchSentRows(client, 'autopilot_id', autopilotId, locale, limit);
+}
+
+/**
+ * Tous les messages envoyés d'une campagne, tous passages du pilote confondus, les plus récents d'abord (liste
+ * « Voir les N envois » : les anciens lots restent consultables, 12/11/2026).
+ */
+export function fetchCampaignSent(
+  client: Client,
+  campaignId: string,
+  locale: string,
+  limit: number,
+) {
+  return fetchSentRows(client, 'campaign_id', campaignId, locale, limit);
+}
+
+/** Nombre de messages envoyés (confirmés) d'une campagne, tous passages confondus. */
+export async function countCampaignSent(client: Client, campaignId: string) {
+  const { count, error } = await client
+    .from('lm_attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('campaign_id', campaignId)
+    .eq('status', 'sent');
+
+  if (error) throw error;
+
+  return count ?? 0;
+}
+
+async function fetchSentRows(
+  client: Client,
+  column: 'autopilot_id' | 'campaign_id',
+  id: string,
   locale: string,
   limit: number,
 ) {
@@ -169,7 +205,7 @@ export async function fetchAutopilotSent(
     .select(
       'id, status, subject, body, template_name, form_url, sent_at, updated_at, screenshot_after, prospect:lm_prospects!inner(id, name, website, city, category)',
     )
-    .eq('autopilot_id', autopilotId)
+    .eq(column, id)
     // seulement les envois confirmés : « à vérifier » (pas de confirmation visible) n'est plus compté (12/11/2026)
     .eq('status', 'sent')
     .order('sent_at', { ascending: false, nullsFirst: false })

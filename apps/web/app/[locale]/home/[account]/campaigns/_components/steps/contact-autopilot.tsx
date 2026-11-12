@@ -214,6 +214,7 @@ export function ContactAutopilot(props: {
 
   return (
     <AutopilotRunning
+      campaignId={props.campaignId}
       summary={summary}
       checkedAt={dataUpdatedAt}
       senderLabel={props.senderLabel ?? null}
@@ -1039,6 +1040,7 @@ function AutopilotPreview(props: {
 /* ------------------------------------------------------------------ */
 
 function AutopilotRunning(props: {
+  campaignId: string;
   summary: AutopilotSummary;
   /** heure du dernier rafraîchissement des compteurs (toutes les 4 s en marche) */
   checkedAt: number;
@@ -1255,6 +1257,7 @@ function AutopilotRunning(props: {
 
       <AutopilotLive
         autopilotId={autopilotId}
+        campaignId={props.campaignId}
         live={!done && !paused}
         target={target}
         sentCount={summary.sent}

@@ -33,7 +33,8 @@ import {
   displayHost,
   fetchAttemptScreenshot,
   fetchAutopilotLive,
-  fetchAutopilotSent,
+  countCampaignSent,
+  fetchCampaignSent,
 } from '~/lib/leadmaker/autopilot-query';
 
 /** Relecture en marche (même rythme que les compteurs). */
@@ -64,6 +65,7 @@ const SENT_PAGE = 50;
 
 export function AutopilotLive(props: {
   autopilotId: string;
+  campaignId: string;
   live: boolean;
   target: number;
   sentCount: number;
@@ -78,6 +80,12 @@ export function AutopilotLive(props: {
   const format = useFormatter();
   const locale = useLocale();
   const client = useSupabase();
+  // envois de toute la campagne (tous les passages du pilote) : la liste garde les anciens lots
+  const { data: campaignSent = props.sentCount } = useQuery({
+    queryKey: ['lm-campaign-sent-count', props.campaignId],
+    queryFn: () => countCampaignSent(client, props.campaignId),
+    refetchInterval: props.live ? POLL_MS * 3 : false,
+  });
   const [open, setOpen] = useState<AutopilotSentCard | null>(null);
   const [listOpen, setListOpen] = useState(false);
 
@@ -181,14 +189,14 @@ export function AutopilotLive(props: {
             ) : null}
           </h3>
 
-          {props.sentCount > 0 ? (
+          {campaignSent > 0 ? (
             <button
               type={'button'}
               className={'text-brand cursor-pointer text-sm hover:underline'}
               data-test={'autopilot-see-all-sent'}
               onClick={() => setListOpen(true)}
             >
-              {t('seeAllSent', { count: props.sentCount })}
+              {t('seeAllSent', { count: campaignSent })}
             </button>
           ) : null}
         </div>
@@ -390,8 +398,8 @@ export function AutopilotLive(props: {
 
       <SentList
         open={listOpen}
-        autopilotId={props.autopilotId}
-        total={props.sentCount}
+        campaignId={props.campaignId}
+        total={campaignSent}
         live={props.live}
         onOpenChange={setListOpen}
         onPick={setOpen}
@@ -434,7 +442,7 @@ export function ProspectBadge(props: { name: string; size?: 'lg' }) {
 /** « Voir les N envois » : tous les messages envoyés du passage, les plus récents d'abord (clic = détail). */
 function SentList(props: {
   open: boolean;
-  autopilotId: string;
+  campaignId: string;
   total: number;
   live: boolean;
   onOpenChange: (open: boolean) => void;
@@ -447,9 +455,9 @@ function SentList(props: {
   const [limit, setLimit] = useState(SENT_PAGE);
 
   const { data: rows = [], isFetching } = useQuery({
-    queryKey: ['lm-autopilot-sent', props.autopilotId, locale, limit],
-    queryFn: () => fetchAutopilotSent(client, props.autopilotId, locale, limit),
-    enabled: props.open && Boolean(props.autopilotId),
+    queryKey: ['lm-campaign-sent', props.campaignId, locale, limit],
+    queryFn: () => fetchCampaignSent(client, props.campaignId, locale, limit),
+    enabled: props.open && Boolean(props.campaignId),
     placeholderData: (previous) => previous,
     refetchInterval: props.open && props.live ? POLL_MS * 3 : false,
   });

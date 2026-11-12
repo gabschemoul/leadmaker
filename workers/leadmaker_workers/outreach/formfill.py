@@ -414,10 +414,17 @@ DESCRIBE_JS = r"""
     // libellé non relié : texte voisin, sans les blocs qui contiennent un autre champ ou un bouton (12/11/2026
     // firstclassrenovations.com : chaque case d'Elementor recevait « Project Send », textes des cases voisines et du
     // bouton → nom laissé vide, contrôle IA trompé ; même filtre que fieldLabel de FIND_FORM_JS)
+    // plusieurs libellés côte à côte (« Name * Email * Message * » à plat dans le formulaire, lashclubla.com 12/11/2026 :
+    // l'e-mail écrit dans « Name ») : seul le dernier placé AVANT le champ compte
     if (!t.trim()) { let p = up(el); for (let i = 0; i < 2 && p; i++, p = up(p)) {
-      const txt = [...p.childNodes].filter(n => n.nodeType === 3 || ['LABEL','SPAN','P','DIV','LEGEND'].includes(n.tagName))
+      let cands = [...p.childNodes].filter(n => n.nodeType === 3 || ['LABEL','SPAN','P','DIV','LEGEND'].includes(n.tagName))
         .filter(n => !(n.querySelector && n.querySelector('input,textarea,select,button')))
-        .map(n => (n.innerText || n.textContent || '')).join(' ').trim();
+        .filter(n => (n.innerText || n.textContent || '').trim());
+      if (cands.length > 1) {
+        const before = cands.filter(n => n.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+        cands = before.length ? [before[before.length - 1]] : [cands[0]];
+      }
+      const txt = cands.map(n => (n.innerText || n.textContent || '')).join(' ').trim();
       if (txt && txt.length < 120) { t = txt; break; } } }
     return t.replace(/\s+/g, ' ').trim().slice(0, 120);
   };
@@ -1276,8 +1283,14 @@ def detect_protection(frame: Frame) -> str | None:
     return None
 
 
-def submit(frame: Frame) -> tuple[bool | None, str]:
-    """Clique sur le bouton d'envoi du formulaire et vérifie la confirmation (None = refusé par le site)."""
+# vérification anti-robot affichée APRÈS le clic (fenêtre « Please confirm you're human », hallsofivysalon.com 12/11/2026)
+CHALLENGE_TEXT = re.compile(r"confirm (that )?you'?re (a )?human|i'?m not a robot|verify (that )?you are (a )?human"
+                            r"|je ne suis pas un robot|prouvez que vous", re.I)
+
+
+def submit(frame: Frame) -> tuple[bool | None | str, str]:
+    """Clique sur le bouton d'envoi du formulaire et vérifie la confirmation (None = refusé par le site ; un texte =
+    type de protection anti-robot apparue après le clic : rien n'est parti)."""
     _dismiss_cookies(frame.page)
     form = frame.locator("[data-ff-form]")
     btn = form.locator('button[type="submit"]:visible, input[type="submit"]:visible, button:not([type]):visible')
@@ -1293,12 +1306,17 @@ def submit(frame: Frame) -> tuple[bool | None, str]:
     elif not frame.evaluate("() => {" + QSA_JS + """ const f = qsa(document, '[data-ff-form]')[0];
                                       if (f && f.tagName === 'FORM' && f.requestSubmit) { f.requestSubmit(); return true; }
                                       return false; }"""):
-        return False, "bouton d'envoi introuvable"
+        return None, "bouton d'envoi introuvable : rien n'est parti"  # jamais compté comme envoyé (12/11/2026)
     frame.page.wait_for_timeout(5000)
     try:
         text = _norm(frame.page.inner_text("body", timeout=5000))
     except Exception:
         text = ""
+    # le formulaire de départ n'avait pas de protection visible (sinon : site protégé avant le clic) ; une protection
+    # visible maintenant est une vérification demandée par le site : le robot ne la passe jamais, rien n'est parti
+    challenge = detect_protection(frame) or ("recaptcha_v2" if CHALLENGE_TEXT.search(text) else None)
+    if challenge:
+        return challenge, "vérification anti-robot affichée après le clic : rien n'est parti, envoyez-le vous-même"
     m = FAILURE.search(text)
     if m:
         return None, f"refusé par le site (« {m.group(0)} »)"

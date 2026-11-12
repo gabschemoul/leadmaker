@@ -53,7 +53,7 @@ def _screenshot(page, frame) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
-# contexte du formulaire choisi pour le contrôle IA (ai_check.py) : titre de la page, 3 derniers titres au-dessus
+# contexte du formulaire choisi pour le contrôle IA (ai_check.py) : titre de la page, 3 derniers titres juste au-dessus
 # (balises de titre ou texte écrit en gros), texte du formulaire (libellés, choix des listes)
 CONTEXT_JS = r"""() => {
   const f = document.querySelector('[data-ff-form]'); const N = s => (s || '').replace(/\s+/g, ' ').trim();
@@ -65,7 +65,12 @@ CONTEXT_JS = r"""() => {
     if (e.closest('a,button,nav,header,footer,li,label,form,h1,h2,h3,h4,h5,h6') || e.querySelector('input,textarea,select,a,button')) return false;
     return parseFloat(getComputedStyle(e).fontSize) >= 24;
   });
-  return {title: document.title, before: [...new Set(heads.slice(-3).map(e => N(e.innerText || e.textContent).slice(0, 100)))],
+  // seulement les titres proches du formulaire (moins de 400 lettres de texte entre eux) : un titre ailleurs dans la page
+  // n'est pas le sien (12/11/2026 palacioshomeco.com : « Need Help Choosing Furniture? » loin au-dessus, envoi bloqué)
+  const gap = h => { try { const r = document.createRange(); r.setStartAfter(h); r.setEndBefore(f); return N(r.toString()).length; }
+    catch (e) { return 1e9; } };
+  const near = heads.slice(-3).filter(h => gap(h) < 400);
+  return {title: document.title, before: [...new Set(near.map(e => N(e.innerText || e.textContent).slice(0, 100)))],
           form: N(f.innerText).slice(0, 1500)};
 }"""
 
@@ -228,9 +233,13 @@ def send(job: dict) -> dict:
                 else:
                     out["submitted"] = True
                     ok, detail = submit(frame)
-                    status = {True: "sent", False: "to_verify", None: "failed"}[ok]
-                    out.update(status=status, detail=detail, short=r.short, filled=r.filled,
-                               screenshot_b64=_screenshot(page, frame))
+                    if isinstance(ok, str):  # vérification anti-robot apparue après le clic : rien n'est parti
+                        out.update(status="intervention_required", submitted=False, protection_type=ok, detail=detail,
+                                   screenshot_b64=_screenshot(page, frame))
+                    else:
+                        status = {True: "sent", False: "to_verify", None: "failed"}[ok]
+                        out.update(status=status, detail=detail, short=r.short, filled=r.filled,
+                                   screenshot_b64=_screenshot(page, frame))
         except SiteDown as e:
             out.update(status="failed", detail=f"site hors ligne (« {e} »)")
         except Exception as e:

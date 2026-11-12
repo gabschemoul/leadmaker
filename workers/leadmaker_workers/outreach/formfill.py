@@ -408,8 +408,12 @@ DESCRIBE_JS = r"""
     const l = labelFor(el); if (l) t += l.innerText;
     const pl = el.closest('label'); if (pl) t += ' ' + pl.innerText;
     if (el.getAttribute('aria-label')) t += ' ' + el.getAttribute('aria-label');
+    // libellé non relié : texte voisin, sans les blocs qui contiennent un autre champ ou un bouton (12/11/2026
+    // firstclassrenovations.com : chaque case d'Elementor recevait « Project Send », textes des cases voisines et du
+    // bouton → nom laissé vide, contrôle IA trompé ; même filtre que fieldLabel de FIND_FORM_JS)
     if (!t.trim()) { let p = up(el); for (let i = 0; i < 2 && p; i++, p = up(p)) {
       const txt = [...p.childNodes].filter(n => n.nodeType === 3 || ['LABEL','SPAN','P','DIV','LEGEND'].includes(n.tagName))
+        .filter(n => !(n.querySelector && n.querySelector('input,textarea,select,button')))
         .map(n => (n.innerText || n.textContent || '')).join(' ').trim();
       if (txt && txt.length < 120) { t = txt; break; } } }
     return t.replace(/\s+/g, ' ').trim().slice(0, 120);

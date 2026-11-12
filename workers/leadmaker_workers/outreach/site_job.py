@@ -88,6 +88,7 @@ def _quote_reason(quotes: list) -> str:
 
 # Formulaire caché (fenêtre qui s'ouvre au clic) ou sans e-mail ni téléphone : rien d'utile n'a pu être écrit, il
 # n'est jamais « prêt » ni envoyé (6/11/2026 : 37 formulaires « prêts » vides).
+NO_MESSAGE = "pas de zone de message sur ce formulaire : rien n'est envoyé"
 UNUSABLE = "formulaire inutilisable : ni e-mail ni téléphone n'ont pu être remplis (formulaire caché ou incomplet)"
 
 
@@ -129,7 +130,12 @@ def prepare(job: dict) -> dict:
                 r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
                               short_message=job.get("short_body", ""))
                 protection = r.protection or detect_protection(frame)
-                if protection:
+                if "message" not in r.filled and r.status != "error":
+                    # sans zone de message, rien ne part jamais, même à la main (12/11/2026, règle de Gabriel)
+                    status = "no_form"
+                    protection = None
+                    r.warnings = [NO_MESSAGE] + [w for w in r.warnings if not w.startswith("pas de zone de message")]
+                elif protection:
                     status = "intervention_required"
                 elif r.status == "error":
                     status = "failed"

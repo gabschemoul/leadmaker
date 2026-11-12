@@ -363,7 +363,10 @@ FIND_FORM_JS = r"""
     if (fields.length < 2) return;
     const visible = fields.filter(vis).length;
     const ta = fields.filter(e => e.tagName === 'TEXTAREA').length;
-    const msg = ta || fields.filter(e => /message|comment|demande|question|nachricht|mensaje|messaggio|bericht/i.test(text(e))).length;
+    // zone de message : une zone de texte, ou une case texte nommée « message »… Jamais une case à cocher ni une liste
+    // (12/11/2026 zenzonerenovations.com : « J'accepte de recevoir des messages » prise pour la zone de message)
+    const msg = ta || fields.filter(e => e.tagName === 'INPUT' && ['text', ''].includes(e.type)
+      && /message|comment|demande|question|nachricht|mensaje|messaggio|bericht/i.test(text(e))).length;
     const pwd = fields.filter(e => e.type === 'password').length;
     const search = fields.filter(e => e.type === 'search' || /^(s|q|search|recherche|suche|busca)$/i.test(e.name||'')).length;
     const reply = fields.filter(e => e.tagName === 'INPUT' && (['email', 'tel'].includes(e.type)
@@ -1220,13 +1223,6 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                     res.missing.append(label)
             elif kind == "unknown":
                 if CAPTCHA_TEXT.search(_norm(label)):
-                    continue
-                if not has_message and f["type"] in ("text", "") and f["tag"] == "input" and not any(
-                        k == "message" for k in kinds.values()) and f["required"]:
-                    _fill(loc, values["message"])
-                    has_message = True
-                    res.filled["message"] = label
-                    res.warnings.append(f"message écrit dans le champ « {label} » (pas de zone de message)")
                     continue
                 if f["required"]:
                     res.warnings.append(f"champ obligatoire non reconnu : {label}")

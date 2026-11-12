@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import os
 import signal
+import threading
 import time
 
 from . import handlers, proxy_budget, queue
@@ -23,6 +24,27 @@ log = logging.getLogger("leadmaker.worker")
 PROXY_KINDS = ("discovery", "estimate")  # tâches qui passent par le proxy résidentiel (facturé au volume)
 
 OUTAGE_WAITS = (60, 120, 300, 600, 900)  # secondes d'attente après 1, 2, 3, 4, 5+ pannes de proxy d'affilée
+# Ordinateur dédié : une recherche dure 10 s à 3 min. Au-delà, le navigateur ne répond plus (vu le 12/11 : robots
+# figés pour toujours, le veilleur les croyait en marche). Le robot rend sa recherche et s'arrête ; le veilleur
+# (local_launcher) en relance un neuf dans la minute.
+HANG_SECONDS = float(os.environ.get("TASK_HANG_SECONDS", "600"))
+
+
+def _abandon_hung(task: queue.Task) -> None:
+    """Appelé par la minuterie quand une recherche dépasse HANG_SECONDS : rend la tâche et arrête net le robot."""
+    log.error("tâche %s figée depuis %.0f s : recherche rendue, robot arrêté (le veilleur le relance)", task.id,
+              HANG_SECONDS)
+    try:
+        conn = queue.connect()
+        queue.fail(conn, task.id, f"robot figé plus de {HANG_SECONDS:.0f} s, recherche remise en file")
+        if task.attempts >= task.max_attempts:
+            handlers.on_final_failure(task, conn)
+        conn.close()
+    except Exception:
+        log.exception("tâche %s non rendue (remise en file automatique après 15 min)", task.id)
+    finally:
+        logging.shutdown()
+        os._exit(75)
 
 
 def main() -> None:
@@ -90,8 +112,17 @@ def main() -> None:
             after = proxy_budget.network_bytes() if net_before is not None else None
             return max(after - net_before, 0) if after is not None else 0
 
+        hang_timer = None
+        if local and HANG_SECONDS > 0:
+            hang_timer = threading.Timer(HANG_SECONDS, _abandon_hung, args=(task,))
+            hang_timer.daemon = True
+            hang_timer.start()
         try:
-            result = handlers.run(task, conn)
+            try:
+                result = handlers.run(task, conn)
+            finally:
+                if hang_timer is not None:
+                    hang_timer.cancel()
         except Exception as exc:
             if net_before is not None:
                 try:

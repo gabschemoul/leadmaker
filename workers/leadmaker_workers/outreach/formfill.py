@@ -13,7 +13,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from urllib.parse import unquote, urlparse
 
-from playwright.sync_api import Frame, Page, TimeoutError as PWTimeout
+from playwright.sync_api import Error as PWError, Frame, Page, TimeoutError as PWTimeout
 
 # Mots « contact » par langue (fr, en, de, es, it, pt, nl, pl, tr…)
 CONTACT_LINK = re.compile(
@@ -25,7 +25,11 @@ NOT_CONTACT = re.compile(r"mentions|cgv|cgu|legal|politique|recrut|carriere|job|
 SUCCESS = re.compile(
     r"merci|bien (ete )?(envoye|recu|transmis)|a ete envoye|message (a ete )?envoye|nous vous (repondrons|recontacterons)"
     r"|thank|has been sent|success|we('ll| will) (be in touch|get back|contact you|respond)|been (received|submitted)"
-    r"|message (was )?sent|submission (was )?(received|successful)|vielen dank|gracias|grazie|obrigad|bedankt", re.I)
+    r"|message (was )?sent|submission (was )?(received|successful)|vielen dank|gracias|grazie|obrigad|bedankt"
+    # autres langues (12/11/2026 aylahomecollection.com : « 谢谢您！表单提交成功。 » non reconnu)
+    r"|erfolgreich (gesendet|versendet|ubermittelt)|nachricht wurde|enviado (correctamente|con exito)|mensaje enviado"
+    r"|inviato (correttamente|con successo)|messaggio inviato|enviad[ao] com sucesso|verzonden|verstuurd"
+    r"|spasibo|спасибо|отправлен|提交成功|发送成功|已发送|已提交|谢谢|感谢|送信(が)?完了|ありがとうございま|감사합니다|전송되었습니다", re.I)
 FAILURE = re.compile(
     r"recaptcha[^.]{0,60}(echoue|invalide|failed)|utilisation abusive|(envoi|message)[^.]{0,30}(a echoue|n'a pas pu)"
     r"|n'a pas pu etre envoye|une erreur (s'est produite|est survenue)|formulaire non valide|failed to send"
@@ -906,6 +910,11 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
     visited.append("accueil")
     harvest_emails(page, site, emails)
     frame = _find_form(page, quotes) or _find_form_late(page, quotes)
+    if not frame and not contact_first:
+        # envoi : on rouvre l'adresse exacte du formulaire validé ; s'il tarde (site lent, serveur d'envoi chargé),
+        # on l'attend avant d'aller chercher ailleurs (12/11/2026 expresselectricny.com, chicagolandremodeling.com)
+        page.wait_for_timeout(4000)
+        frame = _find_form(page, quotes)
     if frame:
         return _contact_page_first(page, frame, timeout, emails, visited, started) if contact_first else frame
     _check_alive(page, final=True)
@@ -946,7 +955,7 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
                         candidates.insert(0, extra)
                         if not _same_site(extra, home):
                             external.append(extra)
-        except PWTimeout:
+        except PWError:  # délai dépassé, ou page qui refuse de s'ouvrir (net::ERR_ABORTED) : on passe à la suivante
             continue
     if external:
         visited.append(f"formulaire externe non exploitable : {external[0][:80]}")
@@ -1363,6 +1372,10 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
         cands = form.locator("button:visible, [role=button]:visible, a.button:visible, input[type=button]:visible")
         btn = cands.filter(has_text=SUBMIT) if cands.count() else cands
     url_before = frame.url
+    try:  # repère : disparaît si la page se recharge (un rechargement vide aussi le formulaire, même en cas d'erreur)
+        frame.evaluate("() => { window.__ffNoReload = 1; }")
+    except Exception:
+        pass
     if btn.count():
         try:
             btn.first.click(timeout=5000)
@@ -1389,6 +1402,13 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
         return True, "confirmation affichée"
     if frame.url != url_before:
         return True, "page changée après envoi"
+    try:
+        # le site a vidé la zone de message qu'on avait remplie, sans erreur affichée : envoi accepté
+        if frame.evaluate("() => window.__ffNoReload === 1") and form.count() and form.first.evaluate(
+                "f => { const t = f.querySelector('textarea'); return !!t && t.offsetParent !== null && t.value.trim() === ''; }"):
+            return True, "formulaire vidé après envoi"
+    except Exception:
+        pass
     try:
         if not form.count() or not form.first.is_visible():
             return True, "formulaire disparu après envoi"

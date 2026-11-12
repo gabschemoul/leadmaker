@@ -832,10 +832,9 @@ function forecastEnd(params: {
     hourCycle: 'h23',
   });
 
-  // au plus 180 jours d'heures, pour ne jamais boucler sans fin
+  // heure par heure, au plus 180 jours pour ne jamais boucler sans fin ; la dernière heure compte au prorata
+  // (12/11/2026 : avant, toujours au moins une heure entière → la fin reculait d'une heure à chaque visite)
   for (let step = 0; step < 180 * 24 && remaining > 0; step++) {
-    cursor += hour;
-
     if (office) {
       const values = Object.fromEntries(
         parts
@@ -850,11 +849,19 @@ function forecastEnd(params: {
         localHour < 9 ||
         localHour >= 18
       ) {
+        cursor += hour;
         continue;
       }
     }
 
+    if (remaining <= perHour) {
+      cursor += (remaining / perHour) * hour;
+      remaining = 0;
+      break;
+    }
+
     remaining -= perHour;
+    cursor += hour;
   }
 
   return { kind: 'date', end: new Date(cursor), perHour, bars };

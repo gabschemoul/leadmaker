@@ -383,7 +383,9 @@ class DiscoveryRunner:
                               phone=row.get("phone") or "", website=row.get("website") or "",
                               maps_url=row.get("maps_url") or "", place_id=row["place_id"],
                               latitude=row.get("latitude"), longitude=row.get("longitude"))
-                if row.get("is_chain") or not place.name:
+                # Les fiches « même site sur plusieurs fiches » (is_chain) restent proposées, comme dans une vraie
+                # recherche (badge « chaîne »). Seules les grandes enseignes connues sont écartées (filters.exclude).
+                if not place.name:
                     continue
                 if filters.in_area and not filters.in_area(place):
                     continue

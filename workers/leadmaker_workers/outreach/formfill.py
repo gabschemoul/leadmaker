@@ -49,6 +49,9 @@ CIVILITY = r"civilit|salutation|\bgenre\b|\bsexe\b|anrede|tratamiento|\btitel\b|
 CIV_F = re.compile(r"^\W*(madame|mme\.?|mrs\.?|ms\.?|miss|mademoiselle|mlle|frau|sra\.?|senora|señora|signora"
                    r"|mevrouw|mevr\.?|senhora)\W*$", re.I)
 CIV_M = re.compile(r"^\W*(monsieur|m\.|mr\.?|herr|sr\.?|senor|señor|signor|meneer|dhr\.?|senhor)\W*$", re.I)
+# État / province (formulaires américains : « State », « State/Region », « Province ») — 13/11/2026 : 96 formulaires
+# américains « à compléter » faute de case État ; l'État vient du code postal de l'expéditeur
+STATE = r"\bstate\b|\bprovince\b|\bstate ?/ ?(region|province)\b|\bus state\b"
 FIELD_RULES = [
     ("civility", CIVILITY),
     ("email", r"e-?mail|courriel|\bmail\b|correo"),
@@ -62,6 +65,7 @@ FIELD_RULES = [
                 r"|unternehmen|empresa|azienda|bedrijf"),
     ("subject", r"objet|sujet|subject|motif|regarding|topic|betreff|asunto|oggetto|onderwerp|assunto"),
     ("zip", r"code postal|postal|zip|\bcp\b|\bplz\b|postleitzahl|codigo postal|\bcap\b|postcode"),
+    ("state", STATE),
     ("country", COUNTRY),
     ("job_title", r"fonction|job ?title|\bjob\b|intitule (du |de )?poste|poste occupe|votre poste|^\W*poste\b\W*\*?\W*$"
                   r"|\bposition\b|titre de fonction|\bcargo\b|\bfunktion\b|\bruolo\b|\bfunctie\b"),
@@ -604,14 +608,44 @@ def _fill_phone(loc, phone: str, country_code: str) -> str:
     return value
 
 
+# Codes postaux américains → État (3 premiers chiffres)
+US_ZIP_STATES = [(10, 27, "MA", "Massachusetts"), (28, 29, "RI", "Rhode Island"), (30, 38, "NH", "New Hampshire"),
+    (39, 49, "ME", "Maine"), (50, 59, "VT", "Vermont"), (60, 69, "CT", "Connecticut"), (70, 89, "NJ", "New Jersey"),
+    (100, 149, "NY", "New York"), (150, 196, "PA", "Pennsylvania"), (197, 199, "DE", "Delaware"),
+    (200, 205, "DC", "District of Columbia"), (206, 219, "MD", "Maryland"), (220, 246, "VA", "Virginia"),
+    (247, 268, "WV", "West Virginia"), (270, 289, "NC", "North Carolina"), (290, 299, "SC", "South Carolina"),
+    (300, 319, "GA", "Georgia"), (320, 349, "FL", "Florida"), (350, 369, "AL", "Alabama"), (370, 385, "TN", "Tennessee"),
+    (386, 397, "MS", "Mississippi"), (398, 399, "GA", "Georgia"), (400, 427, "KY", "Kentucky"), (430, 459, "OH", "Ohio"),
+    (460, 479, "IN", "Indiana"), (480, 499, "MI", "Michigan"), (500, 528, "IA", "Iowa"), (530, 549, "WI", "Wisconsin"),
+    (550, 567, "MN", "Minnesota"), (570, 577, "SD", "South Dakota"), (580, 588, "ND", "North Dakota"),
+    (590, 599, "MT", "Montana"), (600, 629, "IL", "Illinois"), (630, 658, "MO", "Missouri"), (660, 679, "KS", "Kansas"),
+    (680, 693, "NE", "Nebraska"), (700, 714, "LA", "Louisiana"), (716, 729, "AR", "Arkansas"), (730, 749, "OK", "Oklahoma"),
+    (750, 799, "TX", "Texas"), (800, 816, "CO", "Colorado"), (820, 831, "WY", "Wyoming"), (832, 838, "ID", "Idaho"),
+    (840, 847, "UT", "Utah"), (850, 865, "AZ", "Arizona"), (870, 884, "NM", "New Mexico"), (889, 898, "NV", "Nevada"),
+    (900, 961, "CA", "California"), (967, 968, "HI", "Hawaii"), (970, 979, "OR", "Oregon"), (980, 994, "WA", "Washington"),
+    (995, 999, "AK", "Alaska")]
+
+
+def us_state(sender: Sender) -> tuple[str, str] | None:
+    """(code, nom) de l'État américain de l'expéditeur d'après son code postal, sinon None."""
+    if (sender.country_code or "").upper() != "US":
+        return None
+    digits = re.sub(r"\D", "", sender.zip or "")
+    if len(digits) < 3:
+        return None
+    p = int(digits[:3])
+    return next(((code, name) for lo, hi, code, name in US_ZIP_STATES if lo <= p <= hi), None)
+
+
 def _values(sender: Sender, subject: str, message: str) -> dict[str, str]:
     country = sender.country_names[0] if sender.country_names else ""
+    st = us_state(sender)
     return {
         "email": sender.email, "phone": sender.phone, "first_name": sender.first_name, "last_name": sender.last_name,
         "full_name": f"{sender.first_name} {sender.last_name}".strip(), "company": sender.company, "subject": subject,
         "message": message, "website": sender.website, "city": sender.city, "zip": sender.zip,
         "address": sender.address, "country": country, "civility": sender.civility,
-        "job_title": sender.job_title, "location": country,
+        "job_title": sender.job_title, "location": country, "state": st[1] if st else "",
     }
 
 
@@ -1185,7 +1219,7 @@ def _pick_country(opts: list[str], sender: Sender) -> str | None:
 
 
 FILLABLE = {"email", "phone", "first_name", "last_name", "full_name", "company", "subject", "message", "website",
-            "city", "zip", "address", "country", "civility", "job_title", "location"}
+            "city", "zip", "address", "country", "civility", "job_title", "location", "state"}
 
 
 def _click_next(frame: Frame) -> bool:
@@ -1346,6 +1380,9 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
             elif kind == "select":
                 opts = [o for o in f["options"] if o and not re.search(r"^(--|choisi|select|s[eé]lection|veuillez|bitte|elige|seleccion|scegli|kies)", _norm(o))]
                 pick = pick_option(opts)
+                st = us_state(sender)
+                if st and re.search(STATE, _norm(f"{label} {f['name']}")):
+                    pick = next((o for o in opts if _norm(o).strip() in (st[0].lower(), _norm(st[1]))), None) or pick
                 country = _pick_country(opts, sender)
                 if country and (re.search(COUNTRY, _norm(f"{label} {f['name']}")) or len(opts) > 20):
                     pick = country

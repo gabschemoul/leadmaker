@@ -876,7 +876,8 @@
         "copy": "Copy",
         "openStep": "Open their contact page",
         "open": "Open the site"
-      }
+      },
+      "openForm": "View the form"
     },
     "errors": {
       "generic": "That didn’t work. Please try again.",

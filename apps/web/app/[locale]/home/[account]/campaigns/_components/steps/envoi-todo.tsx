@@ -511,7 +511,7 @@ function ReviewItem(props: {
       >
         <div
           className={
-            'bg-muted/60 border-foreground/[0.08] flex h-10 items-center gap-2 border-b px-3.5'
+            'bg-muted/60 border-foreground/[0.08] flex h-12 items-center gap-2 border-b px-3.5'
           }
         >
           <span
@@ -526,31 +526,29 @@ function ReviewItem(props: {
             aria-hidden
             className={'bg-foreground/15 size-2.5 rounded-full'}
           />
-          {/* barre d'adresse = lien vers la page du formulaire (nouvel onglet) */}
-          {pageHref ? (
-            <a
-              href={pageHref}
-              target={'_blank'}
-              rel={'noreferrer'}
-              className={
-                'bg-card text-muted-foreground hover:text-foreground hover:ring-foreground/20 ml-2.5 flex h-6 min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 text-xs transition-colors hover:ring-1'
+          <span
+            className={
+              'bg-card text-muted-foreground ml-2.5 flex h-7 min-w-0 flex-1 items-center truncate rounded-md px-2.5 text-xs'
+            }
+          >
+            {displayHost(pageUrl)}
+          </span>
+
+          {/* site protégé : déjà « Ouvrir le site » dans les étapes à droite */}
+          {pageHref && props.kind !== 'captcha' ? (
+            <Button
+              size={'sm'}
+              className={'shrink-0'}
+              nativeButton={false}
+              render={
+                <a href={pageHref} target={'_blank'} rel={'noreferrer'} />
               }
               data-test={'envoi-review-open-page'}
             >
-              <span className={'min-w-0 flex-1 truncate'}>
-                {displayHost(pageUrl)}
-              </span>
-              <ExternalLink className={'size-3.5 shrink-0'} />
-            </a>
-          ) : (
-            <span
-              className={
-                'bg-card text-muted-foreground ml-2.5 flex h-6 min-w-0 flex-1 items-center truncate rounded-md px-2.5 text-xs'
-              }
-            >
-              {displayHost(pageUrl)}
-            </span>
-          )}
+              {t('openForm')}
+              <ExternalLink />
+            </Button>
+          ) : null}
         </div>
 
         {item.screenshotUrl ? (

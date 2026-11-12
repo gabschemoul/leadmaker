@@ -876,7 +876,8 @@
         "copy": "Copier",
         "openStep": "Ouvrir leur page de contact",
         "open": "Ouvrir le site"
-      }
+      },
+      "openForm": "Voir le formulaire"
     },
     "errors": {
       "generic": "L’action n’a pas abouti. Réessayez.",

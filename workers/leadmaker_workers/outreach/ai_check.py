@@ -56,7 +56,11 @@ Ce qui est NORMAL dans un formulaire de contact (ne bloque pas pour ça) :
   Parlons-en ») quand le formulaire a une vraie zone de message libre où part le message : le message dit tout de
   suite qui écrit. Dans ce cas seuls les champs comptent (règle des champs obligatoires ci-dessus) ;
 - une case « Project », « Votre projet » ou « Request » facultative laissée vide, ou obligatoire remplie par le
-  robot avec l'objet du message de l'agence.
+  robot avec l'objet du message de l'agence ;
+- des champs FACULTATIFS de rendez-vous ou de projet (date, heure, service, budget) laissés vides, quand le formulaire
+  a une zone de message libre et que son texte invite aussi aux questions (« Have questions or ready to book? Fill
+  out the form below ») : il sert aussi de formulaire de contact. Un champ est facultatif s'il n'a ni « * » ni
+  « required » / « obligatoire » ; seul un tel champ OBLIGATOIRE bloque.
 Ne juge pas le contenu du message ni les coordonnées écrites (texte de prospection déjà validé, parfois un texte de
 test) ni les captchas (gérés à part).
 La liste « Ce que le robot a rempli » est fiable : si la capture ne montre pas un champ (bandeau de cookies par-dessus,
@@ -114,7 +118,7 @@ def review(form_url: str, filled: dict, context: dict | None, screenshot_b64: st
         return None
     c = context or {}
     text = (f"Adresse de la page : {form_url}\nTitre de la page : {c.get('title', '')}\n"
-            f"Derniers titres au-dessus du formulaire : {' | '.join(c.get('before') or []) or '(aucun)'}\n"
+            f"Titres juste au-dessus du formulaire (les titres ailleurs dans la page sont ignorés) : {' | '.join(c.get('before') or []) or '(aucun)'}\n"
             f"Texte du formulaire (libellés, choix des listes) : {(c.get('form') or '(non disponible)')[:1500]}\n\n"
             f"Ce que le robot a rempli :\n{describe(filled)}\n\nLa capture montre le formulaire rempli.")
     content: list = [{"type": "text", "text": text}]

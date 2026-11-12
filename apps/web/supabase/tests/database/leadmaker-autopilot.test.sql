@@ -190,8 +190,8 @@ select pg_temp.tour();
 select pg_temp.tour();
 select is((select (status, finished_reason)::text from public.lm_autopilots where id = (select id from ap_ids where name = 'camp')),
   '(done,no_prospects)', 'Plus aucun prospect : pilote terminé');
-select is((select (sent, in_flight, aside)::text from public.lm_autopilot_counts((select id from ap_ids where name = 'camp'))), '(2,0,7)',
-  'Bilan : 2 envoyés, 7 mis de côté');
+select is((select (sent, in_flight, aside)::text from public.lm_autopilot_counts((select id from ap_ids where name = 'camp'))), '(1,0,7)',
+  'Bilan : 1 envoyé confirmé (« à vérifier » n''est plus compté envoyé), 7 mis de côté');
 
 -- Un cas douteux re-préparé à la main (mode Avancé) quitte le pilote et le robot rechoisira son message
 set local role postgres;

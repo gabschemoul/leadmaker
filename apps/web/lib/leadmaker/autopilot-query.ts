@@ -170,7 +170,8 @@ export async function fetchAutopilotSent(
       'id, status, subject, body, template_name, form_url, sent_at, updated_at, screenshot_after, prospect:lm_prospects!inner(id, name, website, city, category)',
     )
     .eq('autopilot_id', autopilotId)
-    .in('status', ['sent', 'to_verify'])
+    // seulement les envois confirmés : « à vérifier » (pas de confirmation visible) n'est plus compté (12/11/2026)
+    .eq('status', 'sent')
     .order('sent_at', { ascending: false, nullsFirst: false })
     .order('id')
     .limit(limit);
@@ -231,18 +232,19 @@ export async function fetchAutopilotLive(
       .from('lm_attempts')
       .select('sent_at')
       .eq('autopilot_id', autopilotId)
-      .in('status', ['sent', 'to_verify'])
+      .eq('status', 'sent')
       .not('sent_at', 'is', null)
       .order('sent_at', { ascending: false })
       .limit(1000),
     // même règle que « À vous de jouer » (un formulaire prêt sans doute attend juste son envoi : pas compté)
     client.rpc('lm_autopilot_todo', { p_autopilot_id: autopilotId }),
-    base().in('status', ['sent', 'to_verify']),
+    base().eq('status', 'sent'),
     base().eq('status', 'no_form').ilike('detail', '%devis%'),
     base().eq('status', 'no_form').not('detail', 'ilike', '%devis%'),
     base().eq('status', 'no_form').is('detail', null),
     base().in('status', ['unreachable', 'failed']),
-    base().in('status', ['skipped', 'excluded']),
+    // « à vérifier » (envoi sans confirmation visible) : rangé avec les autres issues, jamais compté envoyé
+    base().in('status', ['skipped', 'excluded', 'to_verify']),
   ]);
 
   if (times.error) throw times.error;

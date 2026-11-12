@@ -312,7 +312,9 @@ language sql
 stable
 security definer
 as $$
-  select count(*) filter (where a.status in ('sent', 'to_verify'))::integer,
+  -- envoyés = confirmés seulement : « à vérifier » (aucune confirmation visible) n'est plus compté (12/11/2026,
+  -- 151 sur 274 étaient en fait bloqués par une vérification anti-robot) ; le pilote continue jusqu'au vrai nombre
+  select count(*) filter (where a.status = 'sent')::integer,
          count(*) filter (where a.status in ('pending', 'preparing', 'validated', 'sending'))::integer,
          count(*) filter (where public.lm_attempt_is_clean(a.status, a.detail, a.protection_type, a.missing))::integer,
          count(*) filter (where a.status not in ('sent', 'to_verify', 'pending', 'preparing', 'validated', 'sending')

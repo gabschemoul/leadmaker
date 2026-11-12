@@ -29,6 +29,7 @@ import fcntl
 import json
 import os
 import shlex
+import socket
 import subprocess
 import sys
 import time
@@ -44,6 +45,11 @@ API = "https://api.hetzner.cloud/v1"
 SAVED_CONTAINERS = "/root/.rotate-running-containers"
 
 WORKERS = Path(__file__).resolve().parent.parent
+# Listes noires publiques consultées avant de garder une nouvelle adresse (Hetzner réattribue des adresses
+# déjà utilisées par d'autres clients). Une liste qui ne répond pas à son adresse d'essai (127.0.0.2) est
+# ignorée : Spamhaus, par exemple, refuse les serveurs DNS publics.
+BLOCKLISTS = ("zen.spamhaus.org", "b.barracudacentral.org", "bl.spamcop.net")
+MAX_TRIES = 6
 
 
 def log(msg: str) -> None:
@@ -149,6 +155,29 @@ class Remote:
         raise RuntimeError(f"serveur injoignable après rallumage ({last})")
 
 
+def _listed(ip: str, zone: str) -> bool | None:
+    """True = listée, False = propre, None = la liste ne répond pas (ignorée)."""
+    try:
+        answer = socket.gethostbyname(".".join(reversed(ip.split("."))) + "." + zone)
+    except socket.gaierror:
+        return False
+    except OSError:
+        return None
+    # 127.255.255.x = refus de répondre (résolveur public, quota) : ce n'est pas une inscription
+    return None if answer.startswith("127.255.255.") else answer.startswith("127.")
+
+
+def blocklisted(ip: str) -> list[str]:
+    """Listes noires (parmi celles qui répondent) où figure l'adresse."""
+    hits = []
+    for zone in BLOCKLISTS:
+        if _listed("127.0.0.2", zone) is not True:  # la liste ne répond pas d'ici : ignorée
+            continue
+        if _listed(ip, zone):
+            hits.append(zone)
+    return hits
+
+
 def read_env(path: Path) -> dict[str, str]:
     env: dict[str, str] = {}
     try:
@@ -211,6 +240,9 @@ def main() -> int:
 
     running = r.run(old["ip"], "docker ps -q | wc -l")
     log(f"{running} robots tournent")
+    usable = [z for z in BLOCKLISTS if _listed("127.0.0.2", z) is True]
+    log(f"listes noires consultées : {', '.join(usable) or 'aucune ne répond'} ; "
+        f"adresse actuelle {'listée sur ' + ', '.join(blocklisted(old['ip'])) if blocklisted(old['ip']) else 'propre'}")
     if a.dry_run:
         log("simulation : je créerais une nouvelle adresse IPv4 à "
             f"{location}, j'arrêterais ces {running} robots, j'éteindrais le serveur, je remplacerais "
@@ -220,18 +252,34 @@ def main() -> int:
 
     # 1. nouvelle adresse (pas encore branchée). Si Hetzner en donne une signalée « bloquée », on en reprend une.
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d-%H%M")
+    # Une adresse refusée est supprimée tout de suite (elle n'est facturée que quelques secondes) ;
+    # on la garde réservée pendant l'essai suivant pour que Hetzner ne nous la redonne pas.
     new = None
-    for i in range(3):
-        created = h.call("POST", "/primary_ips", {
-            "name": f"envoi-{stamp}" + (f"-{i}" if i else ""), "type": "ipv4", "assignee_type": "server",
-            "location": location, "auto_delete": True, "labels": {"role": "envoi"}})["primary_ip"]
-        if not created.get("blocked") and created["ip"] != MAIN_SERVER_IP:
-            new = created
-            break
-        log(f"adresse {created['ip']} signalée bloquée : supprimée, nouvel essai")
-        h.call("DELETE", f"/primary_ips/{created['id']}")
+    rejected: list[dict] = []
+    try:
+        for i in range(MAX_TRIES):
+            created = h.call("POST", "/primary_ips", {
+                "name": f"envoi-{stamp}" + (f"-{i}" if i else ""), "type": "ipv4", "assignee_type": "server",
+                "location": location, "auto_delete": True, "labels": {"role": "envoi"}})["primary_ip"]
+            hits = blocklisted(created["ip"])
+            if created.get("blocked"):
+                hits.append("bloquée par Hetzner")
+            if created["ip"] == MAIN_SERVER_IP:
+                hits.append("adresse du serveur principal")
+            if not hits:
+                new = created
+                break
+            log(f"adresse {created['ip']} écartée ({', '.join(hits)}) : nouvel essai")
+            rejected.append(created)
+    finally:
+        for c in rejected:
+            try:
+                h.call("DELETE", f"/primary_ips/{c['id']}")
+            except Exception as e:
+                log(f"adresse écartée {c['ip']} non supprimée : {e}")
     if new is None:
-        raise RuntimeError("pas d'adresse propre après 3 essais : rien n'a été changé")
+        raise RuntimeError(f"pas d'adresse propre après {MAX_TRIES} essais : rien n'a été changé, "
+                           f"le serveur garde {old['ip']}")
     log(f"nouvelle adresse réservée : {new['ip']}")
 
     switched = False   # la nouvelle adresse est-elle branchée ?

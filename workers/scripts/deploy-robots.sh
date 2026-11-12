@@ -1,7 +1,7 @@
 #!/bin/bash
 # Mise à jour des robots sur les serveurs Hetzner, AVEC CONTRÔLE AVANT BASCULE.
 #   ./workers/scripts/deploy-robots.sh               → serveur principal (recherche, estimation, préparation, surveillant)
-#   ./workers/scripts/deploy-robots.sh --send        → serveur d'envoi (adresse dans workers/.send-server-ip)
+#   ./workers/scripts/deploy-robots.sh --send        → serveur d'envoi (adresse lue chez Hetzner, notée dans workers/.send-server-ip)
 #   ./workers/scripts/deploy-robots.sh --all         → les deux
 #   ./workers/scripts/deploy-robots.sh --rollback    → remet la version précédente (serveur principal)
 #   ./workers/scripts/deploy-robots.sh --rollback-send
@@ -21,8 +21,8 @@ EXCLUDES=(--exclude .venv --exclude logs --exclude data/bench --exclude '.env*' 
 
 send_ip() {
   local ip
-  ip=$(cat workers/.send-server-ip 2>/dev/null || true)
-  [ -n "$ip" ] || { echo "Pas de serveur d'envoi : lancez d'abord workers/scripts/setup-send-server.sh"; exit 1; }
+  # l'adresse change chaque nuit (rotate_send_ip.py) : lue chez Hetzner, fichier mis à jour au passage
+  ip=$(workers/scripts/send-server-ip.sh) || { echo "Pas de serveur d'envoi : lancez d'abord workers/scripts/setup-send-server.sh"; exit 1; }
   echo "$ip"
 }
 

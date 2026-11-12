@@ -11,7 +11,7 @@ MAIN=2.31.72.125
 EMAIL=${1:-schemoul.gabriel@gmail.com}
 RESEND=$(tr -d '[:space:]' < .env.resend 2>/dev/null || true)
 [ -n "$RESEND" ] || { echo "Clé Resend introuvable dans .env.resend"; exit 1; }
-SEND_IP=$(cat workers/.send-server-ip 2>/dev/null || true)
+SEND_IP=$(workers/scripts/send-server-ip.sh 2>/dev/null || true)
 
 configure() {
   local ip=$1 service=$2 profile=$3

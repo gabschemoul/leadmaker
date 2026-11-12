@@ -135,6 +135,7 @@ DEAD_SITE = re.compile(r"site not found|boutique indisponible|shop (is )?(unavai
                        r"|\b40[34]\b|site (est )?hors ligne|this site is offline|not found", re.I)
 # Protections au niveau du site (pas du formulaire) : le robot est bloqué avant même de voir la page
 PROTECTED_SITE = re.compile(r"attention required|just a moment|checking your browser|verify you are human|un instant"
+                            r"|one moment,? please|request is being verified"
                             r"|captcha-delivery|datadome|ddos-guard|access denied|acces refuse|bot detection", re.I)
 PROTECTED_FRAME = re.compile(r"captcha-delivery|datadome|challenges\.cloudflare|ddos-guard|perimeterx|px-cdn", re.I)
 # Formulaires hébergés ailleurs (le lien sort du site, on y va quand même)
@@ -218,6 +219,7 @@ class Sender:
     job_title: str = ""
     civility: str = ""            # "mrs", "mr" ou ""
     country_names: list = field(default_factory=list)  # noms du pays dans plusieurs langues
+    country_code: str = ""        # pays de l'expéditeur (FR, US…) : indicatif du téléphone
 
 
 @dataclass
@@ -551,6 +553,55 @@ def classify(f: dict) -> str | None:
 # case de projet du visiteur (« Project », « Votre projet », « Request », « Requirements »…)
 PROJECT_FIELD = re.compile(r"\bproje[ct]t?s?\b|\bprojet|\bproyecto|\bprogetto|\bprojekt|\brequest\b|\brequirements?\b"
                            r"|\binquiry\b|\benquiry\b|reason for (contact|inquiry|your)|purpose of", re.I)
+
+
+# Indicatifs téléphoniques des pays servis (le reste : numéro laissé tel quel)
+DIAL_CODES = {"FR": "33", "US": "1", "CA": "1", "GB": "44", "BE": "32", "CH": "41", "LU": "352", "DE": "49", "ES": "34",
+              "IT": "39", "PT": "351", "NL": "31", "IE": "353", "AU": "61", "NZ": "64", "MA": "212", "TN": "216",
+              "DZ": "213", "SN": "221", "CI": "225", "AT": "43", "SE": "46", "DK": "45", "NO": "47", "FI": "358",
+              "PL": "48", "MX": "52", "BR": "55", "AR": "54", "ZA": "27", "AE": "971", "SG": "65", "IN": "91"}
+
+
+def international_phone(phone: str, country_code: str) -> str:
+    """« 0700000000 » + FR → « +33 700000000 » ; « (202) 555-0100 » + US → « +1 2025550100 ». Déjà en +… : inchangé."""
+    phone = (phone or "").strip()
+    dial = DIAL_CODES.get((country_code or "").upper())
+    if not phone or phone.startswith("+") or not dial:
+        return phone
+    digits = re.sub(r"\D", "", phone)
+    if dial == "1":
+        national = digits[-10:]
+    else:
+        national = digits[len(dial):] if digits.startswith(dial) and len(digits) > 10 else digits.lstrip("0")
+    return f"+{dial} {national}"
+
+
+# Case téléphone avec sélecteur de pays (intl-tel-input, HubSpot, react-phone-number-input…) : le site choisit le
+# pays d'après l'adresse IP du visiteur (notre serveur est en Allemagne → +49, 12/11/2026 landscapeconcepts.com).
+# intl-tel-input : on choisit le pays de l'expéditeur ; ailleurs : le numéro est saisi au format international et
+# le widget bascule de lui-même sur le bon pays.
+PHONE_WIDGET_JS = r"""(el, cc) => {
+  cc = (cc || '').toLowerCase();
+  let inst = null;
+  try { inst = window.intlTelInputGlobals && window.intlTelInputGlobals.getInstance(el); } catch (e) {}
+  try { if (!inst && window.intlTelInput && window.intlTelInput.getInstance) inst = window.intlTelInput.getInstance(el); } catch (e) {}
+  if (inst && inst.setCountry && cc) { try { inst.setCountry(cc); return 'iti'; } catch (e) {} }
+  const wrap = el.closest('.iti, .intl-tel-input, .hsfc-PhoneInput, .PhoneInput, .react-tel-input, [class*=PhoneInput], [class*=phone-input], [class*=tel-input]');
+  if (wrap) return 'widget';
+  if ((el.value || '').trim().startsWith('+')) return 'prefix';
+  return null;
+}"""
+
+
+def _fill_phone(loc, phone: str, country_code: str) -> str:
+    """Remplit le téléphone en tenant compte d'un éventuel sélecteur de pays. Renvoie la valeur saisie."""
+    try:
+        widget = loc.evaluate(PHONE_WIDGET_JS, country_code)
+    except Exception:
+        widget = None
+    value = phone if widget in (None, "iti") else international_phone(phone, country_code)
+    _fill(loc, value)
+    return value
 
 
 def _values(sender: Sender, subject: str, message: str) -> dict[str, str]:
@@ -1337,7 +1388,10 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                         value, res.short = short_message, True
                 if f["type"] == "number":
                     value = re.sub(r"\D", "", value)
-                _fill(loc, value)
+                if kind == "phone" and f["type"] != "number":
+                    _fill_phone(loc, value, sender.country_code)
+                else:
+                    _fill(loc, value)
                 res.filled[kind] = label
         except Exception as e:  # champ non modifiable, masqué par un widget…
             if f["required"]:
@@ -1368,7 +1422,7 @@ NET_SKIP = re.compile(r"google-analytics|googletagmanager|doubleclick|googleadse
                       r"|hotjar|clarity\.ms|sentry|segment\.(io|com)|mixpanel|recaptcha|gstatic|hcaptcha|cloudflareinsights"
                       r"|challenges\.cloudflare|matomo|plausible|stats\.wp\.com|tiktok|linkedin|pinterest|bing\.com|snapchat"
                       r"|intercom|crisp\.chat|tawk\.to|zendesk|hubspot\.com/(api/)?(analytics|usage)|newrelic|nr-data", re.I)
-FORM_SERVICES = re.compile(r"admin-ajax|wp-json|formspree|hsforms|hubspot|jotform|typeform|wufoo|getform|basin|formsubmit"
+NET_FORM_HOSTS = re.compile(r"admin-ajax|wp-json|formspree|hsforms|hubspot|jotform|typeform|wufoo|getform|basin|formsubmit"
                            r"|squarespace|wix|weebly|webflow|shopify|godaddy|jimdo|site123|duda|elementor|wpforms|gravityforms"
                            r"|ninja-forms|contact-form|/contact|/submit|/send|/form", re.I)
 NET_OK = re.compile(r'mail_sent|"success"\s*:\s*true|"status"\s*:\s*"(success|ok|sent|mail_sent)"|"ok"\s*:\s*true'
@@ -1387,7 +1441,7 @@ def _net_verdict(responses: list, page_url: str) -> tuple[str | None, str]:
             req = r.request
             if req.method not in ("POST", "PUT") or NET_SKIP.search(r.url):
                 continue
-            ours = _same_site(r.url, page_url) or bool(FORM_SERVICES.search(r.url))
+            ours = _same_site(r.url, page_url) or bool(NET_FORM_HOSTS.search(r.url))
             try:
                 body = (r.text() or "")[:3000]
             except Exception:

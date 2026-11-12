@@ -130,7 +130,7 @@ def _load_context(conn: psycopg.Connection, row: dict):
         "first_name": sender["first_name"], "last_name": sender["last_name"], "company": sender["company"],
         "email": sender["email"], "phone": sender["phone"] or "", "website": sender["website"] or "",
         "city": sender["city"] or "", "zip": sender["zip"] or "", "address": sender["address"] or "",
-        "job_title": sender["job_title"] or "", "civility": sender["civility"] or "", "country_names": names,
+        "job_title": sender["job_title"] or "", "civility": sender["civility"] or "", "country_names": names, "country_code": country or "",
     }
     return prospect, dict(sender), campaign, sender_job
 
@@ -271,7 +271,7 @@ class PrepareRunner:
                 "first_name": sender["first_name"], "last_name": sender["last_name"], "company": sender["company"],
                 "email": sender["email"], "phone": sender["phone"] or "", "website": sender["website"] or "",
                 "city": sender["city"] or "", "zip": sender["zip"] or "", "address": sender["address"] or "",
-                "job_title": sender["job_title"] or "", "civility": sender["civility"] or "", "country_names": names,
+                "job_title": sender["job_title"] or "", "civility": sender["civility"] or "", "country_names": names, "country_code": country or "",
             },
         }
         started = time.monotonic()

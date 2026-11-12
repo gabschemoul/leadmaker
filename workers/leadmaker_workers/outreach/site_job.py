@@ -249,7 +249,13 @@ def send(job: dict) -> dict:
                         out.update(status=status, detail=detail, short=r.short, filled=r.filled,
                                    screenshot_b64=_screenshot(page, frame))
         except SiteDown as e:
-            out.update(status="failed", detail=f"site hors ligne (« {e} »)")
+            if "protégé contre les robots" in str(e):
+                # filtre anti-robot de l'hébergeur (12/11/2026 : « One moment, please… » vu du serveur d'envoi seulement) :
+                # rien n'est parti, à réessayer plus tard (le blocage d'une adresse est souvent temporaire)
+                out.update(status="intervention_required", protection_type="hebergeur",
+                           detail=f"l'hébergeur du site bloque le robot d'envoi (« {e} ») : rien n'est parti, à réessayer plus tard")
+            else:
+                out.update(status="failed", detail=f"site hors ligne (« {e} »)")
         except Exception as e:
             if out["submitted"]:  # erreur après le clic : on ne sait pas si c'est parti
                 out.update(status="to_verify", detail=f"erreur après l'envoi : {type(e).__name__}")

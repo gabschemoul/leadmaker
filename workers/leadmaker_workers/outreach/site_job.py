@@ -21,6 +21,7 @@ from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 from ..discovery.scraper import USER_AGENT, proxy_from_env
 from . import netguard
 from .formfill import (CONTACT_PATHS, QUOTE_DETAIL, Sender, SiteDown, SiteGone, _check_alive, _contact_links, _dismiss_cookies,
+                       _dismiss_overlays,
                        _same_site, best_email, detect_protection, fill_form, harvest_emails, legal_links, open_contact_form,
                        own_email, submit)
 
@@ -43,6 +44,13 @@ def _arm_watchdog() -> None:
 
 
 def _screenshot(page, frame) -> str:
+    # une fenêtre de promotion apparue entre-temps cacherait le formulaire ; et certaines cases dessinent leur coche avec
+    # une petite animation : sans attendre, la capture montre une case vide alors qu'elle est cochée (12/11/2026)
+    _dismiss_overlays(page, frame)
+    try:
+        page.wait_for_timeout(500)
+    except Exception:
+        pass
     try:
         data = frame.locator("[data-ff-form]").first.screenshot(timeout=5000)
     except Exception:

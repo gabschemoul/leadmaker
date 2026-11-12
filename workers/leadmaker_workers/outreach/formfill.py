@@ -1006,6 +1006,69 @@ def _dismiss_cookies(page: Page):
             continue
 
 
+# Fenêtres qui recouvrent la page (promotion, lettre d'info, « réservez maintenant »…), hors bandeau cookies : elles
+# cachaient le formulaire sur la capture et pouvaient prendre le clic « Envoyer » (12/11/2026, chateaudelavilledubois.com).
+# Jamais la fenêtre qui contient le formulaire choisi ([data-ff-form], ou le cadre qui l'héberge [data-ff-host]), jamais
+# une fenêtre qui contient un cadre (captcha, paiement, formulaire externe). Mode « close » : clique sur sa croix ;
+# mode « hide » (après Échap, en dernier recours) : la masque dans notre navigateur seulement.
+OVERLAY_JS = r"""
+(mode) => {
+  const W = innerWidth, H = innerHeight;
+  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+    return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && parseFloat(s.opacity) > 0.05; };
+  const kept = [...document.querySelectorAll('[data-ff-form], [data-ff-host]')];
+  const covers = [...document.querySelectorAll('body *')].filter(el => {
+    const s = getComputedStyle(el);
+    if (s.position !== 'fixed' && !(s.position === 'absolute' && (parseInt(s.zIndex) || 0) >= 1000)) return false;
+    if (!vis(el)) return false;
+    const r = el.getBoundingClientRect();
+    const area = Math.max(0, Math.min(r.right, W) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, H) - Math.max(r.top, 0));
+    if (area < W * H * 0.15) return false;
+    if (kept.some(k => el.contains(k) || k.contains(el))) return false;
+    if (el.querySelector('iframe')) return false;
+    if (/cookie|consent|didomi|onetrust|axeptio|tarteaucitron|cmp/i.test((el.id || '') + ' ' + (el.className || ''))) return false;
+    return true;
+  }).filter((el, _, all) => !all.some(o => o !== el && o.contains(el)));
+  if (!covers.length) return null;
+  if (mode === 'count') return covers.map(() => 'reste');
+  const CLOSE_TXT = /^\s*(×|✕|✖|╳|x|fermer|close|non merci|no,? thanks?|plus tard|later|maybe later|ignorer|dismiss|skip|continuer sur le site|schließen|cerrar|chiudi)\s*$/i;
+  const CLOSE_ATTR = /close|fermer|dismiss|schlie|cerrar|chiudi/i;
+  const done = [];
+  for (const c of covers) {
+    if (mode === 'hide') { c.style.setProperty('display', 'none', 'important'); done.push('masquée'); continue; }
+    const btns = [...c.querySelectorAll('button, a, [role=button], span, div, i, svg')].filter(b => {
+      if (!vis(b)) return false;
+      const r = b.getBoundingClientRect(); if (r.width > 260 || r.height > 120) return false;
+      const t = (b.innerText || '').trim();
+      const attrs = [b.getAttribute('aria-label'), b.getAttribute('title'), b.id, typeof b.className === 'string' ? b.className : ''].join(' ');
+      return (t && t.length < 30 && CLOSE_TXT.test(t)) || (!t && CLOSE_ATTR.test(attrs)) || (t.length < 30 && /(^|[\s_-])close/i.test(attrs));
+    });
+    if (btns.length) { btns[0].click(); done.push('fermée'); } else done.push('sans croix');
+  }
+  return done;
+}
+"""
+
+
+def _dismiss_overlays(page: Page, frame: Frame | None = None) -> list[str]:
+    """Ferme les fenêtres qui recouvrent la page (sauf celle du formulaire) : croix, puis Échap, puis masquage local."""
+    main = page.main_frame
+    try:
+        if frame is not None and frame != main:
+            frame.frame_element().evaluate("e => e.setAttribute('data-ff-host', '1')")
+        done = main.evaluate(OVERLAY_JS, "close") or []
+        if not done:
+            return []
+        page.wait_for_timeout(500)
+        if main.evaluate(OVERLAY_JS, "count"):
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(400)
+            done += main.evaluate(OVERLAY_JS, "hide") or []
+        return done
+    except Exception:
+        return []
+
+
 SET_VALUE_JS = """(e, v) => { e.focus(); e.value = v;
     ['input', 'change', 'blur'].forEach(t => e.dispatchEvent(new Event(t, {bubbles: true}))); return e.value === v; }"""
 SELECT_TEXT_JS = """(e, v) => { const o = [...e.options].find(o => o.text.trim().toLowerCase() === v.trim().toLowerCase());
@@ -1094,6 +1157,7 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
     """extra : valeurs saisies à la main pour des champs précis ({libellé du champ: valeur}).
     Les formulaires en plusieurs étapes sont parcourus : champs visibles remplis, « Suivant », et ainsi de suite."""
     res = FillResult(status="filled", form_url=frame.url)
+    _dismiss_overlays(frame.page, frame)
     done: set[str] = set()  # identifiants (name/id/index) des champs déjà traités
     steps = 0
     while True:
@@ -1292,6 +1356,7 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
     """Clique sur le bouton d'envoi du formulaire et vérifie la confirmation (None = refusé par le site ; un texte =
     type de protection anti-robot apparue après le clic : rien n'est parti)."""
     _dismiss_cookies(frame.page)
+    _dismiss_overlays(frame.page, frame)
     form = frame.locator("[data-ff-form]")
     btn = form.locator('button[type="submit"]:visible, input[type="submit"]:visible, button:not([type]):visible')
     if not btn.count():

@@ -207,64 +207,65 @@ export function TodoCard() {
     return null;
   }
 
+  // liseré dégradé de la carte « Filtres » du site vitrine (.hp-lisere, home.css)
   return (
-    <section
-      className={
-        'bg-card ring-brand flex flex-col rounded-2xl px-5 pt-5 pb-2 ring-[1.5px]'
-      }
-      data-test={'envoi-todo'}
-    >
-      <h3 className={'mb-2 text-[15px] font-medium'}>{t('todo.title')}</h3>
+    <div className={'hp-lisere mb-2.5 rounded-2xl'}>
+      <section
+        className={'bg-card flex flex-col rounded-2xl px-5 pt-5 pb-2'}
+        data-test={'envoi-todo'}
+      >
+        <h3 className={'mb-2 text-[15px] font-medium'}>{t('todo.title')}</h3>
 
-      <ul className={'flex flex-col'}>
-        {TODO_KINDS.filter((kind) => todo.counts[kind] > 0).map((kind) => (
-          <li
-            key={kind}
-            className={
-              'border-foreground/[0.07] flex flex-wrap items-center gap-x-4 gap-y-2 border-t py-3.5 sm:flex-nowrap'
-            }
-            data-test={`envoi-todo-${kind}`}
-          >
-            <span
-              className={cn(
-                'flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl px-2 text-[15px] font-semibold tabular-nums',
-                KIND_TINTS[kind],
-              )}
+        <ul className={'flex flex-col'}>
+          {TODO_KINDS.filter((kind) => todo.counts[kind] > 0).map((kind) => (
+            <li
+              key={kind}
+              className={
+                'border-foreground/[0.07] flex flex-wrap items-center gap-x-4 gap-y-2 border-t py-3.5 sm:flex-nowrap'
+              }
+              data-test={`envoi-todo-${kind}`}
             >
-              {format.number(todo.counts[kind])}
-            </span>
-
-            <span className={'flex min-w-0 flex-1 flex-col gap-0.5'}>
-              <span className={'text-[15px] font-medium'}>
-                {t(`todo.${kind}.title`)}
-              </span>
-              <span className={'text-muted-foreground text-[13px]'}>
-                {t(`todo.${kind}.hint`)}
-              </span>
-            </span>
-
-            <span className={'flex shrink-0 items-center gap-2'}>
-              <Button
-                variant={'ghost'}
-                size={'sm'}
-                className={'text-muted-foreground'}
-                data-test={`envoi-skip-all-${kind}`}
-                onClick={() => todo.skipAll(kind)}
+              <span
+                className={cn(
+                  'flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl px-2 text-[15px] font-semibold tabular-nums',
+                  KIND_TINTS[kind],
+                )}
               >
-                {t('skipAll.button')}
-              </Button>
+                {format.number(todo.counts[kind])}
+              </span>
 
-              <Button
-                data-test={`envoi-open-${kind}`}
-                onClick={() => todo.open(kind)}
-              >
-                {t(`todo.${kind}.cta`)}
-              </Button>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
+              <span className={'flex min-w-0 flex-1 flex-col gap-0.5'}>
+                <span className={'text-[15px] font-medium'}>
+                  {t(`todo.${kind}.title`)}
+                </span>
+                <span className={'text-muted-foreground text-[13px]'}>
+                  {t(`todo.${kind}.hint`)}
+                </span>
+              </span>
+
+              <span className={'flex shrink-0 items-center gap-2'}>
+                <Button
+                  variant={'ghost'}
+                  size={'sm'}
+                  className={'text-muted-foreground'}
+                  data-test={`envoi-skip-all-${kind}`}
+                  onClick={() => todo.skipAll(kind)}
+                >
+                  {t('skipAll.button')}
+                </Button>
+
+                <Button
+                  data-test={`envoi-open-${kind}`}
+                  onClick={() => todo.open(kind)}
+                >
+                  {t(`todo.${kind}.cta`)}
+                </Button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
   );
 }
 

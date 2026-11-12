@@ -10,14 +10,18 @@
 * lignes texte | visuel carré, titres 72 / 56 / 40 px en Season Mix.
  */
 
-.hp {
-  --hp-blue: var(--brand);
-  --hp-blue-deep: #2626d6;
-  --hp-blue-soft: #e9e9ff;
+:root {
+  /* couleurs du liseré (.hp-lisere), au niveau racine pour servir aussi dans l'appli (encart « À vous de jouer ») */
   --hp-blue-glow: #9d9dff;
   --hp-cyan: #8fd8ff;
   --hp-lilac: #c6b6ff;
   --hp-pink: #ffa9d8;
+}
+
+.hp {
+  --hp-blue: var(--brand);
+  --hp-blue-deep: #2626d6;
+  --hp-blue-soft: #e9e9ff;
   /* fond de page d'ElevenLabs (#fdfcfc), comme le reste du site */
   --hp-bg: var(--background);
   --hp-cream: #f7f5f2;
@@ -239,7 +243,7 @@
     border-radius: inherit;
     background: linear-gradient(
       100deg,
-      var(--hp-blue) 0%,
+      var(--hp-blue, var(--brand)) 0%,
       var(--hp-blue-glow) 24%,
       var(--hp-cyan) 48%,
       var(--hp-lilac) 72%,

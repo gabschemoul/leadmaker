@@ -128,7 +128,7 @@ def prepare(job: dict) -> dict:
                            + ", ".join(dict.fromkeys(visited)) + ")")
             else:
                 r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
-                              short_message=job.get("short_body", ""))
+                              short_message=job.get("short_body", ""), locale=job.get("locale", ""))
                 protection = r.protection or detect_protection(frame)
                 if "message" not in r.filled and r.status != "error":
                     # sans zone de message, rien ne part jamais, même à la main (12/11/2026, règle de Gabriel)
@@ -209,7 +209,7 @@ def send(job: dict) -> dict:
                 out.update(status="failed", detail="formulaire introuvable au moment de l'envoi")
             else:
                 r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
-                              short_message=job.get("short_body", ""))
+                              short_message=job.get("short_body", ""), locale=job.get("locale", ""))
                 protection = r.protection or detect_protection(frame)
                 if protection:
                     out.update(status="intervention_required", protection_type=protection,

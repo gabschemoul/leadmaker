@@ -537,6 +537,11 @@ def classify(f: dict) -> str | None:
     return "unknown"
 
 
+# case de projet du visiteur (« Project », « Votre projet », « Request », « Requirements »…)
+PROJECT_FIELD = re.compile(r"\bproje[ct]t?s?\b|\bprojet|\bproyecto|\bprogetto|\bprojekt|\brequest\b|\brequirements?\b"
+                           r"|\binquiry\b|\benquiry\b|reason for (contact|inquiry|your)|purpose of", re.I)
+
+
 def _values(sender: Sender, subject: str, message: str) -> dict[str, str]:
     country = sender.country_names[0] if sender.country_names else ""
     return {
@@ -1078,7 +1083,7 @@ def _click_next(frame: Frame) -> bool:
 
 
 def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: dict | None = None,
-              short_message: str = "") -> FillResult:
+              short_message: str = "", locale: str = "") -> FillResult:
     """extra : valeurs saisies à la main pour des champs précis ({libellé du champ: valeur}).
     Les formulaires en plusieurs étapes sont parcourus : champs visibles remplis, « Suivant », et ainsi de suite."""
     res = FillResult(status="filled", form_url=frame.url)
@@ -1223,6 +1228,15 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                     res.missing.append(label)
             elif kind == "unknown":
                 if CAPTCHA_TEXT.search(_norm(label)):
+                    continue
+                # case « Project / Votre projet / Request » obligatoire : l'objet du message écrit par l'utilisateur
+                # (adapté à son offre et à sa langue), sinon une phrase neutre ; jamais une case facultative
+                # (12/11/2026, décision de Gabriel)
+                if f["required"] and f["tag"] in ("input", "textarea") and f["type"] in ("text", "", "textarea") \
+                        and PROJECT_FIELD.search(_norm(label)):
+                    _fill(loc, subject.strip() or ("Proposition commerciale" if locale.lower().startswith("fr")
+                                                   else "Business proposal"))
+                    res.filled["project"] = label
                     continue
                 if f["required"]:
                     res.warnings.append(f"champ obligatoire non reconnu : {label}")

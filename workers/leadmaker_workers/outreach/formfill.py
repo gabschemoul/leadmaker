@@ -599,6 +599,48 @@ def _find_form_after_click(page: Page, visited: list[str], quotes: list | None =
     return None
 
 
+CONTACT_PAGE = re.compile(r"contact|kontakt|contatt|contato|get-?in-?touch|reach-?us|nous-?ecrire", re.I)
+
+
+def _page_key(url: str) -> str:
+    u = urlparse(url)
+    return u.netloc.lower().removeprefix("www.") + (u.path.rstrip("/") or "/")
+
+
+def _contact_page_first(page: Page, home_frame: Frame, timeout: int, emails: set[str], visited: list[str],
+                        started: float) -> Frame | None:
+    """Formulaire trouvé sur l'accueil : si le site a une page « Contact », son formulaire passe avant (celui de
+    l'accueil est souvent une demande de devis ou d'intervention, refusée ensuite par le contrôle IA). Sans formulaire
+    utilisable sur la page Contact, retour au formulaire de l'accueil.
+    12/11/2026 : bestnycelectricianmanhattan.com, « Get A Consultation » rempli sur l'accueil malgré /contact/."""
+    home = page.url
+    try:
+        links = [link for link in _contact_links(page, home) if _same_site(link, home)
+                 and _page_key(link) != _page_key(home) and CONTACT_PAGE.search(urlparse(link).path)]
+    except Exception:
+        return home_frame
+    if not links or time.monotonic() - started > SITE_BUDGET - 20:
+        return home_frame
+    link = links[0]
+    try:
+        resp = page.goto(link, wait_until="domcontentloaded", timeout=timeout)
+        if resp is None or resp.status < 400:
+            page.wait_for_timeout(1000)
+            _dismiss_cookies(page)
+            _scroll(page)
+            harvest_emails(page, home, emails)
+            ignored: list = []  # un devis sur la page Contact : on garde simplement le formulaire de l'accueil
+            frame = _find_form(page, ignored) or _find_form_late(page, ignored)
+            if frame:
+                visited.append(urlparse(link).path or "/")
+                return frame
+    except PWTimeout:
+        pass
+    # retour à l'accueil (l'ancien cadre est détaché par la navigation) : formulaire cherché à nouveau
+    _load(page, home, timeout)
+    return _find_form(page, []) or _find_form_late(page, [])
+
+
 def quote_url(url: str) -> str | None:
     """Chemin de la page s'il désigne une page de devis / réservation / rendez-vous (même « /contact-devis »)."""
     path = _norm(unquote(urlparse(url or "").path))
@@ -844,7 +886,7 @@ def open_contact_form(page: Page, site: str, timeout: int = 25000, emails: set[s
     harvest_emails(page, site, emails)
     frame = _find_form(page, quotes) or _find_form_late(page, quotes)
     if frame:
-        return frame
+        return _contact_page_first(page, frame, timeout, emails, visited, started)
     _check_alive(page, final=True)
     home = page.url
     frame = _find_form_after_click(page, visited, quotes)

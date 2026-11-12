@@ -1361,6 +1361,54 @@ CHALLENGE_TEXT = re.compile(r"confirm (that )?you'?re (a )?human|i'?m not a robo
                             r"|je ne suis pas un robot|prouvez que vous", re.I)
 
 
+# Réponse du serveur à l'envoi (12/11/2026, idée de Gabriel) : le code seul ne suffit pas (Contact Form 7 répond 200 avec
+# « spam » ou « validation_failed ») ; on lit aussi le contenu de la réponse. Les mouchards (statistiques, publicité,
+# captcha) ne sont jamais pris pour l'envoi.
+NET_SKIP = re.compile(r"google-analytics|googletagmanager|doubleclick|googleadservices|google\.com/(ccm|pagead)|facebook"
+                      r"|hotjar|clarity\.ms|sentry|segment\.(io|com)|mixpanel|recaptcha|gstatic|hcaptcha|cloudflareinsights"
+                      r"|challenges\.cloudflare|matomo|plausible|stats\.wp\.com|tiktok|linkedin|pinterest|bing\.com|snapchat"
+                      r"|intercom|crisp\.chat|tawk\.to|zendesk|hubspot\.com/(api/)?(analytics|usage)|newrelic|nr-data", re.I)
+FORM_SERVICES = re.compile(r"admin-ajax|wp-json|formspree|hsforms|hubspot|jotform|typeform|wufoo|getform|basin|formsubmit"
+                           r"|squarespace|wix|weebly|webflow|shopify|godaddy|jimdo|site123|duda|elementor|wpforms|gravityforms"
+                           r"|ninja-forms|contact-form|/contact|/submit|/send|/form", re.I)
+NET_OK = re.compile(r'mail_sent|"success"\s*:\s*true|"status"\s*:\s*"(success|ok|sent|mail_sent)"|"ok"\s*:\s*true'
+                    r'|"sent"\s*:\s*true|message_sent|"submitted"\s*:\s*true|"result"\s*:\s*"success"|inlinemessage'
+                    r'|submission_?success|"redirecturl"', re.I)
+NET_FAIL = re.compile(r'validation_failed|mail_failed|acceptance_missing|\bspam\b|"success"\s*:\s*false'
+                      r'|"status"\s*:\s*"(error|fail|failed|invalid|aborted)"|captcha|"errors"\s*:\s*(\[\s*\{|\{\s*")', re.I)
+
+
+def _net_verdict(responses: list, page_url: str) -> tuple[str | None, str]:
+    """Verdict tiré des requêtes d'envoi parties après le clic : ("ok" | "fail" | "accepted" | None, détail)."""
+    fail = ""
+    accepted = ""
+    for r in responses:
+        try:
+            req = r.request
+            if req.method not in ("POST", "PUT") or NET_SKIP.search(r.url):
+                continue
+            ours = _same_site(r.url, page_url) or bool(FORM_SERVICES.search(r.url))
+            try:
+                body = (r.text() or "")[:3000]
+            except Exception:
+                body = ""
+            m = NET_OK.search(body)
+            if m and ours:
+                return "ok", f"réponse du site à l'envoi : {r.status} ({m.group(0)[:40]})"
+            m = NET_FAIL.search(body)
+            if ours and (r.status >= 400 or m):
+                fail = fail or f"réponse du site à l'envoi : {r.status}" + (f" ({m.group(0)[:40]})" if m else "")
+            elif ours and 200 <= r.status < 400:
+                accepted = accepted or f"envoi accepté par le site (code {r.status})"
+        except Exception:
+            continue
+    if fail:
+        return "fail", fail
+    if accepted:
+        return "accepted", accepted
+    return None, ""
+
+
 def submit(frame: Frame) -> tuple[bool | None | str, str]:
     """Clique sur le bouton d'envoi du formulaire et vérifie la confirmation (None = refusé par le site ; un texte =
     type de protection anti-robot apparue après le clic : rien n'est parti)."""
@@ -1372,6 +1420,11 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
         cands = form.locator("button:visible, [role=button]:visible, a.button:visible, input[type=button]:visible")
         btn = cands.filter(has_text=SUBMIT) if cands.count() else cands
     url_before = frame.url
+    responses: list = []
+
+    def on_response(r):  # une vraie fonction : Playwright refuse une méthode intégrée comme list.append
+        responses.append(r)
+    frame.page.on("response", on_response)
     try:  # repère : disparaît si la page se recharge (un rechargement vide aussi le formulaire, même en cas d'erreur)
         frame.evaluate("() => { window.__ffNoReload = 1; }")
     except Exception:
@@ -1387,9 +1440,14 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
         return None, "bouton d'envoi introuvable : rien n'est parti"  # jamais compté comme envoyé (12/11/2026)
     frame.page.wait_for_timeout(5000)
     try:
+        frame.page.remove_listener("response", on_response)
+    except Exception:
+        pass
+    try:
         text = _norm(frame.page.inner_text("body", timeout=5000))
     except Exception:
         text = ""
+    net, net_detail = _net_verdict(responses, url_before)
     # le formulaire de départ n'avait pas de protection visible (sinon : site protégé avant le clic) ; une protection
     # visible maintenant est une vérification demandée par le site : le robot ne la passe jamais, rien n'est parti
     challenge = detect_protection(frame) or ("recaptcha_v2" if CHALLENGE_TEXT.search(text) else None)
@@ -1398,8 +1456,12 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
     m = FAILURE.search(text)
     if m:
         return None, f"refusé par le site (« {m.group(0)} »)"
+    if net == "fail":
+        return None, f"refusé par le site ({net_detail})"
     if SUCCESS.search(text):
-        return True, "confirmation affichée"
+        return True, "confirmation affichée" + (f" ; {net_detail}" if net else "")
+    if net == "ok":
+        return True, net_detail
     if frame.url != url_before:
         return True, "page changée après envoi"
     try:
@@ -1414,4 +1476,6 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
             return True, "formulaire disparu après envoi"
     except Exception:
         pass
+    if net == "accepted":
+        return True, net_detail
     return False, "pas de confirmation visible"

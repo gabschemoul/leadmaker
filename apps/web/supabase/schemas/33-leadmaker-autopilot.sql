@@ -1124,7 +1124,7 @@ revoke all on function public.lm_campaign_todo(uuid) from public;
 
 grant execute on function public.lm_campaign_todo(uuid) to authenticated, service_role;
 
--- Les formulaires d'une liste « À vous de jouer » (to_check, captcha, unknown_field), les plus anciens d'abord,
+-- Les formulaires d'une liste « À vous de jouer » (to_check, captcha, unknown_field), les plus récents d'abord,
 -- 500 au plus : l'écran les montre un par un.
 -- Appelant : appli (utilisateur connecté), contrôle d'accès lm_member.
 create or replace function public.lm_campaign_todo_ids(p_campaign_id uuid, p_kind text)
@@ -1142,7 +1142,7 @@ as $$
      and public.lm_attempt_todo_kind(a.status, a.detail, a.protection_type, a.missing, a.validated_by, ap.status) = p_kind
      and exists (select 1 from public.lm_campaigns c
                   where c.id = p_campaign_id and public.lm_member(c.account_id))
-   order by a.updated_at, a.id
+   order by a.updated_at desc, a.id desc  -- les plus récents d'abord (12/11/2026, demande de Gabriel)
    limit 500;
 $$;
 

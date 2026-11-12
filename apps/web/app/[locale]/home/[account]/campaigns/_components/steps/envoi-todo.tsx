@@ -11,7 +11,13 @@
 import { createContext, use, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, ImageOff } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  ImageOff,
+} from 'lucide-react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
@@ -285,8 +291,13 @@ function TodoReview(props: {
   const format = useFormatter();
   const locale = useLocale();
   const client = useSupabase();
-  // formulaires déjà traités dans cet écran (la liste est lue une fois, à l'ouverture)
-  const [handled, setHandled] = useState<string[]>([]);
+  // formulaires déjà traités dans cet écran (la liste est lue une fois, à l'ouverture) et position dans ceux qui
+  // restent : ‹ › pour regarder sans décider (12/11/2026)
+  const [view, setView] = useState<{ handled: string[]; index: number }>({
+    handled: [],
+    index: 0,
+  });
+  const handled = view.handled;
 
   const ids = useQuery({
     queryKey: ['lm-todo-ids', props.campaignId, props.kind],
@@ -296,8 +307,12 @@ function TodoReview(props: {
 
   const all = ids.data ?? [];
   const queue = all.filter((id) => !handled.includes(id));
-  const current = queue[0] ?? null;
-  const next = queue[1] ?? null;
+  const index = Math.min(view.index, Math.max(queue.length - 1, 0));
+  const current = queue[index] ?? null;
+  const next = queue[index + 1] ?? null;
+  const previous = index > 0 ? (queue[index - 1] ?? null) : null;
+  const goTo = (target: number) =>
+    setView((v) => ({ ...v, index: Math.max(0, target) }));
 
   const itemQuery = (id: string) => ({
     queryKey: ['lm-todo-item', id, locale],
@@ -306,8 +321,9 @@ function TodoReview(props: {
   });
 
   const item = useQuery({ ...itemQuery(current ?? ''), enabled: !!current });
-  // le suivant se charge pendant qu'on regarde celui-ci
+  // le suivant et le précédent se chargent pendant qu'on regarde celui-ci
   useQuery({ ...itemQuery(next ?? ''), enabled: !!next });
+  useQuery({ ...itemQuery(previous ?? ''), enabled: !!previous });
 
   const advance = (id: string) => {
     props.onChanged();
@@ -318,7 +334,8 @@ function TodoReview(props: {
       return;
     }
 
-    setHandled((list) => [...list, id]);
+    // le suivant prend sa place ; s'il n'y en a plus après, on recule d'un cran
+    setView((v) => ({ handled: [...v.handled, id], index: v.index }));
   };
 
   // déjà traité ailleurs (autre onglet, autre membre, robot) : on le dit et on passe au suivant
@@ -370,11 +387,36 @@ function TodoReview(props: {
           <span className={'text-foreground font-medium'}>
             {t(`todo.${props.kind}.title`)}
           </span>
-          <span className={'tabular-nums'} data-test={'envoi-review-position'}>
-            {t('review.position', {
-              index: format.number(handled.length + 1),
-              total: format.number(all.length),
-            })}
+          <span className={'flex items-center gap-1'}>
+            <Button
+              variant={'ghost'}
+              size={'icon-sm'}
+              aria-label={t('review.previous')}
+              disabled={index === 0}
+              data-test={'envoi-review-previous'}
+              onClick={() => goTo(index - 1)}
+            >
+              <ChevronLeft />
+            </Button>
+            <span
+              className={'min-w-16 text-center tabular-nums'}
+              data-test={'envoi-review-position'}
+            >
+              {t('review.position', {
+                index: format.number(Math.min(index + 1, queue.length)),
+                total: format.number(queue.length),
+              })}
+            </span>
+            <Button
+              variant={'ghost'}
+              size={'icon-sm'}
+              aria-label={t('review.next')}
+              disabled={index >= queue.length - 1}
+              data-test={'envoi-review-forward'}
+              onClick={() => goTo(index + 1)}
+            >
+              <ChevronRight />
+            </Button>
           </span>
           <span
             className={

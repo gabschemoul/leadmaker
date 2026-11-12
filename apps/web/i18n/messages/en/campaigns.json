@@ -877,7 +877,8 @@
         "openStep": "Open their contact page",
         "open": "Open the site"
       },
-      "openForm": "View the form"
+      "openForm": "View the form",
+      "previous": "Previous"
     },
     "errors": {
       "generic": "That didn’t work. Please try again.",

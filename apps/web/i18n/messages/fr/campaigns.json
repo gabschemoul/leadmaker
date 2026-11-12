@@ -877,7 +877,8 @@
         "openStep": "Ouvrir leur page de contact",
         "open": "Ouvrir le site"
       },
-      "openForm": "Voir le formulaire"
+      "openForm": "Voir le formulaire",
+      "previous": "Précédent"
     },
     "errors": {
       "generic": "L’action n’a pas abouti. Réessayez.",

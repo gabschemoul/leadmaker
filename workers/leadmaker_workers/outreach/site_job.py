@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
 from ..discovery.scraper import USER_AGENT, proxy_from_env
-from . import ai_check, netguard
+from . import ai_check, formfill, netguard
 from .formfill import (CONTACT_PATHS, QUOTE_DETAIL, Sender, SiteDown, SiteGone, _check_alive, _contact_links, _dismiss_cookies,
                        _dismiss_overlays,
                        _same_site, best_email, detect_protection, fill_form, harvest_emails, legal_links, open_contact_form,
@@ -96,6 +96,10 @@ def _valid_fixes(fixes, fields: list[dict], agency: dict[str, str]) -> dict[str,
         if not f or not val:
             continue
         if f["type"] in ("checkbox", "radio"):
+            # jamais une case facultative qui inscrit à quelque chose (offres, SMS, « communications »…)
+            optional = not f.get("required") and not str(f.get("label") or "").rstrip().endswith("*")
+            if optional and f["type"] == "checkbox" and formfill.RECEIVE.search(formfill._norm(f"{f.get('label')} {f.get('name')}")):
+                continue
             if val.lower() in ("oui", "yes"):
                 out[f["key"]] = "oui"
         elif f["tag"] == "select":

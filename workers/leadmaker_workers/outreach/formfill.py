@@ -88,8 +88,15 @@ NEWSLETTER = re.compile(r"newsletter|lettre d'information|actualit|offres? (comm
 # Case OBLIGATOIRE : on la coche sauf si c'est vraiment une inscription (lettre d'info, offres, partenaires…).
 # « J'accepte d'être recontacté au sujet de ma demande » bloquait l'envoi (5/11/2026 : 7 formulaires sur 500).
 NEWSLETTER_STRICT = re.compile(r"newsletter|lettre d'information|actualit|offres? (commerciales|promotionnelles)|partenaires"
+                               r"|exclusive offers|partner (hotels|companies|brands)"
                                r"|marketing|promotion|special offers|subscribe|mailing list|receive (updates|news|offers)"
                                r"|werbung|boletin|novedades|nieuwsbrief", re.I)
+# Case FACULTATIVE : cochée seulement si c'est un simple accord pour traiter la demande. Tout ce qui parle de
+# recevoir quelque chose (offres, « other communications », SMS, appels, contenus…) reste décoché (13/11/2026 : une
+# vingtaine de cases « J'accepte de recevoir vos e-mails », « Send me emails and exclusive offers » cochées en 3 jours).
+RECEIVE = re.compile(r"recevoir|receive|send me|m'envoyer (des|vos)|communications?|\btexts?\b|\bsms\b|appels|\bcalls\b"
+                     r"|offres?|offers?|promotion|exclusi|partner|partenaire|interests|content from|marketing|newsletter"
+                     r"|sign(ing)? up|inscri|werbung|ofertas|novedades", re.I)
 # Captchas « à recopier » (image, calcul)
 CAPTCHA_TEXT = re.compile(r"code de securite|entre[rz]? le code|recopie|antispam|anti-spam|combien font|resultat de l'operation"
                           r"|(?<!re)captcha|security code|enter the (code|characters)|what is \d+|solve|math question"
@@ -383,6 +390,10 @@ FIND_FORM_JS = r"""
       || /mail|courriel|correo|t[ée]l[ée]?phone|\btel\b|phone|portable|mobile|telefon|handy/i.test(text(e)))).length;
     const named = fields.filter(e => e.tagName === 'INPUT' && /\bnom\b|name|pr[ée]nom|first|last|vorname|nachname|nombre|nome|naam/i.test(text(e))).length;
     if (pwd || search >= fields.length / 2) return;
+    // formulaire de commentaires d'un blog WordPress (« Leave a Reply ») : le message deviendrait un commentaire public
+    // (13/11/2026 : alaminaci.com/contact/, message publié sous un article ; 4 autres arrêtés par le contrôle IA)
+    if (/wp-comments-post/i.test(f.tagName === 'FORM' ? (f.getAttribute('action') || '') : '') || f.id === 'commentform'
+        || f.closest('#respond, .comment-respond') || qsa(f, 'input[name=comment_post_ID], input[name=wp-comment-cookies-consent]').length) return;
     // sans champ de réponse (email/téléphone), seul un formulaire « nom + message » est accepté
     if (!reply && !(ta && named)) return;
     // sans zone de message : demande de rappel (nom + téléphone, l'entreprise rappellerait en croyant à un client,
@@ -1378,10 +1389,14 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                 res.filled[f"saisi {f['i']}"] = label
             elif kind == "checkbox":
                 text = _norm(f"{f['label']} {f['name']}")
-                if CONSENT.search(text) and not NEWSLETTER.search(text):
+                # « … *» à la fin du libellé : obligatoire même sans l'attribut required (vérifié par le script du site)
+                required = f["required"] or (f["label"] or "").rstrip().endswith("*")
+                if not required and RECEIVE.search(text):
+                    pass
+                elif CONSENT.search(text) and not NEWSLETTER.search(text):
                     _check(loc)
                     res.filled["consentement"] = label
-                elif f["required"] and not NEWSLETTER_STRICT.search(text) and not OPTION_AVOID.search(text):
+                elif required and not NEWSLETTER_STRICT.search(text) and not OPTION_AVOID.search(text):
                     _check(loc)
                     res.filled[f"case obligatoire {f['i']}"] = label
             elif kind == "radio" and f["name"] in civ_radio:

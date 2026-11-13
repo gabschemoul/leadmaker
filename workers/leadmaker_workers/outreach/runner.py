@@ -50,9 +50,19 @@ LOCALES = {
 }
 
 
-# Pages sur un réseau social ou un annuaire : pas de formulaire de contact, inutile de les visiter
+# Pages sur un réseau social, un annuaire ou un outil de réservation / commande : pas de formulaire de contact de
+# l'entreprise, inutile de les visiter. Le robot y trouverait le formulaire de l'outil lui-même (13/11/2026 : fiche dont
+# le site est une page Calendly → formulaire de contact de Calendly préparé). Les sites faits AVEC un outil (wixsite,
+# square.site, carrd…) restent visités : ce sont ceux de l'entreprise.
 NO_FORM_HOSTS = ("facebook.com", "fb.com", "instagram.com", "linkedin.com", "tiktok.com", "twitter.com", "x.com",
-                 "youtube.com", "pagesjaunes.fr", "yelp.com", "yelp.fr", "linktr.ee", "wa.me", "t.me")
+                 "youtube.com", "pagesjaunes.fr", "yelp.com", "yelp.fr", "linktr.ee", "wa.me", "t.me",
+                 "calendly.com", "linkin.bio", "beacons.ai", "doctolib.fr", "maiia.com", "keldoc.com", "planity.com",
+                 "treatwell.fr", "booksy.com", "fresha.com", "setmore.com", "vagaro.com", "schedulicity.com",
+                 "mindbodyonline.com", "zocdoc.com", "booking.com", "airbnb.fr", "airbnb.com", "tripadvisor.fr",
+                 "tripadvisor.com", "thefork.fr", "lafourchette.com", "ubereats.com", "deliveroo.fr", "just-eat.fr",
+                 "doordash.com", "grubhub.com", "toasttab.com", "squareup.com", "clover.com", "order.store",
+                 "tiqets.com", "solocal.com", "mappy.com", "justacote.com", "pappers.fr", "societe.com", "leboncoin.fr",
+                 "123devis.com", "habitatpresto.com", "starofservice.com")
 
 
 def _social_host(url: str) -> bool:
@@ -289,7 +299,7 @@ class PrepareRunner:
         started = time.monotonic()
         timeout = _timeout()
         if _social_host(prospect["website"] or ""):
-            result = {"status": "no_form", "detail": "page sur un réseau social ou un annuaire : pas de formulaire de contact"}
+            result = {"status": "no_form", "detail": "page sur un réseau social, un annuaire ou un outil de réservation : pas de formulaire de contact"}
         elif seen := _known_no_form(conn, row["prospect_id"]):
             # Déjà visité sans formulaire (par n'importe quel client) : pas de nouvelle visite (« déjà vérifié… » :
             # le constat n'est pas prolongé, voir lm_attempts_record_site_form)

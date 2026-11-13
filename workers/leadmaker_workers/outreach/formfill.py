@@ -1225,12 +1225,29 @@ def _fill(loc, value: str):
             raise
 
 
+SELECTED_TEXT_JS = "e => ((e.options[e.selectedIndex] || {}).text || '').trim().toLowerCase()"
+
+
 def _select(loc, label: str):
     try:
         loc.select_option(label=label, timeout=3000)
     except Exception:
         if not loc.evaluate(SELECT_TEXT_JS, label):
             raise
+    want = label.strip().lower()
+    if loc.evaluate(SELECTED_TEXT_JS) == want:
+        return
+    # liste « contrôlée » qui annule le choix fait par script (listes Wix, 13/11/2026 : ccomme.fr restait sur
+    # « Choisissez une option ») : choix au clavier, flèche après flèche, comme une personne
+    try:
+        n = loc.evaluate("e => e.options.length")
+        loc.focus(timeout=2000)
+        for _ in range(n):
+            loc.press("ArrowDown", timeout=2000)
+            if loc.evaluate(SELECTED_TEXT_JS) == want:
+                return
+    except Exception:
+        pass
 
 
 def _check(loc):

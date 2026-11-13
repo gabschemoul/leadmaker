@@ -1143,6 +1143,15 @@ OVERLAY_JS = r"""
   const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
     return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && parseFloat(s.opacity) > 0.05; };
   const kept = [...document.querySelectorAll('[data-ff-form], [data-ff-host]')];
+  // formulaire visible au premier plan (le point en son milieu est bien à lui) : un voile qui le chevauche est DERRIÈRE
+  // lui (fond sombre d'une fenêtre « Get in touch »). Le fermer n'apporte rien et Échap fermait le formulaire avec
+  // (13/11/2026 : brechtechservices.com, formulaire vide puis « pas de zone de message »)
+  const overlap = (a, b) => { const r = a.getBoundingClientRect(), q = b.getBoundingClientRect();
+    return r.left < q.right && q.left < r.right && r.top < q.bottom && q.top < r.bottom; };
+  const onTop = kept.filter(k => { const r = k.getBoundingClientRect(); if (r.width < 3 || r.height < 3) return false;
+    const x = r.left + r.width / 2, y = r.top + Math.min(r.height / 2, 60);
+    if (x < 0 || y < 0 || x >= W || y >= H) return false;
+    const e = document.elementFromPoint(x, y); return !!e && (k.contains(e) || e === k); });
   const covers = [...document.querySelectorAll('body *')].filter(el => {
     const s = getComputedStyle(el);
     if (s.position !== 'fixed' && !(s.position === 'absolute' && (parseInt(s.zIndex) || 0) >= 1000)) return false;
@@ -1151,6 +1160,7 @@ OVERLAY_JS = r"""
     const area = Math.max(0, Math.min(r.right, W) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, H) - Math.max(r.top, 0));
     if (area < W * H * 0.15) return false;
     if (kept.some(k => el.contains(k) || k.contains(el))) return false;
+    if (onTop.some(k => overlap(el, k))) return false;
     if (el.querySelector('iframe')) return false;
     if (/cookie|consent|didomi|onetrust|axeptio|tarteaucitron|cmp/i.test((el.id || '') + ' ' + (el.className || ''))) return false;
     return true;

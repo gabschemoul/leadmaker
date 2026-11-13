@@ -166,6 +166,42 @@ def review_fix(form_url: str, filled: dict, context: dict | None, screenshot_b64
     return v
 
 
+# IA de secours (13/11/2026) : le robot a trouvé une page avec des formulaires mais n'y voit pas de zone de message
+# (mauvais formulaire choisi parmi plusieurs, message sur une seule ligne…). L'IA regarde la page et désigne le formulaire
+# de contact général et la case où écrire le message, ou dit qu'il n'y en a pas.
+RESCUE_SYSTEM = """Tu aides un robot qui envoie un message de prospection par le formulaire de contact du site d'une entreprise.
+Sur cette page, le robot n'a pas trouvé de zone de message. Tu reçois la capture de la page et la liste numérotée de ses
+champs visibles (n°, cadre, type, libellé, obligatoire). Dis s'il existe un formulaire de contact GÉNÉRAL (pas une lettre
+d'info, pas un devis, pas une réservation, pas une candidature, pas une recherche, pas un compte client) et quelle case
+reçoit le message libre (zone de texte, ou à défaut une case texte d'une ligne du type « Message », « Votre demande »,
+« How can we help? »). Si tu as un doute, réponds contact=false : mieux vaut perdre un prospect qu'écrire au mauvais endroit."""
+
+
+class Rescue(BaseModel):
+    contact: bool
+    message_field: int | None
+    reason: str
+
+
+def rescue(page_url: str, screenshot_b64: str, fields: list[dict]) -> Rescue | None:
+    rows = [f"{f['k']} | cadre {f['frame']} | {f['type'] or f['tag']} | « {(f['label'] or '')[:80]} » | "
+            f"{'obligatoire' if f['required'] else 'facultatif'}" for f in fields]
+    content: list = [{"type": "text", "text": f"Adresse de la page : {page_url}\nChamps visibles (n° | cadre | type | libellé | obligatoire) :\n"
+                      + "\n".join(rows)}]
+    if screenshot_b64:
+        content.insert(0, {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": screenshot_b64}})
+    try:
+        r = _get_client().messages.parse(model=MODEL, max_tokens=600, system=RESCUE_SYSTEM, output_format=Rescue,
+                                         messages=[{"role": "user", "content": content}], timeout=25.0)
+        v = r.parsed_output
+    except Exception as exc:
+        log.warning("IA de secours indisponible pour %s : %s", page_url, str(exc)[:200])
+        return None
+    if v is not None:
+        log.info("IA de secours %s → %s (case %s) %s", page_url, v.contact, v.message_field, v.reason[:120])
+    return v
+
+
 def enabled() -> bool:
     return bool(os.environ.get("ANTHROPIC_API_KEY")) and os.environ.get("AI_CHECK", "on").lower() != "off"
 

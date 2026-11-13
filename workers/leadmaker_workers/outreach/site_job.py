@@ -145,9 +145,88 @@ def _ai_loop(page, frame, sender: Sender, job: dict, out: dict) -> None:
     finally:
         signal.alarm(0)
     if done:
-        out["ai_fixes"] = done
+        out["ai_fixes"] = {**(out.get("ai_fixes") or {}), **done}
         note = "corrigé par l'IA : " + ", ".join(f"« {k[:40]} » ← {v[:40]}" for k, v in done.items())
         out["detail"] = "; ".join(filter(None, [out.get("detail"), note]))
+
+
+# IA de secours (13/11/2026) : champs visibles de toute la page (tous les cadres), numérotés pour l'IA
+RESCUE_FIELDS_JS = r"""(start) => {
+  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+    return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0'; };
+  const lab = el => { const l = el.id ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`) : null;
+    return [(l || {}).innerText, el.closest('label') && el.closest('label').innerText, el.getAttribute('aria-label'),
+            el.placeholder, el.name].filter(Boolean).join(' / ').replace(/\s+/g, ' ').slice(0, 120); };
+  let k = start; const out = [];
+  document.querySelectorAll('input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=image]),textarea,select').forEach(el => {
+    if (!vis(el) || k - start >= 40) return;
+    el.setAttribute('data-ff-ai', String(k));
+    out.push({k, tag: el.tagName.toLowerCase(), type: (el.type || '').toLowerCase(), label: lab(el),
+              required: el.required || el.getAttribute('aria-required') === 'true' || /\*/.test(lab(el))});
+    k++;
+  });
+  return out;
+}"""
+
+# le formulaire qui contient la case choisie par l'IA devient le formulaire du robot
+RESCUE_PICK_JS = r"""(k) => {
+  const el = document.querySelector(`[data-ff-ai="${k}"]`); if (!el) return false;
+  let c = el.closest('form');
+  if (!c) { c = el.parentElement; for (let i = 0; i < 8 && c && c.querySelectorAll('input,textarea,select').length < 3; i++) c = c.parentElement; }
+  if (!c) return false;
+  document.querySelectorAll('[data-ff-form]').forEach(f => f.removeAttribute('data-ff-form'));
+  c.setAttribute('data-ff-form', '1');
+  return true;
+}"""
+
+
+def _ai_rescue(page, sender: Sender, job: dict):
+    """Le robot n'a pas de zone de message : l'IA désigne le formulaire de contact et la case du message.
+    Renvoie (cadre, résultat du remplissage) si c'est réparé, sinon None."""
+    from .formfill import DESCRIBE_JS, SKIP_FRAME
+    frames = [page.main_frame] + [f for f in page.frames if f != page.main_frame and f.url and not SKIP_FRAME.search(f.url)]
+    fields, owner = [], {}
+    for idx, fr in enumerate(frames[:8]):
+        try:
+            got = fr.evaluate(RESCUE_FIELDS_JS, len(fields))
+        except Exception:
+            continue
+        for f in got:
+            f["frame"] = idx
+            owner[f["k"]] = fr
+        fields += got
+    if not fields:
+        return None
+    try:
+        shot = base64.b64encode(page.screenshot(full_page=True, timeout=8000)).decode("ascii")
+    except Exception:
+        shot = ""
+    v = ai_check.rescue(page.url, shot, fields)
+    if not v or not v.contact or v.message_field is None or v.message_field not in owner:
+        return None
+    fr = owner[v.message_field]
+    if not fr.evaluate(RESCUE_PICK_JS, v.message_field):
+        return None
+    # libellé de la case du message tel que le robot le voit, pour la remplir comme une saisie à la main
+    fr.evaluate(DESCRIBE_JS)
+    i = fr.evaluate(f"() => (document.querySelector('[data-ff-ai=\"{v.message_field}\"]') || {{}}).getAttribute && "
+                    f"document.querySelector('[data-ff-ai=\"{v.message_field}\"]').getAttribute('data-ff-i')")
+    desc = {str(d["i"]): d for d in fr.evaluate(DESCRIBE_JS)}
+    d = desc.get(str(i))
+    if not d:
+        return None
+    key = d.get("label") or d.get("placeholder") or d.get("name") or d.get("id")
+    if not key:
+        return None
+    extra = {**(job.get("extra") or {}), key: job["body"]}
+    job["extra"] = extra  # la boucle IA et l'envoi rejouent la même case
+    r = fill_form(fr, sender, job.get("subject", ""), job["body"], extra, short_message=job.get("short_body", ""),
+                  locale=job.get("locale", ""))
+    if "message" not in r.filled:
+        r.filled["message"] = key  # la case désignée par l'IA a reçu le message (saisie « à la main »)
+    r.warnings = [w for w in r.warnings if not w.startswith("pas de zone de message")]
+    r.warnings.append(f"formulaire et zone de message désignés par l'IA de secours ({v.reason[:100]})")
+    return fr, r
 
 
 def _screenshot(page, frame) -> str:
@@ -250,6 +329,15 @@ def prepare(job: dict) -> dict:
             else:
                 r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
                               short_message=job.get("short_body", ""), locale=job.get("locale", ""))
+                if "message" not in r.filled and r.status != "error" and ai_check.enabled() \
+                        and time.monotonic() - started < AI_START_MAX:
+                    try:
+                        fixed = _ai_rescue(page, sender, job)
+                    except Exception:
+                        fixed = None
+                    if fixed:
+                        frame, r = fixed
+                        out["ai_fixes"] = {r.filled["message"]: job["body"]}  # gardé dans lm_attempts.extra pour l'envoi
                 protection = r.protection or detect_protection(frame)
                 if "message" not in r.filled and r.status != "error":
                     # sans zone de message, rien ne part jamais, même à la main (12/11/2026, règle de Gabriel)

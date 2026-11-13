@@ -1490,8 +1490,11 @@ NET_FAIL = re.compile(r'validation_failed|mail_failed|acceptance_missing|\bspam\
                       r'|"status"\s*:\s*"(error|fail|failed|invalid|aborted)"|captcha|"errors"\s*:\s*(\[\s*\{|\{\s*")', re.I)
 
 
-def _net_verdict(responses: list, page_url: str) -> tuple[str | None, str]:
-    """Verdict tiré des requêtes d'envoi parties après le clic : ("ok" | "fail" | "accepted" | None, détail)."""
+def _net_verdict(responses: list, page_url: str, action_url: str = "") -> tuple[str | None, str]:
+    """Verdict tiré des requêtes d'envoi parties après le clic : ("ok" | "fail" | "accepted" | None, détail).
+    Est une réponse du formulaire : une requête vers le site lui-même, vers un service de formulaires connu, ou vers
+    l'adresse où le formulaire déclare envoyer ses données (attribut action, 13/11/2026 : services inconnus du robot)."""
+    action_host = (urlparse(action_url).hostname or "") if action_url else ""
     fail = ""
     accepted = ""
     for r in responses:
@@ -1499,7 +1502,8 @@ def _net_verdict(responses: list, page_url: str) -> tuple[str | None, str]:
             req = r.request
             if req.method not in ("POST", "PUT") or NET_SKIP.search(r.url):
                 continue
-            ours = _same_site(r.url, page_url) or bool(NET_FORM_HOSTS.search(r.url))
+            ours = (_same_site(r.url, page_url) or bool(NET_FORM_HOSTS.search(r.url))
+                    or bool(action_host and (urlparse(r.url).hostname or "") == action_host))
             try:
                 body = (r.text() or "")[:3000]
             except Exception:
@@ -1521,6 +1525,18 @@ def _net_verdict(responses: list, page_url: str) -> tuple[str | None, str]:
     return None, ""
 
 
+def _net_seen(responses: list) -> str:
+    """Requêtes d'envoi vues après le clic (hors mouchards), pour comprendre un « à vérifier »."""
+    seen = []
+    for r in responses:
+        try:
+            if r.request.method in ("POST", "PUT") and not NET_SKIP.search(r.url):
+                seen.append(f"{r.request.method} {urlparse(r.url).hostname} → {r.status}")
+        except Exception:
+            continue
+    return ", ".join(dict.fromkeys(seen[:6]))
+
+
 def submit(frame: Frame) -> tuple[bool | None | str, str]:
     """Clique sur le bouton d'envoi du formulaire et vérifie la confirmation (None = refusé par le site ; un texte =
     type de protection anti-robot apparue après le clic : rien n'est parti)."""
@@ -1532,6 +1548,10 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
         cands = form.locator("button:visible, [role=button]:visible, a.button:visible, input[type=button]:visible")
         btn = cands.filter(has_text=SUBMIT) if cands.count() else cands
     url_before = frame.url
+    try:  # adresse où le formulaire envoie ses données (vide pour les formulaires sans balise <form>)
+        action_url = form.first.evaluate("f => f.tagName === 'FORM' ? (f.action || '') : ''") or ""
+    except Exception:
+        action_url = ""
     responses: list = []
 
     def on_response(r):  # une vraie fonction : Playwright refuse une méthode intégrée comme list.append
@@ -1559,7 +1579,7 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
         text = _norm(frame.page.inner_text("body", timeout=5000))
     except Exception:
         text = ""
-    net, net_detail = _net_verdict(responses, url_before)
+    net, net_detail = _net_verdict(responses, url_before, action_url)
     # le formulaire de départ n'avait pas de protection visible (sinon : site protégé avant le clic) ; une protection
     # visible maintenant est une vérification demandée par le site : le robot ne la passe jamais, rien n'est parti
     challenge = detect_protection(frame) or ("recaptcha_v2" if CHALLENGE_TEXT.search(text) else None)
@@ -1590,4 +1610,5 @@ def submit(frame: Frame) -> tuple[bool | None | str, str]:
         pass
     if net == "accepted":
         return True, net_detail
-    return False, "pas de confirmation visible"
+    seen = _net_seen(responses)
+    return False, "pas de confirmation visible" + (f" (requêtes après le clic : {seen})" if seen else " (aucune requête d'envoi vue)")

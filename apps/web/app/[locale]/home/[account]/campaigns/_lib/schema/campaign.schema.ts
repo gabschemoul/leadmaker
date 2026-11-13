@@ -357,6 +357,12 @@ export const ArchiveCampaignSchema = CampaignIdSchema.extend({
   archived: z.boolean(),
 });
 
+/** Épingler (true) ou retirer (false) une campagne des favoris de l'utilisateur. */
+export const FavoriteCampaignSchema = CampaignIdSchema.extend({
+  accountId: z.string().uuid(),
+  favorite: z.boolean(),
+});
+
 /** Expéditeur d'une campagne ; null = celui par défaut de l'organisation. */
 export const CampaignSenderSchema = CampaignIdSchema.extend({
   senderId: z.string().uuid().nullable(),

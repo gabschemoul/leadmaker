@@ -61,7 +61,9 @@
     "featureFind": "Trouvez",
     "featureFindText": "Les prospects qui correspondent, avec site, téléphone et note moyenne.",
     "featureContact": "Contactez",
-    "featureContactText": "Vos messages partent par les formulaires de contact, au rythme choisi."
+    "featureContactText": "Vos messages partent par les formulaires de contact, au rythme choisi.",
+    "favoriteAdd": "Épingler en haut de la liste",
+    "favoriteRemove": "Retirer des favoris"
   },
   "form": {
     "pageTitle": "Nouvelle campagne",
@@ -300,7 +302,8 @@
     "estimateQuota": "Vous avez atteint le nombre d'estimations possibles pour aujourd'hui. Réessayez demain, ou lancez directement la campagne : le tarif est mesuré automatiquement.",
     "archived": "Cette campagne est archivée : désarchivez-la d'abord.",
     "archiveFailed": "La campagne n'a pas pu être archivée. Réessayez dans un instant.",
-    "capReached": "Plafond de la campagne atteint : montez-le dans les paramètres avancés pour reprendre."
+    "capReached": "Plafond de la campagne atteint : montez-le dans les paramètres avancés pour reprendre.",
+    "favoriteFailed": "Impossible d’enregistrer le favori, réessayez"
   },
   "duplicate": {
     "button": "Dupliquer",

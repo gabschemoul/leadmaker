@@ -1023,6 +1023,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"lm_campaign_favorites": {
+                  Row: {
+                    "account_id": string,"campaign_id": string,"created_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"campaign_id": string,"created_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"campaign_id"?: string,"created_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"lm_site_forms": {
                   Row: {
                     "checked_at": string,"form_url": string | null,"site_key": string,"source": string,"status": string,"updated_at": string

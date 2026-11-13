@@ -5,20 +5,23 @@
  * (10/11/2026, « ça ne filtre pas de façon instantanée ») : toutes les campagnes de l'organisation sont déjà
  * chargées (quelques dizaines au plus), on filtre à chaque lettre tapée et à chaque clic, sans rappeler le
  * serveur. L'adresse (?q=, ?statut=) est mise à jour en silence pour garder un lien partageable.
- * Écritures : aucune.
+ * Favoris (13/11/2026) : l'étoile épingle une campagne en haut de la liste, pour l'utilisateur seulement.
+ * Écritures : favoriteCampaignAction (lm_campaign_favorites).
  */
 import { useState } from 'react';
 
 import Link from 'next/link';
 
-import { ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, Search, Star } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useAction } from 'next-safe-action/hooks';
 
 import { Button } from '@kit/ui/button';
 import { chipClasses } from '@kit/ui/button-extras';
 import { Card } from '@kit/ui/card';
 import { Input } from '@kit/ui/input';
 import { Skeleton } from '@kit/ui/skeleton';
+import { toast } from '@kit/ui/sonner';
 import {
   Table,
   TableBody,
@@ -33,6 +36,7 @@ import { cn } from '@kit/ui/utils';
 import type { Database } from '~/lib/database.types';
 
 import { CampaignStatusBadge } from '../../_components/leadmaker/campaign-status-badge';
+import { favoriteCampaignAction } from '../_lib/server/campaign-lifecycle-actions';
 import { STATUS_FILTERS } from '../_lib/status-filters';
 
 type CampaignStatus = Database['public']['Enums']['lm_campaign_status'];
@@ -45,9 +49,11 @@ export interface CampaignRow {
   folderLabel: string;
   countryLabel: string;
   prospectsLabel: string;
+  favorite: boolean;
 }
 
 export function CampaignsTable(props: {
+  accountId: string;
   campaigns: CampaignRow[];
   campaignsPath: string;
   showFolders: boolean;
@@ -56,10 +62,40 @@ export function CampaignsTable(props: {
   searchPlaceholder: string;
   openLabel: string;
 }) {
+  const t = useTranslations();
   const [filters, setFilters] = useState({
     search: props.initialSearch,
     status: props.initialStatus,
   });
+  // étoiles changées tout de suite à l'écran ; remises comme avant si l'enregistrement échoue
+  const [favorites, setFavorites] = useState(
+    () => new Set(props.campaigns.filter((c) => c.favorite).map((c) => c.id)),
+  );
+
+  const setFavorite = (id: string, on: boolean) =>
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  const favorite = useAction(favoriteCampaignAction, {
+    onError: ({ input }) => {
+      setFavorite(input.campaignId, !input.favorite);
+      toast.error(t('campaigns.errors.favoriteFailed'));
+    },
+  });
+
+  const toggleFavorite = (id: string) => {
+    const on = !favorites.has(id);
+    setFavorite(id, on);
+    favorite.execute({
+      campaignId: id,
+      accountId: props.accountId,
+      favorite: on,
+    });
+  };
 
   const update = (next: Partial<typeof filters>) => {
     const merged = { ...filters, ...next };
@@ -79,14 +115,18 @@ export function CampaignsTable(props: {
 
   const search = filters.search.trim().toLocaleLowerCase();
 
-  // sans filtre : tout sauf les archivées
-  const campaigns = props.campaigns.filter(
+  // sans filtre : tout sauf les archivées ; les favorites en premier, puis l'ordre habituel (les plus récentes)
+  const shown = props.campaigns.filter(
     (campaign) =>
       (filters.status
         ? campaign.status === filters.status
         : campaign.status !== 'archived') &&
       (!search || campaign.name.toLocaleLowerCase().includes(search)),
   );
+  const campaigns = [
+    ...shown.filter((c) => favorites.has(c.id)),
+    ...shown.filter((c) => !favorites.has(c.id)),
+  ];
 
   const countByStatus = (status: CampaignStatus) =>
     props.campaigns.filter((campaign) => campaign.status === status).length;
@@ -202,23 +242,34 @@ export function CampaignsTable(props: {
                     className={'group/row [&>td]:h-14'}
                   >
                     <TableCell className={'max-w-[28rem]'}>
-                      <Link
-                        className={'flex min-w-0 flex-col'}
-                        data-test={'campaign-link'}
-                        href={href}
-                      >
-                        <span className={'truncate text-[15px] font-medium'}>
-                          {campaign.name}
-                        </span>
-
-                        <span
-                          className={
-                            'text-muted-foreground truncate text-[14px]'
-                          }
+                      <div className={'flex min-w-0 items-center gap-2'}>
+                        <FavoriteStar
+                          on={favorites.has(campaign.id)}
+                          label={t(
+                            favorites.has(campaign.id)
+                              ? 'campaigns.list.favoriteRemove'
+                              : 'campaigns.list.favoriteAdd',
+                          )}
+                          onClick={() => toggleFavorite(campaign.id)}
+                        />
+                        <Link
+                          className={'flex min-w-0 flex-col'}
+                          data-test={'campaign-link'}
+                          href={href}
                         >
-                          {campaign.createdLabel}
-                        </span>
-                      </Link>
+                          <span className={'truncate text-[15px] font-medium'}>
+                            {campaign.name}
+                          </span>
+
+                          <span
+                            className={
+                              'text-muted-foreground truncate text-[14px]'
+                            }
+                          >
+                            {campaign.createdLabel}
+                          </span>
+                        </Link>
+                      </div>
                     </TableCell>
 
                     <TableCell>
@@ -274,6 +325,32 @@ export function CampaignsTable(props: {
         </div>
       </Card>
     </div>
+  );
+}
+
+/** Étoile d'une campagne : pleine = épinglée en haut de la liste. Discrète tant qu'elle n'est pas cochée. */
+function FavoriteStar(props: {
+  on: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type={'button'}
+      onClick={props.onClick}
+      aria-pressed={props.on}
+      aria-label={props.label}
+      title={props.label}
+      data-test={'campaign-favorite'}
+      className={cn(
+        'hover:bg-foreground/[0.06] flex size-7 shrink-0 items-center justify-center rounded-md transition-colors',
+        props.on
+          ? 'text-[#f5a524]'
+          : 'text-muted-foreground/40 hover:text-foreground group-hover/row:text-muted-foreground',
+      )}
+    >
+      <Star className={'size-4'} fill={props.on ? 'currentColor' : 'none'} />
+    </button>
   );
 }
 

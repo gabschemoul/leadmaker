@@ -28,6 +28,7 @@ import {
   CampaignIdSchema,
   CreateCampaignSchema,
   DuplicateCampaignSchema,
+  FavoriteCampaignSchema,
   type LaunchError,
   LocalDiscoverySchema,
   ACTIVITIES_TARGETS,
@@ -590,4 +591,44 @@ export const setLocalDiscoveryAction = authActionClient
     revalidatePath('/home/[account]/campaigns', 'layout');
 
     return { enabled };
+  });
+
+/**
+ * Épingle une campagne en haut de la liste (ou la retire), pour l'utilisateur seulement (lm_campaign_favorites, RLS :
+ * ses propres favoris, sur une campagne de son équipe). Déjà épinglée / déjà retirée : rien ne change.
+ */
+export const favoriteCampaignAction = authActionClient
+  .inputSchema(FavoriteCampaignSchema)
+  .action(async ({ parsedInput: { campaignId, accountId, favorite }, ctx }) => {
+    const client = getSupabaseServerClient();
+
+    const { error } = favorite
+      ? await client
+          .from('lm_campaign_favorites')
+          .upsert(
+            {
+              campaign_id: campaignId,
+              account_id: accountId,
+              user_id: ctx.user.id,
+            },
+            { onConflict: 'user_id,campaign_id', ignoreDuplicates: true },
+          )
+      : await client
+          .from('lm_campaign_favorites')
+          .delete()
+          .eq('campaign_id', campaignId)
+          .eq('user_id', ctx.user.id);
+
+    if (error) {
+      const logger = await getLogger();
+      logger.error(
+        { error, campaignId, favorite, userId: ctx.user.id },
+        'campaigns.favorite',
+      );
+      throw new Error('campaigns.errors.favoriteFailed');
+    }
+
+    revalidatePath('/home/[account]/campaigns', 'page');
+
+    return { favorite };
   });

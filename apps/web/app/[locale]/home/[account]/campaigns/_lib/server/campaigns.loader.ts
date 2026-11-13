@@ -20,13 +20,14 @@ type Client = SupabaseClient<Database>;
  * Un comptage en échec ne bloque jamais la liste : la colonne reste vide.
  */
 export async function loadCampaigns(client: Client, accountId: string) {
-  const [{ data, error }, counts] = await Promise.all([
+  const [{ data, error }, counts, favorites] = await Promise.all([
     client
       .from('lm_campaigns')
       .select('id, name, status, country_code, created_at, space_id')
       .eq('account_id', accountId)
       .order('created_at', { ascending: false }),
     loadCampaignProspectCounts(client, accountId),
+    loadFavoriteCampaignIds(client, accountId),
   ]);
 
   if (error) {
@@ -41,7 +42,26 @@ export async function loadCampaigns(client: Client, accountId: string) {
     createdAt: campaign.created_at,
     spaceId: campaign.space_id,
     prospects: counts?.get(campaign.id) ?? null,
+    favorite: favorites.has(campaign.id),
   }));
+}
+
+/**
+ * Campagnes épinglées par l'utilisateur (lm_campaign_favorites, 13/11/2026 ; la RLS ne montre que les siennes).
+ * Table absente (migration pas encore poussée) ou erreur : aucune favorite, la liste s'affiche quand même.
+ */
+async function loadFavoriteCampaignIds(client: Client, accountId: string) {
+  const { data, error } = await client
+    .from('lm_campaign_favorites')
+    .select('campaign_id')
+    .eq('account_id', accountId);
+
+  if (error) {
+    console.error('lm_campaign_favorites', error.message);
+    return new Set<string>();
+  }
+
+  return new Set(data.map((row) => row.campaign_id));
 }
 
 async function loadCampaignProspectCounts(client: Client, accountId: string) {

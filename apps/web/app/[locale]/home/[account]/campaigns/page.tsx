@@ -187,6 +187,7 @@ async function CampaignsList({
 
   return (
     <CampaignsTable
+      accountId={account.id}
       campaigns={allCampaigns.map((campaign) => ({
         id: campaign.id,
         name: campaign.name,
@@ -199,6 +200,7 @@ async function CampaignsList({
         countryLabel: countryName(campaign.countryCode),
         prospectsLabel:
           campaign.prospects === null ? '' : format.number(campaign.prospects),
+        favorite: campaign.favorite,
       }))}
       campaignsPath={campaignsPath}
       showFolders={showFolders}

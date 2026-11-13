@@ -39,6 +39,10 @@ import { cn } from '@kit/ui/utils';
 import { extraValues, missingLabels } from '~/lib/leadmaker/attempts';
 import { displayHost } from '~/lib/leadmaker/autopilot-query';
 import {
+  type WorkProgress,
+  fetchWorkProgress,
+} from '~/lib/leadmaker/progress-query';
+import {
   type CampaignTodo,
   TODO_KINDS,
   type TodoItem,
@@ -70,6 +74,7 @@ const KIND_TINTS: Record<TodoKind, string> = {
 interface TodoContextValue {
   counts: CampaignTodo;
   total: number;
+  progress: WorkProgress;
   open: (kind: TodoKind) => void;
   skipAll: (kind: TodoKind) => void;
 }
@@ -102,11 +107,22 @@ export function EnvoiTodoProvider(
 
   const todoKey = ['lm-campaign-todo', props.campaignId];
 
+  // préparation ou envoi lancé hors pilote : relu souvent tant qu'il tourne
+  const { data: progress = { prepare: null, send: null } } = useQuery({
+    queryKey: ['lm-work-progress', props.campaignId],
+    queryFn: () => fetchWorkProgress(client, props.campaignId),
+    refetchInterval: (query) =>
+      props.live || query.state.data?.prepare || query.state.data?.send
+        ? POLL_LIVE_MS
+        : POLL_IDLE_MS,
+  });
+  const working = Boolean(progress.prepare || progress.send);
+
   const { data: counts = { to_check: 0, captcha: 0, unknown_field: 0 } } =
     useQuery({
       queryKey: todoKey,
       queryFn: () => fetchCampaignTodo(client, props.campaignId),
-      refetchInterval: props.live ? POLL_LIVE_MS : POLL_IDLE_MS,
+      refetchInterval: props.live || working ? POLL_LIVE_MS : POLL_IDLE_MS,
     });
 
   const total = counts.to_check + counts.captcha + counts.unknown_field;
@@ -114,6 +130,7 @@ export function EnvoiTodoProvider(
   // la liste de l'écran « un par un » n'est pas relue pendant qu'on la parcourt (position stable)
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['lm-campaign-todo'] });
+    void queryClient.invalidateQueries({ queryKey: ['lm-work-progress'] });
     void queryClient.invalidateQueries({ queryKey: ['lm-autopilot'] });
     void queryClient.invalidateQueries({ queryKey: ['lm-autopilot-live'] });
   };
@@ -141,6 +158,7 @@ export function EnvoiTodoProvider(
       value={{
         counts,
         total,
+        progress,
         open,
         skipAll: setSkipping,
       }}
@@ -209,69 +227,137 @@ export function TodoCard() {
   const format = useFormatter();
   const todo = useEnvoiTodo();
 
-  if (!todo || todo.total === 0) {
+  if (!todo) {
     return null;
+  }
+
+  const progress = <WorkProgressCard progress={todo.progress} />;
+
+  if (todo.total === 0) {
+    return progress;
   }
 
   // liseré dégradé de la carte « Filtres » du site vitrine (.hp-lisere, home.css)
   return (
-    <div className={'hp-lisere mb-2.5 rounded-2xl'}>
-      <section
-        className={'bg-card flex flex-col rounded-2xl px-5 pt-5 pb-2'}
-        data-test={'envoi-todo'}
-      >
-        <h3 className={'mb-2 text-[15px] font-medium'}>{t('todo.title')}</h3>
+    <>
+      {progress}
+      <div className={'hp-lisere mb-2.5 rounded-2xl'}>
+        <section
+          className={'bg-card flex flex-col rounded-2xl px-5 pt-5 pb-2'}
+          data-test={'envoi-todo'}
+        >
+          <h3 className={'mb-2 text-[15px] font-medium'}>{t('todo.title')}</h3>
 
-        <ul className={'flex flex-col'}>
-          {TODO_KINDS.filter((kind) => todo.counts[kind] > 0).map((kind) => (
-            <li
-              key={kind}
-              className={
-                'border-foreground/[0.07] flex flex-wrap items-center gap-x-4 gap-y-2 border-t py-3.5 sm:flex-nowrap'
-              }
-              data-test={`envoi-todo-${kind}`}
-            >
-              <span
-                className={cn(
-                  'flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl px-2 text-[15px] font-semibold tabular-nums',
-                  KIND_TINTS[kind],
-                )}
+          <ul className={'flex flex-col'}>
+            {TODO_KINDS.filter((kind) => todo.counts[kind] > 0).map((kind) => (
+              <li
+                key={kind}
+                className={
+                  'border-foreground/[0.07] flex flex-wrap items-center gap-x-4 gap-y-2 border-t py-3.5 sm:flex-nowrap'
+                }
+                data-test={`envoi-todo-${kind}`}
               >
-                {format.number(todo.counts[kind])}
-              </span>
-
-              <span className={'flex min-w-0 flex-1 flex-col gap-0.5'}>
-                <span className={'text-[15px] font-medium'}>
-                  {t(`todo.${kind}.title`)}
-                </span>
-                <span className={'text-muted-foreground text-[13px]'}>
-                  {t(`todo.${kind}.hint`)}
-                </span>
-              </span>
-
-              <span className={'flex shrink-0 items-center gap-2'}>
-                <Button
-                  variant={'ghost'}
-                  size={'sm'}
-                  className={'text-muted-foreground'}
-                  data-test={`envoi-skip-all-${kind}`}
-                  onClick={() => todo.skipAll(kind)}
+                <span
+                  className={cn(
+                    'flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl px-2 text-[15px] font-semibold tabular-nums',
+                    KIND_TINTS[kind],
+                  )}
                 >
-                  {t('skipAll.button')}
-                </Button>
+                  {format.number(todo.counts[kind])}
+                </span>
 
-                <Button
-                  data-test={`envoi-open-${kind}`}
-                  onClick={() => todo.open(kind)}
-                >
-                  {t(`todo.${kind}.cta`)}
-                </Button>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+                <span className={'flex min-w-0 flex-1 flex-col gap-0.5'}>
+                  <span className={'text-[15px] font-medium'}>
+                    {t(`todo.${kind}.title`)}
+                  </span>
+                  <span className={'text-muted-foreground text-[13px]'}>
+                    {t(`todo.${kind}.hint`)}
+                  </span>
+                </span>
+
+                <span className={'flex shrink-0 items-center gap-2'}>
+                  <Button
+                    variant={'ghost'}
+                    size={'sm'}
+                    className={'text-muted-foreground'}
+                    data-test={`envoi-skip-all-${kind}`}
+                    onClick={() => todo.skipAll(kind)}
+                  >
+                    {t('skipAll.button')}
+                  </Button>
+
+                  <Button
+                    data-test={`envoi-open-${kind}`}
+                    onClick={() => todo.open(kind)}
+                  >
+                    {t(`todo.${kind}.cta`)}
+                  </Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Avancement d'une préparation ou d'un envoi lancé hors pilote automatique (13/11/2026) : « Préparation en
+ * cours 37 / 100 », « Envoi en cours 12 / 38 », barre comme celle du pilote. Rien quand rien ne tourne.
+ */
+function WorkProgressCard(props: { progress: WorkProgress }) {
+  const t = useTranslations('campaigns.envoi');
+  const format = useFormatter();
+  const lines = (['prepare', 'send'] as const).flatMap((kind) => {
+    const value = props.progress[kind];
+
+    return value ? [{ kind, ...value }] : [];
+  });
+
+  if (lines.length === 0) {
+    return null;
+  }
+
+  return (
+    <section
+      className={'bg-card mb-2.5 flex flex-col gap-4 rounded-2xl px-5 py-4'}
+      data-test={'envoi-work-progress'}
+    >
+      {lines.map((line) => (
+        <div
+          key={line.kind}
+          className={'flex flex-col gap-2'}
+          data-test={`envoi-work-progress-${line.kind}`}
+        >
+          <div className={'flex items-center gap-2.5'}>
+            <Spinner className={'size-4'} />
+            <span className={'flex-1 text-[15px] font-medium'}>
+              {t(`progress.${line.kind}`)}
+            </span>
+            <span className={'text-muted-foreground text-sm tabular-nums'}>
+              {format.number(line.done)} / {format.number(line.total)}
+            </span>
+          </div>
+
+          <div
+            className={'bg-foreground/[0.06] h-1 overflow-hidden rounded-full'}
+            role={'progressbar'}
+            aria-valuemin={0}
+            aria-valuemax={line.total}
+            aria-valuenow={line.done}
+            aria-label={t(`progress.${line.kind}`)}
+          >
+            <div
+              className={'bg-foreground h-full transition-all'}
+              style={{
+                width: `${line.total ? Math.round((line.done / line.total) * 1000) / 10 : 0}%`,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
 

@@ -884,6 +884,10 @@
       "generic": "L’action n’a pas abouti. Réessayez.",
       "gone": "Ce formulaire a déjà été traité.",
       "missing": "Remplissez toutes les cases avant d’envoyer."
+    },
+    "progress": {
+      "prepare": "Préparation en cours",
+      "send": "Envoi en cours"
     }
   }
 }

@@ -884,6 +884,10 @@
       "generic": "That didn’t work. Please try again.",
       "gone": "This form has already been handled.",
       "missing": "Fill in every field before sending."
+    },
+    "progress": {
+      "prepare": "Preparing forms",
+      "send": "Sending"
     }
   }
 }

@@ -379,6 +379,10 @@ FIND_FORM_JS = r"""
       && !/^(g-recaptcha|h-captcha|cf-turnstile)-response/i.test(e.name || e.id || ''));
     if (fields.length < 2) return;
     const visible = fields.filter(vis).length;
+    // aucun champ visible : fenêtre fermée (« neo-click-popup »), formulaire de commentaire d'une galerie… Rien n'y serait
+    // rempli (seuls les champs visibles le sont) : on laisse le robot cliquer sur « Contact » pour l'ouvrir (13/11/2026 :
+    // ~130 formulaires « pas de zone de message » sans aucun champ rempli en 3 jours, optima-energies.com…)
+    if (!visible) return;
     const ta = fields.filter(e => e.tagName === 'TEXTAREA').length;
     // zone de message : une zone de texte, ou une case texte nommée « message »… Jamais une case à cocher ni une liste
     // (12/11/2026 zenzonerenovations.com : « J'accepte de recevoir des messages » prise pour la zone de message)
@@ -393,7 +397,8 @@ FIND_FORM_JS = r"""
     // formulaire de commentaires d'un blog WordPress (« Leave a Reply ») : le message deviendrait un commentaire public
     // (13/11/2026 : alaminaci.com/contact/, message publié sous un article ; 4 autres arrêtés par le contrôle IA)
     if (/wp-comments-post/i.test(f.tagName === 'FORM' ? (f.getAttribute('action') || '') : '') || f.id === 'commentform'
-        || f.closest('#respond, .comment-respond') || qsa(f, 'input[name=comment_post_ID], input[name=wp-comment-cookies-consent]').length) return;
+        || f.closest('#respond, .comment-respond') || qsa(f, 'input[name=comment_post_ID], input[name=wp-comment-cookies-consent]').length
+        || (qsa(f, 'textarea[name=comment]').length && qsa(f, 'input[name=author]').length)) return;
     // sans champ de réponse (email/téléphone), seul un formulaire « nom + message » est accepté
     if (!reply && !(ta && named)) return;
     // sans zone de message : demande de rappel (nom + téléphone, l'entreprise rappellerait en croyant à un client,
@@ -1146,8 +1151,6 @@ OVERLAY_JS = r"""
   // formulaire visible au premier plan (le point en son milieu est bien à lui) : un voile qui le chevauche est DERRIÈRE
   // lui (fond sombre d'une fenêtre « Get in touch »). Le fermer n'apporte rien et Échap fermait le formulaire avec
   // (13/11/2026 : brechtechservices.com, formulaire vide puis « pas de zone de message »)
-  const overlap = (a, b) => { const r = a.getBoundingClientRect(), q = b.getBoundingClientRect();
-    return r.left < q.right && q.left < r.right && r.top < q.bottom && q.top < r.bottom; };
   const onTop = kept.filter(k => { const r = k.getBoundingClientRect(); if (r.width < 3 || r.height < 3) return false;
     const x = r.left + r.width / 2, y = r.top + Math.min(r.height / 2, 60);
     if (x < 0 || y < 0 || x >= W || y >= H) return false;
@@ -1160,7 +1163,9 @@ OVERLAY_JS = r"""
     const area = Math.max(0, Math.min(r.right, W) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, H) - Math.max(r.top, 0));
     if (area < W * H * 0.15) return false;
     if (kept.some(k => el.contains(k) || k.contains(el))) return false;
-    if (onTop.some(k => overlap(el, k))) return false;
+    // formulaire déjà visible au premier plan : rien ne le cache, on ne ferme rien (un en-tête fixe pris pour une fenêtre
+    // déclenchait Échap, qui fermait la fenêtre du formulaire : glamournaillashes.favesalon.com, 13/11/2026)
+    if (onTop.length) return false;
     if (el.querySelector('iframe')) return false;
     if (/cookie|consent|didomi|onetrust|axeptio|tarteaucitron|cmp/i.test((el.id || '') + ' ' + (el.className || ''))) return false;
     return true;

@@ -605,6 +605,23 @@ def _fill_phone(loc, phone: str, country_code: str) -> str:
         widget = None
     value = phone if widget in (None, "iti") else international_phone(phone, country_code)
     _fill(loc, value)
+    # le site refuse cette écriture (13/11/2026 gatecitykitchens.com : motif sans parenthèses, « (202) 555-0100 »
+    # refusé) : autres écritures du même numéro, jusqu'à une acceptée
+    try:
+        if not loc.evaluate("e => e.validity ? e.validity.valid : true"):
+            digits = re.sub(r"\D", "", phone)
+            alts = [digits]
+            if len(digits) == 10:
+                alts.append(f"{digits[:3]}-{digits[3:6]}-{digits[6:]}")
+                alts.append(f"{digits[:3]} {digits[3:6]} {digits[6:]}")
+            alts += [international_phone(phone, country_code), international_phone(phone, country_code).replace(" ", "")]
+            for alt in dict.fromkeys(a for a in alts if a and a != value):
+                _fill(loc, alt)
+                if loc.evaluate("e => e.validity ? e.validity.valid : true"):
+                    return alt
+            _fill(loc, value)
+    except Exception:
+        pass
     return value
 
 

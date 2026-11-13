@@ -229,6 +229,27 @@ def _ai_rescue(page, sender: Sender, job: dict):
     return fr, r
 
 
+def _ai_devis(page, quotes: list):
+    """Seulement des formulaires « de devis » : l'IA juge si le premier peut servir de contact.
+    Renvoie (cadre, raison) s'il est utilisable, sinon None."""
+    from . import formfill as ff
+    url = quotes[0][0]
+    ff.IGNORE_QUOTES = True
+    try:
+        page.goto(url, wait_until="domcontentloaded", timeout=25000)
+        page.wait_for_timeout(2500)
+        _dismiss_cookies(page)
+        frame = ff._find_form(page, []) or ff._find_form_late(page, [])
+    finally:
+        ff.IGNORE_QUOTES = False
+    if not frame:
+        return None
+    v = ai_check.devis_ok(frame.url, _context(page, frame), _screenshot(page, frame))
+    if not v or not v.utilisable:
+        return None
+    return frame, v.raison
+
+
 def _screenshot(page, frame) -> str:
     # une fenêtre de promotion apparue entre-temps cacherait le formulaire ; et certaines cases dessinent leur coche avec
     # une petite animation : sans attendre, la capture montre une case vide alors qu'elle est cochée (12/11/2026)
@@ -320,6 +341,14 @@ def prepare(job: dict) -> dict:
         try:
             frame = open_contact_form(page, job["site"], emails=emails, visited=visited, quotes=quotes,
                                       contact_first=True)
+            devis_reason = None
+            if not frame and quotes and ai_check.enabled() and time.monotonic() - started < AI_START_MAX:
+                try:
+                    got = _ai_devis(page, quotes)
+                except Exception:
+                    got = None
+                if got:
+                    frame, devis_reason = got
             if not frame and quotes:  # seulement des formulaires de devis / rendez-vous : jamais remplis
                 out.update(status="no_form", detail=f"{QUOTE_DETAIL} ({_quote_reason(quotes)} ; pages vues : "
                            + ", ".join(dict.fromkeys(visited)) + ")")
@@ -329,6 +358,10 @@ def prepare(job: dict) -> dict:
             else:
                 r = fill_form(frame, sender, job.get("subject", ""), job["body"], job.get("extra") or {},
                               short_message=job.get("short_body", ""), locale=job.get("locale", ""))
+                if devis_reason:
+                    r.warnings.append(f"formulaire de type devis jugé utilisable comme contact par l'IA ({devis_reason[:120]})")
+                    # marque gardée dans lm_attempts.extra : l'envoi rouvrira ce formulaire sans la règle anti-devis
+                    out["ai_fixes"] = {**(out.get("ai_fixes") or {}), "__devis_ok": "oui"}
                 if "message" not in r.filled and r.status != "error" and ai_check.enabled() \
                         and time.monotonic() - started < AI_START_MAX:
                     try:
@@ -337,7 +370,7 @@ def prepare(job: dict) -> dict:
                         fixed = None
                     if fixed:
                         frame, r = fixed
-                        out["ai_fixes"] = {r.filled["message"]: job["body"]}  # gardé dans lm_attempts.extra pour l'envoi
+                        out["ai_fixes"] = {**(out.get("ai_fixes") or {}), r.filled["message"]: job["body"]}  # gardé pour l'envoi
                 protection = r.protection or detect_protection(frame)
                 if "message" not in r.filled and r.status != "error":
                     # sans zone de message, rien ne part jamais, même à la main (12/11/2026, règle de Gabriel)
@@ -399,6 +432,9 @@ def _finish_now(out: dict, site: str, emails: set[str], visited: list[str]) -> N
 def send(job: dict) -> dict:
     """Rouvre le formulaire validé, le remplit à nouveau (avec les valeurs saisies à la main) et l'envoie."""
     sender = Sender(**job["sender"])
+    if (job.get("extra") or {}).get("__devis_ok"):  # formulaire « de devis » jugé utilisable par l'IA à la préparation
+        from . import formfill as _ff
+        _ff.IGNORE_QUOTES = True
     out: dict = {"status": "failed", "submitted": False, "filled": {}, "missing": [], "detail": ""}
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=job.get("headless", True), proxy=proxy_from_env("OUTREACH_PROXY_URL"))

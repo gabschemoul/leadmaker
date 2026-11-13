@@ -773,18 +773,22 @@ def quote_url(url: str) -> str | None:
 
 
 QUOTE_ARGS = {"title": QUOTE_TITLE.pattern, "field": QUOTE_FIELD.pattern}
+# Tri IA des devis (13/11/2026) : un formulaire « de devis » jugé utilisable comme contact par l'IA est rouvert sans la
+# règle anti-devis (préparation : le temps de le rouvrir ; envoi : quand la tentative porte la marque « __devis_ok »)
+NO_QUOTE_ARGS = {"title": "(?!x)x", "field": "(?!x)x"}
+IGNORE_QUOTES = False
 
 
 def _find_form(page: Page, quotes: list | None = None) -> Frame | None:
     """Cadre qui contient un formulaire de contact, ou None. Les formulaires de devis vus en chemin sont notés dans
     `quotes` (adresse de la page, raison)."""
     quotes = quotes if quotes is not None else []
-    page_quote = quote_url(page.url)
+    page_quote = None if IGNORE_QUOTES else quote_url(page.url)
     # cadres sans adresse : jamais chargés (ou détachés), ils ne répondent pas aux appels
     frames = [page.main_frame] + [f for f in page.frames if f != page.main_frame and f.url and not SKIP_FRAME.search(f.url)]
     for frame in frames[:12]:
         try:
-            r = frame.evaluate(FIND_FORM_JS, QUOTE_ARGS)
+            r = frame.evaluate(FIND_FORM_JS, NO_QUOTE_ARGS if IGNORE_QUOTES else QUOTE_ARGS)
         except Exception:
             continue
         if not r:

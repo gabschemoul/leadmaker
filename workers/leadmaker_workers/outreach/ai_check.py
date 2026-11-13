@@ -202,6 +202,46 @@ def rescue(page_url: str, screenshot_b64: str, fields: list[dict]) -> Rescue | N
     return v
 
 
+# Tri IA des devis (13/11/2026) : le robot écarte tout formulaire qui ressemble à un devis ; mesuré sur 30 devis tirés au
+# hasard, environ 1 sur 8 est en réalité un formulaire de contact utilisable (titre « Contactez-nous », message libre,
+# aucun champ obligatoire de projet). L'IA en juge ; le contrôle habituel (review_fix) repasse ensuite dessus.
+DEVIS_SYSTEM = """Un robot envoie des messages de prospection honnêtes (une agence présente ses services) via le formulaire de
+contact du site d'une entreprise. Il a écarté ce formulaire parce qu'il ressemble à un formulaire de DEVIS. Tu reçois la
+capture du formulaire, le titre de la page, les titres au-dessus et le texte du formulaire. Dis s'il peut servir de
+formulaire de contact SANS faire croire à une demande de client : zone de message libre présente ; AUCUN champ
+OBLIGATOIRE qui demande un détail de projet de client (type de travaux, surface, budget, dimensions, adresse de chantier,
+date, service souhaité, photos) ; titre du formulaire qui n'impose pas une demande de devis ou d'estimation (« Contactez-
+nous », « Une question ? » vont ; « Demandez votre devis gratuit », « Get a free estimate » ne vont pas). Au moindre doute,
+utilisable=false."""
+
+
+class DevisVerdict(BaseModel):
+    utilisable: bool
+    champs_projet_obligatoires: list[str]
+    raison: str
+
+
+def devis_ok(form_url: str, context: dict | None, screenshot_b64: str) -> DevisVerdict | None:
+    c = context or {}
+    text = (f"Adresse de la page : {form_url}\nTitre de la page : {c.get('title', '')}\n"
+            f"Titres juste au-dessus du formulaire : {' | '.join(c.get('before') or []) or '(aucun)'}\n"
+            f"Texte du formulaire (libellés, choix des listes) : {(c.get('form') or '(non disponible)')[:2000]}")
+    content: list = [{"type": "text", "text": text}]
+    if screenshot_b64:
+        content.insert(0, {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": screenshot_b64}})
+    try:
+        r = _get_client().messages.parse(model=os.environ.get("AI_DEVIS_MODEL", MODEL), max_tokens=600, system=DEVIS_SYSTEM,
+                                         output_format=DevisVerdict, messages=[{"role": "user", "content": content}],
+                                         timeout=25.0)
+        v = r.parsed_output
+    except Exception as exc:
+        log.warning("tri IA du devis indisponible pour %s : %s", form_url, str(exc)[:200])
+        return None
+    if v is not None:
+        log.info("tri devis %s → %s %s", form_url, v.utilisable, v.raison[:120])
+    return v
+
+
 def enabled() -> bool:
     return bool(os.environ.get("ANTHROPIC_API_KEY")) and os.environ.get("AI_CHECK", "on").lower() != "off"
 

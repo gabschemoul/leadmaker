@@ -387,7 +387,8 @@ FIND_FORM_JS = r"""
     // zone de message : une zone de texte, ou une case texte nommée « message »… Jamais une case à cocher ni une liste
     // (12/11/2026 zenzonerenovations.com : « J'accepte de recevoir des messages » prise pour la zone de message)
     const msg = ta || fields.filter(e => e.tagName === 'INPUT' && ['text', ''].includes(e.type)
-      && /message|comment|demande|question|nachricht|mensaje|messaggio|bericht/i.test(text(e))).length;
+      // libellé voisin non relié au champ compris (15/11/2026 : landscapingsouthaustin.com, « Message » sur une ligne)
+      && /message|comment|demande|question|nachricht|mensaje|messaggio|bericht/i.test(text(e) + ' ' + fieldLabel(e))).length;
     const pwd = fields.filter(e => e.type === 'password').length;
     const search = fields.filter(e => e.type === 'search' || /^(s|q|search|recherche|suche|busca)$/i.test(e.name||'')).length;
     const reply = fields.filter(e => e.tagName === 'INPUT' && (['email', 'tel'].includes(e.type)
@@ -704,6 +705,10 @@ REVEAL_JS = "(args) => {" + QSA_JS + r"""
   const cands = qsa(document, 'button, [role=button], a[href="#"], a[href^="#"], a[href^="javascript"], a:not([href]), [data-toggle], [data-popup], [data-elementor-open-popup], .elementor-button')
     .filter(el => vis(el) && !/^(tel:|mailto:)/i.test(el.getAttribute('href') || ''));
   for (const el of cands) {
+    // bouton d'envoi d'un formulaire (\u00ab SEND MESSAGE \u00bb) : jamais cliqu\u00e9, ce serait envoyer ce formulaire vide au site
+    // (15/11/2026 : heartmoving.us, newcastlemetal.com, formulaire du pied de page valid\u00e9 vide en pr\u00e9paration)
+    if ((el.tagName === 'BUTTON' && el.form && (el.getAttribute('type') || 'submit').toLowerCase() === 'submit')
+        || el.matches('input[type=submit], input[type=image]')) continue;
     const t = (el.innerText || el.getAttribute('aria-label') || el.title || '').trim();
     const n = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     if (t && t.length < 50 && rx.test(n) && !bad.test(n)) { el.scrollIntoView({block: 'center'}); el.click(); return t; }
@@ -1151,9 +1156,13 @@ OVERLAY_JS = r"""
   // formulaire visible au premier plan (le point en son milieu est bien à lui) : un voile qui le chevauche est DERRIÈRE
   // lui (fond sombre d'une fenêtre « Get in touch »). Le fermer n'apporte rien et Échap fermait le formulaire avec
   // (13/11/2026 : brechtechservices.com, formulaire vide puis « pas de zone de message »)
+  // point testé dans la PARTIE VISIBLE du formulaire : un formulaire dont le haut est déjà passé au-dessus de l'écran
+  // (déroulé jusqu'au message) restait « caché », Échap faisait alors disparaître le formulaire (15/11/2026 :
+  // emile-toiture-69.fr, rien rempli puis « pas de zone de message »)
   const onTop = kept.filter(k => { const r = k.getBoundingClientRect(); if (r.width < 3 || r.height < 3) return false;
-    const x = r.left + r.width / 2, y = r.top + Math.min(r.height / 2, 60);
-    if (x < 0 || y < 0 || x >= W || y >= H) return false;
+    const top = Math.max(r.top, 0), bottom = Math.min(r.bottom, H);
+    const x = r.left + r.width / 2, y = top + Math.min((bottom - top) / 2, 60);
+    if (bottom - top < 3 || x < 0 || x >= W) return false;
     const e = document.elementFromPoint(x, y); return !!e && (k.contains(e) || e === k); });
   const covers = [...document.querySelectorAll('body *')].filter(el => {
     const s = getComputedStyle(el);
@@ -1316,6 +1325,13 @@ def fill_form(frame: Frame, sender: Sender, subject: str, message: str, extra: d
     Les formulaires en plusieurs étapes sont parcourus : champs visibles remplis, « Suivant », et ainsi de suite."""
     res = FillResult(status="filled", form_url=frame.url)
     _dismiss_overlays(frame.page, frame)
+    # le site a redessiné son formulaire en fermant une fenêtre (Échap…) : la marque du formulaire choisi est perdue,
+    # rien n'aurait été rempli → on le retrouve (15/11/2026 : emile-toiture-69.fr)
+    try:
+        if not frame.evaluate(DESCRIBE_JS):
+            frame.evaluate(FIND_FORM_JS, QUOTE_ARGS)
+    except Exception:
+        pass
     done: set[str] = set()  # identifiants (name/id/index) des champs déjà traités
     steps = 0
     while True:

@@ -93,11 +93,11 @@ export function ProspectsTable(props: {
   /** appelé après une action groupée réussie (le parent rafraîchit ses données) */
   onMutated?: () => void;
   noResultsMessage?: React.ReactNode;
-  /** campagnes du dossier (préparation des prospects importés sans campagne) */
+  /** campagnes de l'organisation (préparation des prospects importés sans campagne) */
   campaigns?: Array<{ id: string; name: string }>;
   formsHref?: string;
-  /** dossier à suivre en temps réel (e-mails trouvés, prospects ajoutés) */
-  liveSpaceId?: string;
+  /** organisation à suivre en temps réel (e-mails trouvés, prospects ajoutés) */
+  liveAccountId?: string;
   /** appelé à chaque changement en direct (liste chargée dans le navigateur) */
   onLiveChange?: () => void;
   /** false : le tableau est posé à ras bord dans un panneau qui dessine déjà le cadre */
@@ -147,9 +147,9 @@ export function ProspectsTable(props: {
 
   return (
     <div className={'flex flex-col gap-3'}>
-      {props.liveSpaceId ? (
+      {props.liveAccountId ? (
         <ProspectsLiveRefresh
-          spaceId={props.liveSpaceId}
+          accountId={props.liveAccountId}
           paused={selected.length > 0}
           onChange={props.onLiveChange}
         />

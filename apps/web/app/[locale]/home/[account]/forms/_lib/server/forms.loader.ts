@@ -28,20 +28,27 @@ function emptyCounts() {
   return counts;
 }
 
-/** Nombre de formulaires par groupe (onglets) d'un dossier. */
-export async function loadAttemptCounts(client: Client, spaceId: string) {
-  const { data, error } = await client.rpc('lm_attempt_counts', {
-    p_space_id: spaceId,
-  });
-
-  if (error) {
-    throw error;
-  }
+/**
+ * Nombre de formulaires par groupe (onglets) de toute l'organisation : somme des compteurs de chacun de ses
+ * espaces (lm_attempt_counts, un appel par espace, en parallèle ; un seul pour presque toutes les organisations).
+ */
+export async function loadAttemptCounts(client: Client, spaceIds: string[]) {
+  const results = await Promise.all(
+    spaceIds.map((spaceId) =>
+      client.rpc('lm_attempt_counts', { p_space_id: spaceId }),
+    ),
+  );
 
   const counts = emptyCounts();
 
-  for (const row of data ?? []) {
-    counts[groupOfStatus(row.status as AttemptStatus)] += Number(row.total);
+  for (const { data, error } of results) {
+    if (error) {
+      throw error;
+    }
+
+    for (const row of data ?? []) {
+      counts[groupOfStatus(row.status as AttemptStatus)] += Number(row.total);
+    }
   }
 
   return counts;
@@ -79,7 +86,7 @@ export async function loadCampaignAttemptCounts(
 /** Formulaires d'un groupe (premier rendu côté serveur). */
 export function loadAttempts(
   client: Client,
-  params: { spaceId: string; group: AttemptGroup; campaignId?: string },
+  params: { accountId: string; group: AttemptGroup; campaignId?: string },
 ) {
   return fetchAttempts(client, params);
 }

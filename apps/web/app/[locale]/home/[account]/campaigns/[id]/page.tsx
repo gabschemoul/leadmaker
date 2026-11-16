@@ -39,7 +39,6 @@ import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layo
 import {
   loadCountryOptions,
   loadHasPlan,
-  loadSpaces,
 } from '../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../_lib/server/team-account-workspace.loader';
 import { loadCampaignAttemptCounts } from '../../forms/_lib/server/forms.loader';
@@ -155,7 +154,6 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     { account },
     campaign,
     countries,
-    spaces,
     live,
     counts,
     sender,
@@ -165,7 +163,6 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     workspace,
     loadCampaign(client, id),
     loadCountryOptions(client),
-    workspace.then((ws) => loadSpaces(client, ws.account.id)),
     fetchCampaignLive(client, id),
     loadCampaignAttemptCounts(client, id),
     loadCampaignSender(client, id),
@@ -210,19 +207,13 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
     countries.find((country) => country.code === campaign.country_code)
       ?.label ?? campaign.country_code;
 
-  // le dossier client n'est mentionné que si l'organisation en a plusieurs
-  const folderName =
-    spaces.length > 1
-      ? (spaces.find((space) => space.id === campaign.space_id)?.label ?? null)
-      : null;
-
   const campaignsPath = pathsConfig.app.accountCampaigns.replace(
     '[account]',
     slug,
   );
   const basePath = `${campaignsPath}/${id}`;
   const stepHref = (target: CampaignStep) => `${basePath}?etape=${target}`;
-  const formsHref = `${pathsConfig.app.accountForms.replace('[account]', slug)}?space=${campaign.space_id}`;
+  const formsHref = pathsConfig.app.accountForms.replace('[account]', slug);
   const senderHref = `${pathsConfig.app.accountSender.replace('[account]', slug)}?space=${campaign.space_id}${sender ? `&sender=${sender.id}` : ''}`;
 
   return (
@@ -260,16 +251,6 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
               />
             </AlertDescription>
           </Alert>
-        ) : null}
-
-        {folderName ? (
-          <p
-            className={'text-muted-foreground text-sm'}
-            data-test={'campaign-folder'}
-          >
-            <Trans i18nKey={'campaigns.detail.folder'} />{' '}
-            <span>{folderName}</span>
-          </p>
         ) : null}
 
         <CampaignStepNavigation active={step}>
@@ -333,10 +314,7 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
                   campaignsPath={campaignsPath}
                   allProspectsHref={buildProspectsHref(
                     pathsConfig.app.accountProspects.replace('[account]', slug),
-                    {
-                      space: spaces.length > 1 ? campaign.space_id : undefined,
-                      filters: { campaign: id, status: 'all' },
-                    },
+                    { filters: { campaign: id, status: 'all' } },
                   )}
                   canDelete={account.permissions.includes('settings.manage')}
                   billingPath={pathsConfig.app.accountBilling.replace(

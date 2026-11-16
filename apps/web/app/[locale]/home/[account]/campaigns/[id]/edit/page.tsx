@@ -18,7 +18,7 @@ import {
 import { TeamAccountLayoutPageHeader } from '../../../_components/team-account-layout-page-header';
 import {
   loadCountryOptions,
-  loadSpaces,
+  loadDefaultSpaceId,
 } from '../../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../../_lib/server/team-account-workspace.loader';
 import { CampaignForm } from '../../_components/campaign-form';
@@ -84,10 +84,10 @@ async function EditCampaignContent({ params }: { params: Params }) {
   const client = getSupabaseServerClient();
   const locale = await getLocale();
 
-  const [campaign, spaces, spaceOffers, countries, categoryLimit] =
+  const [campaign, defaultSpaceId, spaceOffers, countries, categoryLimit] =
     await Promise.all([
       loadCampaignForEdit(client, id, locale),
-      loadSpaces(client, account.id),
+      loadDefaultSpaceId(client, account.id),
       loadSpaceOffers(client, account.id),
       loadCountryOptions(client),
       getCategoryLimit(user.id),
@@ -108,11 +108,7 @@ async function EditCampaignContent({ params }: { params: Params }) {
       <CampaignForm
         accountId={account.id}
         accountSlug={slug}
-        spaces={spaces.map(({ id, label, is_default }) => ({
-          id,
-          label,
-          is_default,
-        }))}
+        defaultSpaceId={defaultSpaceId}
         spaceOffers={spaceOffers}
         countries={countries}
         categoryLimit={categoryLimit}

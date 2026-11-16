@@ -18,7 +18,7 @@ const FALLBACK_MS = 15_000;
  * Le rafraîchissement manqué est rattrapé dès la reprise.
  */
 export function FormsLiveRefresh(props: {
-  spaceId: string;
+  accountId: string;
   preparing: number;
   paused: boolean;
   onRefresh?: () => void;
@@ -27,9 +27,9 @@ export function FormsLiveRefresh(props: {
   const { onRefresh } = props;
 
   useRealtimeRefresh({
-    channel: `lm-attempts-${props.spaceId}`,
+    channel: `lm-attempts-${props.accountId}`,
     table: 'lm_attempts',
-    filter: `space_id=eq.${props.spaceId}`,
+    filter: `account_id=eq.${props.accountId}`,
     throttleMs: THROTTLE_MS,
     fallbackMs: props.preparing > 0 ? FALLBACK_MS : null,
     paused: props.paused,

@@ -1,6 +1,6 @@
 /**
- * Rôle : page « Prospects » : liste paginée et filtrée des prospects d'un dossier client.
- * Données : loadProspectsPage / loadProspectFacets (prospects.loader), loadSpaces ; filtres lus dans l'URL au
+ * Rôle : page « Prospects » : liste paginée et filtrée des prospects de toute l'organisation (tous espaces réunis).
+ * Données : loadProspectsPage / loadProspectFacets (prospects.loader), loadSpaceIds ; filtres lus dans l'URL au
  * premier affichage, puis appliqués sur place par ProspectsBrowser (instantané, 10/11/2026).
  * Écritures : aucune ici (actions dans ProspectsTable / ProspectsBulkActions).
  */
@@ -23,16 +23,16 @@ import {
 } from '~/lib/leadmaker/prospects-query';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
-import { loadSpaces } from '../_lib/server/leadmaker.loader';
+import { loadSpaceIds } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { ImportProspectsDialog } from './_components/import-prospects-dialog';
 import { ProspectsBrowser } from './_components/prospects-browser';
 import { ProspectsSkeleton } from './_components/prospects-skeleton';
 import {
   PROSPECTS_PAGE_SIZE,
+  loadAccountCampaigns,
   loadProspectFacets,
   loadProspectsPage,
-  loadSpaceCampaigns,
 } from './_lib/server/prospects.loader';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -85,17 +85,12 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
-  const spaces = await loadSpaces(client, account.id);
-
-  // l'espace par défaut vient en premier ; avec un seul dossier client, la
-  // notion reste invisible (pas de filtre, pas de paramètre d'URL)
-  const showFolders = spaces.length > 1;
-  const space = spaces.find((item) => item.id === state.space) ?? spaces[0]!;
-  const spaceParam = showFolders ? space.id : undefined;
+  // l'espace par défaut en premier : les imports y vont
+  const spaceIds = await loadSpaceIds(client, account.id);
 
   // compteurs des filtres (0,5 s sur 229 000 fiches) : lancés tout de suite mais pas attendus, les lignes
   // s'affichent sans eux ; les listes Activité / Ville se remplissent dès qu'ils arrivent
-  const facets = loadProspectFacets(client, space.id).catch(() => ({
+  const facets = loadProspectFacets(client, spaceIds).catch(() => ({
     categories: [],
     cities: [],
     campaigns: [],
@@ -103,13 +98,13 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
   const [{ prospects, total }, campaigns] = await Promise.all([
     loadProspectsPage(client, {
-      spaceId: space.id,
+      spaceIds,
       page: state.page,
       sort: state.sort,
       dir: state.dir,
       filters: state.filters,
     }),
-    loadSpaceCampaigns(client, space.id),
+    loadAccountCampaigns(client, account.id),
   ]);
 
   const pageCount = Math.max(1, Math.ceil(total / PROSPECTS_PAGE_SIZE));
@@ -120,16 +115,12 @@ async function ProspectsContent(props: ProspectsPageProps) {
   );
 
   const pageHref = (page: number) =>
-    buildProspectsHref(basePath, { ...state, space: spaceParam, page });
+    buildProspectsHref(basePath, { ...state, page });
 
   // page au-delà de la dernière (lien périmé) : on revient à la dernière
   if (prospects.length === 0 && state.page > pageCount) {
     redirect(pageHref(pageCount));
   }
-
-  const folderOptions = showFolders
-    ? spaces.map(({ id, label }) => ({ id, label }))
-    : [];
 
   // campagnes archivées cachées (filtre et choix de campagne à la préparation),
   // sauf celle déjà choisie dans le filtre (lien gardé)
@@ -146,13 +137,9 @@ async function ProspectsContent(props: ProspectsPageProps) {
 
   return (
     <ProspectsBrowser
-      // autre dossier : tout repart de zéro
-      key={space.id}
       basePath={basePath}
       initialState={state}
-      spaceParam={spaceParam}
-      spaceId={space.id}
-      folders={folderOptions}
+      spaceIds={spaceIds}
       campaigns={campaignOptions}
       facets={facets}
       initialProspects={prospects}
@@ -161,12 +148,7 @@ async function ProspectsContent(props: ProspectsPageProps) {
       campaignsPath={campaignsPath}
       formsHref={pathsConfig.app.accountForms.replace('[account]', slug)}
       canDelete={account.permissions.includes('settings.manage')}
-      importDialog={
-        <ImportProspectsDialog
-          folders={folderOptions}
-          defaultSpaceId={space.id}
-        />
-      }
+      importDialog={<ImportProspectsDialog defaultSpaceId={spaceIds[0]!} />}
     />
   );
 }

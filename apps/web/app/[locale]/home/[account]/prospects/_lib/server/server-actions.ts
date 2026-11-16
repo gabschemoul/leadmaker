@@ -34,7 +34,7 @@ export const importProspectsAction = authActionClient
 
     if (error) {
       if (error.code === 'P0002') {
-        throw new Error('campaigns.import.folderNotFound');
+        throw new Error('campaigns.import.failed');
       }
 
       await throwRpcError({

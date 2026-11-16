@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 
 import Link from 'next/link';
 
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +16,6 @@ import { WorkspaceDropdown } from '~/components/workspace-dropdown';
 import pathsConfig from '~/config/paths.config';
 import { getTeamAccountSidebarConfig } from '~/config/team-account-navigation.config';
 
-import { hasSeveralSpaces } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import { TeamAccountLayoutSidebarNavigation } from './team-account-layout-sidebar-navigation';
 
@@ -47,11 +45,7 @@ export function TeamAccountLayoutSidebar({ account }: { account: string }) {
       </SidebarHeader>
 
       <SidebarContent className={'px-1 pt-2'}>
-        <Suspense
-          fallback={<TeamAccountLayoutSidebarNavigation config={config} />}
-        >
-          <TeamAccountSidebarNavigation account={account} />
-        </Suspense>
+        <TeamAccountLayoutSidebarNavigation config={config} />
       </SidebarContent>
 
       <SidebarFooter
@@ -68,18 +62,6 @@ export function TeamAccountLayoutSidebar({ account }: { account: string }) {
         </Suspense>
       </SidebarFooter>
     </Sidebar>
-  );
-}
-
-async function TeamAccountSidebarNavigation({ account }: { account: string }) {
-  const data = await loadTeamWorkspace(account);
-  const client = getSupabaseServerClient();
-  const showSpaces = await hasSeveralSpaces(client, data.account.id);
-
-  return (
-    <TeamAccountLayoutSidebarNavigation
-      config={getTeamAccountSidebarConfig(account, { showSpaces })}
-    />
   );
 }
 

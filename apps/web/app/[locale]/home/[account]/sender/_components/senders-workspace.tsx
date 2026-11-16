@@ -41,8 +41,6 @@ export function SendersWorkspace(props: {
   accountSlug: string;
   spaceId: string;
   countries: React.ComponentProps<typeof SenderProfileForm>['countries'];
-  /** sélecteur de dossier (plusieurs dossiers seulement) */
-  folderSwitch: React.ReactNode;
 }) {
   const [selected, setSelected] = useState(props.initialSelected);
 
@@ -104,13 +102,11 @@ export function SendersWorkspace(props: {
               <Trans i18nKey={'outreach.sender.intro'} />
             </CardDescription>
           </div>
-
-          {props.folderSwitch}
         </CardHeader>
 
         <CardContent>
           <SenderProfileForm
-            // autre expéditeur ou autre dossier : le formulaire repart de ses valeurs
+            // autre expéditeur : le formulaire repart de ses valeurs
             key={`${props.spaceId}:${profile?.id ?? 'new'}`}
             accountId={props.accountId}
             accountSlug={props.accountSlug}

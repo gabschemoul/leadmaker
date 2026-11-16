@@ -11,7 +11,7 @@ import { CardLoading } from '~/components/skeletons/card-loading';
 import { TeamAccountLayoutPageHeader } from '../../_components/team-account-layout-page-header';
 import {
   loadCountryOptions,
-  loadSpaces,
+  loadDefaultSpaceId,
 } from '../../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../../_lib/server/team-account-workspace.loader';
 import { CampaignForm } from '../_components/campaign-form';
@@ -79,22 +79,19 @@ async function NewCampaignContent({ params }: { params: Params }) {
   const { account, user } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
 
-  const [spaces, spaceOffers, countries, categoryLimit] = await Promise.all([
-    loadSpaces(client, account.id),
-    loadSpaceOffers(client, account.id),
-    loadCountryOptions(client),
-    getCategoryLimit(user.id),
-  ]);
+  const [defaultSpaceId, spaceOffers, countries, categoryLimit] =
+    await Promise.all([
+      loadDefaultSpaceId(client, account.id),
+      loadSpaceOffers(client, account.id),
+      loadCountryOptions(client),
+      getCategoryLimit(user.id),
+    ]);
 
   return (
     <CampaignForm
       accountId={account.id}
       accountSlug={slug}
-      spaces={spaces.map(({ id, label, is_default }) => ({
-        id,
-        label,
-        is_default,
-      }))}
+      defaultSpaceId={defaultSpaceId}
       spaceOffers={spaceOffers}
       countries={countries}
       categoryLimit={categoryLimit}

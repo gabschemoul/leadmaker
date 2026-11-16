@@ -35,7 +35,6 @@
   "noMatch": "No prospects match your filters.",
   "campaignLink": "See all prospects from this campaign",
   "filters": {
-    "folder": "Client folder",
     "searchPlaceholder": "Name, address, website, phone…",
     "searchButton": "Search",
     "campaign": "Campaign",

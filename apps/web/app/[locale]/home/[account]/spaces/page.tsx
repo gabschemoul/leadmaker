@@ -1,127 +1,32 @@
 import { Suspense } from 'react';
 
-import { getFormatter, getTranslations } from 'next-intl/server';
+import { redirect } from 'next/navigation';
 
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-import { Card, CardContent, CardDescription, CardHeader } from '@kit/ui/card';
-import { PageBody } from '@kit/ui/page';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@kit/ui/table';
-import { Trans } from '@kit/ui/trans';
-
-import { CardSkeleton, Delayed } from '~/components/skeletons/page-skeletons';
-
-import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
-import { loadSpaces } from '../_lib/server/leadmaker.loader';
-import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
-import { CreateSpaceDialog } from './_components/create-space-dialog';
-import { SpaceRowActions } from './_components/space-row-actions';
+import pathsConfig from '~/config/paths.config';
 
 interface SpacesPageProps {
   params: Promise<{ account: string }>;
 }
 
-type Params = SpacesPageProps['params'];
-
-export const generateMetadata = async () => {
-  const t = await getTranslations('campaigns');
-
-  return {
-    title: t('folders.pageTitle'),
-  };
-};
-
+/**
+ * Ancienne page « Dossiers clients » : la notion n'est plus affichée nulle part (décision du 16/11/2026), toutes
+ * les pages montrent l'organisation entière. Gardée pour les anciens liens et favoris : on arrive sur les
+ * campagnes.
+ */
 function SpacesPage({ params }: SpacesPageProps) {
   return (
-    <PageBody>
-      {/* titre fixe : affiché tout de suite, sans attendre le serveur */}
-      <TeamAccountLayoutPageHeader
-        title={<Trans i18nKey={'common.routes.spaces'} />}
-      />
-
-      <div className={'flex w-full flex-col pb-32'}>
-        <Suspense
-          fallback={
-            <Delayed>
-              <CardSkeleton rows={3} />
-            </Delayed>
-          }
-        >
-          <SpacesCard params={params} />
-        </Suspense>
-      </div>
-    </PageBody>
+    <Suspense fallback={null}>
+      <RedirectToCampaigns params={params} />
+    </Suspense>
   );
 }
 
 export default SpacesPage;
 
-async function SpacesCard({ params }: { params: Params }) {
-  const { account: slug } = await params;
-  const { account } = await loadTeamWorkspace(slug);
-  const client = getSupabaseServerClient();
+async function RedirectToCampaigns({ params }: SpacesPageProps) {
+  const { account } = await params;
 
-  const [spaces, format] = await Promise.all([
-    loadSpaces(client, account.id),
-    getFormatter(),
-  ]);
+  redirect(pathsConfig.app.accountCampaigns.replace('[account]', account));
 
-  return (
-    <Card>
-      <CardHeader className={'flex flex-row items-start justify-between gap-4'}>
-        <CardDescription className={'max-w-xl'}>
-          <Trans i18nKey={'campaigns.folders.intro'} />
-        </CardDescription>
-
-        <CreateSpaceDialog accountId={account.id} />
-      </CardHeader>
-
-      <CardContent>
-        <Table data-test={'folders-table'}>
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <Trans i18nKey={'campaigns.folders.nameColumn'} />
-              </TableHead>
-
-              <TableHead>
-                <Trans i18nKey={'campaigns.folders.createdAtColumn'} />
-              </TableHead>
-
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {spaces.map((space) => (
-              <TableRow key={space.id} data-test={'folder-row'}>
-                <TableCell className={'font-medium'}>{space.label}</TableCell>
-
-                <TableCell>
-                  {format.dateTime(new Date(space.created_at), {
-                    dateStyle: 'medium',
-                  })}
-                </TableCell>
-
-                <TableCell>
-                  <SpaceRowActions
-                    accountId={account.id}
-                    spaceId={space.id}
-                    name={space.label}
-                    isDefault={space.is_default}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
+  return null;
 }

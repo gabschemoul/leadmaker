@@ -1,64 +1,46 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getLocale } from 'next-intl/server';
 
 import type { Database } from '@kit/supabase/database';
 
 import { toCountryOptions } from '~/lib/leadmaker/countries';
-import { spaceLabel } from '~/lib/leadmaker/space-label';
 
 type Client = SupabaseClient<Database>;
 
 /**
- * Renvoie une fonction qui donne le libellé affiché d'un dossier client :
- * « Mon entreprise » pour l'espace par défaut, son nom sinon.
+ * Identifiants des espaces de l'organisation, l'espace par défaut en premier. Les dossiers clients ne sont plus
+ * affichés nulle part (décision du 16/11/2026) : les pages montrent toute l'organisation, tous espaces réunis.
+ * Il y en a toujours au moins un.
  */
-export async function getSpaceLabeler() {
-  const t = await getTranslations('campaigns');
-  const defaultLabel = t('folders.defaultName');
-
-  return (space: { name: string; is_default: boolean }) =>
-    spaceLabel(space, defaultLabel);
-}
-
-/**
- * Dossiers clients (espaces) de l'organisation : l'espace par défaut en
- * premier, puis du plus ancien au plus récent. Il y en a toujours au moins un.
- */
-/** L'organisation a-t-elle plusieurs dossiers clients ? (menu « Dossiers clients ») */
-export async function hasSeveralSpaces(client: Client, accountId: string) {
-  const { count, error } = await client
+export async function loadSpaceIds(client: Client, accountId: string) {
+  const { data, error } = await client
     .from('lm_spaces')
-    .select('id', { count: 'exact', head: true })
-    .eq('account_id', accountId);
+    .select('id')
+    .eq('account_id', accountId)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: true });
 
   if (error) {
     throw error;
   }
 
-  return (count ?? 0) > 1;
-}
+  const ids = (data ?? []).map((space) => space.id);
 
-export async function loadSpaces(client: Client, accountId: string) {
-  const [{ data, error }, label] = await Promise.all([
-    client
-      .from('lm_spaces')
-      .select('id, name, is_default, created_at')
-      .eq('account_id', accountId)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: true }),
-    getSpaceLabeler(),
-  ]);
-
-  if (error) {
-    throw error;
+  if (ids.length === 0) {
+    throw new Error('lm_spaces: aucun espace pour cette organisation');
   }
 
-  return (data ?? []).map((space) => ({ ...space, label: label(space) }));
+  return ids;
 }
 
-export type SpaceSummary = Awaited<ReturnType<typeof loadSpaces>>[number];
+/** Espace par défaut de l'organisation : là où se créent campagnes, imports et expéditeurs. */
+export async function loadDefaultSpaceId(client: Client, accountId: string) {
+  const [first] = await loadSpaceIds(client, accountId);
+
+  return first!;
+}
 
 /** Pays couverts, nommés dans la langue de l'interface. */
 export async function loadCountryOptions(client: Client) {

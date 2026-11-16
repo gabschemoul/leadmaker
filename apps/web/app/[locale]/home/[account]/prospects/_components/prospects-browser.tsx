@@ -64,10 +64,8 @@ const NO_FACETS: ProspectFacets = { categories: [], cities: [], campaigns: [] };
 export function ProspectsBrowser(props: {
   basePath: string;
   initialState: ListState;
-  /** identifiant du dossier à garder dans l'URL (absent avec un seul dossier) */
-  spaceParam: string | undefined;
-  spaceId: string;
-  folders: Array<{ id: string; label: string }>;
+  /** espaces de l'organisation, l'espace par défaut en premier : la liste les réunit tous */
+  spaceIds: string[];
   campaigns: Array<{ id: string; name: string }>;
   /** compteurs des filtres, envoyés après les lignes (pas attendus pour afficher la liste) */
   facets: Promise<ProspectFacets>;
@@ -95,23 +93,16 @@ export function ProspectsBrowser(props: {
     filters: { ...state.filters, query: debouncedQuery?.trim() || undefined },
   };
 
-  const queryHref = buildProspectsHref(props.basePath, {
-    ...query,
-    space: props.spaceParam,
-  });
+  const queryHref = buildProspectsHref(props.basePath, query);
+  const initialHref = buildProspectsHref(props.basePath, props.initialState);
 
-  const initialHref = buildProspectsHref(props.basePath, {
-    ...props.initialState,
-    space: props.spaceParam,
-  });
-
-  const queryKey = ['lm-prospects-page', props.spaceId, queryHref];
+  const queryKey = ['lm-prospects-page', props.accountId, queryHref];
 
   const { data, isFetching, isPlaceholderData } = useQuery({
     queryKey,
     queryFn: () =>
       fetchProspectsPage(client, {
-        spaceId: props.spaceId,
+        spaceIds: props.spaceIds,
         page: query.page,
         sort: query.sort,
         dir: query.dir,
@@ -137,7 +128,7 @@ export function ProspectsBrowser(props: {
     window.history.replaceState(
       null,
       '',
-      buildProspectsHref(props.basePath, { ...next, space: props.spaceParam }),
+      buildProspectsHref(props.basePath, next),
     );
   };
 
@@ -167,11 +158,11 @@ export function ProspectsBrowser(props: {
   // après une action groupée ou un changement en direct : la page affichée est redemandée
   const refetch = () =>
     void queryClient.invalidateQueries({
-      queryKey: ['lm-prospects-page', props.spaceId],
+      queryKey: ['lm-prospects-page', props.accountId],
     });
 
   const exportParams = toProspectsSearchParams({ filters: query.filters });
-  exportParams.set('space_id', props.spaceId);
+  exportParams.set('account_id', props.accountId);
 
   const hasFilters = countActiveFilters(query.filters) > 0;
 
@@ -183,12 +174,9 @@ export function ProspectsBrowser(props: {
 
     return (
       <ProspectsFilters
-        basePath={props.basePath}
         filters={state.filters}
         onChange={changeFilters}
         onReset={resetFilters}
-        folders={props.folders}
-        spaceId={props.spaceId}
         campaigns={props.campaigns.map((campaign) => ({
           ...campaign,
           total: totals.get(campaign.id) ?? 0,
@@ -261,7 +249,7 @@ export function ProspectsBrowser(props: {
             onLiveChange={refetch}
             campaigns={props.campaigns}
             formsHref={props.formsHref}
-            liveSpaceId={props.spaceId}
+            liveAccountId={props.accountId}
             noResultsMessage={
               loading ? (
                 <Loader2

@@ -26,7 +26,6 @@ import { type AttemptRow, fetchAttempts } from '~/lib/leadmaker/attempts-query';
 import { FormsTable } from './forms-table';
 
 export function FormsGroupsPanel(props: {
-  spaceId: string;
   accountId: string;
   counts: Record<AttemptGroup, number>;
   initialGroup: AttemptGroup;
@@ -37,8 +36,8 @@ export function FormsGroupsPanel(props: {
   const [group, setGroup] = useState(props.initialGroup);
 
   const keyFor = (target: AttemptGroup) => [
-    'lm-space-attempts',
-    props.spaceId,
+    'lm-account-attempts',
+    props.accountId,
     target,
   ];
 
@@ -48,30 +47,30 @@ export function FormsGroupsPanel(props: {
 
   const { data, isFetching } = useQuery({
     queryKey: keyFor(group),
-    queryFn: () => fetchAttempts(client, { spaceId: props.spaceId, group }),
+    queryFn: () => fetchAttempts(client, { accountId: props.accountId, group }),
     initialData: group === props.initialGroup ? props.initialRows : undefined,
     staleTime: 15_000,
   });
 
   // chargement en avance des autres onglets non vides : le clic n'attend plus le serveur
-  // (effet justifié : lancer des requêtes après le premier affichage, une fois par dossier)
+  // (effet justifié : lancer des requêtes après le premier affichage, une fois par organisation)
   useEffect(() => {
     for (const item of visibleGroups) {
       if (item === props.initialGroup || props.counts[item] === 0) continue;
 
       void queryClient.prefetchQuery({
-        queryKey: ['lm-space-attempts', props.spaceId, item],
+        queryKey: keyFor(item),
         queryFn: () =>
-          fetchAttempts(client, { spaceId: props.spaceId, group: item }),
+          fetchAttempts(client, { accountId: props.accountId, group: item }),
         staleTime: 15_000,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.spaceId]);
+  }, [props.accountId]);
 
   const refetchRows = () =>
     void queryClient.invalidateQueries({
-      queryKey: ['lm-space-attempts', props.spaceId],
+      queryKey: ['lm-account-attempts', props.accountId],
     });
 
   const select = (target: AttemptGroup) => {
@@ -132,11 +131,10 @@ export function FormsGroupsPanel(props: {
 
       {data ? (
         <FormsTable
-          key={`${props.spaceId}:${group}`}
+          key={group}
           rows={data}
           group={group}
           accountId={props.accountId}
-          spaceId={props.spaceId}
           preparing={props.counts.preparing}
           onRefresh={refetchRows}
         />

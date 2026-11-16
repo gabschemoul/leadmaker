@@ -21,42 +21,59 @@ export interface ProspectFacet {
 }
 
 /**
- * Valeurs présentes dans l'espace pour les filtres (activités, villes,
- * campagnes), avec leur nombre de prospects. Les campagnes sont renvoyées par
- * identifiant : leurs noms viennent de `loadSpaceCampaigns`.
+ * Valeurs présentes dans l'organisation pour les filtres (activités, villes,
+ * campagnes), avec leur nombre de prospects : somme des compteurs de chacun de
+ * ses espaces (lm_prospect_facets, un appel par espace, en parallèle). Les
+ * campagnes sont renvoyées par identifiant : leurs noms viennent de
+ * `loadAccountCampaigns`.
  */
-export async function loadProspectFacets(client: Client, spaceId: string) {
-  const { data, error } = await client.rpc('lm_prospect_facets', {
-    p_space_id: spaceId,
-  });
+export async function loadProspectFacets(client: Client, spaceIds: string[]) {
+  const results = await Promise.all(
+    spaceIds.map((spaceId) =>
+      client.rpc('lm_prospect_facets', { p_space_id: spaceId }),
+    ),
+  );
 
-  if (error) {
-    throw error;
-  }
-
-  const facets = {
-    categories: [] as ProspectFacet[],
-    cities: [] as ProspectFacet[],
-    campaigns: [] as ProspectFacet[],
+  const totals = {
+    category: new Map<string, number>(),
+    city: new Map<string, number>(),
+    campaign: new Map<string, number>(),
   };
 
-  for (const row of data ?? []) {
-    const facet = { value: row.value, total: Number(row.total) };
+  for (const { data, error } of results) {
+    if (error) {
+      throw error;
+    }
 
-    if (row.kind === 'category') facets.categories.push(facet);
-    else if (row.kind === 'city') facets.cities.push(facet);
-    else if (row.kind === 'campaign') facets.campaigns.push(facet);
+    for (const row of data ?? []) {
+      const kind = row.kind as keyof typeof totals;
+      const map = totals[kind];
+
+      if (map) {
+        map.set(row.value, (map.get(row.value) ?? 0) + Number(row.total));
+      }
+    }
   }
 
-  return facets;
+  // les plus nombreux d'abord, puis par nom (même ordre que lm_prospect_facets)
+  const toFacets = (map: Map<string, number>): ProspectFacet[] =>
+    [...map.entries()]
+      .map(([value, total]) => ({ value, total }))
+      .sort((a, b) => b.total - a.total || a.value.localeCompare(b.value));
+
+  return {
+    categories: toFacets(totals.category),
+    cities: toFacets(totals.city),
+    campaigns: toFacets(totals.campaign),
+  };
 }
 
-/** Noms des campagnes d'un espace, pour le filtre et la colonne « Campagne ». */
-export async function loadSpaceCampaigns(client: Client, spaceId: string) {
+/** Noms des campagnes de l'organisation, pour le filtre et la colonne « Campagne ». */
+export async function loadAccountCampaigns(client: Client, accountId: string) {
   const { data, error } = await client
     .from('lm_campaigns')
     .select('id, name, status')
-    .eq('space_id', spaceId)
+    .eq('account_id', accountId)
     .order('created_at', { ascending: false });
 
   if (error) {

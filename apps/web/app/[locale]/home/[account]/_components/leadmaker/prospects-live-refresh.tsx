@@ -7,7 +7,7 @@ import { useRealtimeRefresh } from './use-realtime-refresh';
 const THROTTLE_MS = 4_000;
 
 /**
- * Rafraîchit la liste quand un prospect du dossier change (e-mail trouvé par
+ * Rafraîchit la liste quand un prospect de l'organisation change (e-mail trouvé par
  * le robot, prospect ajouté par une campagne), en temps réel sur lm_prospects.
  *
  * `paused` : tant que des lignes sont cochées, aucun rafraîchissement (il
@@ -15,7 +15,7 @@ const THROTTLE_MS = 4_000;
  * est rattrapé dès la reprise.
  */
 export function ProspectsLiveRefresh(props: {
-  spaceId: string;
+  accountId: string;
   paused: boolean;
   /** liste chargée dans le navigateur : la redemander aussi */
   onChange?: () => void;
@@ -23,9 +23,9 @@ export function ProspectsLiveRefresh(props: {
   const router = useRouter();
 
   useRealtimeRefresh({
-    channel: `lm-prospects-${props.spaceId}`,
+    channel: `lm-prospects-${props.accountId}`,
     table: 'lm_prospects',
-    filter: `space_id=eq.${props.spaceId}`,
+    filter: `account_id=eq.${props.accountId}`,
     throttleMs: THROTTLE_MS,
     paused: props.paused,
     onChange: () => {

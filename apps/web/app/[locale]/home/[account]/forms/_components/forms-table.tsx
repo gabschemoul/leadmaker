@@ -93,7 +93,6 @@ export function FormsTable(props: {
   rows: AttemptRow[];
   group: AttemptGroup;
   accountId: string;
-  spaceId: string;
   preparing: number;
   /** données tenues par le parent (ex. onglet d'une campagne) à recharger aussi */
   onRefresh?: () => void;
@@ -200,7 +199,7 @@ export function FormsTable(props: {
   return (
     <div className={'flex flex-col gap-3'}>
       <FormsLiveRefresh
-        spaceId={props.spaceId}
+        accountId={props.accountId}
         preparing={props.preparing}
         paused={isPending || pending !== null || openId !== null}
         onRefresh={props.onRefresh}

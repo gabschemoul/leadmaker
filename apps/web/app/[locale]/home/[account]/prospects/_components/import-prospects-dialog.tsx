@@ -36,7 +36,6 @@ import {
 import { useAsyncDialog } from '@kit/ui/hooks/use-async-dialog';
 import { If } from '@kit/ui/if';
 import { Input } from '@kit/ui/input';
-import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
 import { Progress } from '@kit/ui/progress';
 import { Trans } from '@kit/ui/trans';
 
@@ -52,8 +51,7 @@ interface ImportResult {
 }
 
 export function ImportProspectsDialog(props: {
-  /** vide quand l'organisation n'a qu'un dossier client : pas de sélecteur */
-  folders: Array<{ id: string; label: string }>;
+  /** espace par défaut de l'organisation : les fiches importées y vont */
   defaultSpaceId: string;
 }) {
   const { dialogProps, isPending, setIsPending, setOpen } = useAsyncDialog();
@@ -87,7 +85,6 @@ export function ImportProspectsDialog(props: {
 
           <If condition={dialogProps.open}>
             <ImportProspectsForm
-              folders={props.folders}
               defaultSpaceId={props.defaultSpaceId}
               setIsPending={setIsPending}
               onClose={() => setOpen(false)}
@@ -111,8 +108,7 @@ async function readFileText(file: File) {
 }
 
 function ImportProspectsForm(props: {
-  /** vide quand l'organisation n'a qu'un dossier client : pas de sélecteur */
-  folders: Array<{ id: string; label: string }>;
+  /** espace par défaut de l'organisation : les fiches importées y vont */
   defaultSpaceId: string;
   setIsPending: (pending: boolean) => void;
   onClose: () => void;
@@ -254,36 +250,6 @@ function ImportProspectsForm(props: {
               </AlertDescription>
             </Alert>
           )}
-        </If>
-
-        <If condition={props.folders.length > 1}>
-          <FormField
-            name={'spaceId'}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  <Trans i18nKey={'campaigns.import.folderLabel'} />
-                </FormLabel>
-
-                <FormControl>
-                  <NativeSelect
-                    className={'w-full'}
-                    data-test={'import-folder-select'}
-                    value={field.value}
-                    onChange={(event) => field.onChange(event.target.value)}
-                  >
-                    {props.folders.map((folder) => (
-                      <NativeSelectOption key={folder.id} value={folder.id}>
-                        {folder.label}
-                      </NativeSelectOption>
-                    ))}
-                  </NativeSelect>
-                </FormControl>
-
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </If>
 
         <FormField

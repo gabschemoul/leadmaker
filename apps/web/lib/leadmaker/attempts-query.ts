@@ -13,19 +13,19 @@ const COLUMNS =
   'id, status, template_name, template_used, subject, body, form_url, filled, missing, extra, protection_type, screenshot_before, screenshot_after, detail, sent_at, updated_at, created_at, prospect:lm_prospects!inner(id, name, website, city, category, found_email)';
 
 /**
- * Formulaires d'un groupe de statuts (d'un dossier, ou d'une campagne), les
+ * Formulaires d'un groupe de statuts (de toute l'organisation, ou d'une campagne), les
  * plus récents d'abord, avec un lien signé (1 h) vers la capture d'écran.
  * Utilisable côté serveur (premier rendu) comme côté navigateur (changement
  * d'onglet sans recharger la page) : la RLS filtre dans les deux cas.
  */
 export async function fetchAttempts(
   client: Client,
-  params: { spaceId: string; group: AttemptGroup; campaignId?: string },
+  params: { accountId: string; group: AttemptGroup; campaignId?: string },
 ) {
   let query = client
     .from('lm_attempts')
     .select(COLUMNS)
-    .eq('space_id', params.spaceId)
+    .eq('account_id', params.accountId)
     .in('status', [...ATTEMPT_GROUPS[params.group]]);
 
   if (params.campaignId) {

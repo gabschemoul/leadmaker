@@ -18,10 +18,10 @@ import { useSupabase } from '@kit/supabase/hooks/use-supabase';
  * useEffect justifié : abonnement temps réel ouvert au montage, fermé au démontage.
  */
 export function useRealtimeRefresh(params: {
-  /** nom unique du canal Realtime, ex. `lm-attempts-<spaceId>` */
+  /** nom unique du canal Realtime, ex. `lm-attempts-<accountId>` */
   channel: string;
   table: string;
-  /** filtre PostgREST, ex. `space_id=eq.<id>` */
+  /** filtre PostgREST, ex. `account_id=eq.<id>` */
   filter: string;
   throttleMs: number;
   paused: boolean;

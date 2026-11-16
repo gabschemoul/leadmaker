@@ -1,10 +1,4 @@
-import {
-  CreditCard,
-  FolderKanban,
-  Settings,
-  UserSearch,
-  Users,
-} from 'lucide-react';
+import { CreditCard, Settings, UserSearch, Users } from 'lucide-react';
 
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
@@ -22,12 +16,8 @@ const iconClasses = 'size-5! group-data-[collapsible=icon]:-m-0.5';
 const iconProps = { className: iconClasses, strokeWidth: 1.8 } as const;
 const customIconProps = { className: iconClasses, strokeWidth: 1.35 } as const;
 
-/**
- * `showSpaces` : l'entrée « Dossiers clients » n'apparaît que quand
- * l'organisation en a plusieurs (une PME qui prospecte pour elle-même n'en
- * a pas besoin). Par défaut cachée, le temps de charger le nombre de dossiers.
- */
-const getRoutes = (account: string, showSpaces: boolean) => [
+// Plus d'entrée « Dossiers clients » (décision du 16/11/2026) : la notion n'est plus affichée nulle part.
+const getRoutes = (account: string) => [
   {
     label: 'common.routes.application',
     children: [
@@ -62,13 +52,6 @@ const getRoutes = (account: string, showSpaces: boolean) => [
         path: createPath(pathsConfig.app.accountMembers, account),
         Icon: <Users {...iconProps} />,
       },
-      showSpaces
-        ? {
-            label: 'common.routes.spaces',
-            path: createPath(pathsConfig.app.accountSpaces, account),
-            Icon: <FolderKanban {...iconProps} />,
-          }
-        : undefined,
       featureFlagsConfig.enableTeamAccountBilling
         ? {
             label: 'common.routes.billing',
@@ -85,12 +68,9 @@ const getRoutes = (account: string, showSpaces: boolean) => [
   },
 ];
 
-export function getTeamAccountSidebarConfig(
-  account: string,
-  options: { showSpaces?: boolean } = {},
-) {
+export function getTeamAccountSidebarConfig(account: string) {
   return NavigationConfigSchema.parse({
-    routes: getRoutes(account, options.showSpaces ?? false),
+    routes: getRoutes(account),
     style: process.env.NEXT_PUBLIC_TEAM_NAVIGATION_STYLE,
     sidebarCollapsed: process.env.NEXT_PUBLIC_TEAM_SIDEBAR_COLLAPSED,
     sidebarCollapsedStyle: process.env.NEXT_PUBLIC_SIDEBAR_COLLAPSIBLE_STYLE,

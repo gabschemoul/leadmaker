@@ -66,14 +66,12 @@ const ProspectsFiltersSchema = z.object({
 export type ProspectsFilters = z.output<typeof ProspectsFiltersSchema>;
 
 const ProspectsListParamsSchema = z.object({
-  space: z.string().uuid().optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(100_000).catch(1),
   sort: z.enum(PROSPECT_SORT_KEYS).catch('date'),
   dir: z.enum(['asc', 'desc']).optional().catch(undefined),
 });
 
 export interface ProspectsListState {
-  space: string | undefined;
   page: number;
   sort: ProspectSortKey;
   dir: ProspectSortDir;
@@ -107,7 +105,6 @@ export function parseProspectsSearchParams(
   raw: RawSearchParams,
 ): ProspectsListState {
   const params = ProspectsListParamsSchema.parse({
-    space: first(raw.space),
     page: first(raw.page),
     sort: first(raw.sort),
     dir: first(raw.dir),
@@ -127,7 +124,6 @@ export function parseProspectsSearchParams(
   });
 
   return {
-    space: params.space,
     page: params.page,
     sort: params.sort,
     dir: params.dir ?? defaultSortDir(params.sort),
@@ -147,7 +143,6 @@ export function toProspectsSearchParams(state: ProspectsHrefState) {
   const params = new URLSearchParams();
   const filters: Partial<ProspectsFilters> = state.filters ?? {};
 
-  if (state.space) params.set('space', state.space);
   if (filters.query) params.set('q', filters.query);
   if (filters.campaign) params.set('campaign', filters.campaign);
 

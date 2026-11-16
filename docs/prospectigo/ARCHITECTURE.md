@@ -75,7 +75,7 @@ Navigateur ──► Next.js (Vercel : prospectigo.com = main, staging.prospecti
 | `apps/web/app/[locale]/home/[account]/campaigns` | Campagnes : écran « Qui ? » (`new`, `[id]/edit` : cible en une phrase, activités, offre, zone, « Plus de critères », lancement direct sans estimation), page à étapes `[id]` (Qui ? / Vos entreprises / Votre message / Envoi ; « Vos entreprises » = onglets Gardées / À vérifier pour une campagne triée, ancien écran de recherche sinon), messages, pilote automatique |
 | `apps/web/app/[locale]/home/[account]/prospects` | Liste des prospects, filtres, import CSV, export, actions groupées |
 | `apps/web/app/[locale]/home/[account]/forms` | Formulaires préparés (mode avancé) |
-| `apps/web/app/[locale]/home/[account]/sender`, `spaces` | Expéditeurs ; dossiers clients (espaces) |
+| `apps/web/app/[locale]/home/[account]/sender` | Expéditeurs (`spaces` ne fait plus que renvoyer vers les campagnes : les dossiers clients ne sont plus affichés nulle part depuis le 16/11/2026 ; Formulaires, Prospects et l'export montrent toute l'organisation, tous espaces réunis ; créations dans l'espace par défaut) |
 | `apps/web/app/[locale]/home/[account]/_lib/server`, `_components/leadmaker` | Chargeurs et composants partagés Prospectigo |
 | `apps/web/lib/leadmaker` | Code partagé client/serveur : CSV, clé de site (`site-key.ts`, identique à `workers/.../text.py`), modèles de messages |
 | `apps/web/lib/server/leadmaker` | Serveur seulement : crédits Stripe (`plan-credits.service.ts`), erreurs RPC (`rpc-errors.ts`) |
@@ -192,7 +192,7 @@ Toujours `pnpm exec supabase` depuis `apps/web` (la CLI globale est trop vieille
 | Interface | Code |
 |---|---|
 | Organisation / équipe | `accounts` (compte d'équipe) |
-| Dossier client | `lm_spaces` (espace) |
+| (plus affiché depuis le 16/11/2026, ex-« Dossier client ») | `lm_spaces` (espace ; tout se crée dans l'espace par défaut) |
 | Expéditeur | `lm_sender_profiles` |
 | Campagne | `lm_campaigns` |
 | Qui ? / Vos entreprises / Votre message / Envoi (ex-Cibler / Trouver / Rédiger / Contacter) | étapes `cibler` / `trouver` / `rediger` / `contacter` (`?etape=`) |

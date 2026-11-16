@@ -90,9 +90,9 @@ export const saveSenderProfileAction = authActionClient
     revalidatePath('/home/[account]/campaigns', 'layout');
 
     if (!parsedInput.senderId) {
-      // nouvel expéditeur : la page s'ouvre sur lui
+      // nouvel expéditeur : la page s'ouvre sur lui (dans son espace)
       redirect(
-        `${pathsConfig.app.accountSender.replace('[account]', parsedInput.accountSlug)}?sender=${result.data.id}`,
+        `${pathsConfig.app.accountSender.replace('[account]', parsedInput.accountSlug)}?sender=${result.data.id}&space=${parsedInput.spaceId}`,
       );
     }
 

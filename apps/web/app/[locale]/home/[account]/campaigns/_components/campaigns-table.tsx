@@ -46,7 +46,6 @@ export interface CampaignRow {
   name: string;
   status: CampaignStatus;
   createdLabel: string;
-  folderLabel: string;
   countryLabel: string;
   prospectsLabel: string;
   favorite: boolean;
@@ -56,7 +55,6 @@ export function CampaignsTable(props: {
   accountId: string;
   campaigns: CampaignRow[];
   campaignsPath: string;
-  showFolders: boolean;
   initialSearch: string;
   initialStatus: CampaignStatus | null;
   searchPlaceholder: string;
@@ -214,12 +212,6 @@ export function CampaignsTable(props: {
                   <Trans i18nKey={'campaigns.list.statusColumn'} />
                 </TableHead>
 
-                {props.showFolders ? (
-                  <TableHead>
-                    <Trans i18nKey={'campaigns.list.folderColumn'} />
-                  </TableHead>
-                ) : null}
-
                 <TableHead>
                   <Trans i18nKey={'campaigns.list.countryColumn'} />
                 </TableHead>
@@ -275,12 +267,6 @@ export function CampaignsTable(props: {
                     <TableCell>
                       <CampaignStatusBadge status={campaign.status} />
                     </TableCell>
-
-                    {props.showFolders ? (
-                      <TableCell className={'text-muted-foreground'}>
-                        {campaign.folderLabel}
-                      </TableCell>
-                    ) : null}
 
                     <TableCell className={'text-muted-foreground'}>
                       {campaign.countryLabel}

@@ -21,8 +21,7 @@ import { CardLoading } from '~/components/skeletons/card-loading';
 import featuresFlagConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
 
-import { loadSpaces } from '../_lib/server/leadmaker.loader';
-import { FolderSwitch } from '../sender/_components/folder-switch';
+import { loadDefaultSpaceId } from '../_lib/server/leadmaker.loader';
 import { SpaceOfferForm } from './_components/space-offer-form';
 
 export const generateMetadata = async () => {
@@ -119,34 +118,22 @@ async function TeamAccountSettings({
 }
 
 /**
- * « Votre offre » (CDC-PARCOURS-TRI-ANNUAIRE §3.1) : texte du dossier utilisé par le tri IA et « Proposer avec
- * l'IA ». Choix du dossier (?space=) seulement quand l'organisation en a plusieurs, comme la page Expéditeurs.
+ * « Votre offre » (CDC-PARCOURS-TRI-ANNUAIRE §3.1) : texte de l'espace par défaut utilisé par le tri IA et
+ * « Proposer avec l'IA » (les dossiers clients ne sont plus affichés, 16/11/2026).
  */
 async function SpaceOfferCard(props: TeamAccountSettingsPageProps) {
   await connection();
 
-  const [{ account: slug }, searchParams] = await Promise.all([
-    props.params,
-    props.searchParams,
-  ]);
+  const { account: slug } = await props.params;
 
   const client = getSupabaseServerClient();
   const team = await createTeamAccountsApi(client).getTeamAccount(slug);
-  const spaces = await loadSpaces(client, team.id);
-
-  const requested =
-    typeof searchParams.space === 'string' ? searchParams.space : null;
-
-  const space = spaces.find((item) => item.id === requested) ?? spaces[0];
-
-  if (!space) {
-    return null;
-  }
+  const spaceId = await loadDefaultSpaceId(client, team.id);
 
   const { data, error } = await client
     .from('lm_spaces')
     .select('offer')
-    .eq('id', space.id)
+    .eq('id', spaceId)
     .maybeSingle();
 
   if (error) {
@@ -163,29 +150,12 @@ async function SpaceOfferCard(props: TeamAccountSettingsPageProps) {
         <CardDescription>
           <Trans i18nKey={'teams.settings.offer.description'} />
         </CardDescription>
-
-        {spaces.length > 1 ? (
-          <div className={'flex flex-col gap-1.5 pt-2'}>
-            <span className={'text-muted-foreground text-xs'}>
-              <Trans i18nKey={'outreach.sender.folderLabel'} />
-            </span>
-
-            <FolderSwitch
-              basePath={pathsConfig.app.accountSettings.replace(
-                '[account]',
-                slug,
-              )}
-              folders={spaces.map(({ id, label }) => ({ id, label }))}
-              value={space.id}
-            />
-          </div>
-        ) : null}
       </CardHeader>
 
       <CardContent>
         <SpaceOfferForm
-          key={space.id}
-          spaceId={space.id}
+          key={spaceId}
+          spaceId={spaceId}
           offer={data?.offer ?? ''}
         />
       </CardContent>

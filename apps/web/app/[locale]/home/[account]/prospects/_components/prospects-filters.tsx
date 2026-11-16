@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * Rôle : barre de filtres de la page Prospects (dossier, campagne, recherche, activité, ville, note, avis, site web, statut, source).
+ * Rôle : barre de filtres de la page Prospects (campagne, recherche, activité, ville, note, avis, site web, statut, source).
  * Données : filtres et facettes passés par la page ; l'état vit dans ProspectsBrowser (filtrage sur place,
- * instantané depuis le 10/11/2026 ; l'adresse suit en silence). Seul le changement de dossier recharge la page.
+ * instantané depuis le 10/11/2026 ; l'adresse suit en silence).
  * Écritures : aucune.
  */
 
@@ -17,10 +17,8 @@ import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@kit/ui/popover';
 import { Trans } from '@kit/ui/trans';
 
-import { useProgressRouter } from '~/components/navigation-progress';
 import {
   type ProspectsFilters as Filters,
-  buildProspectsHref,
   countActiveFilters,
 } from '~/lib/leadmaker/prospects-query';
 
@@ -39,26 +37,17 @@ interface Facet {
  * recherche filtre pendant la frappe.
  */
 export function ProspectsFilters(props: {
-  basePath: string;
   filters: Filters;
   onChange: (patch: Partial<Filters>) => void;
   onReset: () => void;
-  /** vide quand l'organisation n'a qu'un dossier client : pas de sélecteur */
-  folders: Array<{ id: string; label: string }>;
-  spaceId: string;
   campaigns: Array<{ id: string; name: string; total: number }>;
   categories: Facet[];
   cities: Facet[];
 }) {
   const t = useTranslations('prospects');
-  const router = useProgressRouter();
   const { filters } = props;
   const navigate = props.onChange;
   const reset = props.onReset;
-
-  // autre dossier : autres activités, villes et campagnes, la page est rechargée
-  const changeFolder = (spaceId: string) =>
-    router.push(buildProspectsHref(props.basePath, { space: spaceId }));
 
   const number = (value: string) => (value === '' ? undefined : Number(value));
 
@@ -80,22 +69,6 @@ export function ProspectsFilters(props: {
   return (
     <div className={'flex flex-col gap-3'} data-test={'prospects-filters'}>
       <div className={'flex flex-wrap items-center gap-2'}>
-        {props.folders.length > 1 ? (
-          <NativeSelect
-            size={'sm'}
-            aria-label={t('filters.folder')}
-            data-test={'prospects-folder-select'}
-            value={props.spaceId}
-            onChange={(event) => changeFolder(event.target.value)}
-          >
-            {props.folders.map((folder) => (
-              <NativeSelectOption key={folder.id} value={folder.id}>
-                {folder.label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        ) : null}
-
         <form
           className={'flex items-center gap-1'}
           role={'search'}

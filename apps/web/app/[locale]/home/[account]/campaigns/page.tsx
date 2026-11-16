@@ -1,5 +1,5 @@
 /**
- * Rôle : page liste des campagnes de l'organisation (par dossier client), dans la charte du site
+ * Rôle : page liste des campagnes de l'organisation, dans la charte du site
  * (relooking du 8/11/2026) : pastilles de statut, recherche en pilule, tableau dans un panneau blanc
  * avec en-têtes en petites capitales, lignes de 56 px avec titre et sous-titre, flèche discrète à droite.
  * Données : loadCampaigns (campaigns.loader) et leadmaker.loader. Filtres : ?q= (texte) et ?statut=, appliqués
@@ -27,10 +27,7 @@ import type { Database } from '~/lib/database.types';
 
 import { EmptyPanel } from '../_components/leadmaker/empty-panel';
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
-import {
-  loadCountryOptions,
-  loadSpaces,
-} from '../_lib/server/leadmaker.loader';
+import { loadCountryOptions } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
 import {
   CampaignsTable,
@@ -115,8 +112,7 @@ async function CampaignsList({
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
 
-  const [spaces, allCampaigns, countries, format, t] = await Promise.all([
-    loadSpaces(client, account.id),
+  const [allCampaigns, countries, format, t] = await Promise.all([
     loadCampaigns(client, account.id),
     loadCountryOptions(client),
     getFormatter(),
@@ -136,12 +132,6 @@ async function CampaignsList({
   const activeStatus = STATUS_FILTERS.includes(statusFilter as CampaignStatus)
     ? statusFilter
     : undefined;
-
-  // un seul dossier (celui par défaut) : la notion n'est pas affichée
-  const showFolders = spaces.length > 1;
-
-  const folderLabel = (spaceId: string) =>
-    spaces.find((space) => space.id === spaceId)?.label ?? '';
 
   const countryName = (code: string) =>
     countries.find((country) => country.code === code)?.label ?? code;
@@ -196,14 +186,12 @@ async function CampaignsList({
           new Date(campaign.createdAt),
           { dateStyle: 'medium' },
         )}`,
-        folderLabel: folderLabel(campaign.spaceId),
         countryLabel: countryName(campaign.countryCode),
         prospectsLabel:
           campaign.prospects === null ? '' : format.number(campaign.prospects),
         favorite: campaign.favorite,
       }))}
       campaignsPath={campaignsPath}
-      showFolders={showFolders}
       initialSearch={query.q ?? ''}
       initialStatus={activeStatus ?? null}
       searchPlaceholder={t('list.searchPlaceholder')}

@@ -1,6 +1,6 @@
 /**
  * Rôle : page « Formulaires » (mode avancé) : formulaires préparés par statut, à vérifier et valider.
- * Données : loadAttempts / loadAttemptCounts (forms.loader), loadSpaces.
+ * Données : loadAttempts / loadAttemptCounts (forms.loader), de toute l'organisation (tous espaces réunis).
  * Écritures : aucune ici (actions dans FormsTable et AttemptDetailDialog).
  */
 
@@ -16,7 +16,6 @@ import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
 import { Delayed } from '~/components/skeletons/page-skeletons';
-import pathsConfig from '~/config/paths.config';
 import {
   ATTEMPT_GROUP_ORDER,
   type AttemptGroup,
@@ -24,9 +23,8 @@ import {
 } from '~/lib/leadmaker/attempts';
 
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
-import { loadSpaces } from '../_lib/server/leadmaker.loader';
+import { loadSpaceIds } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
-import { FolderSwitch } from '../sender/_components/folder-switch';
 import { FormsGroupsPanel } from './_components/forms-groups-panel';
 import { FormsSkeleton } from './_components/forms-skeleton';
 import { loadAttemptCounts, loadAttempts } from './_lib/server/forms.loader';
@@ -79,15 +77,10 @@ async function FormsContent(props: FormsPageProps) {
 
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
-  const spaces = await loadSpaces(client, account.id);
-
-  const requestedSpace =
-    typeof rawSearchParams.space === 'string' ? rawSearchParams.space : null;
-  const space = spaces.find((item) => item.id === requestedSpace) ?? spaces[0]!;
-  const showFolders = spaces.length > 1;
+  const spaceIds = await loadSpaceIds(client, account.id);
 
   // crédit unique (9/11) : les envois sont gratuits, plus de solde de prise de contact à afficher
-  const counts = await loadAttemptCounts(client, space.id);
+  const counts = await loadAttemptCounts(client, spaceIds);
 
   // Sans onglet choisi : « Prêts », ou le premier onglet non vide (robot au
   // travail, formulaires à compléter…) pour ne jamais tomber sur une liste vide
@@ -95,9 +88,7 @@ async function FormsContent(props: FormsPageProps) {
     ? rawSearchParams.status
     : (ATTEMPT_GROUP_ORDER.find((item) => counts[item] > 0) ?? 'ready');
 
-  const rows = await loadAttempts(client, { spaceId: space.id, group });
-
-  const basePath = pathsConfig.app.accountForms.replace('[account]', slug);
+  const rows = await loadAttempts(client, { accountId: account.id, group });
 
   return (
     <Card>
@@ -118,26 +109,10 @@ async function FormsContent(props: FormsPageProps) {
             </AlertDescription>
           </Alert>
         ) : null}
-
-        {showFolders ? (
-          <div className={'flex flex-col gap-1.5'}>
-            <span className={'text-sm font-medium'}>
-              <Trans i18nKey={'outreach.forms.folderLabel'} />
-            </span>
-
-            <FolderSwitch
-              basePath={basePath}
-              folders={spaces.map(({ id, label }) => ({ id, label }))}
-              value={space.id}
-            />
-          </div>
-        ) : null}
       </CardHeader>
 
       <CardContent>
         <FormsGroupsPanel
-          key={space.id}
-          spaceId={space.id}
           accountId={account.id}
           counts={counts}
           initialGroup={group}

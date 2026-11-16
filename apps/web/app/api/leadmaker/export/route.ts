@@ -43,24 +43,24 @@ const IdsSchema = z
 const QuerySchema = z.union([
   z.object({
     ids: IdsSchema,
-    space_id: z.undefined(),
+    account_id: z.undefined(),
     campaign_id: z.undefined(),
   }),
   z.object({
-    space_id: z.string().uuid(),
+    account_id: z.string().uuid(),
     ids: z.undefined(),
     campaign_id: z.undefined(),
   }),
   z.object({
     campaign_id: z.string().uuid(),
     ids: z.undefined(),
-    space_id: z.undefined(),
+    account_id: z.undefined(),
   }),
 ]);
 
 type Target =
   | { kind: 'ids'; ids: string[] }
-  | { kind: 'space'; id: string }
+  | { kind: 'account'; id: string }
   | { kind: 'campaign'; id: string };
 
 type ExportRow = {
@@ -95,8 +95,8 @@ function slugify(value: string) {
 
 /**
  * Export CSV des prospects :
- * - d'un espace (?space_id=), avec les mêmes filtres que la page Prospects
- *   (q, cat, city, rmin, rmax, reviews, website, source, status, campaign) ;
+ * - de toute l'organisation (?account_id=, tous ses espaces l'un après l'autre), avec les mêmes filtres que la
+ *   page Prospects (q, cat, city, rmin, rmax, reviews, website, source, status, campaign) ;
  * - d'une campagne (?campaign_id=) : campagne triée par l'IA, seulement ses entreprises gardées et payées
  *   (CDC §5.1 « l'export ne sort que des fiches payées », analyse UX T-08) ; ancienne campagne sans phrase
  *   cible, toutes ses fiches ;
@@ -111,7 +111,7 @@ export const GET = enhanceRouteHandler(
 
     const parsed = QuerySchema.safeParse({
       ids: searchParams.get('ids') ?? undefined,
-      space_id: searchParams.get('space_id') ?? undefined,
+      account_id: searchParams.get('account_id') ?? undefined,
       campaign_id: searchParams.get('campaign_id') ?? undefined,
     });
 
@@ -121,49 +121,50 @@ export const GET = enhanceRouteHandler(
 
     const target: Target = parsed.data.ids
       ? { kind: 'ids', ids: parsed.data.ids }
-      : parsed.data.space_id
-        ? { kind: 'space', id: parsed.data.space_id }
+      : parsed.data.account_id
+        ? { kind: 'account', id: parsed.data.account_id }
         : { kind: 'campaign', id: parsed.data.campaign_id! };
 
     let filename: string;
     // campagne triée par l'IA (phrase cible) : on n'exporte que ce que le client a payé
     let sortedCampaign = false;
+    // export de l'organisation : ses espaces (visibles, RLS), lus l'un après l'autre
+    let spaceIds: string[] = [];
 
     if (target.kind === 'ids') {
       filename = 'prospects-selection';
+    } else if (target.kind === 'account') {
+      const spaces = await client
+        .from('lm_spaces')
+        .select('id')
+        .eq('account_id', target.id)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: true });
+
+      // l'organisation doit être visible (RLS) : sinon 404
+      if (spaces.error || !spaces.data || spaces.data.length === 0) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+
+      spaceIds = spaces.data.map((space) => space.id);
+      filename = 'prospects';
     } else {
-      // l'espace ou la campagne doit être visible (RLS) : sinon 404
-      const owner =
-        target.kind === 'space'
-          ? await client
-              .from('lm_spaces')
-              .select('name, is_default')
-              .eq('id', target.id)
-              .maybeSingle()
-          : await client
-              .from('lm_campaigns')
-              .select('name, sort_target')
-              .eq('id', target.id)
-              .maybeSingle();
+      // la campagne doit être visible (RLS) : sinon 404
+      const owner = await client
+        .from('lm_campaigns')
+        .select('name, sort_target')
+        .eq('id', target.id)
+        .maybeSingle();
 
       if (owner.error || !owner.data) {
         return NextResponse.json({ error: 'not_found' }, { status: 404 });
       }
 
-      // l'espace par défaut porte un nom technique (« Default ») : on l'omet
-      const isDefaultSpace =
-        'is_default' in owner.data && owner.data.is_default === true;
-
-      sortedCampaign =
-        'sort_target' in owner.data &&
-        (owner.data.sort_target ?? '').trim().length > 0;
-
-      filename = isDefaultSpace
-        ? 'prospects'
-        : `prospects-${slugify(owner.data.name)}`;
+      sortedCampaign = (owner.data.sort_target ?? '').trim().length > 0;
+      filename = `prospects-${slugify(owner.data.name)}`;
     }
 
-    // les filtres de la page ne s'appliquent qu'à l'export d'un espace
+    // les filtres de la page ne s'appliquent qu'à l'export de l'organisation
     const filters = parseProspectsSearchParams(
       Object.fromEntries(
         Array.from(new Set(searchParams.keys())).map((key) => [
@@ -172,6 +173,9 @@ export const GET = enhanceRouteHandler(
         ]),
       ),
     ).filters;
+
+    // espace en cours de lecture (export de l'organisation)
+    let spaceIndex = 0;
 
     const fetchPage = async (
       from: number,
@@ -199,8 +203,11 @@ export const GET = enhanceRouteHandler(
       const scoped =
         target.kind === 'ids'
           ? query.in('id', target.ids)
-          : target.kind === 'space'
-            ? applyProspectsFilters(query.eq('space_id', target.id), filters)
+          : target.kind === 'account'
+            ? applyProspectsFilters(
+                query.eq('space_id', spaceIds[spaceIndex]!),
+                filters,
+              )
             : query.eq('campaign_id', target.id);
 
       const { data, error } = await scoped
@@ -209,6 +216,26 @@ export const GET = enhanceRouteHandler(
         .range(from, from + PAGE_SIZE - 1);
 
       return { data: data as ExportRow[] | null, error };
+    };
+
+    // page suivante ; export de l'organisation : un espace vide est sauté, pour ne jamais rendre la main au flux
+    // sans rien lui avoir donné (il attendrait sinon indéfiniment)
+    const fetchNext = async () => {
+      for (;;) {
+        const result = await fetchPage(offset);
+
+        if (
+          result.error ||
+          (result.data ?? []).length > 0 ||
+          target.kind !== 'account' ||
+          spaceIndex >= spaceIds.length - 1
+        ) {
+          return result;
+        }
+
+        spaceIndex += 1;
+        offset = 0;
+      }
     };
 
     const separator = csvSeparatorFor(request.headers.get('accept-language'));
@@ -226,7 +253,7 @@ export const GET = enhanceRouteHandler(
           );
         }
 
-        const { data, error } = await fetchPage(offset);
+        const { data, error } = await fetchNext();
 
         if (error) {
           const logger = await getLogger();
@@ -275,6 +302,19 @@ export const GET = enhanceRouteHandler(
         offset += rows.length;
 
         if (rows.length < PAGE_SIZE) {
+          // export de l'organisation : on passe à l'espace suivant (des lignes viennent d'être envoyées, le flux
+          // redemandera la suite)
+          if (
+            rows.length > 0 &&
+            target.kind === 'account' &&
+            spaceIndex < spaceIds.length - 1
+          ) {
+            spaceIndex += 1;
+            offset = 0;
+
+            return;
+          }
+
           controller.close();
         }
       },

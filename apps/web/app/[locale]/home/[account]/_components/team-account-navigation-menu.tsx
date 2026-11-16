@@ -16,13 +16,10 @@ import { TeamAccountNotifications } from './team-account-notifications';
 
 export function TeamAccountNavigationMenu(props: {
   workspace: TeamAccountWorkspace;
-  showSpaces: boolean;
 }) {
   const { account, user, accounts } = props.workspace;
 
-  const routes = getTeamAccountSidebarConfig(account.slug, {
-    showSpaces: props.showSpaces,
-  }).routes.reduce<
+  const routes = getTeamAccountSidebarConfig(account.slug).routes.reduce<
     Array<{
       path: string;
       label: string;

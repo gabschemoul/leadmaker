@@ -14,15 +14,12 @@ import { alertExtras } from '@kit/ui/alert-extras';
 import { PageBody } from '@kit/ui/page';
 import { Trans } from '@kit/ui/trans';
 
-import pathsConfig from '~/config/paths.config';
-
 import { TeamAccountLayoutPageHeader } from '../_components/team-account-layout-page-header';
 import {
   loadCountryOptions,
-  loadSpaces,
+  loadSpaceIds,
 } from '../_lib/server/leadmaker.loader';
 import { loadTeamWorkspace } from '../_lib/server/team-account-workspace.loader';
-import { FolderSwitch } from './_components/folder-switch';
 import { SendersLoading } from './_components/senders-loading';
 import { SendersWorkspace } from './_components/senders-workspace';
 import { CIVILITIES } from './_lib/schema/sender-profile.schema';
@@ -72,16 +69,18 @@ async function SenderContent(props: SenderPageProps) {
   const { account } = await loadTeamWorkspace(slug);
   const client = getSupabaseServerClient();
 
-  const [spaces, countries] = await Promise.all([
-    loadSpaces(client, account.id),
+  const [spaceIds, countries] = await Promise.all([
+    loadSpaceIds(client, account.id),
     loadCountryOptions(client),
   ]);
 
   const requested =
     typeof rawSearchParams.space === 'string' ? rawSearchParams.space : null;
 
-  const space = spaces.find((item) => item.id === requested) ?? spaces[0]!;
-  const senders = await loadSenders(client, space.id);
+  // espace par défaut ; ?space= (lien « expéditeur » d'une campagne, jamais affiché) : celui de la campagne
+  const spaceId =
+    requested && spaceIds.includes(requested) ? requested : spaceIds[0]!;
+  const senders = await loadSenders(client, spaceId);
 
   // ?sender=new : nouvel expéditeur ; ?sender=<id> : celui-là ; sinon celui par défaut (choix ensuite sur place)
   const requestedSender =
@@ -106,8 +105,6 @@ async function SenderContent(props: SenderPageProps) {
     };
   };
 
-  const basePath = pathsConfig.app.accountSender.replace('[account]', slug);
-
   return (
     <div className={'flex flex-col gap-4'}>
       {senders.length > 0 ? null : (
@@ -123,8 +120,8 @@ async function SenderContent(props: SenderPageProps) {
       )}
 
       <SendersWorkspace
-        // autre dossier, ou nouvel expéditeur enregistré (l'action renvoie vers ?sender=<id>) : on repart de là
-        key={`${space.id}:${requestedSender ?? ''}`}
+        // nouvel expéditeur enregistré (l'action renvoie vers ?sender=<id>) : on repart de là
+        key={`${spaceId}:${requestedSender ?? ''}`}
         senders={senders.map((sender) => ({
           id: sender.id,
           first_name: sender.first_name,
@@ -139,23 +136,8 @@ async function SenderContent(props: SenderPageProps) {
         emptyValues={valuesOf(null)}
         accountId={account.id}
         accountSlug={slug}
-        spaceId={space.id}
+        spaceId={spaceId}
         countries={countries}
-        folderSwitch={
-          spaces.length > 1 ? (
-            <div className={'flex flex-col gap-1.5'}>
-              <span className={'text-sm font-medium'}>
-                <Trans i18nKey={'outreach.sender.folderLabel'} />
-              </span>
-
-              <FolderSwitch
-                basePath={basePath}
-                folders={spaces.map(({ id, label }) => ({ id, label }))}
-                value={space.id}
-              />
-            </div>
-          ) : null
-        }
       />
     </div>
   );

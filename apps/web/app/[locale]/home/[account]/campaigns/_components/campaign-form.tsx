@@ -5,7 +5,7 @@
  * la cible en une phrase, ses précisions et les activités cherchées, l'offre du dossier (./campaign-form/who-section),
  * « Où ? » (ciblage inchangé), « Plus de critères » (filtres, fermé par défaut), puis « Lancer la recherche ».
  * Plus d'écran d'estimation : le prix se mesure sur les premières entreprises triées.
- * Données : espaces, offres des dossiers, pays et limite d'activités passés par la page.
+ * Données : espace par défaut, son offre, pays et limite d'activités passés par la page.
  * Écritures : createCampaignAction / updateCampaignAction (campagne, offre, cible, lancement).
  */
 
@@ -32,7 +32,6 @@ import {
 } from '@kit/ui/form';
 import { If } from '@kit/ui/if';
 import { Input } from '@kit/ui/input';
-import { NativeSelect, NativeSelectOption } from '@kit/ui/native-select';
 import { toast } from '@kit/ui/sonner';
 import { Trans } from '@kit/ui/trans';
 
@@ -52,12 +51,6 @@ import {
 import { CitiesSection } from './campaign-form/cities-section';
 import { FiltersSection } from './campaign-form/filters-section';
 import { WhoSection } from './campaign-form/who-section';
-
-interface SpaceOption {
-  id: string;
-  label: string;
-  is_default: boolean;
-}
 
 /** Champs du pli « Plus de critères » : une erreur sur l'un d'eux ouvre le pli. */
 const CRITERIA_FIELDS = [
@@ -97,7 +90,8 @@ export function CampaignForm(props: CampaignFormProps) {
 function CampaignFormBody(props: {
   accountId: string;
   accountSlug: string;
-  spaces: SpaceOption[];
+  /** espace où créer la campagne (celui par défaut de l'organisation) */
+  defaultSpaceId: string;
   /** « Votre offre » enregistrée pour chaque dossier (vide si aucune) */
   spaceOffers: Record<string, string>;
   countries: CountryOption[];
@@ -127,12 +121,6 @@ function CampaignFormBody(props: {
   const launched = props.campaign?.launched ?? false;
   const initialTarget = props.campaign?.values.sortTarget ?? '';
 
-  // Une seule entrée = l'espace par défaut : le choix du dossier client est masqué.
-  const defaultSpace =
-    props.spaces.find((space) => space.is_default) ?? props.spaces[0];
-
-  const showSpaceSelect = props.spaces.length > 1;
-
   // brouillon enregistré : on arrive sur sa page, un message le confirme (retour du 11/11 : aucune indication)
   const confirmDraft = ({ input }: { input: { launch?: boolean } }) => {
     if (input.launch === false) {
@@ -160,9 +148,9 @@ function CampaignFormBody(props: {
 
   const defaultValues: CampaignFormValues = props.campaign?.values ?? {
     sortTarget: '',
-    offer: props.spaceOffers[defaultSpace?.id ?? ''] ?? '',
+    offer: props.spaceOffers[props.defaultSpaceId] ?? '',
     name: '',
-    spaceId: defaultSpace?.id ?? '',
+    spaceId: props.defaultSpaceId,
     countryCode: locale.startsWith('fr') ? 'FR' : 'US',
     citiesMode: 'country' as const,
     minPopulation: 0,
@@ -225,12 +213,6 @@ function CampaignFormBody(props: {
     form.setValue('countryCode', code, { shouldValidate: true });
     form.setValue('radiusCity', null);
     form.setValue('cities', []);
-  };
-
-  // L'offre appartient au dossier : on reprend celle du dossier choisi.
-  const changeSpace = (spaceId: string) => {
-    form.setValue('spaceId', spaceId, { shouldValidate: true });
-    form.setValue('offer', props.spaceOffers[spaceId] ?? '');
   };
 
   const onInvalid = (errors: FieldErrors<CampaignFormValues>) => {
@@ -333,37 +315,6 @@ function CampaignFormBody(props: {
                 </FormItem>
               )}
             />
-
-            <If condition={showSpaceSelect}>
-              <FormField
-                name={'spaceId'}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      <Trans i18nKey={'campaigns.form.folderLabel'} />
-                    </FormLabel>
-
-                    <FormControl>
-                      <NativeSelect
-                        className={'w-full'}
-                        data-test={'campaign-folder-select'}
-                        disabled={editing}
-                        value={field.value}
-                        onChange={(event) => changeSpace(event.target.value)}
-                      >
-                        {props.spaces.map((space) => (
-                          <NativeSelectOption key={space.id} value={space.id}>
-                            {space.label}
-                          </NativeSelectOption>
-                        ))}
-                      </NativeSelect>
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </If>
           </CardContent>
         </Card>
 

@@ -797,13 +797,13 @@
     "todo": {
       "title": "Your turn",
       "to_check": {
-        "title": "Forms to check before sending",
-        "hint": "Something looks off on the page or in the message",
-        "cta": "Check"
+        "title": "Forms ready to send",
+        "hint": "No autopilot will send them without you",
+        "cta": "View"
       },
       "captcha": {
         "title": "Sites protected against bots",
-        "hint": "Your message is ready to paste",
+        "hint": "Optional: your message is ready to paste",
         "cta": "Send it myself"
       },
       "unknown_field": {
@@ -815,7 +815,7 @@
     "skipAll": {
       "button": "Skip all",
       "title": {
-        "to_check": "Skip {count, plural, one {the form to check} other {the # forms to check}}?",
+        "to_check": "Skip {count, plural, one {the ready form} other {the # ready forms}}?",
         "captcha": "Skip {count, plural, one {the protected site} other {the # protected sites}}?",
         "unknown_field": "Skip {count, plural, one {the form to fill in} other {the # forms to fill in}}?"
       },

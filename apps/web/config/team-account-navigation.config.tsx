@@ -3,7 +3,6 @@ import { CreditCard, Settings, UserSearch, Users } from 'lucide-react';
 import { NavigationConfigSchema } from '@kit/ui/navigation-schema';
 
 import { CampaignsIcon } from '~/components/icons/campaigns-icon';
-import { FormsIcon } from '~/components/icons/forms-icon';
 import { SendersIcon } from '~/components/icons/senders-icon';
 import featureFlagsConfig from '~/config/feature-flags.config';
 import pathsConfig from '~/config/paths.config';
@@ -16,7 +15,8 @@ const iconClasses = 'size-5! group-data-[collapsible=icon]:-m-0.5';
 const iconProps = { className: iconClasses, strokeWidth: 1.8 } as const;
 const customIconProps = { className: iconClasses, strokeWidth: 1.35 } as const;
 
-// Plus d'entrée « Dossiers clients » (décision du 16/11/2026) : la notion n'est plus affichée nulle part.
+// Plus d'entrée « Dossiers clients » ni « Formulaires » (décisions du 16/11/2026) : ce qui reste au client est dans
+// l'étape Envoi de chaque campagne.
 const getRoutes = (account: string) => [
   {
     label: 'common.routes.application',
@@ -25,11 +25,6 @@ const getRoutes = (account: string) => [
         label: 'common.routes.campaigns',
         path: createPath(pathsConfig.app.accountCampaigns, account),
         Icon: <CampaignsIcon {...customIconProps} />,
-      },
-      {
-        label: 'common.routes.forms',
-        path: createPath(pathsConfig.app.accountForms, account),
-        Icon: <FormsIcon {...customIconProps} />,
       },
       {
         label: 'common.routes.prospects',

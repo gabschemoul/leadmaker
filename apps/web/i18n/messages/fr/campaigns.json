@@ -797,13 +797,13 @@
     "todo": {
       "title": "À vous de jouer",
       "to_check": {
-        "title": "Formulaires à vérifier avant envoi",
-        "hint": "Un doute sur la page ou le message",
-        "cta": "Vérifier"
+        "title": "Formulaires prêts à envoyer",
+        "hint": "Aucun pilote ne les enverra sans vous",
+        "cta": "Voir"
       },
       "captcha": {
         "title": "Sites protégés contre les robots",
-        "hint": "Votre message est prêt à coller",
+        "hint": "Facultatif : votre message est prêt à coller",
         "cta": "Envoyer moi-même"
       },
       "unknown_field": {
@@ -815,7 +815,7 @@
     "skipAll": {
       "button": "Tout passer",
       "title": {
-        "to_check": "Passer {count, plural, one {le formulaire à vérifier} other {les # formulaires à vérifier}} ?",
+        "to_check": "Passer {count, plural, one {le formulaire prêt} other {les # formulaires prêts}} ?",
         "captcha": "Passer {count, plural, one {le site protégé} other {les # sites protégés}} ?",
         "unknown_field": "Passer {count, plural, one {le formulaire à compléter} other {les # formulaires à compléter}} ?"
       },

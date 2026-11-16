@@ -2,8 +2,9 @@
 
 /**
  * Rôle : « À vous de jouer » de l'étape Envoi (un seul écran depuis le 12/11/2026, maquette validée par Gabriel) :
- * l'encart des trois listes qui attendent l'utilisateur (formulaires à vérifier, sites protégés contre les robots,
- * cases à compléter) et l'écran qui les montre un par un (capture du formulaire rempli, message, décision).
+ * l'encart des trois listes qui attendent l'utilisateur (formulaires prêts qu'aucun pilote n'enverra, cases à
+ * compléter, sites protégés contre les robots, facultatif) et l'écran qui les montre un par un (capture du formulaire
+ * rempli, message, décision). Un formulaire douteux n'est plus jamais montré (16/11/2026).
  * Données : lm_campaign_todo / lm_campaign_todo_ids et le formulaire courant (~/lib/leadmaker/todo-query), lus par
  * la RLS ; compteurs relus toutes les quelques secondes pendant un envoi.
  * Écritures : approveTodoAction, markSentByHandAction, skipTodoAction (envoi-actions.ts).

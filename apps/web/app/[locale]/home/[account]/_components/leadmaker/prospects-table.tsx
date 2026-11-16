@@ -95,7 +95,6 @@ export function ProspectsTable(props: {
   noResultsMessage?: React.ReactNode;
   /** campagnes de l'organisation (préparation des prospects importés sans campagne) */
   campaigns?: Array<{ id: string; name: string }>;
-  formsHref?: string;
   /** organisation à suivre en temps réel (e-mails trouvés, prospects ajoutés) */
   liveAccountId?: string;
   /** appelé à chaque changement en direct (liste chargée dans le navigateur) */
@@ -169,7 +168,6 @@ export function ProspectsTable(props: {
               onClear={clearSelection}
               onMutated={props.onMutated}
               campaigns={props.campaigns}
-              formsHref={props.formsHref}
             />
           ) : null}
         </div>

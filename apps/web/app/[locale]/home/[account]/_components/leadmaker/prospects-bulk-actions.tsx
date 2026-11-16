@@ -62,7 +62,6 @@ export function ProspectsBulkActions(props: {
   canDelete: boolean;
   /** campagnes du dossier, pour les prospects importés sans campagne */
   campaigns?: CampaignOption[];
-  formsHref?: string;
   onClear: () => void;
   /** appelé après une action réussie (le parent rafraîchit ses données) */
   onMutated?: () => void;
@@ -276,7 +275,6 @@ export function ProspectsBulkActions(props: {
         ids={preparable.map((prospect) => prospect.id)}
         needsCampaign={needsCampaign}
         campaigns={props.campaigns ?? []}
-        formsHref={props.formsHref}
         onDone={() => {
           props.onClear();
           props.onMutated?.();

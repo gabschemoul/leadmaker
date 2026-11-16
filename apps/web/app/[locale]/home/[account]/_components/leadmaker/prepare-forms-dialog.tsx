@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 
-import Link from 'next/link';
-
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
 
@@ -40,7 +38,6 @@ export function PrepareFormsDialog(props: {
   ids: string[];
   needsCampaign: boolean;
   campaigns: CampaignOption[];
-  formsHref?: string;
   onDone?: () => void;
 }) {
   const t = useTranslations('outreach.forms.prepare');
@@ -52,14 +49,6 @@ export function PrepareFormsDialog(props: {
     onSuccess: ({ data }) => {
       toast.success(
         t('done', { queued: data?.queued ?? 0, skipped: data?.skipped ?? 0 }),
-        props.formsHref
-          ? {
-              action: {
-                label: t('goToForms'),
-                onClick: () => window.location.assign(props.formsHref!),
-              },
-            }
-          : undefined,
       );
 
       props.onOpenChange(false);
@@ -124,10 +113,7 @@ export function PrepareFormsDialog(props: {
 
         {error ? (
           <p className={'text-destructive text-sm'} data-test={'prepare-error'}>
-            <Trans i18nKey={error} />{' '}
-            {error === 'outreach.forms.prepare.noSender' && props.formsHref
-              ? null
-              : null}
+            <Trans i18nKey={error} />
           </p>
         ) : null}
 
@@ -150,12 +136,6 @@ export function PrepareFormsDialog(props: {
             {t('submit')}
           </Button>
         </DialogFooter>
-
-        {props.formsHref ? (
-          <Link className={'sr-only'} href={props.formsHref}>
-            {t('goToForms')}
-          </Link>
-        ) : null}
       </DialogContent>
     </Dialog>
   );

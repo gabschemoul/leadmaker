@@ -73,7 +73,6 @@ export function ProspectsBrowser(props: {
   initialTotal: number;
   accountId: string;
   campaignsPath: string;
-  formsHref: string;
   canDelete: boolean;
   importDialog: React.ReactNode;
 }) {
@@ -248,7 +247,6 @@ export function ProspectsBrowser(props: {
             onMutated={refetch}
             onLiveChange={refetch}
             campaigns={props.campaigns}
-            formsHref={props.formsHref}
             liveAccountId={props.accountId}
             noResultsMessage={
               loading ? (

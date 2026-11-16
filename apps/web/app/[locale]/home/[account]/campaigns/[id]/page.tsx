@@ -213,7 +213,6 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
   );
   const basePath = `${campaignsPath}/${id}`;
   const stepHref = (target: CampaignStep) => `${basePath}?etape=${target}`;
-  const formsHref = pathsConfig.app.accountForms.replace('[account]', slug);
   const senderHref = `${pathsConfig.app.accountSender.replace('[account]', slug)}?space=${campaign.space_id}${sender ? `&sender=${sender.id}` : ''}`;
 
   return (
@@ -321,7 +320,6 @@ async function CampaignContent({ params, searchParams }: CampaignPageProps) {
                     '[account]',
                     slug,
                   )}
-                  formsHref={formsHref}
                   writeHref={stepHref('rediger')}
                   targetHref={stepHref('cibler')}
                   readyToWrite={messagesCount > 0 && sender !== null}

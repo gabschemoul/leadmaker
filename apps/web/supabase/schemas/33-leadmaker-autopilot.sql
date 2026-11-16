@@ -1067,7 +1067,7 @@ grant execute on function public.lm_set_campaign_archived(uuid, boolean) to auth
 -- ---------------------------------------------------------------------------------------------------------------
 -- « À vous de jouer » (étape Envoi en un seul écran, 12/11/2026 : plus de mode Avancé). Ce qui attend une décision
 -- de l'utilisateur dans une campagne, en trois listes :
---  * to_check : formulaire prêt avec un doute, ou prêt sans pilote en marche (rien ne l'enverra sans lui) ;
+--  * to_check : formulaire prêt sans aucun doute mais sans pilote en marche (rien ne l'enverra sans lui) ;
 --  * captcha : site protégé contre les robots, à envoyer soi-même ;
 --  * unknown_field : une case du formulaire que le robot ne sait pas remplir.
 -- N'y figurent pas, dans un pilote actif (en pause par exemple), un formulaire prêt sans aucun doute ni un formulaire
@@ -1091,9 +1091,11 @@ as $$
       then null
     when p_status = 'intervention_required' then 'captcha'
     when p_status = 'incomplete' then 'unknown_field'
+    -- formulaire douteux (devis, réservation, contrôle IA réservé…) : jamais envoyé, jamais montré au client
+    -- (16/11/2026, décision de Gabriel : le robot tranche seul, le client ne fait que ce qu'un humain peut faire)
     when p_status = 'ready'
-         and not (public.lm_attempt_is_clean(p_status, p_detail, p_protection_type, p_missing)
-                  and coalesce(p_autopilot_status in ('preview', 'running', 'paused'), false))
+         and public.lm_attempt_is_clean(p_status, p_detail, p_protection_type, p_missing)
+         and not coalesce(p_autopilot_status in ('preview', 'running', 'paused'), false)
       then 'to_check'
   end;
 $$;

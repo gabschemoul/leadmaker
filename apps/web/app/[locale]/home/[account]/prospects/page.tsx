@@ -146,7 +146,6 @@ async function ProspectsContent(props: ProspectsPageProps) {
       initialTotal={total}
       accountId={account.id}
       campaignsPath={campaignsPath}
-      formsHref={pathsConfig.app.accountForms.replace('[account]', slug)}
       canDelete={account.permissions.includes('settings.manage')}
       importDialog={<ImportProspectsDialog defaultSpaceId={spaceIds[0]!} />}
     />

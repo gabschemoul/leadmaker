@@ -4,8 +4,11 @@ import type { Database } from '@kit/supabase/database';
 
 type Client = SupabaseClient<Database>;
 
-/** Les trois listes « À vous de jouer » de l'étape Envoi (lm_attempt_todo_kind). */
-export const TODO_KINDS = ['to_check', 'captcha', 'unknown_field'] as const;
+/**
+ * Les trois listes « À vous de jouer » de l'étape Envoi (lm_attempt_todo_kind), dans l'ordre d'affichage : le site
+ * protégé, facultatif, en dernier. Un formulaire douteux n'y est jamais (16/11/2026).
+ */
+export const TODO_KINDS = ['to_check', 'unknown_field', 'captcha'] as const;
 
 export type TodoKind = (typeof TODO_KINDS)[number];
 

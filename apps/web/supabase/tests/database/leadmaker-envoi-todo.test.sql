@@ -1,4 +1,5 @@
--- Étape Envoi en un seul écran (12/11/2026) : listes « À vous de jouer » (à vérifier, site protégé, case inconnue),
+-- Étape Envoi en un seul écran (12/11/2026) : listes « À vous de jouer » (prêt hors pilote, site protégé, case inconnue ;
+-- formulaire douteux jamais montré depuis le 16/11/2026),
 -- « Envoyer » qui garde le formulaire dans son pilote, « C'est envoyé » pour un site protégé, isolation.
 begin;
 
@@ -59,14 +60,14 @@ select makerkit.authenticate_as('todo_owner');
 
 select results_eq(
   $$ select to_check, captcha, unknown_field from public.lm_campaign_todo((select id from camp)) $$,
-  $$ values (2, 1, 1) $$,
-  'À vérifier : le douteux et le prêt hors pilote (pas le prêt sans doute du pilote en pause) ; 1 site protégé ; 1 case'
+  $$ values (1, 1, 1) $$,
+  'À vérifier : le prêt hors pilote seulement (ni le douteux, jamais montré depuis le 16/11, ni le prêt sans doute du pilote en pause) ; 1 site protégé ; 1 case'
 );
 
 select set_eq(
   $$ select public.lm_campaign_todo_ids((select id from camp), 'to_check') $$,
-  $$ values (pg_temp.att('doute')), (pg_temp.att('manuel')) $$,
-  'Liste « à vérifier »'
+  $$ values (pg_temp.att('manuel')) $$,
+  'Liste « à vérifier » : jamais un formulaire douteux'
 );
 select set_eq($$ select public.lm_campaign_todo_ids((select id from camp), 'captcha') $$,
   $$ values (pg_temp.att('captcha')) $$, 'Liste « site protégé »');
@@ -87,8 +88,8 @@ select is(public.lm_mark_sent_by_hand(array[pg_temp.att('captcha')]), 0, '« C''
 
 select makerkit.authenticate_as('todo_owner');
 
-select is(public.lm_autopilot_todo((select id from public.lm_autopilots)), 3,
-  'Bilan du pilote : douteux, site protégé, case (pas le prêt sans doute ni le formulaire hors pilote)');
+select is(public.lm_autopilot_todo((select id from public.lm_autopilots)), 2,
+  'Bilan du pilote : site protégé, case (ni le douteux, ni le prêt sans doute, ni le formulaire hors pilote)');
 
 -- « Envoyer » pendant la pause : l'accord est noté, rien n'attend « validé », il sort de la liste
 select is(public.lm_approve_attempts(array[pg_temp.att('doute')]), 1, 'Formulaire douteux accepté');

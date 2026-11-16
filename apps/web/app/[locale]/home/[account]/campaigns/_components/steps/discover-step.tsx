@@ -54,7 +54,6 @@ export function DiscoverStep(props: {
   allProspectsHref: string;
   canDelete: boolean;
   billingPath: string;
-  formsHref: string;
   writeHref: string;
   /** étape Cibler, pour préciser la cible quand la campagne est en pause « too_hard » */
   targetHref: string;
@@ -147,7 +146,6 @@ export function DiscoverStep(props: {
             accountId={props.accountId}
             campaignsPath={props.campaignsPath}
             canDelete={props.canDelete}
-            formsHref={props.formsHref}
             sorting={[{ id: 'date', desc: true }]}
             hiddenColumns={['campaign']}
             onMutated={() => void queryClient.invalidateQueries({ queryKey })}

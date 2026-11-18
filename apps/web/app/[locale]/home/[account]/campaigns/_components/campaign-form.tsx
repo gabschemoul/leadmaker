@@ -192,12 +192,14 @@ function CampaignFormBody(props: {
           campaignId: props.campaign.id,
           accountSlug: props.accountSlug,
           launch: launchNow,
+          locale,
         })
       : create.execute({
           ...data,
           accountId: props.accountId,
           accountSlug: props.accountSlug,
           launch: launchNow,
+          locale,
         });
   };
 

@@ -174,6 +174,8 @@ export const CreateCampaignSchema = CampaignFieldsSchema.extend({
   accountSlug: z.string().min(1),
   /** faux : « Enregistrer en brouillon », la recherche n'est pas lancée */
   launch: z.boolean().default(true),
+  /** langue de l'écran : une action serveur ne peut pas lire la langue de l'adresse (18/11) */
+  locale: z.string().max(10).optional(),
 }).superRefine(refineCampaign);
 
 export const UpdateCampaignSchema = CampaignFieldsSchema.extend({
@@ -181,6 +183,8 @@ export const UpdateCampaignSchema = CampaignFieldsSchema.extend({
   accountSlug: z.string().min(1),
   /** brouillon seulement : faux = enregistrer sans lancer */
   launch: z.boolean().default(true),
+  /** langue de l'écran : une action serveur ne peut pas lire la langue de l'adresse (18/11) */
+  locale: z.string().max(10).optional(),
 }).superRefine(refineCampaign);
 
 export const TargetingSchema = z.object({

@@ -10,8 +10,6 @@ import { redirect } from 'next/navigation';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { getLocale } from 'next-intl/server';
-
 import { authActionClient } from '@kit/next/safe-action';
 import { getLogger } from '@kit/shared/logger';
 import type { Database } from '@kit/supabase/database';
@@ -55,14 +53,17 @@ type Client = SupabaseClient<Database>;
  * par entreprise gardée comme les autres. Phrase fixe, sans la liste des activités : ajouter une activité ne
  * relance pas le tri de toute la campagne. Une campagne qui en a déjà une la garde (même langue qu'au départ).
  */
-async function targetFromActivities(previous?: string | null) {
+function targetFromActivities(
+  locale: string | undefined,
+  previous?: string | null,
+) {
   if (isActivitiesTarget(previous)) {
     return (previous ?? '').trim();
   }
 
-  const locale = await getLocale();
-
-  return locale.startsWith('fr')
+  // Langue envoyée par l'écran : getLocale() (next/root-params) est interdit dans une action serveur et faisait
+  // échouer toute création de campagne sans phrase (« Désolé, une erreur est survenue », 18/11).
+  return (locale ?? 'fr').startsWith('fr')
     ? ACTIVITIES_TARGETS.fr
     : ACTIVITIES_TARGETS.en;
 }
@@ -244,7 +245,7 @@ export const createCampaignAction = authActionClient
 
     const client = getSupabaseServerClient();
     // brouillon compris : sans phrase, la cible fixe (l'écran Entreprises du brouillon est celui d'une campagne triée)
-    const sortTarget = values.sortTarget || (await targetFromActivities());
+    const sortTarget = values.sortTarget || targetFromActivities(values.locale);
 
     const { data, error } = await client
       .from('lm_campaigns')
@@ -342,7 +343,9 @@ export const updateCampaignAction = authActionClient
     const keepsLegacy = !isDraft && !before?.sort_target?.trim();
     const sortTarget =
       values.sortTarget ||
-      (keepsLegacy ? '' : await targetFromActivities(before?.sort_target));
+      (keepsLegacy
+        ? ''
+        : targetFromActivities(values.locale, before?.sort_target));
 
     const { data: status, error } = await client.rpc('lm_update_campaign', {
       p_campaign_id: values.campaignId,
@@ -603,16 +606,14 @@ export const favoriteCampaignAction = authActionClient
     const client = getSupabaseServerClient();
 
     const { error } = favorite
-      ? await client
-          .from('lm_campaign_favorites')
-          .upsert(
-            {
-              campaign_id: campaignId,
-              account_id: accountId,
-              user_id: ctx.user.id,
-            },
-            { onConflict: 'user_id,campaign_id', ignoreDuplicates: true },
-          )
+      ? await client.from('lm_campaign_favorites').upsert(
+          {
+            campaign_id: campaignId,
+            account_id: accountId,
+            user_id: ctx.user.id,
+          },
+          { onConflict: 'user_id,campaign_id', ignoreDuplicates: true },
+        )
       : await client
           .from('lm_campaign_favorites')
           .delete()

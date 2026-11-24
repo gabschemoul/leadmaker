@@ -33,9 +33,20 @@ function checkMessages(
 ) {
   const perGroup = new Map<string, number>();
   const names = new Map<string, number>();
+  let filled = 0;
 
   messages.forEach((message, index) => {
     if (message.body.trim() === '') return;
+
+    filled += 1;
+
+    if (filled > MAX_MESSAGES) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['messages', index, 'body'],
+        message: 'campaigns.messages.tooManyMessages',
+      });
+    }
 
     const group = message.group?.trim() || '';
     const count = (perGroup.get(group) ?? 0) + 1;
@@ -70,8 +81,7 @@ function checkMessages(
 // le vrai plafond est celui du forfait, appliqué par la base à chaque mise en file.
 export const DAILY_LIMIT_MAX = 100_000;
 
-const CampaignTemplatesBaseSchema = z.object({
-  messages: z.array(MessageSchema).max(MAX_MESSAGES),
+const SendingSettingsSchema = z.object({
   // réglages d'envoi de la campagne
   dailyLimit: z.coerce
     .number()
@@ -81,8 +91,20 @@ const CampaignTemplatesBaseSchema = z.object({
   autoValidation: z.boolean(),
 });
 
+// Écran : une case par version et par onglet, vides comprises (onglets × MAX_VERSIONS_PER_GROUP, 110 cases pour
+// 10 groupes). Le plafond MAX_MESSAGES porte sur les messages remplis (checkMessages) : avec .max() sur le tableau,
+// l'enregistrement d'une campagne à 8 groupes ou plus échouait sans rien afficher (24/11/2026, Électriciens France).
+const CampaignTemplatesFormBaseSchema = SendingSettingsSchema.extend({
+  messages: z.array(MessageSchema),
+});
+
+// Enregistrement : seuls les messages remplis (et ceux non affichés) sont envoyés
+const CampaignTemplatesBaseSchema = SendingSettingsSchema.extend({
+  messages: z.array(MessageSchema).max(MAX_MESSAGES),
+});
+
 export const CampaignTemplatesFormSchema =
-  CampaignTemplatesBaseSchema.superRefine((values, ctx) =>
+  CampaignTemplatesFormBaseSchema.superRefine((values, ctx) =>
     checkMessages(values.messages, ctx),
   );
 

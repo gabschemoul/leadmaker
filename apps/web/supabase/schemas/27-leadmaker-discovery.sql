@@ -674,6 +674,10 @@ grant execute on function public.lm_pause_campaign(uuid, text) to authenticated,
 --     recherche dans les secteurs déjà vus de Bruxelles, pendant que d'autres en donnaient 8 à 9).
 -- Les activités essayées sans aucun prospect passent en dernier dans les deux régimes ;
 -- quand un régime n'a plus de candidate, l'autre prend la place.
+-- Rattrapage (22/11/2026) : une activité qui a plus de max(20, 5 % des villes) de retard sur la plus avancée
+-- passe avant tout le reste. Avant, une activité sans prospect sur ses 2 premières recherches attendait la fin
+-- des autres (« Trading card store » aux États-Unis : 2 recherches sur 4 472 pendant que « Game store » en
+-- était à 827, alors que c'était la meilleure activité du test).
 -- Abandon (lm_finish_search) : aucun prospect après ABANDON_ZERO_AFTER recherches,
 -- ou moins de MIN_RATE fiche par recherche après MIN_SEARCHES recherches.
 -- Appelant : robots / serveur uniquement (rôle service).
@@ -694,6 +698,8 @@ declare
   v_explore boolean;
   v_zone_count integer;
   v_inserted integer;
+  v_lead integer;
+  v_lag integer;
 begin
   -- un seul planificateur à la fois
   if not pg_try_advisory_xact_lock(hashtext('lm_schedule_discovery')) then
@@ -726,6 +732,9 @@ begin
 
     select count(*) into v_zone_count from public.lm_campaign_zones where campaign_id = v_campaign.id;
 
+    -- Retard toléré avant rattrapage : 5 % des villes, au moins 20
+    v_lag := greatest(20, v_zone_count / 20);
+
     -- Recherches en cours sur des activités dont on n'a encore aucun résultat
     select coalesce(sum(in_flight), 0) into v_exploring
       from public.lm_campaign_categories where campaign_id = v_campaign.id and searches = 0;
@@ -733,13 +742,22 @@ begin
     while v_slots > 0 loop
       v_explore := v_exploring < v_explore_slots;
 
+      -- Position de l'activité la plus avancée (relue à chaque place : elle avance pendant la boucle)
+      select max(next_zone_idx) into v_lead
+        from public.lm_campaign_categories
+       where campaign_id = v_campaign.id and not abandoned and not removed;
+
       select cc.gcid, cc.next_zone_idx, cat.label_en, (cc.searches + cc.in_flight = 0) as untried into v_pick
         from public.lm_campaign_categories cc
         join public.lm_categories cat using (gcid)
        where cc.campaign_id = v_campaign.id
          and not cc.abandoned and not cc.removed
          and cc.next_zone_idx < v_zone_count
-       order by case
+       order by (cc.searches + cc.in_flight > 0 and v_lead - cc.next_zone_idx > v_lag) desc,
+                -- entre activités en rattrapage : la plus en retard d'abord
+                case when cc.searches + cc.in_flight > 0 and v_lead - cc.next_zone_idx > v_lag
+                     then cc.next_zone_idx end nulls last,
+                case
                   when cc.searches + cc.in_flight = 0 then (case when v_explore then 0 else 1 end)
                   when cc.kept > 0 then (case when v_explore then 1 else 0 end)
                   else 2

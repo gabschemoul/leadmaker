@@ -431,6 +431,27 @@ export function CampaignMessagesForm(props: {
           return;
         }
 
+        // même contrôle que l'enregistrement (société de l'expéditeur dans chaque message rempli), mais on ouvre le
+        // message fautif : le refus du serveur ne disait pas lequel, souvent un vieux message d'un autre onglet
+        // (24/11/2026, Électriciens France : un essai « Bonjour {company} » dans « Pour les autres »)
+        const noCompany = props.companyOptional
+          ? -1
+          : data.messages.findIndex(
+              (message) =>
+                message.body.trim() !== '' &&
+                (!mentionsCompany(message.body, company) ||
+                  (message.short.trim() !== '' &&
+                    !mentionsCompany(message.short, company))),
+            );
+
+        if (noCompany >= 0) {
+          showSlot(noCompany);
+          setNextIntent(false);
+          toast.error(t('companyMissing'));
+
+          return;
+        }
+
         save.execute({
           ...data,
           // cases vides retirées ; messages non affichés renvoyés tels quels

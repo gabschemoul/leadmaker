@@ -1415,6 +1415,17 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
             radio_none.add(name)
         else:
             radio_pick[name] = next(r["i"] for r in radios if (r["label"] or r["id"] or "") == choice)
+    # Zone de texte du message présente : le message y va, jamais dans une case d'une ligne « Votre demande* » placée
+    # avant elle ; cette case reçoit l'objet. Sinon le message partait dans la case d'une ligne et l'IA remplissait la
+    # vraie zone de message avec le nom de la société (25/11/2026 : melec45.fr, elec42-mb.fr, electricien-tassin-69.com)
+    message_rule = dict(FIELD_RULES)["message"]
+    if any(f["tag"] == "textarea" and kinds[f["i"]] == "message"
+           and not HONEYPOT.search(f["name"] or "") and not HONEYPOT.search(f["id"] or "")
+           and (not _norm(f["label"] or "").strip() or re.search(message_rule, _norm(f["label"] or "")))
+           for f in fresh):
+        for f in fresh:
+            if kinds[f["i"]] == "message" and f["tag"] != "textarea":
+                kinds[f["i"]] = "message_line"
     lone_name ="last_name" in kinds.values() and "first_name" not in kinds.values()
     # Un seul champ texte libre sans zone de message : il reçoit le message (formulaires « rappel »)
     for f in fresh:
@@ -1478,6 +1489,12 @@ def _fill_pass(frame: Frame, fields: list[dict], fresh: list[dict], sender: Send
                 elif opts and f["required"]:
                     res.warnings.append(f"liste obligatoire sans choix possible (devis, rendez-vous…) : {label}")
                     res.missing.append(label)
+            elif kind == "message_line":
+                # case d'une ligne « Votre demande » à côté de la zone de message : l'objet, et seulement si obligatoire
+                if f["required"] or (f["label"] or "").rstrip().endswith("*"):
+                    _fill(loc, subject.strip() or ("Proposition commerciale" if locale.lower().startswith("fr")
+                                                   else "Business proposal"))
+                    res.filled["objet"] = label
             elif kind == "unknown":
                 if CAPTCHA_TEXT.search(_norm(label)):
                     continue

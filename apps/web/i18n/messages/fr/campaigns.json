@@ -335,7 +335,8 @@
       "senderDefaultOptionEmpty": "Par défaut",
       "senderChosen": "Expéditeur de la campagne enregistré.",
       "senderChooseFailed": "L'expéditeur n'a pas pu être changé. Réessayez dans un instant.",
-      "senderNotFound": "Cet expéditeur n'existe plus."
+      "senderNotFound": "Cet expéditeur n'existe plus.",
+      "senderNoPhone": "Ajoutez un téléphone : beaucoup de formulaires l'exigent."
     },
     "contact": {
       "noMessage": "Il manque le message : Prospectigo ne sait pas quoi écrire dans les formulaires.",
@@ -832,7 +833,7 @@
       "allDone": "C’est fait, la liste est terminée",
       "skip": "Passer",
       "send": "Envoyer",
-      "sentByHand": "C’est envoyé",
+      "sentByHand": "Je l’ai envoyé moi-même",
       "message": "Message",
       "screenshotAlt": "Formulaire rempli sur le site de {name}",
       "copied": "Message copié",

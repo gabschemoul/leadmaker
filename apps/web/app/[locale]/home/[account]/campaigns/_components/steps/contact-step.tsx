@@ -223,6 +223,18 @@ async function ContactSender(props: {
           <ChevronRight className={'text-muted-foreground size-4 shrink-0'} />
         </Link>
       )}
+
+      {/* sans téléphone, près d'un formulaire sur cinq reste « à compléter » (25/11/2026, Électriciens France) ;
+          dès qu'il est ajouté, ces formulaires repartent tout seuls (lm_sender_profiles_reprepare) */}
+      {sender && !sender.phone?.trim() ? (
+        <Link
+          href={senderHref}
+          className={'text-destructive text-[13px] hover:underline'}
+          data-test={'contact-sender-no-phone'}
+        >
+          {t('senderNoPhone')}
+        </Link>
+      ) : null}
     </div>
   );
 }

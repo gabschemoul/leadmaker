@@ -335,7 +335,8 @@
       "senderDefaultOptionEmpty": "Default",
       "senderChosen": "Campaign sender saved.",
       "senderChooseFailed": "The sender could not be changed. Please try again in a moment.",
-      "senderNotFound": "This sender no longer exists."
+      "senderNotFound": "This sender no longer exists.",
+      "senderNoPhone": "Add a phone number: many forms require it."
     },
     "contact": {
       "noMessage": "The message is missing: Prospectigo does not know what to write in the forms.",
@@ -832,7 +833,7 @@
       "allDone": "Done, the list is finished",
       "skip": "Skip",
       "send": "Send",
-      "sentByHand": "I sent it",
+      "sentByHand": "I sent it myself",
       "message": "Message",
       "screenshotAlt": "Form filled in on {name}’s website",
       "copied": "Message copied",
